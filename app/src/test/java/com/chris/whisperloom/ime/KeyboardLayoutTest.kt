@@ -42,7 +42,8 @@ class KeyboardLayoutTest {
             R.id.status, R.id.level, R.id.mic_zone, R.id.mic_pulse, R.id.mic_ring, R.id.mic_progress, R.id.mic,
             R.id.key_row, R.id.key_globe, R.id.key_comma, R.id.key_space, R.id.key_period,
             R.id.key_backspace, R.id.key_enter, R.id.key_retry, R.id.key_settings,
-            R.id.gesture_discard, R.id.gesture_lock,
+            R.id.gesture_discard, R.id.gesture_lock, R.id.key_refine, R.id.refine_row,
+            R.id.refine_off, R.id.refine_polish, R.id.refine_beautify, R.id.refine_summarize,
         )) {
             assertNotNull("ID fehlt: ${ctx.resources.getResourceEntryName(id)}", v.findViewById<View>(id))
         }
@@ -52,6 +53,7 @@ class KeyboardLayoutTest {
         // Die Wisch-Ziele zeigt erst die Geste — im Ruhezustand ist die Tastatur unveraendert.
         assertEquals(View.GONE, v.findViewById<View>(R.id.gesture_discard).visibility)
         assertEquals(View.GONE, v.findViewById<View>(R.id.gesture_lock).visibility)
+        assertEquals(View.GONE, v.findViewById<View>(R.id.refine_row).visibility)
     }
 
     @Test fun wischZieleSindBedienbarGross() {
@@ -80,7 +82,24 @@ class KeyboardLayoutTest {
                 assertTrue("Icon-Taste erwartet", key is ImageButton)
             }
         }
-        assertEquals(8, row.childCount)
+        assertEquals(9, row.childCount)
+    }
+
+    @Test fun derSchnellzugriffMachtDieTastaturNichtHoeher() {
+        // Die Zeile klappt aus, die Spec-Hoehe von ~240 dp gilt aber fuer den Ruhezustand.
+        val v = inflate()
+        val spec = View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY)
+        val frei = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        v.measure(spec, frei)
+        val eingeklappt = v.measuredHeight
+
+        v.findViewById<View>(R.id.refine_row).visibility = View.VISIBLE
+        v.measure(spec, frei)
+        assertTrue("Ausgeklappt muss die Tastatur hoeher werden", v.measuredHeight > eingeklappt)
+
+        v.findViewById<View>(R.id.refine_row).visibility = View.GONE
+        v.measure(spec, frei)
+        assertEquals("Eingeklappt muss sie wieder genau so hoch sein", eingeklappt, v.measuredHeight)
     }
 
     @Test fun masseNachSpec() {
