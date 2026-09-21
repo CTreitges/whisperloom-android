@@ -459,14 +459,18 @@
 
     <!-- §6.12 IME-Tastatur (V2) -->
     <string name="kb_hint_hold">Halte das Mikrofon gedrückt und sprich</string>
-    <string name="kb_listening">Höre zu … loslassen zum Beenden</string>
+    <string name="kb_listening">Höre zu … rechts wischen stellt fest</string>
     <string name="kb_transcribing">Wird übertragen …</string>
     <string name="kb_need_permission">Mikrofon-Berechtigung fehlt — tippe zum Einrichten</string>
     <string name="kb_not_configured">Kein Zugang eingerichtet — tippe zum Einrichten</string>
     <string name="kb_error">Fehler bei der Erkennung — erneut versuchen</string>
+    <string name="kb_lock_armed">Loslassen stellt die Aufnahme fest</string>
+    <string name="kb_cancel_armed">Loslassen verwirft die Aufnahme</string>
+    <string name="kb_locked">Aufnahme %1$s — senden oder verwerfen</string>
+    <string name="kb_discarded">Aufnahme verworfen</string>
     <string name="refine_skipped">Textverbesserung übersprungen: %1$s</string>
     <string name="kb_space">Leer</string>
-    <string name="cd_mic">Diktat-Mikrofon — halten zum Sprechen</string>
+    <string name="cd_mic">Diktat-Mikrofon — antippen zum Starten, gedrückt halten zum Sprechen</string>
     <string name="cd_kb_switch">Eingabemethode wechseln</string>
     <string name="cd_kb_comma">Komma</string>
     <string name="cd_kb_space">Leerzeichen</string>
@@ -475,4 +479,11 @@
     <string name="cd_kb_enter">Eingabe</string>
     <string name="cd_kb_retry">Erneut senden</string>
     <string name="cd_kb_settings">WhisperLoom-Einstellungen</string>
+    <string name="cd_kb_discard">Aufnahme verwerfen</string>
+    <string name="cd_kb_send">Aufnahme senden</string>
+    <string name="cd_kb_lock">Aufnahme feststellen</string>
+    <string name="cd_mic_recording">Aufnahme läuft, %1$s — antippen zum Senden</string>
+    <string name="cd_mic_locked">Aufnahme festgestellt, %1$s — antippen zum Senden</string>
+    <string name="cd_mic_sending">Wird übertragen</string>
+    <string name="cd_mic_error">Fehler — antippen für erneuten Versuch</string>
 </resources>

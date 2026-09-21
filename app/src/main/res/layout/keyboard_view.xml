@@ -62,6 +62,37 @@
             android:src="@drawable/ime_progress_arc"
             android:visibility="gone" />
 
+        <!-- Wisch-Ziele links/rechts (UX-Spec §5.3): waehrend des Ziehens nur Anzeige, nach dem
+             Feststellen bedienbare Tasten. Symbol, Beschreibung und Bedienbarkeit setzt der
+             Service; eingerastet = android:state_activated. -->
+        <ImageButton
+            android:id="@+id/gesture_discard"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_gravity="start|center_vertical"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/gesture_target_discard"
+            android:contentDescription="@string/cd_kb_discard"
+            android:padding="16dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_close"
+            android:tint="@color/gesture_discard_tint"
+            android:visibility="gone" />
+
+        <ImageButton
+            android:id="@+id/gesture_lock"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_gravity="end|center_vertical"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/gesture_target_lock"
+            android:contentDescription="@string/cd_kb_lock"
+            android:padding="16dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_lock"
+            android:tint="@color/gesture_lock_tint"
+            android:visibility="gone" />
+
         <!-- 88 dp, Icon 36 dp (Padding 26). Fuellung = Level-List, Level = BubbleVisual.Fill.ordinal. -->
         <ImageButton
             android:id="@+id/mic"

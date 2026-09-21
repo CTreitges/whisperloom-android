@@ -42,12 +42,29 @@ class KeyboardLayoutTest {
             R.id.status, R.id.level, R.id.mic_zone, R.id.mic_pulse, R.id.mic_ring, R.id.mic_progress, R.id.mic,
             R.id.key_row, R.id.key_globe, R.id.key_comma, R.id.key_space, R.id.key_period,
             R.id.key_backspace, R.id.key_enter, R.id.key_retry, R.id.key_settings,
+            R.id.gesture_discard, R.id.gesture_lock,
         )) {
             assertNotNull("ID fehlt: ${ctx.resources.getResourceEntryName(id)}", v.findViewById<View>(id))
         }
         assertTrue(v.findViewById<View>(R.id.level) is LevelBandView)
         assertEquals(View.GONE, v.findViewById<View>(R.id.key_retry).visibility)
         assertEquals(View.ACCESSIBILITY_LIVE_REGION_POLITE, v.findViewById<View>(R.id.status).accessibilityLiveRegion)
+        // Die Wisch-Ziele zeigt erst die Geste — im Ruhezustand ist die Tastatur unveraendert.
+        assertEquals(View.GONE, v.findViewById<View>(R.id.gesture_discard).visibility)
+        assertEquals(View.GONE, v.findViewById<View>(R.id.gesture_lock).visibility)
+    }
+
+    @Test fun wischZieleSindBedienbarGross() {
+        val v = inflate()
+        val d = ctx.resources.displayMetrics.density
+        for (id in listOf(R.id.gesture_discard, R.id.gesture_lock)) {
+            val target = v.findViewById<View>(id)
+            val name = ctx.resources.getResourceEntryName(id)
+            // 48 dp ist das Mindest-Touch-Ziel (UX-Spec §5.6); die Ziele sind 56.
+            assertTrue("$name zu schmal", (target.layoutParams.width / d).toInt() >= 48)
+            assertTrue("$name zu niedrig", (target.layoutParams.height / d).toInt() >= 48)
+            assertFalse("$name ohne contentDescription", target.contentDescription.isNullOrBlank())
+        }
     }
 
     @Test fun keineEmojiUndJedeTasteHatEineBeschreibung() {
