@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.chris.whisperloom.AppNav
+import com.chris.whisperloom.ui.tutorial.TutorialKind
 
 /** Die Screens der MainActivity (UX-Spec §1.1). [key] ist stabil je Screen-Typ (Uebergangs-Animation). */
 sealed class Screen(val key: String) {
@@ -26,6 +27,9 @@ sealed class Screen(val key: String) {
     data object ButtonKeyboard : Screen("button")
     data object Models : Screen("models")
 
+    /** Erweiterte Optionen: Sprachauftrag an einen eigenen Agenten. */
+    data object Agent : Screen("agent")
+
     /** [section] 1..7 = initial geoeffneter Hilfe-Abschnitt. */
     data class Help(val section: Int = 1) : Screen("help")
 
@@ -34,7 +38,11 @@ sealed class Screen(val key: String) {
      * [startBubbleAfter]: W9 "Knopf starten & los" — der schwebende Knopf startet erst beim Beenden des
      * Tutorials (sonst schwebt er darueber).
      */
-    data class Tutorial(val startPage: Int = 0, val startBubbleAfter: Boolean = false) : Screen("tutorial") {
+    data class Tutorial(
+        val startPage: Int = 0,
+        val startBubbleAfter: Boolean = false,
+        val kind: TutorialKind = TutorialKind.BASICS,
+    ) : Screen("tutorial") {
         companion object {
             const val PAGE_SHARE = 2
         }
@@ -43,7 +51,7 @@ sealed class Screen(val key: String) {
     fun encode(): String = when (this) {
         is Setup -> "$key:$step"
         is Help -> "$key:$section"
-        is Tutorial -> "$key:$startPage:${if (startBubbleAfter) 1 else 0}"
+        is Tutorial -> "$key:$startPage:${if (startBubbleAfter) 1 else 0}:${kind.key}"
         else -> key
     }
 
@@ -58,8 +66,13 @@ sealed class Screen(val key: String) {
                 "text" -> TextSettings
                 "button" -> ButtonKeyboard
                 "models" -> Models
+                "agent" -> Agent
                 "help" -> Help(arg ?: 1)
-                "tutorial" -> Tutorial(arg ?: 0, startBubbleAfter = parts.getOrNull(2) == "1")
+                "tutorial" -> Tutorial(
+                    arg ?: 0,
+                    startBubbleAfter = parts.getOrNull(2) == "1",
+                    kind = TutorialKind.fromKey(parts.getOrNull(3)),
+                )
                 else -> Home
             }
         }

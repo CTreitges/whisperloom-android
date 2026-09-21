@@ -42,12 +42,12 @@ class TutorialScreenTest {
         finished = 0
     }
 
-    private fun show(startPage: Int = 0) {
+    private fun show(startPage: Int = 0, kind: TutorialKind = TutorialKind.BASICS) {
         val env = AppEnv(PrefsState(Prefs(ctx)), SystemStatus()) { SystemStatus() }
         compose.setContent {
             WhisperLoomTheme {
                 CompositionLocalProvider(LocalAppEnv provides env) {
-                    TutorialScreen(startPage = startPage, onFinish = { finished++ })
+                    TutorialScreen(startPage = startPage, kind = kind, onFinish = { finished++ })
                 }
             }
         }
@@ -120,5 +120,34 @@ class TutorialScreenTest {
         compose.waitForIdle()
         assertTrue(Prefs(ctx).tutorialSeen)
         assertEquals(1, finished)
+    }
+
+    // --- Zweites Heft: Sprachauftrag ----------------------------------------
+
+    @Test fun dasSprachauftragHeftZeigtSeineEigenenSeiten() {
+        show(kind = TutorialKind.AGENT)
+        compose.onNodeWithText("Das Widget auf den Startbildschirm").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Seite 1 von 4").assertIsDisplayed()
+    }
+
+    @Test fun dasSprachauftragHeftSetztNurSeinEigenesFlag() {
+        show(kind = TutorialKind.AGENT)
+        compose.onNodeWithText("Überspringen").performClick()
+        compose.waitForIdle()
+        val prefs = Prefs(ctx)
+        assertTrue(prefs.agentTutorialSeen)
+        // tutorialSeen bedeutet weiterhin "Einsteiger-Tutorial gesehen" — sonst bekaeme ein
+        // Bestandsnutzer das Einsteiger-Tutorial nie wieder bzw. beim Update erneut.
+        assertFalse("tutorialSeen darf seine Bedeutung nicht aendern", prefs.tutorialSeen)
+        assertEquals(1, finished)
+    }
+
+    @Test fun dasEinsteigerHeftSetztNichtDasSprachauftragFlag() {
+        show()
+        compose.onNodeWithText("Überspringen").performClick()
+        compose.waitForIdle()
+        val prefs = Prefs(ctx)
+        assertTrue(prefs.tutorialSeen)
+        assertFalse(prefs.agentTutorialSeen)
     }
 }

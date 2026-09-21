@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tutorial-Illustration Sprachauftrag 3: Widget im Aufnahme-Zustand mit Schallwellen und laufender Zeit.
+     Flach und schematisch im Stil der uebrigen Tutorial-Bilder; nur @color/loom_*-Farben,
+     kein Text (Bildbeschreibung: tutorial_agent_img_* in strings.xml).
+     Erzeugt mit scratchpad/gen_agent_ill.py. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:width="320dp"
+    android:height="240dp"
+    android:viewportWidth="320"
+    android:viewportHeight="240"
+    tools:ignore="VectorRaster">
+    <path
+        android:fillColor="@color/loom_recordingContainer"
+        android:pathData="M102,52 h116 a26,26 0 0 1 26,26 v84 a26,26 0 0 1 -26,26 h-116 a26,26 0 0 1 -26,-26 v-84 a26,26 0 0 1 26,-26 z" />
+    <path
+        android:strokeColor="@color/loom_recording"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M102,52 h116 a26,26 0 0 1 26,26 v84 a26,26 0 0 1 -26,26 h-116 a26,26 0 0 1 -26,-26 v-84 a26,26 0 0 1 26,-26 z" />
+    <path
+        android:fillColor="@color/loom_recording"
+        android:pathData="M132,104 a28,28 0 1 0 56,0 a28,28 0 1 0 -56,0 z" />
+    <path
+        android:fillColor="@color/loom_onRecording"
+        android:pathData="M160,92 h0 a6,6 0 0 1 6,6 v6 a6,6 0 0 1 -6,6 h0 a6,6 0 0 1 -6,-6 v-6 a6,6 0 0 1 6,-6 z" />
+    <path
+        android:strokeColor="@color/loom_onRecording"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M148,106 a12,12 0 0 0 24,0" />
+    <path
+        android:fillColor="@color/loom_onRecording"
+        android:pathData="M158.5,118 h3 v6 h-3 z" />
+    <path
+        android:fillColor="@color/loom_recordingText"
+        android:pathData="M94.5,97.0 h0.0 a2.5,2.5 0 0 1 2.5,2.5 v9.0 a2.5,2.5 0 0 1 -2.5,2.5 h-0.0 a2.5,2.5 0 0 1 -2.5,-2.5 v-9.0 a2.5,2.5 0 0 1 2.5,-2.5 z" />
+    <path
+        android:fillColor="@color/loom_recordingText"
+        android:pathData="M103.5,91.0 h0.0 a2.5,2.5 0 0 1 2.5,2.5 v21.0 a2.5,2.5 0 0 1 -2.5,2.5 h-0.0 a2.5,2.5 0 0 1 -2.5,-2.5 v-21.0 a2.5,2.5 0 0 1 2.5,-2.5 z" />
+    <path
+        android:fillColor="@color/loom_recordingText"
+        android:pathData="M112.5,85.0 h0.0 a2.5,2.5 0 0 1 2.5,2.5 v33.0 a2.5,2.5 0 0 1 -2.5,2.5 h-0.0 a2.5,2.5 0 0 1 -2.5,-2.5 v-33.0 a2.5,2.5 0 0 1 2.5,-2.5 z" />
+    <path
+        android:fillColor="@color/loom_recordingText"
+        android:pathData="M121.5,91.0 h0.0 a2.5,2.5 0 0 1 2.5,2.5 v21.0 a2.5,2.5 0 0 1 -2.5,2.5 h-0.0 a2.5,2.5 0 0 1 -2.5,-2.5 v-21.0 a2.5,2.5 0 0 1 2.5,-2.5 z" />
+    <path
+        android:fillColor="@color/loom_recordingText"
+        android:pathData="M130.5,97.0 h0.0 a2.5,2.5 0 0 1 2.5,2.5 v9.0 a2.5,2.5 0 0 1 -2.5,2.5 h-0.0 a2.5,2.5 0 0 1 -2.5,-2.5 v-9.0 a2.5,2.5 0 0 1 2.5,-2.5 z" />
+    <path
+        android:fillColor="@color/loom_recordingText"
+        android:pathData="M198.5,97.0 h0.0 a2.5,2.5 0 0 1 2.5,2.5 v9.0 a2.5,2.5 0 0 1 -2.5,2.5 h-0.0 a2.5,2.5 0 0 1 -2.5,-2.5 v-9.0 a2.5,2.5 0 0 1 2.5,-2.5 z" />
+    <path
+        android:fillColor="@color/loom_recordingText"
+        android:pathData="M207.5,91.0 h0.0 a2.5,2.5 0 0 1 2.5,2.5 v21.0 a2.5,2.5 0 0 1 -2.5,2.5 h-0.0 a2.5,2.5 0 0 1 -2.5,-2.5 v-21.0 a2.5,2.5 0 0 1 2.5,-2.5 z" />
+    <path
+        android:fillColor="@color/loom_recordingText"
+        android:pathData="M216.5,85.0 h0.0 a2.5,2.5 0 0 1 2.5,2.5 v33.0 a2.5,2.5 0 0 1 -2.5,2.5 h-0.0 a2.5,2.5 0 0 1 -2.5,-2.5 v-33.0 a2.5,2.5 0 0 1 2.5,-2.5 z" />
+    <path
+        android:fillColor="@color/loom_recordingText"
+        android:pathData="M225.5,91.0 h0.0 a2.5,2.5 0 0 1 2.5,2.5 v21.0 a2.5,2.5 0 0 1 -2.5,2.5 h-0.0 a2.5,2.5 0 0 1 -2.5,-2.5 v-21.0 a2.5,2.5 0 0 1 2.5,-2.5 z" />
+    <path
+        android:fillColor="@color/loom_recordingText"
+        android:pathData="M234.5,97.0 h0.0 a2.5,2.5 0 0 1 2.5,2.5 v9.0 a2.5,2.5 0 0 1 -2.5,2.5 h-0.0 a2.5,2.5 0 0 1 -2.5,-2.5 v-9.0 a2.5,2.5 0 0 1 2.5,-2.5 z" />
+    <path
+        android:fillColor="@color/loom_recording"
+        android:pathData="M127,156 a5,5 0 1 0 10,0 a5,5 0 1 0 -10,0 z" />
+    <path
+        android:fillColor="@color/loom_recordingText"
+        android:pathData="M148,152 h36 a4,4 0 0 1 4,4 v0 a4,4 0 0 1 -4,4 h-36 a4,4 0 0 1 -4,-4 v0 a4,4 0 0 1 4,-4 z" />
+</vector>
