@@ -15,6 +15,7 @@ import com.chris.whisperloom.RefineMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.After
 import org.junit.Before
@@ -348,6 +349,24 @@ class ImeGestureTest {
         // TranscriptionEngine liest die Prefs bei jedem Diktat frisch — die Wahl wirkt sofort.
         assertEquals(RefineMode.BEAUTIFY, Prefs(app).refineMode)
         assertTrue(refineKey(R.id.refine_beautify).isSelected)
+        // Quittung in der Statuszeile — mit dem Namen der Stufe, nicht nur "gespeichert".
+        assertEquals(
+            app.getString(R.string.kb_refine_set, app.getString(R.string.level_beautify)),
+            statusText,
+        )
+    }
+
+    @Test fun jedeStufeQuittiertMitIhremEigenenNamen() {
+        root.findViewById<View>(R.id.key_refine).performClick()
+        for ((id, label) in listOf(
+            R.id.refine_off to R.string.level_off,
+            R.id.refine_polish to R.string.level_smooth,
+            R.id.refine_beautify to R.string.level_beautify,
+            R.id.refine_summarize to R.string.level_summarize,
+        )) {
+            refineKey(id).performClick()
+            assertEquals(app.getString(R.string.kb_refine_set, app.getString(label)), statusText)
+        }
     }
 
     @Test fun dieOffeneLeisteZeigtDieGespeicherteStufe() {
@@ -363,6 +382,41 @@ class ImeGestureTest {
         assertEquals(app.getString(R.string.kb_refine_needs_llm), statusText)
         assertFalse(refineKey(R.id.refine_polish).isEnabled)
         assertTrue("Aus bleibt waehlbar", refineKey(R.id.refine_off).isEnabled)
+        // Der Hinweis muss irgendwohin fuehren, sonst ist er eine Sackgasse.
+        assertTrue("Hinweis nicht antippbar", status.isClickable)
+        status.performClick()
+        assertNotNull("Tipp muss in die Einstellungen fuehren", shadowOf(app).nextStartedActivity)
+    }
+
+    @Test fun derZauberstabVerschwindetWaehrendDerAufnahme() {
+        val toggle = root.findViewById<View>(R.id.key_refine)
+        assertEquals(View.VISIBLE, toggle.visibility)
+        down()
+        // Er sitzt in der Mikro-Zone, wo jetzt die Wisch-Ziele erscheinen.
+        assertEquals(View.GONE, toggle.visibility)
+        up()
+        assertEquals("Waehrend der Uebertragung ebenfalls weg", View.GONE, toggle.visibility)
+    }
+
+    @Test fun eineAufnahmeKlapptDieOffeneLeisteZu() {
+        root.findViewById<View>(R.id.key_refine).performClick()
+        assertEquals(View.VISIBLE, refineRow.visibility)
+        down()
+        // Sonst stuende sie offen, waehrend ihr Ausloeser verschwindet.
+        assertEquals(View.GONE, refineRow.visibility)
+    }
+
+    @Test fun einFeldwechselFuehrtDieOffeneLeisteNach() {
+        Prefs(app).refineMode = RefineMode.OFF
+        root.findViewById<View>(R.id.key_refine).performClick()
+        assertTrue(refineKey(R.id.refine_off).isSelected)
+
+        // Der Eingabe-View wird wiederverwendet; inzwischen hat jemand die Stufe geaendert.
+        Prefs(app).refineMode = RefineMode.SUMMARIZE
+        service.onStartInputView(null, false)
+
+        assertTrue("Leiste zeigt die alte Stufe", refineKey(R.id.refine_summarize).isSelected)
+        assertFalse(refineKey(R.id.refine_off).isSelected)
     }
 
     @Test fun mitKiZugangKommtKeinHinweis() {
