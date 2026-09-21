@@ -2,7 +2,7 @@
 
 Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
-## [Unreleased]
+## [3.4.0] — 2026-09-21
 
 ### Hinzugefügt
 

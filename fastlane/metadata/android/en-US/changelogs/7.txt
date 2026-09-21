@@ -1,0 +1,5 @@
+WhisperLoom 3.4.0 – voice tasks for your own agent.
+• New home screen widget: tap, speak, tap — WhisperLoom transcribes and sends the task to a server you run yourself
+• Four states with a running timer; tapping an error resends the same task without speaking again
+• Keeps going with the screen off or through a short loss of signal
+• Settings → Advanced options. Off by default
