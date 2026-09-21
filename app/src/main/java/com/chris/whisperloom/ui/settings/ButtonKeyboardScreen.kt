@@ -16,6 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chris.whisperloom.R
 import com.chris.whisperloom.ui.components.DetailScaffold
+import com.chris.whisperloom.ui.components.DisclosureKind
 import com.chris.whisperloom.ui.components.KeyboardRows
 import com.chris.whisperloom.ui.components.OutlinedSection
 import com.chris.whisperloom.ui.components.ScrollColumn
@@ -26,6 +27,7 @@ import com.chris.whisperloom.ui.components.Tone
 import com.chris.whisperloom.ui.components.LoomIcon
 import com.chris.whisperloom.ui.components.LoomRow
 import com.chris.whisperloom.ui.components.openOrSnack
+import com.chris.whisperloom.ui.components.rememberDisclosureGate
 import com.chris.whisperloom.ui.components.rememberPermissionRequest
 import com.chris.whisperloom.ui.components.rememberSnack
 import com.chris.whisperloom.ui.home.HomeStatus
@@ -48,6 +50,12 @@ fun ButtonKeyboardScreen(nav: NavState) {
     val control = rememberBubbleControl(snack) { nav.push(Screen.Setup(SetupRouter.STEP_OVERLAY)) }
     val mic = rememberPermissionRequest(Manifest.permission.RECORD_AUDIO)
     val notif = rememberPermissionRequest(POST_NOTIFICATIONS)
+    // Prominent Disclosure vor Mikrofon-Request bzw. Bedienungshilfe-Einstellungen (Play-Pflicht).
+    val micGate = rememberDisclosureGate(DisclosureKind.MICROPHONE, onAccept = mic.request)
+    val a11yGate = rememberDisclosureGate(
+        DisclosureKind.ACCESSIBILITY,
+        onAccept = { openOrSnack(ctx, SystemIntents.accessibility(), snack) },
+    )
     val positionReset = stringResource(R.string.button_pos_reset_done)
 
     DetailScaffold(title = stringResource(R.string.button_title), onBack = { nav.pop() }, snack = snack) { padding ->
@@ -90,14 +98,14 @@ fun ButtonKeyboardScreen(nav: NavState) {
             }
 
             SectionCard(title = stringResource(R.string.button_card_permissions), gap = 4.dp) {
-                PermissionRow(stringResource(R.string.perm_mic), status.micGranted, stringResource(R.string.perm_allow), onAction = mic.request)
+                PermissionRow(stringResource(R.string.perm_mic), status.micGranted, stringResource(R.string.perm_allow), onAction = micGate.request)
                 PermissionRow(stringResource(R.string.perm_overlay), status.canDrawOverlays, stringResource(R.string.perm_open)) {
                     openOrSnack(ctx, SystemIntents.overlay(ctx), snack)
                 }
                 PermissionRow(
                     stringResource(R.string.perm_a11y), status.a11yRunning, stringResource(R.string.perm_open),
                     supporting = stringResource(R.string.perm_a11y_sub),
-                ) { openOrSnack(ctx, SystemIntents.accessibility(), snack) }
+                ) { a11yGate.request() }
                 if (status.notifNeeded) {
                     PermissionRow(stringResource(R.string.perm_notif), status.notifGranted, stringResource(R.string.perm_allow), onAction = notif.request)
                 }

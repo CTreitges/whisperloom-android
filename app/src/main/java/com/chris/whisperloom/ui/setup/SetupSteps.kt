@@ -34,6 +34,8 @@ import com.chris.whisperloom.Engine
 import com.chris.whisperloom.R
 import com.chris.whisperloom.ui.access.SttAccessSection
 import com.chris.whisperloom.ui.components.CardShape
+import com.chris.whisperloom.ui.components.DisclosureKind
+import com.chris.whisperloom.ui.components.rememberDisclosureGate
 import com.chris.whisperloom.ui.components.InfoCard
 import com.chris.whisperloom.ui.components.KeyboardRows
 import com.chris.whisperloom.ui.components.OutlinedSection
@@ -189,6 +191,8 @@ private fun modelStep(facts: SetupFacts, actions: StepActions): StepUi = StepUi(
 @Composable
 private fun micStep(facts: SetupFacts, actions: StepActions): StepUi {
     val mic = rememberPermissionRequest(Manifest.permission.RECORD_AUDIO)
+    // Prominent Disclosure vor dem System-Permission-Dialog (Play-Pflicht, RECORD_AUDIO).
+    val micGate = rememberDisclosureGate(DisclosureKind.MICROPHONE, onAccept = mic.request)
     val denied = mic.deniedPermanently && !facts.micGranted
     return StepUi(
         icon = R.drawable.ic_mic,
@@ -198,7 +202,7 @@ private fun micStep(facts: SetupFacts, actions: StepActions): StepUi {
         primary = when {
             facts.micGranted -> nextAction(actions)
             denied -> StepAction(stringResource(R.string.setup_open_app_settings), onClick = mic.request)
-            else -> StepAction(stringResource(R.string.setup_s3_btn), onClick = mic.request)
+            else -> StepAction(stringResource(R.string.setup_s3_btn), onClick = micGate.request)
         },
     )
 }
@@ -263,6 +267,11 @@ private fun MoreInfoCard(lines: List<Int>) {
 private fun a11yStep(facts: SetupFacts, actions: StepActions): StepUi {
     val ctx = LocalContext.current
     val prefs = LocalAppEnv.current.prefs
+    // Prominent Disclosure vor dem Öffnen der Bedienungshilfe-Einstellungen (Play-Pflicht, a11y).
+    val a11yGate = rememberDisclosureGate(
+        DisclosureKind.ACCESSIBILITY,
+        onAccept = { openOrSnack(ctx, SystemIntents.accessibility(), actions.snack) },
+    )
     return StepUi(
         icon = R.drawable.ic_accessibility_new,
         title = stringResource(R.string.setup_s5_title),
@@ -271,7 +280,7 @@ private fun a11yStep(facts: SetupFacts, actions: StepActions): StepUi {
         primary = if (facts.a11yRunning) {
             nextAction(actions)
         } else {
-            StepAction(stringResource(R.string.setup_s5_btn)) { openOrSnack(ctx, SystemIntents.accessibility(), actions.snack) }
+            StepAction(stringResource(R.string.setup_s5_btn)) { a11yGate.request() }
         },
         secondary = if (facts.a11yRunning) null else skipAction(actions) { prefs.a11ySkipped = true },
     ) {
