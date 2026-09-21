@@ -233,13 +233,28 @@ Aktivieren und auswählen wie in [Schritt 7](#schritt-7--diktat-tastatur-optiona
 
 Die Tastatur besteht aus drei Zonen:
 
-- **Statuszeile** oben: „Halte das Mikrofon gedrückt und sprich" — während der Aufnahme „Höre zu … loslassen zum Beenden", dann „Wird übertragen …". Fehlt das Mikrofon oder der Zugang, steht dort ein Warntext („Mikrofon-Berechtigung fehlt — tippe zum Einrichten" / „Kein Zugang eingerichtet — tippe zum Einrichten"); ein Tipp darauf öffnet den passenden Schritt der Einrichtung.
+- **Statuszeile** oben: „Halte das Mikrofon gedrückt und sprich" — während der Aufnahme „Höre zu … rechts wischen stellt fest", dann „Wird übertragen …". Fehlt das Mikrofon oder der Zugang, steht dort ein Warntext („Mikrofon-Berechtigung fehlt — tippe zum Einrichten" / „Kein Zugang eingerichtet — tippe zum Einrichten"); ein Tipp darauf öffnet den passenden Schritt der Einrichtung.
 - **Pegelband und Mikrofon-Taste**: Die große Taste in der Mitte funktioniert mit **Halten-zum-Sprechen** — gedrückt halten, sprechen, loslassen. Das Pegelband darüber zeigt während der Aufnahme deine Lautstärke. Die Taste zeigt dieselben vier Zustände wie der schwebende Knopf (bereit, nimmt auf, sendet, Fehler).
 - **Tastenreihe** unten: Globus (Eingabemethode wechseln) · Komma · Leertaste · Punkt · Löschen · Eingabe · (nur nach einem Fehler:) **Erneut senden** · Zahnrad (WhisperLoom-Einstellungen).
 
 Der erkannte Text wird direkt an der Cursor-Position eingefügt — die Bedienungshilfe ist bei der Tastatur nicht nötig. Nach einem Fehler („Fehler bei der Erkennung — erneut versuchen") bleibt das Audio erhalten; die Taste **Erneut senden** wiederholt den Versuch.
 
 Wenn du „Leerzeichen nach Diktat anhängen" (Einstellungen → Text → Regeln ohne KI) aktiv hast, kannst du mehrere Diktate direkt hintereinander sprechen, ohne zwischendurch ein Leerzeichen zu tippen.
+
+### 5.3 Ohne Halten diktieren: die Wisch-Geste
+
+Für längere Diktate musst du das Mikrofon nicht die ganze Zeit gedrückt halten. Halte es an, fang an zu sprechen — und **zieh den Finger nach rechts**, ohne loszulassen. Links und rechts neben dem Mikrofon erscheinen zwei Kreise: links ✕ zum Verwerfen, rechts ein Schloss zum Feststellen. Sobald der Kreis sich einfärbt, sagt die Statuszeile, was das Loslassen tut („Loslassen stellt die Aufnahme fest"). Jetzt loslassen.
+
+Die Aufnahme läuft dann **freihändig weiter**. Die Statuszeile zählt die Dauer mit („Aufnahme 0:42 — senden oder verwerfen"), und aus den beiden Kreisen werden Tasten:
+
+- **Senden** (rechts, Papierflieger) beendet die Aufnahme und fügt den Text ein. Ein Tipp auf das Mikrofon in der Mitte tut dasselbe.
+- **Verwerfen** (links, ✕) wirft die Aufnahme weg — nichts wird übertragen, nichts eingefügt.
+
+**Nach links ziehen** statt nach rechts verwirft sofort, ohne Umweg über das Feststellen. Und wenn du einfach loslässt, ohne zu ziehen, wird wie bisher direkt gesendet — die Geste ändert daran nichts.
+
+Zwei Feinheiten: Ziehst du stark nach oben oder unten weg, gilt das nicht mehr als Wischen und es rastet nichts ein. Und schließt du die Tastatur, während eine festgestellte Aufnahme läuft, wird sie noch fertig übertragen und eingefügt, solange das Eingabefeld erhalten bleibt; ist auch das Feld weg, wird die Aufnahme verworfen.
+
+**Mit TalkBack:** Gedrückthalten funktioniert dort nicht. Deshalb **startet ein Antippen** des Mikrofons die Aufnahme, und sie ist sofort festgestellt — ein zweiter Tipp sendet. Die Tasten Verwerfen und Senden sind dann ganz normal ansteuerbar.
 
 ---
 
