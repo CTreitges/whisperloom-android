@@ -1,0 +1,5 @@
+WhisperLoom 3.4.0 – Sprachauftrag an deinen eigenen Agenten.
+• Neues Widget für den Startbildschirm: tippen, sprechen, tippen — WhisperLoom schreibt mit und schickt den Auftrag an einen Server, den du selbst betreibst
+• Vier Zustände mit laufender Zeit; ein Tipp auf einen Fehler schickt denselben Auftrag erneut, ohne neu zu sprechen
+• Läuft weiter, auch wenn der Bildschirm ausgeht oder das Netz kurz weg ist
+• Einstellungen → Erweiterte Optionen. Ab Werk aus
