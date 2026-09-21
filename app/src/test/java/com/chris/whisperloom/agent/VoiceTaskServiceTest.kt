@@ -23,6 +23,8 @@ import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowAudioRecord
 import org.robolectric.shadows.ShadowSystemClock
 import java.time.Duration
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
  * Der Zustandsautomat des Aufnahme-Dienstes. Das Mikrofon liefert Robolectrics
@@ -38,6 +40,7 @@ class VoiceTaskServiceTest {
     private var eingereiht = 0
     private val echterEnqueue = VoiceTaskWork.enqueueImpl
     private var controller: ServiceController<VoiceTaskService>? = null
+    private lateinit var gelesen: CountDownLatch
 
     @Before fun aufbauen() {
         app.getSharedPreferences("whisperloom", Context.MODE_PRIVATE).edit().clear().commit()
@@ -59,14 +62,33 @@ class VoiceTaskServiceTest {
         controller?.destroy()
     }
 
-    /** Mikrofon, das durchgehend einen Ton liefert. */
-    private fun tonQuelle(amplitude: Short = 8000) {
+    /**
+     * Mikrofon, das durchgehend liefert — [amplitude] 0 ist das stummgeschaltete.
+     *
+     * Der Riegel ist noetig, weil [com.chris.whisperloom.AudioRecorder] in einem ECHTEN Thread
+     * liest, der Test aber nur die Schattenuhr vorschiebt: ohne Warten kann STOP kommen, bevor
+     * der Thread ein einziges Mal gelesen hat. Dann waere die Aufnahme leer — und der Test
+     * pruefte nicht mehr, was er soll. (Genau so ist er einmal auf der CI umgefallen.)
+     */
+    private fun quelle(amplitude: Short) {
+        gelesen = CountDownLatch(1)
         ShadowAudioRecord.setSource(object : ShadowAudioRecord.AudioRecordSource {
             override fun readInShortArray(data: ShortArray, offset: Int, size: Int, blocking: Boolean): Int {
                 for (i in 0 until size) data[offset + i] = if (i % 2 == 0) amplitude else (-amplitude).toShort()
+                gelesen.countDown()
                 return size
             }
         })
+    }
+
+    private fun tonQuelle() = quelle(8000)
+
+    private fun stilleQuelle() = quelle(0)
+
+    /** START und warten, bis das Mikrofon wirklich gelesen wurde. */
+    private fun aufnehmen(service: VoiceTaskService) {
+        senden(service, VoiceTaskService.ACTION_START)
+        assertTrue("Der Aufnahme-Thread hat nichts gelesen", gelesen.await(5, TimeUnit.SECONDS))
     }
 
     private fun dienst(): VoiceTaskService {
@@ -94,14 +116,14 @@ class VoiceTaskServiceTest {
 
     @Test fun startBeginntDieAufnahme() {
         tonQuelle()
-        senden(dienst(), VoiceTaskService.ACTION_START)
+        aufnehmen(dienst())
         assertEquals(VoiceTaskState.RECORDING, store.state)
     }
 
     @Test fun einZweitesStartIstEinDoppelklickUndAendertNichts() {
         tonQuelle()
         val s = dienst()
-        senden(s, VoiceTaskService.ACTION_START)
+        aufnehmen(s)
         ShadowSystemClock.advanceBy(Duration.ofSeconds(3))
         senden(s, VoiceTaskService.ACTION_START)
         assertEquals("START ist eine Absicht, kein Umschalter", VoiceTaskState.RECORDING, store.state)
@@ -131,7 +153,7 @@ class VoiceTaskServiceTest {
     @Test fun eineAufnahmeMitTonWirdZumAuftrag() {
         tonQuelle()
         val s = dienst()
-        senden(s, VoiceTaskService.ACTION_START)
+        aufnehmen(s)
         ShadowSystemClock.advanceBy(Duration.ofSeconds(4))
         senden(s, VoiceTaskService.ACTION_STOP)
 
@@ -144,14 +166,10 @@ class VoiceTaskServiceTest {
 
     @Test fun eineStilleAufnahmeGiltAlsFehlschlagNichtAlsAuftrag() {
         // Kein Ton, aber lange genug: genau der lautlose Entzug des Mikrofons ab Android 14.
-        ShadowAudioRecord.setSource(object : ShadowAudioRecord.AudioRecordSource {
-            override fun readInShortArray(data: ShortArray, offset: Int, size: Int, blocking: Boolean): Int {
-                java.util.Arrays.fill(data, offset, offset + size, 0)
-                return size
-            }
-        })
+        // Mit dem Riegel heisst "still" wirklich "Nullen gelesen" und nicht "nichts gelesen".
+        stilleQuelle()
         val s = dienst()
-        senden(s, VoiceTaskService.ACTION_START)
+        aufnehmen(s)
         ShadowSystemClock.advanceBy(Duration.ofSeconds(4))
         senden(s, VoiceTaskService.ACTION_STOP)
 
@@ -164,7 +182,8 @@ class VoiceTaskServiceTest {
     @Test fun einFehlgriffIstZuKurzUndKeinAuftrag() {
         tonQuelle()
         val s = dienst()
-        senden(s, VoiceTaskService.ACTION_START)
+        aufnehmen(s)
+        // Uhr NICHT vorschieben: die Aufnahme hat Ton, ist aber zu kurz.
         senden(s, VoiceTaskService.ACTION_STOP)
 
         assertEquals(VoiceTaskState.ERROR, store.state)
@@ -177,7 +196,7 @@ class VoiceTaskServiceTest {
         store.state = VoiceTaskState.ERROR
         store.message = "alter Fehler"
         val s = dienst()
-        senden(s, VoiceTaskService.ACTION_START)
+        aufnehmen(s)
         ShadowSystemClock.advanceBy(Duration.ofSeconds(4))
         senden(s, VoiceTaskService.ACTION_STOP)
         assertEquals("", store.message)
