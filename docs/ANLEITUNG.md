@@ -22,7 +22,8 @@ Alle Bezeichnungen in dieser Anleitung („Mikro-Knopf starten", „Zugang prüf
 10. [Eigener Server](#10-eigener-server)
 11. [Datenschutz](#11-datenschutz)
 12. [Wenn etwas nicht klappt](#12-wenn-etwas-nicht-klappt)
-13. [Häufige Fragen](#13-häufige-fragen)
+13. [Sprachauftrag an einen eigenen Agenten](#13-sprachauftrag-an-einen-eigenen-agenten)
+14. [Häufige Fragen](#14-häufige-fragen)
 
 ---
 
@@ -676,7 +677,68 @@ Einstellungen aus 2.x werden übernommen (Key, URL, Modell, Sprache, Regeln). Of
 
 ---
 
-## 13. Häufige Fragen
+## 13. Sprachauftrag an einen eigenen Agenten
+
+Das ist die einzige Funktion in WhisperLoom, die einen Server voraussetzt, den du selbst betreibst. Wenn du keinen hast, überspring dieses Kapitel — du wirst von der Funktion sonst nirgendwo etwas merken, sie ist ab Werk aus.
+
+**Die Idee:** Auf deinem Startbildschirm liegt ein Widget. Du tippst darauf, sprichst deinen Auftrag, tippst noch einmal — WhisperLoom schreibt mit und schickt den Text an deinen eigenen Agenten. Der arbeitet den Auftrag ab und antwortet dort, wo du ihm sonst schreibst. Die App wartet nicht auf die Antwort; sie ist nach ein paar Sekunden fertig.
+
+### 13.1 Was du brauchst
+
+- Einen erreichbaren Server mit der **Bridge** (dem kleinen Gegenstück, das den Auftrag entgegennimmt und an deinen Agenten übergibt). Adresse und ein **Token** bekommst du von dort.
+- Eine eingerichtete Erkennung — online oder offline, beides geht. Das Mitschreiben läuft genau so wie beim normalen Diktat.
+- Die Mikrofon-Berechtigung. Die hast du aus der Einrichtung meist schon.
+
+### 13.2 Einrichten
+
+Einstellungen → **Erweiterte Optionen**.
+
+1. **Sprachauftrag aktivieren** einschalten.
+2. **Server-Adresse** eintragen — die Basis-Adresse ohne Pfad, zum Beispiel `https://bridge.example.de`. Unverschlüsseltes `http://` nimmt WhisperLoom nur für Adressen im Heimnetz oder VPN an; ins offene Internet gibt es eine Warnung.
+3. **Token** eintragen. Das Auge zeigt es kurz im Klartext, das Klemmbrett-Symbol fügt es aus der Zwischenablage ein.
+4. **Verbindung prüfen** antippen. Der Chip darunter sagt dir sofort, ob Adresse und Token stimmen. Die Prüfung löst **keinen** Auftrag aus — es geht nichts an deinen Agenten.
+
+### 13.3 Das Widget auf den Startbildschirm legen
+
+Drücke lange auf eine freie Stelle deines Startbildschirms → **Widgets** → **WhisperLoom** → **Sprachauftrag** dorthin ziehen, wo du es haben willst. Es lässt sich in der Größe ändern; zwei mal zwei Felder sind die Voreinstellung.
+
+Unter Erweiterte Optionen → **Anleitung ansehen** liegt dieselbe Erklärung noch einmal als bebildertes Tutorial.
+
+### 13.4 Benutzen — die vier Zustände
+
+| Widget zeigt | Bedeutung | Ein Tipp … |
+|---|---|---|
+| Mikrofon, „Tippen und sprechen" | bereit | startet die Aufnahme |
+| rot, laufende Zeit | nimmt auf | beendet die Aufnahme und schickt den Auftrag los |
+| blau, „Wird gesendet …" | schreibt mit und überträgt | tut nichts (mit Absicht — ein ungeduldiger zweiter Tipp soll nichts kaputt machen) |
+| rot mit Fehlergrund | etwas hat nicht geklappt | schickt **denselben** Auftrag noch einmal, ohne neu aufzunehmen |
+
+Nach dem Absenden darf der Bildschirm ausgehen: Mitschreiben und Übertragen laufen als Auftrag im System weiter und überstehen auch ein kurzes Funkloch. Ist der Auftrag draußen, wird das Widget kurz grün („Gesendet") und dann wieder grau.
+
+### 13.5 Wenn etwas nicht klappt
+
+**„Mikrofon nicht erlaubt — tippen"**
+Der Tipp führt dich in die Erweiterten Optionen; dort erlaubst du das Mikrofon.
+
+**„Sprachauftrag ist aus — tippen"**
+Der Schalter ist aus, oder Adresse bzw. Token fehlen. Der Tipp führt direkt zur richtigen Stelle.
+
+**„Kein Ton aufgenommen"**
+Es kam nichts am Mikrofon an — etwa weil eine andere App es belegt (Telefonat, Sprachassistent) oder Android es der App im Hintergrund entzogen hat. Ein Tipp startet einen neuen Anlauf.
+
+**„Zu kurz — länger sprechen"**
+Der zweite Tipp kam zu schnell. Unter einer knappen Sekunde ist es ein Fehlgriff, kein Auftrag.
+
+**Ein Fehler mit Zahl (z. B. 401 oder 503)**
+401 heißt: Token stimmt nicht — korrigier es in den Erweiterten Optionen und tippe dann auf das Widget, der Auftrag ist noch da. 503 heißt: die Bridge erreicht deinen Agenten gerade nicht; WhisperLoom versucht es von allein mehrmals erneut, erst danach wird das Widget rot.
+
+### 13.6 Was dabei gesendet wird
+
+An deinen Server gehen: der erkannte Text, eine Auftragskennung, Zeitpunkt und Dauer der Aufnahme. **Nur an die Adresse, die du einträgst** — nicht an den Hersteller der App und an niemanden sonst. Die Aufnahme selbst bleibt auf dem Telefon; fürs Mitschreiben geht sie an den Erkennungsweg, den du ohnehin eingestellt hast (Kapitel 11 beschreibt das im Detail). Ein Auftrag, der noch nicht durchging, liegt so lange auf dem Telefon, bis er abgeschickt oder ersetzt wird; er wird nicht in ein Cloud-Backup übernommen.
+
+---
+
+## 14. Häufige Fragen
 
 **Was kostet WhisperLoom?**
 Die App ist kostenlos und quelloffen (MIT-Lizenz). Kosten entstehen nur beim Online-Anbieter — mit Groq gar keine, mit OpenAI GPT Transcribe etwa $0,0045 pro Diktat-Minute (Stand 09/2026, ohne Gewähr). Der Offline-Modus ist komplett kostenlos.
