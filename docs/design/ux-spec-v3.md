@@ -1180,6 +1180,30 @@ Wisch-Geste (V3):
 | `cd_mic_sending` | Wird übertragen |
 | `cd_mic_error` | Fehler — antippen für erneuten Versuch |
 
+Schnellzugriff Textverbesserung (V3):
+
+| Key | Text |
+|---|---|
+| `cd_kb_refine` | Textverbesserung |
+| `cd_kb_refine_level` | Textverbesserung: %1$s |
+| `kb_refine_set` | Textverbesserung: %1$s |
+| `kb_refine_needs_llm` | Für die KI-Stufen fehlt ein Zugang — tippe zum Einrichten |
+
+Die vier Stufen selbst nutzen die bestehenden `level_*`-Strings des
+Einstellungs-Screens (`RefineMode.SETTINGS`, ohne `paragraphs`).
+
+**Schnellzugriff (§5.3):** Eine `KeyIcon`-Taste mit `ic_auto_fix_high` klappt eine zweite
+Reihe über `key_row` auf — eingeklappt `GONE`, damit die Ruhehöhe von rund 240 dp steht.
+Die gewählte Stufe wird über `android:state_selected` markiert (nicht `state_activated`:
+TalkBack sagt dazu von sich aus „ausgewählt"). Ohne eingerichteten LLM-Zugang sind die drei
+KI-Stufen `isEnabled=false` und die Statuszeile erklärt es; „Aus" bleibt wählbar.
+`applyKeyHeight` skaliert beide Reihen.
+
+**Folge für den Einstellungs-Screen:** Die Tastatur ist ein eigener Dienst und schreibt mit
+einer eigenen `Prefs`-Instanz. `PrefsState` horcht deshalb auf
+`OnSharedPreferenceChangeListener` und liest seine Spiegel neu — sonst zeigt E2 nach einem
+Griff in den Schnellzugriff die alte Stufe.
+
 **Geste (§5.3):** Aus der laufenden Aufnahme nach rechts ziehen stellt fest, nach links
 verwirft. Schwellen relativ zum Druckpunkt: einrasten ab 56 dp (wie `CANCEL_HIT_RADIUS_DP`),
 lösen erst unter 56 − 12 dp (Hysterese), senkrechte Toleranz 64 dp — für ein eingerastetes Ziel
@@ -1300,7 +1324,7 @@ und beim Verlassen zurück auf `polite`.
 | `llmProvider` | `llm_provider` | String, `openai` | Preset-ID |
 | `llmBaseUrl` / `llmApiKey` | `llm_url` / `llm_key` | String, `""` | eigener Zugang |
 | `llmModel` (bestehend) | `llm_model` | Default `gpt-4o-mini` | |
-| `refineLevel` | `refine_level` | String, `off` (off/smooth/beautify/summarize); Migration `llm_polish==true` → `smooth` | Stufe |
+| `refineMode` | `refine_mode` | String, `off` (off/polish/beautify/summarize); Migration `llm_polish==true` → `polish` | Stufe. Der Code hieß nie `refine_level`/`smooth` — diese Zeile war falsch und folgt jetzt `Prefs.KEY_REFINE_MODE` und `RefineMode`. Das Enum kennt zusätzlich `paragraphs`, nicht zuweisbar (nur für geteilte Audios). |
 | `smartFillers` / `removeFillers` / `autoCapitalize` / `trailingSpace` / `language` (bestehend) | — | — | |
 | `customFillers` | `custom_fillers` | StringSet, leer | eigene Wörter |
 | `disabledFillers` | `disabled_fillers` | StringSet, leer | abgewählte Standardwörter |
