@@ -52,34 +52,46 @@ private class TutorialPage(
     @param:StringRes val body: Int,
 )
 
-/** Die vier Seiten in fester Reihenfolge; Index 2 = Sprachnachrichten abtippen (Screen.Tutorial.PAGE_SHARE). */
-private val PAGES = listOf(
+/** Einsteiger-Tutorial; Index 2 = Sprachnachrichten abtippen (Screen.Tutorial.PAGE_SHARE). */
+private val BASICS_PAGES = listOf(
     TutorialPage(R.drawable.ill_tutorial_button, R.string.tutorial_img_button, R.string.tutorial_p1_title, R.string.tutorial_p1_body),
     TutorialPage(R.drawable.ill_tutorial_keyboard, R.string.tutorial_img_keyboard, R.string.tutorial_p2_title, R.string.tutorial_p2_body),
     TutorialPage(R.drawable.ill_tutorial_share, R.string.tutorial_img_share, R.string.tutorial_p3_title, R.string.tutorial_p3_body),
     TutorialPage(R.drawable.ill_tutorial_result, R.string.tutorial_img_result, R.string.tutorial_p4_title, R.string.tutorial_p4_body),
 )
 
+/** Sprachauftrag-Tutorial: Widget hinzufuegen, Server eintragen, aufnehmen, Antwort finden. */
+private val AGENT_PAGES = listOf(
+    TutorialPage(R.drawable.ill_agent_widget, R.string.tutorial_agent_img_widget, R.string.tutorial_agent_p1_title, R.string.tutorial_agent_p1_body),
+    TutorialPage(R.drawable.ill_agent_server, R.string.tutorial_agent_img_server, R.string.tutorial_agent_p2_title, R.string.tutorial_agent_p2_body),
+    TutorialPage(R.drawable.ill_agent_record, R.string.tutorial_agent_img_record, R.string.tutorial_agent_p3_title, R.string.tutorial_agent_p3_body),
+    TutorialPage(R.drawable.ill_agent_answer, R.string.tutorial_agent_img_answer, R.string.tutorial_agent_p4_title, R.string.tutorial_agent_p4_body),
+)
+
+private fun pagesOf(kind: TutorialKind) = if (kind == TutorialKind.AGENT) AGENT_PAGES else BASICS_PAGES
+
 /**
- * T — Tutorial: vier Seiten im HorizontalPager. Laeuft einmal automatisch nach der Einrichtung
+ * T — Tutorial: vier Seiten im HorizontalPager, [kind] waehlt das Heft. Laeuft einmal automatisch nach der Einrichtung
  * (W9) bzw. beim ersten Start eines bereits eingerichteten Bestandsnutzers; spaeter aus Home
  * ("Mehr" -> Seite 3) und Hilfe ("Tutorial erneut ansehen"). "Ueberspringen" und "Los geht's"
- * setzen `tutorialSeen` und rufen [onFinish]; Zurueck blaettert, auf Seite 1 = ueberspringen.
+ * setzen das Gesehen-Flag DES HEFTES ([TutorialKind.markSeen]) und rufen [onFinish];
+ * Zurueck blaettert, auf Seite 1 = ueberspringen.
  */
 @Composable
-fun TutorialScreen(startPage: Int = 0, onFinish: () -> Unit) {
+fun TutorialScreen(startPage: Int = 0, kind: TutorialKind = TutorialKind.BASICS, onFinish: () -> Unit) {
     val prefs = LocalAppEnv.current.prefs
-    val pager = rememberPagerState(initialPage = startPage.coerceIn(0, PAGES.lastIndex)) { PAGES.size }
+    val pages = pagesOf(kind)
+    val pager = rememberPagerState(initialPage = startPage.coerceIn(0, pages.lastIndex)) { pages.size }
     val scope = rememberCoroutineScope()
     val reduceMotion = rememberReduceMotion()
-    val last = pager.currentPage == PAGES.lastIndex
+    val last = pager.currentPage == pages.lastIndex
 
     // Seitenwechsel mit Standard-Animation, bei Reduce-Motion ohne (Spec §5.4).
     val goTo: (Int) -> Unit = { page ->
         scope.launch { if (reduceMotion) pager.scrollToPage(page) else pager.animateScrollToPage(page) }
     }
     val finish = {
-        prefs.tutorialSeen = true
+        kind.markSeen(prefs.prefs)
         onFinish()
     }
 
@@ -92,7 +104,7 @@ fun TutorialScreen(startPage: Int = 0, onFinish: () -> Unit) {
         },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            HorizontalPager(state = pager, modifier = Modifier.weight(1f)) { page -> TutorialPageContent(PAGES[page]) }
+            HorizontalPager(state = pager, modifier = Modifier.weight(1f)) { page -> TutorialPageContent(pages[page]) }
             PageDots(pager)
         }
     }

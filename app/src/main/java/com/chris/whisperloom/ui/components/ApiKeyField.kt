@@ -34,6 +34,7 @@ fun ApiKeyField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     optional: Boolean = false,
+    label: String? = null,
 ) {
     val ctx = LocalContext.current
     var visible by rememberSaveable { mutableStateOf(false) }
@@ -48,7 +49,7 @@ fun ApiKeyField(
         value = value,
         onValueChange = onValueChange,
         modifier = modifier.fillMaxWidth(),
-        label = { Text(stringResource(if (optional) R.string.rec_api_key_optional else R.string.rec_api_key)) },
+        label = { Text(label ?: stringResource(if (optional) R.string.rec_api_key_optional else R.string.rec_api_key)) },
         singleLine = true,
         visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),

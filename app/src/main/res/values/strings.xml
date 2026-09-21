@@ -496,4 +496,64 @@
     <string name="cd_mic_locked">Aufnahme festgestellt, %1$s — antippen zum Senden</string>
     <string name="cd_mic_sending">Wird übertragen</string>
     <string name="cd_mic_error">Fehler — antippen für erneuten Versuch</string>
+
+    <!-- ==== Sprachauftrag: Widget (Paket B) ======================================= -->
+    <string name="widget_label">Sprachauftrag</string>
+    <string name="widget_description">Aufnehmen und als Auftrag an deinen eigenen Agenten schicken.</string>
+    <string name="widget_ready">Tippen und sprechen</string>
+    <string name="widget_working">Wird gesendet …</string>
+    <string name="widget_sent">Gesendet</string>
+    <string name="widget_no_mic">Mikrofon nicht erlaubt — tippen</string>
+    <string name="widget_off">Sprachauftrag ist aus — tippen</string>
+    <string name="widget_fgs_failed">Aufnahme ließ sich nicht starten — App öffnen und erneut versuchen</string>
+    <string name="widget_silent">Kein Ton aufgenommen — tippen für erneuten Versuch</string>
+    <string name="widget_too_short">Zu kurz — länger sprechen</string>
+    <string name="widget_error_retry">%1$s — tippen für erneuten Versuch</string>
+    <string name="cd_widget_ready">Sprachauftrag aufnehmen</string>
+    <string name="cd_widget_recording">Nimmt auf, %1$s — antippen zum Senden</string>
+    <string name="cd_widget_working">Auftrag wird gesendet</string>
+    <string name="cd_widget_sent">Auftrag gesendet</string>
+    <string name="cd_widget_error">%1$s — antippen für erneuten Versuch</string>
+    <string name="cd_widget_no_mic">Mikrofon nicht erlaubt — antippen, um es zu erlauben</string>
+    <string name="agent_channel">Sprachauftrag</string>
+    <string name="agent_notif_title">Sprachauftrag</string>
+    <string name="agent_notif_recording">Nimmt auf …</string>
+    <string name="agent_notif_stop">Senden</string>
+
+    <!-- ==== Sprachauftrag: Einstellungen und Tutorial (Paket C) ==================== -->
+    <string name="settings_group_agent">Erweiterte Optionen</string>
+    <string name="settings_agent_sub">Sprachauftrag an einen eigenen Agenten</string>
+    <string name="settings_agent_off">Aus</string>
+    <string name="agent_card_task">Sprachauftrag</string>
+    <string name="agent_card_connection">Verbindung</string>
+    <string name="agent_card_mic">Mikrofon</string>
+    <string name="agent_card_help">Hilfe</string>
+    <string name="agent_enable">Sprachauftrag aktivieren</string>
+    <string name="agent_enable_sub">Ein Widget auf dem Startbildschirm nimmt auf und schickt den Auftrag an deinen Server.</string>
+    <string name="agent_url">Server-Adresse</string>
+    <string name="agent_url_hint">Adresse deiner Bridge, z. B. https://hermes-bridge.example.de</string>
+    <string name="agent_token">Token</string>
+    <string name="agent_check">Verbindung prüfen</string>
+    <string name="agent_card_pending">Offener Auftrag</string>
+    <string name="agent_discard">Offenen Auftrag verwerfen</string>
+    <string name="agent_discard_sub">Ein Auftrag wartet noch auf den Versand.</string>
+    <string name="agent_discard_done">Auftrag verworfen</string>
+    <string name="agent_tutorial">Anleitung ansehen</string>
+    <string name="agent_tutorial_sub">Widget hinzufügen, Server eintragen, Auftrag sprechen</string>
+    <string name="agent_privacy">Transkript und Auftrag gehen an genau den Server, den du hier einträgst — sonst nirgendwohin. Das Aufnehmen selbst läuft wie beim Diktat über die eingestellte Erkennung.</string>
+    <string name="agent_mic_missing">Für den Sprachauftrag fehlt die Mikrofon-Berechtigung.</string>
+    <string name="agent_mic_allow">Mikrofon erlauben</string>
+    <string name="agent_widget_hint">Widget hinzufügen: Startbildschirm lange drücken → Widgets → WhisperLoom → „Sprachauftrag“.</string>
+    <string name="tutorial_agent_p1_title">Das Widget auf den Startbildschirm</string>
+    <string name="tutorial_agent_p1_body">Drücke lange auf eine freie Stelle deines Startbildschirms, tippe auf „Widgets“, suche WhisperLoom und ziehe „Sprachauftrag“ dorthin, wo du es haben willst.</string>
+    <string name="tutorial_agent_p2_title">Server und Token eintragen</string>
+    <string name="tutorial_agent_p2_body">Unter „Erweiterte Optionen“ trägst du die Adresse deiner Bridge und das Token ein. „Verbindung prüfen“ sagt dir sofort, ob beides stimmt — ohne einen Auftrag auszulösen.</string>
+    <string name="tutorial_agent_p3_title">Tippen, sprechen, tippen</string>
+    <string name="tutorial_agent_p3_body">Ein Tipp startet die Aufnahme, das Widget zählt mit. Der zweite Tipp beendet sie: WhisperLoom schreibt mit und schickt den Auftrag los. Das läuft weiter, auch wenn der Bildschirm ausgeht.</string>
+    <string name="tutorial_agent_p4_title">Die Antwort kommt im Chat</string>
+    <string name="tutorial_agent_p4_body">Dein Agent bekommt das Transkript als Dokument und antwortet dort, wo du ihm sonst schreibst. Klappt etwas nicht, wird das Widget rot — ein Tipp schickt denselben Auftrag noch einmal, ohne neu aufzunehmen.</string>
+    <string name="tutorial_agent_img_widget">Startbildschirm mit dem Sprachauftrag-Widget zwischen anderen Symbolen</string>
+    <string name="tutorial_agent_img_server">Einstellungs-Bildschirm mit Feldern für Adresse und Token und einem grünen Haken</string>
+    <string name="tutorial_agent_img_record">Widget im Aufnahme-Zustand mit laufender Zeitanzeige und Schallwellen</string>
+    <string name="tutorial_agent_img_answer">Chat-Fenster mit einem Dokument und der Antwort des Agenten</string>
 </resources>

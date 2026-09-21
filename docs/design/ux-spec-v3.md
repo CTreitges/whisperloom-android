@@ -56,6 +56,10 @@ Diese Datei ist die **einzige Vorlage** für die Implementierungs-Agenten. Wo di
 | V1 | Schwebender Knopf + Abbrechen-Ziel | View (Overlay) | 4 Zustände |
 | V2 | IME-Tastatur | View | Halten-zum-Sprechen |
 | N1 | Foreground-Notification | Framework | „Diktat aktiv" + Beenden |
+| E7 | Erweiterte Optionen | Compose | Sprachauftrag: Schalter · Server-Adresse · Token · Verbindung prüfen · Anleitung |
+| T2 | Tutorial „Sprachauftrag" | Compose, `HorizontalPager` | 4 Seiten; eigenes Gesehen-Flag (`agent_tutorial_seen`) |
+| W1w | **Sprachauftrag-Widget** | RemoteViews (`AppWidgetProvider`) | 4 Zustände auf dem Startbildschirm; `updatePeriodMillis=0` |
+| N2 | Foreground-Notification Sprachauftrag | Framework | „Nimmt auf …" + Senden |
 
 ### 1.2 Startlogik (Router) — präzise Bedingung „eingerichtet"
 
@@ -1236,6 +1240,72 @@ vorgelesen. Das wäre eine Ansage pro Sekunde in das eigene Diktat hinein. Das F
 wird noch angesagt (der erste Tick läuft davor), danach schaltet der Dienst die Region auf `none`
 und beim Verlassen zurück auf `polite`.
 
+### 6.13 Sprachauftrag — Widget (W1w), Erweiterte Optionen (E7), Tutorial (T2), Notification (N2)
+
+| Key | Text |
+|---|---|
+| `widget_label` | Sprachauftrag |
+| `widget_description` | Aufnehmen und als Auftrag an deinen eigenen Agenten schicken. |
+| `widget_ready` | Tippen und sprechen |
+| `widget_working` | Wird gesendet … |
+| `widget_sent` | Gesendet |
+| `widget_no_mic` | Mikrofon nicht erlaubt — tippen |
+| `widget_off` | Sprachauftrag ist aus — tippen |
+| `widget_silent` | Kein Ton aufgenommen — tippen für erneuten Versuch |
+| `widget_too_short` | Zu kurz — länger sprechen |
+| `widget_error_retry` | %1$s — tippen für erneuten Versuch |
+| `cd_widget_ready` | Sprachauftrag aufnehmen |
+| `cd_widget_recording` | Nimmt auf, %1$s — antippen zum Senden |
+| `cd_widget_working` | Auftrag wird gesendet |
+| `cd_widget_sent` | Auftrag gesendet |
+| `cd_widget_error` | %1$s — antippen für erneuten Versuch |
+| `cd_widget_no_mic` | Mikrofon nicht erlaubt — antippen, um es zu erlauben |
+| `agent_channel` / `agent_notif_title` | Sprachauftrag |
+| `agent_notif_recording` | Nimmt auf … |
+| `agent_notif_stop` | Senden |
+| `settings_group_agent` | Erweiterte Optionen |
+| `settings_agent_sub` | Sprachauftrag an einen eigenen Agenten |
+| `settings_agent_off` | Aus |
+| `agent_card_task` / `agent_card_connection` / `agent_card_mic` / `agent_card_help` | Sprachauftrag / Verbindung / Mikrofon / Hilfe |
+| `agent_enable` | Sprachauftrag aktivieren |
+| `agent_enable_sub` | Ein Widget auf dem Startbildschirm nimmt auf und schickt den Auftrag an deinen Server. |
+| `agent_url` | Server-Adresse |
+| `agent_url_hint` | Adresse deiner Bridge, z. B. https://hermes-bridge.example.de |
+| `agent_token` | Token |
+| `agent_check` | Verbindung prüfen |
+| `agent_privacy` | Transkript und Auftrag gehen an genau den Server, den du hier einträgst — sonst nirgendwohin. … |
+| `agent_mic_missing` | Für den Sprachauftrag fehlt die Mikrofon-Berechtigung. |
+| `agent_mic_allow` | Mikrofon erlauben |
+| `agent_widget_hint` | Widget hinzufügen: Startbildschirm lange drücken → Widgets → WhisperLoom → „Sprachauftrag". |
+| `agent_tutorial` / `agent_tutorial_sub` | Anleitung ansehen / Widget hinzufügen, Server eintragen, Auftrag sprechen |
+| `widget_fgs_failed` | Aufnahme ließ sich nicht starten — App öffnen und erneut versuchen |
+| `agent_card_pending` | Offener Auftrag |
+| `agent_discard` / `agent_discard_sub` / `agent_discard_done` | Offenen Auftrag verwerfen / Ein Auftrag wartet noch auf den Versand. / Auftrag verworfen |
+| `tutorial_agent_p1..p4_title/_body`, `tutorial_agent_img_*` | Die vier Tutorial-Seiten und ihre Bildbeschreibungen |
+
+Farben des Widgets folgen den Zuständen des schwebenden Knopfs (§3.1): bereit
+`loom_surfaceContainer`/`loom_primary`, nimmt auf `loom_recordingContainer`/`loom_recording`,
+arbeitet `loom_secondaryContainer`/`loom_secondary`, gesendet `loom_successContainer`/`loom_success`,
+Fehler und „Mikrofon nicht erlaubt" `loom_errorContainer`/`loom_error`.
+
+Der gesamte Widget-Bereich ist EIN Tippziel mit `contentDescription` je Zustand; das Symbol selbst
+ist `importantForAccessibility="no"`, damit TalkBack nicht zweimal liest.
+
+**Jeder** Zustand hat eine Tippfläche — auch „arbeitet". Sichtbar passiert dort nichts (weder eine
+zweite Aufnahme noch ein zweiter Versand); der Tipp sieht nur nach, ob zu dem Auftrag überhaupt noch
+ein Job eingeplant ist, und reiht ihn nötigenfalls neu ein. Ohne das wäre „arbeitet" eine Sackgasse:
+stirbt der Prozess zwischen dem Ablegen des Auftrags und dem Einreihen, gäbe es nie einen Job, und
+die zuletzt gezeichnete Fläche bliebe für immer stehen. Den Ausstieg von Hand gibt es in E7
+(„Offenen Auftrag verwerfen").
+
+„Gesendet" fällt **nicht** nach einer Kurzzeit auf „bereit" zurück, sondern bleibt bis zum nächsten
+Ereignis stehen: das Warten hätte im Worker stattfinden müssen, der Auftrag wäre so lange RUNNING
+geblieben, und eine in diesem Fenster aufgenommene neue Aufnahme hätte `ExistingWorkPolicy.KEEP`
+lautlos verworfen. Ein Tipp auf „gesendet" startet ohnehin eine neue Aufnahme.
+
+Höchstdauer einer Aufnahme: 5 Minuten (`VoiceTaskService.MAX_DURATION_MS`). Start und Stopp sind zwei
+getrennte Tipps — anders als Overlay und Tastatur hat dieser Weg kein natürliches Ende.
+
 ---
 
 ## 7. Akzeptanzkriterien (prüfbar, je Screen)
@@ -1344,6 +1414,14 @@ und beim Verlassen zurück auf `polite`.
 | `welcomeSeen` | `welcome_seen` | Boolean, false | W1 nur einmal |
 | `a11ySkipped` / `notifSkipped` / `keyboardSkipped` | `setup_skip_*` | Boolean, false | Chip „Übersprungen" |
 | `floatX` / `floatY` (bestehend) | — | — | |
+| `agentEnabled` | `agent_enabled` | Boolean, **false** | Sprachauftrag ein/aus (E7) |
+| `agentUrl` | `agent_url` | String, `""` | Base-URL der Bridge, ohne Pfad |
+| `agentToken` | `agent_token` | String, `""` | Bearer-Token der Bridge; wie die API-Keys unverschlüsselt, `allowBackup=false` |
+| `agentTutorialSeen` | `agent_tutorial_seen` | Boolean, false | T2 einmal gezeigt; `tutorial_seen` behält seine Bedeutung (T1) |
+
+Betriebsdaten des offenen Auftrags stehen **nicht** in `whisperloom.xml`, sondern in einer eigenen
+Datei `whisperloom_agent.xml` (Zustand, `request_id`, erkannter Text, Meldung) plus
+`filesDir/voice_task.pcm`. Beides ist von Cloud-Backup und Geräte-Transfer ausgenommen.
 
 ### 8.2 Provider-Katalog für die Dropdowns (Auszug aus `api-providers.md §8`, Stand 2026-09-06 — Labels sind die Dropdown-Texte)
 

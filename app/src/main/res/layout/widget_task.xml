@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sprachauftrag-Widget (Paket B): grosse Flaeche mit Mikrofon-Symbol, darunter eine
+     Statuszeile. Der gesamte Bereich ist die Tippflaeche — kleine Ziele sind auf dem
+     Startbildschirm unbrauchbar. Hintergrund, Symbol, Farben und Text setzt
+     VoiceTaskWidgetView je Zustand; das Layout selbst kennt keinen Zustand. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="8dp"
+    android:background="@drawable/widget_bg_ready">
+
+    <ImageView
+        android:id="@+id/widget_icon"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:src="@drawable/ic_mic"
+        android:importantForAccessibility="no" />
+
+    <TextView
+        android:id="@+id/widget_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:gravity="center"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:textSize="12sp"
+        android:textColor="@color/loom_onSurfaceVariant"
+        android:text="@string/widget_ready" />
+</LinearLayout>

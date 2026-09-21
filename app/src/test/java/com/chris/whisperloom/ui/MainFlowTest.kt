@@ -377,11 +377,29 @@ class MainFlowTest {
         ).forEach { compose.onNodeWithText(it).assertExists() }
     }
 
-    @Test fun hubZeigtSechsZeilen() {
+    @Test fun hubZeigtSiebenZeilen() {
         prefs.engine = Engine.ONLINE
         screen(env()) { SettingsHubScreen(it) }
-        listOf("Erkennung", "Text", "Knopf & Tastatur", "Offline-Modelle", "Anleitung & Hilfe", "Über WhisperLoom")
-            .forEach { compose.onNodeWithText(it).assertExists() }
+        listOf(
+            "Erkennung", "Text", "Knopf & Tastatur", "Offline-Modelle", "Anleitung & Hilfe",
+            "Erweiterte Optionen", "Über WhisperLoom",
+        ).forEach { compose.onNodeWithText(it).assertExists() }
         compose.onNodeWithText("Version ${BuildConfig.VERSION_NAME}").assertExists()
+    }
+
+    @Test fun derSprachauftragStehtImHubAufAusSolangeErNichtEingerichtetIst() {
+        prefs.engine = Engine.ONLINE
+        screen(env()) { SettingsHubScreen(it) }
+        // Kein Schalter auf Hub-Ebene (Spec §2.3) — nur der Wert.
+        compose.onNodeWithText("Aus").assertExists()
+    }
+
+    @Test fun derEingerichteteSprachauftragZeigtSeinenZweck() {
+        prefs.engine = Engine.ONLINE
+        prefs.agentEnabled = true
+        prefs.agentUrl = "https://bridge.example.de"
+        prefs.agentToken = "geheim"
+        screen(env()) { SettingsHubScreen(it) }
+        compose.onNodeWithText("Sprachauftrag an einen eigenen Agenten").assertExists()
     }
 }

@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.AppNav
+import com.chris.whisperloom.ui.tutorial.TutorialKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -53,7 +54,8 @@ class RouteRequestTest {
     @Test fun screenEncodingIstStabil() {
         val screens = listOf(
             Screen.Home, Screen.Setup(3), Screen.SettingsHub, Screen.Recognition, Screen.TextSettings,
-            Screen.ButtonKeyboard, Screen.Models, Screen.Help(4), Screen.Tutorial(2), Screen.Tutorial(1, startBubbleAfter = true),
+            Screen.ButtonKeyboard, Screen.Models, Screen.Agent, Screen.Help(4), Screen.Tutorial(2),
+            Screen.Tutorial(1, startBubbleAfter = true), Screen.Tutorial(0, kind = TutorialKind.AGENT),
         )
         screens.forEach { assertEquals(it, Screen.decode(it.encode())) }
         assertEquals(Screen.Home, Screen.decode("unbekannt"))

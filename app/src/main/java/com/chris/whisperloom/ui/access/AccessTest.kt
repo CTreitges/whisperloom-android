@@ -8,6 +8,7 @@ import com.chris.whisperloom.api.ApiHttpException
 import com.chris.whisperloom.api.ApiNetworkException
 import com.chris.whisperloom.api.TextRefiner
 import com.chris.whisperloom.api.WavUpload
+import com.chris.whisperloom.agent.AgentBridge
 import java.net.SocketTimeoutException
 import java.util.Locale
 
@@ -47,6 +48,13 @@ object AccessTest {
     /** LLM-Zugang: kurzer Testsatz per Chat-Completion. */
     fun llm(access: ApiAccess, language: String): Outcome =
         timed { TextRefiner(access).refine(PROBE_TEXT, language, RefineMode.POLISH, smartFillers = false) }
+
+    /**
+     * Sprachauftrag-Bridge: ein leeres Transkript, das die Bridge mit 400 beantwortet —
+     * NACHDEM sie das Token geprueft hat. Also loest die Pruefung keinen Auftrag aus und
+     * unterscheidet trotzdem "Token falsch" (401) von "Server nicht da" (Netzfehler).
+     */
+    fun bridge(bridge: AgentBridge): Outcome = timed { bridge.check() }
 
     fun silence(): WavUpload = WavUpload.fromSamples(FloatArray(AudioUtils.SAMPLE_RATE))
 

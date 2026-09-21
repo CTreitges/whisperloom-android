@@ -65,6 +65,9 @@ fun SettingsHubScreen(nav: NavState) {
     else stringResource(R.string.settings_val_text, levelLabel(prefs.refineMode), rules.joinToString(" · "))
     val button = stringResource(if (status.bubbleRunning) R.string.settings_val_bubble_on else R.string.settings_val_bubble_off) +
         " · " + stringResource(if (status.imeEnabled) R.string.settings_val_kb_on else R.string.settings_val_kb_off)
+    // Kein Schalter auf Hub-Ebene (Spec §2.3) — nur der aktuelle Wert als Unterzeile.
+    val agent = if (prefs.agentReady) stringResource(R.string.settings_agent_sub)
+    else stringResource(R.string.settings_agent_off)
     val n = status.installedModels.size
     val models = if (n > 0) stringResource(R.string.home_val_models, n, fileSize(status.modelsUsedBytes))
     else stringResource(R.string.settings_models_none)
@@ -76,6 +79,7 @@ fun SettingsHubScreen(nav: NavState) {
             item { HubRow(R.drawable.ic_touch_app, stringResource(R.string.settings_group_button), button) { nav.push(Screen.ButtonKeyboard) } }
             item { HubRow(R.drawable.ic_download_for_offline, stringResource(R.string.settings_group_models), models) { nav.push(Screen.Models) } }
             item { HubRow(R.drawable.ic_help, stringResource(R.string.settings_group_help), stringResource(R.string.settings_help_sub)) { nav.push(Screen.Help(1)) } }
+            item { HubRow(R.drawable.ic_build, stringResource(R.string.settings_group_agent), agent) { nav.push(Screen.Agent) } }
             item {
                 HubRow(
                     R.drawable.ic_info, stringResource(R.string.settings_group_about),

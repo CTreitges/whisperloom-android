@@ -206,4 +206,74 @@ class PrefsTest {
         assertEquals("qwen3:8b", llm.model)
         assertEquals("whisper-large-v3-turbo", p.sttAccess().model)
     }
+
+    // --- Sprachauftrag ------------------------------------------------------
+
+    @Test fun derSprachauftragIstFrischAus() {
+        val p = Prefs(ctx)
+        assertFalse("Wer das Feature nicht nutzt, soll es nicht bemerken", p.agentEnabled)
+        assertEquals("", p.agentUrl)
+        assertEquals("", p.agentToken)
+        assertFalse(p.agentTutorialSeen)
+        assertFalse(p.agentReady)
+    }
+
+    @Test fun derSprachauftragIstErstMitAdresseUndTokenBereit() {
+        val p = Prefs(ctx)
+        p.agentEnabled = true
+        assertFalse("Ohne Adresse kann nichts gesendet werden", p.agentReady)
+        p.agentUrl = "https://bridge.example.de"
+        assertFalse("Ohne Token kann nichts gesendet werden", p.agentReady)
+        p.agentToken = "geheim"
+        assertTrue(p.agentReady)
+        p.agentEnabled = false
+        assertFalse("Der Schalter hat das letzte Wort", p.agentReady)
+    }
+
+    @Test fun eineUnbrauchbareAdresseZaehltNichtAlsEingerichtet() {
+        // Sonst stuende das Widget auf "bereit", der Nutzer spraeche, die Transkription waere
+        // bezahlt — und erst danach kaeme der Fehler.
+        val p = Prefs(ctx)
+        p.agentEnabled = true
+        p.agentToken = "geheim"
+        p.agentUrl = "bridge.example.de"
+        assertFalse("Adresse ohne Schema", p.agentReady)
+        p.agentUrl = "   "
+        assertFalse("Nur Leerzeichen", p.agentReady)
+        p.agentUrl = "https://bridge.example.de"
+        assertTrue(p.agentReady)
+    }
+
+    @Test fun derSpiegelUrteiltGenauSoWieDiePrefs() {
+        val state = PrefsState(Prefs(ctx))
+        state.agentEnabled = true
+        state.agentToken = "geheim"
+        state.agentUrl = "bridge.example.de"
+        assertFalse(state.agentReady)
+        assertEquals(Prefs(ctx).agentReady, state.agentReady)
+        state.dispose()
+    }
+
+    @Test fun dieSprachauftragWerteLandenInDerBekanntenDatei() {
+        Prefs(ctx).apply {
+            agentEnabled = true
+            agentUrl = "https://bridge.example.de"
+            agentToken = "geheim"
+        }
+        assertTrue(sp.getBoolean("agent_enabled", false))
+        assertEquals("https://bridge.example.de", sp.getString("agent_url", ""))
+        assertEquals("geheim", sp.getString("agent_token", ""))
+    }
+
+    @Test fun dieSprachauftragFelderSpiegelnSichInCompose() {
+        val state = PrefsState(Prefs(ctx))
+        state.agentEnabled = true
+        state.agentUrl = "https://bridge.example.de"
+        state.agentToken = "geheim"
+        assertTrue(state.agentReady)
+        // Und andersherum: eine Aenderung von aussen (Widget-Einrichtung) kommt an.
+        Prefs(ctx).agentEnabled = false
+        assertFalse(state.agentEnabled)
+        state.dispose()
+    }
 }

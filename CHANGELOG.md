@@ -2,6 +2,19 @@
 
 Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [Unreleased]
+
+### Hinzugefügt
+
+- **Sprachauftrag an einen eigenen Agenten (Widget).** Ein Widget auf dem Startbildschirm nimmt auf, WhisperLoom schreibt mit und schickt den Text an einen Server, den du selbst betreibst; die Antwort kommt später dort, wo du deinem Agenten sonst schreibst. Vier Zustände (bereit · nimmt auf mit laufender Zeit · arbeitet · Fehler), ein Tipp auf den Fehler schickt **denselben** Auftrag erneut, ohne neu aufzunehmen oder noch einmal zu transkribieren. Mitschreiben und Übertragen laufen als Auftrag im System weiter — ausgeschalteter Bildschirm und kurze Funklöcher überstehen sie.
+- **Einstellungen → Erweiterte Optionen** (neue, siebte Zeile im Hub): Schalter, Server-Adresse, Token, „Verbindung prüfen" (löst keinen Auftrag aus) und ein eigenes bebildertes Tutorial mit vier Seiten. Ab Werk **aus**; wer die Funktion nicht nutzt, merkt sonst nichts davon.
+
+- Bleibt ein Auftrag hängen, kommt man wieder heraus: ein Tipp auf „Wird gesendet …" reiht ihn nötigenfalls neu ein, und unter Erweiterte Optionen lässt er sich verwerfen. Eine vergessene Aufnahme beendet sich nach fünf Minuten von selbst und wird abgeschickt.
+
+### Sicherheit
+
+- Der offene Sprachauftrag (Transkript und Aufnahme) liegt in einer eigenen Datei auf dem Gerät und ist von Cloud-Backup und Geräte-Transfer ausgenommen.
+
 ## [3.3.0] — 2026-09-21
 
 ### Hinzugefügt

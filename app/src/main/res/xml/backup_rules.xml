@@ -3,5 +3,7 @@
      auf dem Geraet (Zusage "Dein Key bleibt auf dem Geraet"). Modelle sind fuers Backup ohnehin zu gross. -->
 <full-backup-content>
     <exclude domain="sharedpref" path="whisperloom.xml" />
+    <exclude domain="sharedpref" path="whisperloom_agent.xml" />
     <exclude domain="file" path="models" />
+    <exclude domain="file" path="voice_task.pcm" />
 </full-backup-content>

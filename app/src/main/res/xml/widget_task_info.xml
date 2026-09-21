@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- updatePeriodMillis="0": kein Polling. Das Widget wird ausschliesslich von Dienst und
+     Auftrag per updateAppWidget neu gezeichnet — alles andere kostet nur Akku.
+     previewLayout (nicht previewImage): zeigt in der Auswahl die echte Optik,
+     previewImage ist seit Android 12 abgekuendigt. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="110dp"
+    android:minHeight="110dp"
+    android:targetCellWidth="2"
+    android:targetCellHeight="2"
+    android:maxResizeWidth="250dp"
+    android:maxResizeHeight="250dp"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="0"
+    android:initialLayout="@layout/widget_task"
+    android:previewLayout="@layout/widget_task_preview"
+    android:description="@string/widget_description"
+    android:widgetCategory="home_screen" />
