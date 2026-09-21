@@ -1188,12 +1188,23 @@ Schnellzugriff Textverbesserung (V3):
 | `cd_kb_refine_level` | Textverbesserung: %1$s |
 | `kb_refine_set` | Textverbesserung: %1$s |
 | `kb_refine_needs_llm` | Für die KI-Stufen fehlt ein Zugang — tippe zum Einrichten |
+| `kb_level_off` / `kb_level_smooth` / `kb_level_beautify` / `kb_level_summarize` | Aus / Glätten / Schöner / Kürzen (Kurzfassungen für die Tastenzeile) |
 
-Die vier Stufen selbst nutzen die bestehenden `level_*`-Strings des
-Einstellungs-Screens (`RefineMode.SETTINGS`, ohne `paragraphs`).
+Die Statuszeilen-Quittung nutzt die ausgeschriebenen `level_*`-Strings des
+Einstellungs-Screens (`RefineMode.SETTINGS`, ohne `paragraphs`), die Tasten die Kurzfassungen.
 
-**Schnellzugriff (§5.3):** Eine `KeyIcon`-Taste mit `ic_auto_fix_high` klappt eine zweite
-Reihe über `key_row` auf — eingeklappt `GONE`, damit die Ruhehöhe von rund 240 dp steht.
+**Schnellzugriff (§5.3):** Ein 48-dp-Knopf mit `ic_auto_fix_high` klappt eine zweite Reihe
+über `key_row` auf — eingeklappt `GONE`, damit die Ruhehöhe steht.
+
+Der Knopf sitzt **in der Mikro-Zone** (`top|end`), nicht in `key_row`: die Reihe ist bei
+360 dp Breite mit acht Kindern voll (7 × `minWidth` 44 dp + 8 × 4 dp Margin = 340 dp bei
+336 dp verfügbar), eine neunte Taste drückt die Leertaste auf 0 dp und schneidet das Zahnrad
+ab. Weil der Knopf nur außerhalb von `RECORDING`/`SENDING` sichtbar ist, kommt er den
+Wisch-Zielen nie in die Quere; eine offene Leiste schließt beim Aufnahmestart.
+
+Die vier Stufen tragen eigene **Kurz-Labels** (`kb_level_*`: Aus · Glätten · Schöner ·
+Kürzen). Bei 360 dp stehen je Taste 72 dp für Text zur Verfügung; „Verschönern" (≈79 dp) und
+„Zusammenfassen" (≈111 dp) würden abgeschnitten.
 Die gewählte Stufe wird über `android:state_selected` markiert (nicht `state_activated`:
 TalkBack sagt dazu von sich aus „ausgewählt"). Ohne eingerichteten LLM-Zugang sind die drei
 KI-Stufen `isEnabled=false` und die Statuszeile erklärt es; „Aus" bleibt wählbar.

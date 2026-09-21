@@ -8,7 +8,7 @@ Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](ht
 
 - **Wisch-Geste in der Diktat-Tastatur:** Beim Aufnehmen nach rechts ziehen stellt die Aufnahme fest — sie läuft freihändig weiter, die Statuszeile zählt die Dauer mit, und aus den beiden Wisch-Zielen werden die Tasten **Verwerfen** und **Senden**. Nach links ziehen verwirft sofort. Loslassen ohne Ziehen sendet wie bisher.
 
-- **Textverbesserung direkt in der Tastatur:** Der Zauberstab in der Tastenreihe klappt eine Zeile mit den vier Stufen auf (Aus · Glätten · Verschönern · Zusammenfassen). Die Wahl gilt ab dem nächsten Diktat und ist dieselbe Einstellung wie unter Einstellungen → Text. Ohne KI-Zugang sind die drei oberen Stufen ausgegraut.
+- **Textverbesserung direkt in der Tastatur:** Der Zauberstab rechts über dem Mikrofon klappt eine Zeile mit den vier Stufen auf (Aus · Glätten · Schöner · Kürzen). Die Wahl gilt ab dem nächsten Diktat und ist dieselbe Einstellung wie unter Einstellungen → Text. Ohne KI-Zugang sind die drei oberen Stufen ausgegraut.
 
 ### Behoben
 
