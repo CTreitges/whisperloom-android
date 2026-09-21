@@ -67,11 +67,24 @@ class DictationGestureTest {
     }
 
     @Test fun zuSteilGezogenNimmtEinEingerastetesZielZurueck() {
-        assertEquals(Phase.RECORDING, phase(arm * 2, dy = vertical + 1f, current = Phase.LOCK_ARMED))
+        val zuSteil = vertical + hysteresis + 1f
+        assertEquals(Phase.RECORDING, phase(arm * 2, dy = zuSteil, current = Phase.LOCK_ARMED))
+        assertEquals(Phase.RECORDING, phase(-arm * 2, dy = -zuSteil, current = Phase.CANCEL_ARMED))
+    }
+
+    @Test fun eingerastetesZielHaeltAuchSenkrechtUeberDieHysterese() {
+        // Ein Daumen-Wisch beschreibt einen Bogen: knapp ueber der Linie darf es nicht
+        // bei jedem Frame aus- und wieder einrasten.
+        assertEquals(Phase.LOCK_ARMED, phase(arm * 2, dy = vertical + 1f, current = Phase.LOCK_ARMED))
         assertEquals(
-            Phase.RECORDING,
+            Phase.CANCEL_ARMED,
             phase(-arm * 2, dy = -(vertical + 1f), current = Phase.CANCEL_ARMED),
         )
+    }
+
+    @Test fun ohneEingerastetesZielGiltDieToleranzScharf() {
+        assertEquals(Phase.RECORDING, phase(arm * 2, dy = vertical + 1f))
+        assertEquals(Phase.RECORDING, phase(-arm * 2, dy = -(vertical + 1f)))
     }
 
     @Test fun innerhalbDerToleranzRastetEsWeiterhinEin() {

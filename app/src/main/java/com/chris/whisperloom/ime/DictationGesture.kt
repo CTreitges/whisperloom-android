@@ -26,7 +26,10 @@ object DictationGesture {
 
     /**
      * Ab dieser senkrechten Abweichung gilt der Zug nicht mehr als waagerechter Wisch —
-     * sonst rastet jedes Wegziehen nach oben/unten nebenbei ein Ziel ein.
+     * sonst rastet jedes Wegziehen nach oben/unten nebenbei ein Ziel ein. Ein bereits
+     * eingerastetes Ziel haelt auch hier etwas laenger (dieselbe Hysterese wie waagerecht):
+     * ein Daumen-Wisch beschreibt einen Bogen nach unten, und ohne das prasselt auf der
+     * Grenzlinie die Einrast-Haptik.
      */
     const val VERTICAL_TOLERANCE_DP = 64
 
@@ -63,7 +66,8 @@ object DictationGesture {
         verticalPx: Float,
         current: Phase,
     ): Phase {
-        if (abs(dy) > verticalPx) return Phase.RECORDING
+        val verticalHold = if (current == Phase.RECORDING) verticalPx else verticalPx + hysteresisPx
+        if (abs(dy) > verticalHold) return Phase.RECORDING
         val holdPx = (armPx - hysteresisPx).coerceAtLeast(0f)
         val lockPx = if (current == Phase.LOCK_ARMED) holdPx else armPx
         val cancelPx = if (current == Phase.CANCEL_ARMED) holdPx else armPx
