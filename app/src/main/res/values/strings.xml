@@ -533,9 +533,6 @@
     <string name="agent_url_hint">Adresse deiner Bridge, z. B. https://hermes-bridge.example.de</string>
     <string name="agent_token">Token</string>
     <string name="agent_check">Verbindung prüfen</string>
-    <string name="agent_check_running">Prüfe …</string>
-    <string name="agent_check_ok">Verbindung steht</string>
-    <string name="agent_check_incomplete">Adresse und Token eintragen</string>
     <string name="agent_tutorial">Anleitung ansehen</string>
     <string name="agent_tutorial_sub">Widget hinzufügen, Server eintragen, Auftrag sprechen</string>
     <string name="agent_privacy">Transkript und Auftrag gehen an genau den Server, den du hier einträgst — sonst nirgendwohin. Das Aufnehmen selbst läuft wie beim Diktat über die eingestellte Erkennung.</string>

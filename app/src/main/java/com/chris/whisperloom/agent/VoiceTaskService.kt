@@ -8,6 +8,7 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
+import androidx.core.app.ServiceCompat
 import com.chris.whisperloom.AudioRecorder
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
@@ -52,7 +53,10 @@ class VoiceTaskService : Service() {
         store = VoiceTaskStore(this)
         try {
             VoiceTaskNotification.ensureChannel(this)
-            startForeground(
+            // ServiceCompat, nicht startForeground direkt: die Variante mit Typ gibt es erst ab
+            // Android 10, minSdk ist 26.
+            ServiceCompat.startForeground(
+                this,
                 VoiceTaskNotification.ID,
                 VoiceTaskNotification.build(this),
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE,
