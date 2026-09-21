@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Stufe im Schnellzugriff der Tastatur: gewaehlt loom_primaryContainer, sonst wie eine
+     normale Taste (loom_surfaceContainerHigh). Gewaehlt = android:state_selected (TalkBack sagt dazu "ausgewaehlt"). -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="@color/key_ripple">
+    <item>
+        <selector>
+            <item android:state_selected="true">
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/loom_primaryContainer" />
+                    <corners android:radius="12dp" />
+                </shape>
+            </item>
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/loom_surfaceContainerHigh" />
+                    <corners android:radius="12dp" />
+                </shape>
+            </item>
+        </selector>
+    </item>
+</ripple>

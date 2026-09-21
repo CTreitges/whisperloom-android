@@ -35,6 +35,19 @@
     </style>
 
     <!-- Icon-Taste: 22-dp-Symbol in loom_onSurface, Rest wie Key. -->
+    <!-- Stufe im Schnellzugriff: teilt sich die Reihe zu gleichen Teilen, gewaehlte Stufe
+         ueber android:state_activated hervorgehoben. -->
+    <style name="RefineKey" parent="Key">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:background">@drawable/refine_key_bg</item>
+        <item name="android:textColor">@color/refine_key_text</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:paddingHorizontal">4dp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+    </style>
+
     <style name="KeyIcon" parent="Key">
         <item name="android:paddingHorizontal">11dp</item>
         <item name="android:paddingVertical">13dp</item>
