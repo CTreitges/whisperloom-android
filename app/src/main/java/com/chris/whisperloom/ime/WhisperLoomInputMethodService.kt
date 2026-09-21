@@ -71,6 +71,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
     private var retryKey: View? = null
     private var gestureTargets: GestureTargets? = null
     private var refineBar: RefineBar? = null
+    private var refineKey: View? = null
 
     /** Aktueller Stand der Wisch-Geste; nur waehrend eines liegenden Fingers aussagekraeftig. */
     private var gesturePhase = DictationGesture.Phase.RECORDING
@@ -167,7 +168,9 @@ class WhisperLoomInputMethodService : InputMethodService() {
         root.findViewById<View>(R.id.key_backspace).setOnClickListener { backspace() }
         root.findViewById<View>(R.id.key_enter).setOnClickListener { performEnter() }
         root.findViewById<View>(R.id.key_settings).setOnClickListener { startActivity(AppNav.settings(this)) }
-        root.findViewById<View>(R.id.key_refine).setOnClickListener { toggleRefineBar() }
+        refineKey = root.findViewById<View>(R.id.key_refine).also {
+            it.setOnClickListener { toggleRefineBar() }
+        }
         retryKey?.setOnClickListener { retry() }
         refineBar?.bind(::pickRefineMode)
 
@@ -226,6 +229,10 @@ class WhisperLoomInputMethodService : InputMethodService() {
             pendingSamples = null
             applyState(BubbleState.IDLE)
         }
+        // Der Eingabe-View wird ueber Feld- und App-Wechsel hinweg wiederverwendet. Eine
+        // offen stehende Leiste zeigte sonst die Stufe und den KI-Zugang von vorhin —
+        // beides kann sich inzwischen geaendert haben.
+        if (refineBar?.isShown == true) refineBar?.show(prefs.refineMode, hasLlmAccess())
         restoreStatus()
     }
 
@@ -427,15 +434,23 @@ class WhisperLoomInputMethodService : InputMethodService() {
     private fun toggleRefineBar() {
         val bar = refineBar ?: return
         if (bar.isShown) {
-            bar.hide()
-            if (state == BubbleState.IDLE) showIdleStatus()
+            closeRefineBar()
             return
         }
         val llmReady = hasLlmAccess()
         bar.show(prefs.refineMode, llmReady)
+        refineKey?.isSelected = true
         // Ohne Zugang sind die drei KI-Stufen abgeblendet — das braucht eine Erklaerung,
         // sonst sieht es nach einem Fehler aus.
         if (!llmReady && state == BubbleState.IDLE) showStatus(Status.NEEDS_LLM)
+    }
+
+    private fun closeRefineBar() {
+        val bar = refineBar ?: return
+        if (!bar.isShown) return
+        bar.hide()
+        refineKey?.isSelected = false
+        if (state == BubbleState.IDLE) showIdleStatus()
     }
 
     private fun pickRefineMode(mode: RefineMode) {
@@ -484,6 +499,8 @@ class WhisperLoomInputMethodService : InputMethodService() {
         if (recorder.isRecording) return
         if (recorder.start()) {
             pendingSamples = null
+            // Sonst bliebe die Leiste offen, waehrend ihr Ausloeser verschwindet.
+            closeRefineBar()
             recordingStartedAt = SystemClock.elapsedRealtime()
             applyState(BubbleState.RECORDING)
             showStatus(Status.LISTENING)
@@ -591,6 +608,13 @@ class WhisperLoomInputMethodService : InputMethodService() {
         rings?.show(visual.ring)
         retryKey?.visibility = if (next == BubbleState.ERROR) View.VISIBLE else View.GONE
         if (next == BubbleState.RECORDING) levelBand?.start() else levelBand?.stop()
+        // Der Zauberstab sitzt in der Mikro-Zone, wo bei einer laufenden Aufnahme die
+        // Wisch-Ziele erscheinen — waehrend des Diktierens hat er dort nichts verloren.
+        refineKey?.visibility = if (next == BubbleState.RECORDING || next == BubbleState.SENDING) {
+            View.GONE
+        } else {
+            View.VISIBLE
+        }
         updateMicDescription()
     }
 

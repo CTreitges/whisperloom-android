@@ -470,6 +470,12 @@
     <string name="kb_discarded">Aufnahme verworfen</string>
     <string name="kb_refine_set">Textverbesserung: %1$s</string>
     <string name="kb_refine_needs_llm">Für die KI-Stufen fehlt ein Zugang — tippe zum Einrichten</string>
+    <!-- Kurzfassungen der Stufen: in der Tastatur teilen sich vier Tasten eine Zeile,
+         "Verschönern" und "Zusammenfassen" passen dort nicht. -->
+    <string name="kb_level_off">Aus</string>
+    <string name="kb_level_smooth">Glätten</string>
+    <string name="kb_level_beautify">Schöner</string>
+    <string name="kb_level_summarize">Kürzen</string>
     <string name="refine_skipped">Textverbesserung übersprungen: %1$s</string>
     <string name="kb_space">Leer</string>
     <string name="cd_mic">Diktat-Mikrofon — antippen zum Starten, gedrückt halten zum Sprechen</string>
