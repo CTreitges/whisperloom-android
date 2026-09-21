@@ -71,6 +71,20 @@ class VoiceTaskWorkerTest {
         assertEquals(listOf("Kauf Milch"), gesendet)
         assertFalse("Erledigtes darf nicht liegen bleiben", store.hasWork)
         assertFalse(store.audioFile.isFile)
+        assertEquals(VoiceTaskState.SENT, store.state)
+    }
+
+    @Test fun derWorkerHaeltNachDemErfolgNichtAufUndUebermaltNichts() {
+        // Ein frueherer Entwurf schlief zwei Sekunden in doWork und setzte danach READY. In
+        // dieser Zeit blieb der Auftrag RUNNING — eine in dem Fenster aufgenommene neue
+        // Aufnahme waere von ExistingWorkPolicy.KEEP lautlos verworfen und anschliessend mit
+        // "bereit" uebermalt worden.
+        auftragAnlegen()
+        val vorher = System.nanoTime()
+        lauf()
+        val gedauert = (System.nanoTime() - vorher) / 1_000_000
+        assertTrue("doWork hat $gedauert ms gebraucht — es darf nicht warten", gedauert < 1_000)
+        assertEquals("Nach dem Erfolg bleibt gesendet stehen", VoiceTaskState.SENT, store.state)
     }
 
     @Test fun einVoruebergehenderFehlerFuehrtZumSpaeterenVersuch() {

@@ -103,8 +103,12 @@ class VoiceTaskUiTest {
         assertEquals(VoiceTaskState.ERROR, VoiceTaskUi.afterRestart(VoiceTaskState.ERROR, hasWork = true))
     }
 
-    @Test fun gesendetFaelltAufBereitZurueck() {
-        assertEquals(VoiceTaskState.READY, VoiceTaskUi.afterRestart(VoiceTaskState.SENT, hasWork = true))
+    @Test fun jederAndereZustandMitOffenerArbeitIstEinFehler() {
+        // "gesendet" oder "bereit" ueber einem liegengebliebenen Auftrag waere gelogen — und
+        // beides ohne Weg zurueck. ERROR ist der einzige Zustand, dessen Tipp den Auftrag
+        // erneut abschickt.
+        listOf(VoiceTaskState.SENT, VoiceTaskState.READY, VoiceTaskState.NO_MIC, VoiceTaskState.OFF)
+            .forEach { assertEquals("$it mit offener Arbeit", VoiceTaskState.ERROR, VoiceTaskUi.afterRestart(it, hasWork = true)) }
     }
 
     @Test fun dauerWirdAlsMinutenUndSekundenGezeigt() {

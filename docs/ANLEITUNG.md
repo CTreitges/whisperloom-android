@@ -713,7 +713,9 @@ Unter Erweiterte Optionen → **Anleitung ansehen** liegt dieselbe Erklärung no
 | blau, „Wird gesendet …" | schreibt mit und überträgt | tut nichts (mit Absicht — ein ungeduldiger zweiter Tipp soll nichts kaputt machen) |
 | rot mit Fehlergrund | etwas hat nicht geklappt | schickt **denselben** Auftrag noch einmal, ohne neu aufzunehmen |
 
-Nach dem Absenden darf der Bildschirm ausgehen: Mitschreiben und Übertragen laufen als Auftrag im System weiter und überstehen auch ein kurzes Funkloch. Ist der Auftrag draußen, wird das Widget kurz grün („Gesendet") und dann wieder grau.
+Nach dem Absenden darf der Bildschirm ausgehen: Mitschreiben und Übertragen laufen als Auftrag im System weiter und überstehen auch ein kurzes Funkloch. Ist der Auftrag draußen, wird das Widget grün („Gesendet") und bleibt so, bis du das nächste Mal darauf tippst — dann beginnt wie gewohnt eine neue Aufnahme.
+
+Vergisst du das Beenden, macht das Widget nach fünf Minuten von allein Schluss und schickt das Gesprochene ab. Eine Aufnahme läuft also nie unbemerkt weiter.
 
 ### 13.5 Wenn etwas nicht klappt
 
@@ -728,6 +730,9 @@ Es kam nichts am Mikrofon an — etwa weil eine andere App es belegt (Telefonat,
 
 **„Zu kurz — länger sprechen"**
 Der zweite Tipp kam zu schnell. Unter einer knappen Sekunde ist es ein Fehlgriff, kein Auftrag.
+
+**Das Widget bleibt auf „Wird gesendet …" stehen**
+Meistens fehlt nur das Netz — der Auftrag wartet und geht von allein raus, sobald wieder Empfang da ist. Ein Tipp auf die Fläche sieht nach, ob der Auftrag überhaupt noch eingeplant ist, und reiht ihn nötigenfalls neu ein. Willst du ihn loswerden: Einstellungen → Erweiterte Optionen → **Offenen Auftrag verwerfen**.
 
 **Ein Fehler mit Zahl (z. B. 401 oder 503)**
 401 heißt: Token stimmt nicht — korrigier es in den Erweiterten Optionen und tippe dann auf das Widget, der Auftrag ist noch da. 503 heißt: die Bridge erreicht deinen Agenten gerade nicht; WhisperLoom versucht es von allein mehrmals erneut, erst danach wird das Widget rot.

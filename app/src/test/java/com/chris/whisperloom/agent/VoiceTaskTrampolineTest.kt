@@ -30,6 +30,7 @@ class VoiceTaskTrampolineTest {
     private lateinit var store: VoiceTaskStore
     private var eingereiht = 0
     private val echterEnqueue = VoiceTaskWork.enqueueImpl
+    private val echtesIsScheduled = VoiceTaskWork.isScheduledImpl
 
     @Before fun aufbauen() {
         app.getSharedPreferences("whisperloom", Context.MODE_PRIVATE).edit().clear().commit()
@@ -48,6 +49,7 @@ class VoiceTaskTrampolineTest {
 
     @After fun abbauen() {
         VoiceTaskWork.enqueueImpl = echterEnqueue
+        VoiceTaskWork.isScheduledImpl = echtesIsScheduled
         ShadowAudioRecord.clearSource()
     }
 
@@ -121,13 +123,34 @@ class VoiceTaskTrampolineTest {
         assertEquals(TapIntent.NONE, VoiceTaskTrampolineActivity.intentOf(null))
     }
 
-    @Test fun einHaengendesArbeitetLaesstSichWiederLoswerden() {
-        // Nach einem Neustart bleibt die zuletzt gezeichnete Flaeche stehen. Ohne diesen Weg
-        // waere ein "arbeitet" ohne Auftrag fuer immer unbedienbar.
+    @Test fun einAuftragOhneJobWirdBeimNachsehenNeuEingereiht() {
+        // Der Fall, den es in Produktion wirklich gibt: der Prozess stirbt zwischen dem Ablegen
+        // des Auftrags und dem Einreihen. Ohne diesen Weg stuende das Widget fuer immer auf
+        // "Wird gesendet …", und eine neue Aufnahme waere auch nicht moeglich.
+        store.begin(FloatArray(800) { 0.3f }, 4000, "2026-09-21T20:00:00Z")
         store.state = VoiceTaskState.WORKING
+        VoiceTaskWork.isScheduledImpl = { false }
+
         tippen(TapIntent.REFRESH)
-        assertEquals(0, eingereiht)
+
+        assertEquals("Der liegengebliebene Auftrag muss wieder eingereiht werden", 1, eingereiht)
         assertNull(gestarteterDienst())
         assertNull("Nachsehen darf die App nicht oeffnen", shadowOf(app).nextStartedActivity)
+    }
+
+    @Test fun einLaufenderAuftragWirdNichtDoppeltEingereiht() {
+        store.begin(FloatArray(800) { 0.3f }, 4000, "2026-09-21T20:00:00Z")
+        store.state = VoiceTaskState.WORKING
+        VoiceTaskWork.isScheduledImpl = { true }
+
+        tippen(TapIntent.REFRESH)
+
+        assertEquals("Waehrend wirklich gearbeitet wird, tut der Tipp nichts", 0, eingereiht)
+    }
+
+    @Test fun ohneOffenenAuftragWirdNichtsEingereiht() {
+        VoiceTaskWork.isScheduledImpl = { false }
+        tippen(TapIntent.REFRESH)
+        assertEquals(0, eingereiht)
     }
 }

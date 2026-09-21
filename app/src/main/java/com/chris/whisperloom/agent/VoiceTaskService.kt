@@ -36,6 +36,27 @@ class VoiceTaskService : Service() {
     private var startedAt = 0L
     private var recordedAt = ""
 
+    /**
+     * stopSelf() in onCreate haelt ein bereits eingereihtes onStartCommand NICHT auf — ohne
+     * dieses Merkmal liefe danach noch start() durch und liesse ein eingefrorenes "nimmt auf"
+     * stehen, obwohl der Dienst gleich abgeraeumt wird.
+     */
+    private var foregroundFehlgeschlagen = false
+
+    /**
+     * Notbremse. Start und Stopp sind zwei getrennte Tipps — wer nach dem Start das Telefon
+     * einsteckt, liesse den Mikrofon-Dienst sonst unbegrenzt laufen und ~32 kB/s im Speicher
+     * sammeln. Anders als beim Overlay und bei der Tastatur gibt es hier kein natuerliches
+     * Ende. Die Grenze wirkt wie ein Tipp auf "senden": der Auftrag geht raus.
+     */
+    private val notbremse = Runnable {
+        if (recording) {
+            Log.i(TAG, "Hoechstdauer erreicht — Aufnahme wird abgeschickt")
+            stop()
+            stopSelf()
+        }
+    }
+
     /** Sekunden-Takt fuer die laufende Dauer im Widget; ohne ihn stuende die Zeit still. */
     private val tick = object : Runnable {
         override fun run() {
@@ -63,12 +84,17 @@ class VoiceTaskService : Service() {
             )
         } catch (e: Exception) {
             Log.e(TAG, "Foreground-Start fehlgeschlagen", e)
-            fail(getString(R.string.widget_no_mic))
+            foregroundFehlgeschlagen = true
+            fail(getString(R.string.widget_fgs_failed))
             stopSelf()
         }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (foregroundFehlgeschlagen) {
+            stopSelf(startId)
+            return START_NOT_STICKY
+        }
         when (intent?.action) {
             ACTION_START -> start()
             ACTION_STOP -> stop()
@@ -79,6 +105,7 @@ class VoiceTaskService : Service() {
 
     override fun onDestroy() {
         main.removeCallbacks(tick)
+        main.removeCallbacks(notbremse)
         if (recording) recorder.cancel()
         recording = false
         super.onDestroy()
@@ -103,6 +130,7 @@ class VoiceTaskService : Service() {
         store.state = VoiceTaskState.RECORDING
         VoiceTaskWidgetView.push(this, VoiceTaskState.RECORDING, 0)
         main.postDelayed(tick, TICK_MS)
+        main.postDelayed(notbremse, MAX_DURATION_MS)
     }
 
     private fun stop() {
@@ -115,6 +143,7 @@ class VoiceTaskService : Service() {
         }
         recording = false
         main.removeCallbacks(tick)
+        main.removeCallbacks(notbremse)
         val duration = elapsedMs()
         val samples = recorder.stop()
 
@@ -153,10 +182,16 @@ class VoiceTaskService : Service() {
         /** Sekunden-Takt der Dauer-Anzeige. */
         const val TICK_MS = 1_000L
 
+        /**
+         * Hoechstdauer einer Aufnahme. Dieselbe Groessenordnung wie die Stueckelung geteilter
+         * Sprachnachrichten; laengere Auftraege spricht niemand am Startbildschirm.
+         */
+        const val MAX_DURATION_MS = 5 * 60 * 1000L
+
         private const val TAG = "VoiceTaskService"
 
-        fun start(ctx: android.content.Context) {
-            ctx.startForegroundService(Intent(ctx, VoiceTaskService::class.java).setAction(ACTION_START))
-        }
+        // Bewusst KEIN start(context)-Einstieg: der Dienst wird ausschliesslich ueber das
+        // Trampolin gestartet (siehe VoiceTaskTrampolineActivity), ein direkter
+        // startForegroundService waere genau der Hintergrund-Start, den es vermeidet.
     }
 }

@@ -230,6 +230,30 @@ class PrefsTest {
         assertFalse("Der Schalter hat das letzte Wort", p.agentReady)
     }
 
+    @Test fun eineUnbrauchbareAdresseZaehltNichtAlsEingerichtet() {
+        // Sonst stuende das Widget auf "bereit", der Nutzer spraeche, die Transkription waere
+        // bezahlt — und erst danach kaeme der Fehler.
+        val p = Prefs(ctx)
+        p.agentEnabled = true
+        p.agentToken = "geheim"
+        p.agentUrl = "bridge.example.de"
+        assertFalse("Adresse ohne Schema", p.agentReady)
+        p.agentUrl = "   "
+        assertFalse("Nur Leerzeichen", p.agentReady)
+        p.agentUrl = "https://bridge.example.de"
+        assertTrue(p.agentReady)
+    }
+
+    @Test fun derSpiegelUrteiltGenauSoWieDiePrefs() {
+        val state = PrefsState(Prefs(ctx))
+        state.agentEnabled = true
+        state.agentToken = "geheim"
+        state.agentUrl = "bridge.example.de"
+        assertFalse(state.agentReady)
+        assertEquals(Prefs(ctx).agentReady, state.agentReady)
+        state.dispose()
+    }
+
     @Test fun dieSprachauftragWerteLandenInDerBekanntenDatei() {
         Prefs(ctx).apply {
             agentEnabled = true

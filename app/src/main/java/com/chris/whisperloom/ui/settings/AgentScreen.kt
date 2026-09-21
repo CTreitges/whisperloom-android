@@ -8,6 +8,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -17,7 +21,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import com.chris.whisperloom.R
 import com.chris.whisperloom.agent.AgentBridge
 import com.chris.whisperloom.agent.AgentUrlCheck
+import com.chris.whisperloom.agent.VoiceTaskStore
 import com.chris.whisperloom.agent.VoiceTaskWidget
+import com.chris.whisperloom.agent.VoiceTaskWork
 import com.chris.whisperloom.api.ServerUrlCheck
 import com.chris.whisperloom.ui.access.AccessTest
 import com.chris.whisperloom.ui.access.PrivacyLine
@@ -50,12 +56,17 @@ import com.chris.whisperloom.ui.tutorial.TutorialKind
 @Composable
 fun AgentScreen(nav: NavState) {
     val ctx = LocalContext.current
-    val prefs = LocalAppEnv.current.prefs
+    val env = LocalAppEnv.current
+    val prefs = env.prefs
     val snack = rememberSnack()
     val mic = rememberPermissionRequest(Manifest.permission.RECORD_AUDIO)
     // Play-Pflicht: eigener Hinweis VOR dem System-Dialog — der Sprachauftrag ist ein neuer Mikrofon-Einstieg.
     val micGate = rememberDisclosureGate(DisclosureKind.MICROPHONE, onAccept = mic.request)
-    val hasMic = VoiceTaskWidget.hasMicPermission(ctx)
+    // Ueber den Status, nicht per checkSelfPermission: den liest die Activity in onResume neu,
+    // und nur so verschwindet die Warnkarte, nachdem der Nutzer das Mikrofon gerade erlaubt hat.
+    val hasMic = env.status.micGranted
+    var offenerAuftrag by remember { mutableStateOf(VoiceTaskStore(ctx).hasWork) }
+    val verworfen = stringResource(R.string.agent_discard_done)
 
     val urlProblem = if (prefs.agentUrl.isBlank()) null else AgentUrlCheck.check(prefs.agentUrl)
     val complete = prefs.agentUrl.isNotBlank() && prefs.agentToken.isNotBlank() &&
@@ -109,6 +120,23 @@ fun AgentScreen(nav: NavState) {
                         supporting = stringResource(R.string.agent_mic_allow),
                         leading = { StatusIcon(Tone.WARNING, R.drawable.ic_mic_off) },
                         onClick = micGate.request,
+                    )
+                }
+            }
+
+            if (offenerAuftrag) {
+                SectionCard(title = stringResource(R.string.agent_card_pending), gap = 4.dp) {
+                    LoomRow(
+                        headline = stringResource(R.string.agent_discard),
+                        supporting = stringResource(R.string.agent_discard_sub),
+                        leading = { LoomIcon(R.drawable.ic_delete, null, Modifier.size(24.dp), MaterialTheme.colorScheme.onSurfaceVariant) },
+                        onClick = {
+                            VoiceTaskWork.cancel(ctx)
+                            VoiceTaskStore(ctx).clear()
+                            VoiceTaskWidget.refresh(ctx)
+                            offenerAuftrag = false
+                            snack.show(verworfen)
+                        },
                     )
                 }
             }

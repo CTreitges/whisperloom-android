@@ -24,6 +24,8 @@ internal object Http {
      * @param apiKey leer = kein Authorization-Header. Eigene Server (Ollama, whisper.cpp)
      *   brauchen keinen Key; ein leeres "Bearer " werten manche als ungueltig.
      * @param readTimeoutMs CPU-Server brauchen fuer lange Stuecke Minuten (eigener Server: 600 s).
+     * @param followRedirects false laesst den Authorization-Header nicht auf einen anderen Host
+     *   wandern — sinnvoll ueberall dort, wo der Endpunkt keine Weiterleitungen kennt.
      * @param write schreibt den Request-Body.
      * @throws ApiNetworkException wenn die Verbindung scheitert.
      * @throws ApiHttpException bei Status != 2xx.
@@ -33,6 +35,7 @@ internal object Http {
         apiKey: String,
         contentType: String,
         readTimeoutMs: Int = DEFAULT_READ_TIMEOUT_MS,
+        followRedirects: Boolean = true,
         write: (java.io.OutputStream) -> Unit,
     ): String {
         val conn = try {
@@ -42,7 +45,7 @@ internal object Http {
                 doOutput = true
                 connectTimeout = CONNECT_TIMEOUT_MS
                 readTimeout = readTimeoutMs
-                instanceFollowRedirects = true
+                instanceFollowRedirects = followRedirects
                 if (apiKey.isNotBlank()) setRequestProperty("Authorization", "Bearer $apiKey")
                 setRequestProperty("Content-Type", contentType)
             }

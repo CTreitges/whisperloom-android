@@ -2,6 +2,7 @@ package com.chris.whisperloom
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.chris.whisperloom.agent.AgentUrlCheck
 import com.chris.whisperloom.api.AccessResolver
 import com.chris.whisperloom.api.ApiAccess
 import com.chris.whisperloom.api.Provider
@@ -289,8 +290,14 @@ class Prefs(context: Context) {
         get() = sp.getBoolean(KEY_AGENT_TUTORIAL_SEEN, false)
         set(v) = sp.edit().putBoolean(KEY_AGENT_TUTORIAL_SEEN, v).apply()
 
-    /** Eingeschaltet UND vollstaendig — erst dann kann das Widget ueberhaupt etwas senden. */
-    val agentReady: Boolean get() = agentEnabled && agentUrl.isNotBlank() && agentToken.isNotBlank()
+    /**
+     * Eingeschaltet UND brauchbar — erst dann kann das Widget ueberhaupt etwas senden.
+     * Die Adresse wird geprueft, nicht nur auf "nicht leer": eine Adresse ohne Schema haette
+     * das Widget sonst auf "bereit" gestellt, und der Fehler waere erst nach Aufnahme UND
+     * bezahlter Transkription aufgefallen.
+     */
+    val agentReady: Boolean
+        get() = agentEnabled && agentToken.isNotBlank() && AgentUrlCheck.isValid(agentUrl)
 
     // --- Aufgeloeste Zugaenge ------------------------------------------------
 

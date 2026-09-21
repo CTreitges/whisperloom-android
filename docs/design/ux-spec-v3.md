@@ -1278,6 +1278,9 @@ und beim Verlassen zurück auf `polite`.
 | `agent_mic_allow` | Mikrofon erlauben |
 | `agent_widget_hint` | Widget hinzufügen: Startbildschirm lange drücken → Widgets → WhisperLoom → „Sprachauftrag". |
 | `agent_tutorial` / `agent_tutorial_sub` | Anleitung ansehen / Widget hinzufügen, Server eintragen, Auftrag sprechen |
+| `widget_fgs_failed` | Aufnahme ließ sich nicht starten — App öffnen und erneut versuchen |
+| `agent_card_pending` | Offener Auftrag |
+| `agent_discard` / `agent_discard_sub` / `agent_discard_done` | Offenen Auftrag verwerfen / Ein Auftrag wartet noch auf den Versand. / Auftrag verworfen |
 | `tutorial_agent_p1..p4_title/_body`, `tutorial_agent_img_*` | Die vier Tutorial-Seiten und ihre Bildbeschreibungen |
 
 Farben des Widgets folgen den Zuständen des schwebenden Knopfs (§3.1): bereit
@@ -1286,8 +1289,22 @@ arbeitet `loom_secondaryContainer`/`loom_secondary`, gesendet `loom_successConta
 Fehler und „Mikrofon nicht erlaubt" `loom_errorContainer`/`loom_error`.
 
 Der gesamte Widget-Bereich ist EIN Tippziel mit `contentDescription` je Zustand; das Symbol selbst
-ist `importantForAccessibility="no"`, damit TalkBack nicht zweimal liest. Während „arbeitet" hat das
-Widget bewusst **keinen** PendingIntent — ein ungeduldiger zweiter Tipp darf den Zustand nicht kippen.
+ist `importantForAccessibility="no"`, damit TalkBack nicht zweimal liest.
+
+**Jeder** Zustand hat eine Tippfläche — auch „arbeitet". Sichtbar passiert dort nichts (weder eine
+zweite Aufnahme noch ein zweiter Versand); der Tipp sieht nur nach, ob zu dem Auftrag überhaupt noch
+ein Job eingeplant ist, und reiht ihn nötigenfalls neu ein. Ohne das wäre „arbeitet" eine Sackgasse:
+stirbt der Prozess zwischen dem Ablegen des Auftrags und dem Einreihen, gäbe es nie einen Job, und
+die zuletzt gezeichnete Fläche bliebe für immer stehen. Den Ausstieg von Hand gibt es in E7
+(„Offenen Auftrag verwerfen").
+
+„Gesendet" fällt **nicht** nach einer Kurzzeit auf „bereit" zurück, sondern bleibt bis zum nächsten
+Ereignis stehen: das Warten hätte im Worker stattfinden müssen, der Auftrag wäre so lange RUNNING
+geblieben, und eine in diesem Fenster aufgenommene neue Aufnahme hätte `ExistingWorkPolicy.KEEP`
+lautlos verworfen. Ein Tipp auf „gesendet" startet ohnehin eine neue Aufnahme.
+
+Höchstdauer einer Aufnahme: 5 Minuten (`VoiceTaskService.MAX_DURATION_MS`). Start und Stopp sind zwei
+getrennte Tipps — anders als Overlay und Tastatur hat dieser Weg kein natürliches Ende.
 
 ---
 

@@ -505,6 +505,7 @@
     <string name="widget_sent">Gesendet</string>
     <string name="widget_no_mic">Mikrofon nicht erlaubt — tippen</string>
     <string name="widget_off">Sprachauftrag ist aus — tippen</string>
+    <string name="widget_fgs_failed">Aufnahme ließ sich nicht starten — App öffnen und erneut versuchen</string>
     <string name="widget_silent">Kein Ton aufgenommen — tippen für erneuten Versuch</string>
     <string name="widget_too_short">Zu kurz — länger sprechen</string>
     <string name="widget_error_retry">%1$s — tippen für erneuten Versuch</string>
@@ -533,6 +534,10 @@
     <string name="agent_url_hint">Adresse deiner Bridge, z. B. https://hermes-bridge.example.de</string>
     <string name="agent_token">Token</string>
     <string name="agent_check">Verbindung prüfen</string>
+    <string name="agent_card_pending">Offener Auftrag</string>
+    <string name="agent_discard">Offenen Auftrag verwerfen</string>
+    <string name="agent_discard_sub">Ein Auftrag wartet noch auf den Versand.</string>
+    <string name="agent_discard_done">Auftrag verworfen</string>
     <string name="agent_tutorial">Anleitung ansehen</string>
     <string name="agent_tutorial_sub">Widget hinzufügen, Server eintragen, Auftrag sprechen</string>
     <string name="agent_privacy">Transkript und Auftrag gehen an genau den Server, den du hier einträgst — sonst nirgendwohin. Das Aufnehmen selbst läuft wie beim Diktat über die eingestellte Erkennung.</string>

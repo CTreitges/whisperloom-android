@@ -82,8 +82,17 @@ class AgentBridge(
         /** Die Bridge antwortet sofort mit 202; sie wartet nicht auf den Agenten. */
         const val READ_TIMEOUT_MS = 30_000
 
+        /**
+         * Ohne Weiterleitungen: die Bridge hat genau einen Endpunkt und leitet nie um. Ob ein
+         * 302 auf einen fremden Host den Bearer-Header mitnaehme, haengt am HTTP-Unterbau —
+         * auf der JVM wird er abgestreift (HttpRedirectTest), Android benutzt einen anderen.
+         * Darauf soll sich hier nichts verlassen; und ein umleitender Endpunkt ist ohnehin
+         * falsch konfiguriert und soll als Fehler sichtbar werden, nicht still verfolgt.
+         */
         private val DEFAULT_POSTER = BridgePoster { url, token, body ->
-            Http.post(url, token, CONTENT_TYPE, READ_TIMEOUT_MS) { it.write(body.toByteArray(Charsets.UTF_8)) }
+            Http.post(url, token, CONTENT_TYPE, READ_TIMEOUT_MS, followRedirects = false) {
+                it.write(body.toByteArray(Charsets.UTF_8))
+            }
         }
     }
 }

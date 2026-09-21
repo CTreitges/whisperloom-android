@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import com.chris.whisperloom.Engine
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.agent.AgentUrlCheck
 import com.chris.whisperloom.api.AccessResolver
 import com.chris.whisperloom.api.ApiAccess
 import kotlin.properties.ReadWriteProperty
@@ -63,8 +64,9 @@ class PrefsState(val prefs: Prefs) {
     var agentToken: String by pref({ prefs.agentToken }) { prefs.agentToken = it }
     var agentTutorialSeen: Boolean by pref({ prefs.agentTutorialSeen }) { prefs.agentTutorialSeen = it }
 
-    /** Eingeschaltet und vollstaendig — liest die Spiegel, damit Compose Aenderungen sieht. */
-    val agentReady: Boolean get() = agentEnabled && agentUrl.isNotBlank() && agentToken.isNotBlank()
+    /** Wie [Prefs.agentReady], aber ueber die Spiegel — damit Compose Aenderungen sieht. */
+    val agentReady: Boolean
+        get() = agentEnabled && agentToken.isNotBlank() && AgentUrlCheck.isValid(agentUrl)
 
     /** Der Nutzer hat einen eigenen LLM-Zugang gewaehlt (sonst gilt der Erkennungs-Zugang). */
     val llmUseOwn: Boolean get() = llmProviderId != AccessResolver.LLM_SAME

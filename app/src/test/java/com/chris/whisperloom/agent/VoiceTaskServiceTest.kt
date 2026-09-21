@@ -72,14 +72,24 @@ class VoiceTaskServiceTest {
      */
     private fun quelle(amplitude: Short) {
         gelesen = CountDownLatch(1)
+        val uebrig = java.util.concurrent.atomic.AtomicInteger(MAX_LESEVORGAENGE)
         ShadowAudioRecord.setSource(object : ShadowAudioRecord.AudioRecordSource {
             override fun readInShortArray(data: ShortArray, offset: Int, size: Int, blocking: Boolean): Int {
+                // Das Schatten-Mikrofon liefert so schnell, wie die CPU kann — anders als ein
+                // echtes, das 16 000 Werte pro SEKUNDE gibt. Ohne Deckel sammelt der
+                // Aufnahme-Thread waehrend einer simulierten Minute hunderte Megabyte und der
+                // Test stirbt mit OutOfMemoryError. 0 heisst fuer den Aufnahme-Thread
+                // "gerade nichts da" und laesst ihn weiterlaufen.
+                if (uebrig.getAndDecrement() <= 0) return 0
                 for (i in 0 until size) data[offset + i] = if (i % 2 == 0) amplitude else (-amplitude).toShort()
                 gelesen.countDown()
                 return size
             }
         })
     }
+
+    /** Rund 16 s Ton bei 16 kHz — mehr braucht kein Test, und es bleibt unter einem Megabyte. */
+    private val MAX_LESEVORGAENGE = 200
 
     private fun tonQuelle() = quelle(8000)
 
@@ -200,5 +210,26 @@ class VoiceTaskServiceTest {
         ShadowSystemClock.advanceBy(Duration.ofSeconds(4))
         senden(s, VoiceTaskService.ACTION_STOP)
         assertEquals("", store.message)
+    }
+
+    @Test fun eineVergesseneAufnahmeWirdVonSelbstAbgeschickt() {
+        // Start und Stopp sind zwei getrennte Tipps: ohne Notbremse liefe der Mikrofon-Dienst
+        // unbegrenzt weiter, wenn jemand nach dem Start das Telefon einsteckt.
+        tonQuelle()
+        aufnehmen(dienst())
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(VoiceTaskService.MAX_DURATION_MS))
+
+        assertEquals(VoiceTaskState.WORKING, store.state)
+        assertTrue("Das Gesprochene darf nicht verloren gehen", store.hasWork)
+        assertEquals(1, eingereiht)
+    }
+
+    @Test fun vorDerHoechstdauerLaeuftDieAufnahmeWeiter() {
+        tonQuelle()
+        aufnehmen(dienst())
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(VoiceTaskService.MAX_DURATION_MS - 1_000))
+
+        assertEquals(VoiceTaskState.RECORDING, store.state)
+        assertEquals(0, eingereiht)
     }
 }

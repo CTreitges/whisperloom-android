@@ -32,6 +32,9 @@ class VoiceTaskManifestTest {
         val receiver = block("receiver", "agent.VoiceTaskWidget")
         assertTrue(receiver.contains("android.appwidget.action.APPWIDGET_UPDATE"))
         assertTrue(receiver.contains("""android:resource="@xml/widget_task_info""""))
+        // APPWIDGET_UPDATE ist ein geschuetzter System-Broadcast — der Empfaenger braucht
+        // (und bekommt) keine Tuer nach aussen.
+        assertTrue("exported=\"false\" fehlt", receiver.contains("""android:exported="false""""))
     }
 
     @Test fun derAufnahmeDienstIstEinMikrofonDienst() {

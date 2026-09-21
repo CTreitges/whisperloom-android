@@ -117,10 +117,10 @@ object VoiceTaskUi {
      */
     fun afterRestart(stored: VoiceTaskState, hasWork: Boolean): VoiceTaskState = when {
         !hasWork -> VoiceTaskState.READY
-        // Aufnehmen kann nach einem Neustart niemand mehr; liegt trotzdem Audio da, ist der
-        // Auftrag mittendrin abgerissen und gehoert in den Fehler-Zustand (Tipp = erneut senden).
-        stored == VoiceTaskState.RECORDING -> VoiceTaskState.ERROR
         stored == VoiceTaskState.WORKING || stored == VoiceTaskState.ERROR -> stored
-        else -> VoiceTaskState.READY
+        // Liegt Arbeit da, ist jeder andere gespeicherte Zustand eine Luege: aufnehmen kann nach
+        // einem Neustart niemand mehr, und "gesendet" waere es dann nicht. Der Auftrag ist
+        // mittendrin abgerissen und gehoert in den Fehler-Zustand (Tipp = erneut senden).
+        else -> VoiceTaskState.ERROR
     }
 }

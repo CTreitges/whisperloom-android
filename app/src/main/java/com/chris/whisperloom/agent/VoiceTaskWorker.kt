@@ -36,9 +36,30 @@ object VoiceTaskWork {
     fun enqueue(ctx: Context) = enqueueImpl(ctx)
 
     /**
+     * Ob zu diesem Namen wirklich noch etwas aussteht. Ohne diese Frage waere "arbeitet" eine
+     * Sackgasse: stirbt der Prozess zwischen [VoiceTaskStore.begin] und [enqueue], gibt es nie
+     * einen Auftrag, und das Widget stuende bis zur Neuinstallation auf "Wird gesendet …".
+     */
+    fun isScheduled(ctx: Context): Boolean = isScheduledImpl(ctx)
+
+    /** Auftrag aufgeben (Einstellungen: "Offenen Auftrag verwerfen"). */
+    fun cancel(ctx: Context) = cancelImpl(ctx)
+
+    /**
      * Naht fuer Dienst- und Trampolin-Tests: WorkManager laesst sich auf dem
      * Entwicklungsrechner (linux-aarch64) nicht starten, weil Robolectric dort kein SQLite hat.
      */
+    @VisibleForTesting
+    var isScheduledImpl: (Context) -> Boolean = { ctx ->
+        WorkManager.getInstance(ctx).getWorkInfosForUniqueWork(UNIQUE_NAME).get()
+            .any { !it.state.isFinished }
+    }
+
+    @VisibleForTesting
+    var cancelImpl: (Context) -> Unit = { ctx ->
+        WorkManager.getInstance(ctx).cancelUniqueWork(UNIQUE_NAME)
+    }
+
     @VisibleForTesting
     var enqueueImpl: (Context) -> Unit = { ctx ->
         val request = OneTimeWorkRequestBuilder<VoiceTaskWorker>()
@@ -103,20 +124,20 @@ class VoiceTaskWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, para
     }
 
     /**
-     * Zustand festhalten und zeichnen. Nach dem Erfolg bleibt "gesendet" kurz stehen und faellt
-     * dann auf "bereit" zurueck — das Warten passiert hier, weil nach diesem Worker niemand
-     * mehr lebt, der es tun koennte. Wird er dabei abgeraeumt, bleibt "gesendet" stehen;
-     * ein Tipp darauf startet wie auf "bereit" eine neue Aufnahme.
+     * Zustand festhalten und zeichnen.
+     *
+     * "Gesendet" bleibt danach stehen, bis etwas anderes passiert — es wird NICHT nach zwei
+     * Sekunden auf "bereit" zurueckgesetzt. Das war der erste Entwurf und ein Fehler: das
+     * Warten haette in doWork stattfinden muessen, der Auftrag waere zwei Sekunden laenger
+     * RUNNING geblieben, und ein in dieser Zeit aufgenommener neuer Auftrag waere von
+     * ExistingWorkPolicy.KEEP lautlos verworfen und anschliessend auch noch mit "bereit"
+     * uebermalt worden. Stehenbleiben ist ehrlicher und kostet nichts: ein Tipp auf
+     * "gesendet" startet wie auf "bereit" eine neue Aufnahme.
      */
     private fun finish(ctx: Context, store: VoiceTaskStore, state: VoiceTaskState, message: String) {
         store.state = state
         store.message = message
         VoiceTaskWidgetView.push(ctx, state, message = message)
-        if (state == VoiceTaskState.SENT) {
-            runCatching { Thread.sleep(VoiceTaskUi.SENT_HOLD_MS) }
-            store.state = VoiceTaskState.READY
-            VoiceTaskWidget.refresh(ctx)
-        }
     }
 
     companion object {

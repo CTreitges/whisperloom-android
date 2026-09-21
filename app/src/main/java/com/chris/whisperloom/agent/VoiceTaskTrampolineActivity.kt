@@ -26,7 +26,7 @@ class VoiceTaskTrampolineActivity : Activity() {
         when (intentOf(intent)) {
             TapIntent.START -> start()
             TapIntent.RETRY -> retry()
-            TapIntent.REFRESH -> VoiceTaskWidget.refresh(this)
+            TapIntent.REFRESH -> nachsehen()
             else -> openApp()
         }
         finish()
@@ -60,6 +60,20 @@ class VoiceTaskTrampolineActivity : Activity() {
         }
         VoiceTaskWidgetView.push(this, VoiceTaskState.WORKING)
         VoiceTaskWork.enqueue(this)
+    }
+
+    /**
+     * Tipp auf "arbeitet". Sichtbar passiert normalerweise nichts — es sei denn, es gibt zwar
+     * einen Auftrag, aber keinen Job mehr dazu. Genau das passiert, wenn der Prozess zwischen
+     * dem Ablegen des Auftrags und dem Einreihen stirbt; ohne diesen Weg stuende das Widget
+     * dann fuer immer auf "Wird gesendet …", ohne dass eine neue Aufnahme moeglich waere.
+     */
+    private fun nachsehen() {
+        val store = VoiceTaskStore(this)
+        if (store.hasWork && !VoiceTaskWork.isScheduled(this)) {
+            VoiceTaskWork.enqueue(this)
+        }
+        VoiceTaskWidget.refresh(this)
     }
 
     /** Einstellungen der App — dort wird das Mikrofon erlaubt bzw. der Server eingetragen. */
