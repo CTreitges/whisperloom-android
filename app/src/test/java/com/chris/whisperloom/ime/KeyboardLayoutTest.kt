@@ -42,7 +42,8 @@ class KeyboardLayoutTest {
             R.id.status, R.id.level, R.id.mic_zone, R.id.mic_pulse, R.id.mic_ring, R.id.mic_progress, R.id.mic,
             R.id.key_row, R.id.key_globe, R.id.key_comma, R.id.key_space, R.id.key_period,
             R.id.key_backspace, R.id.key_enter, R.id.key_retry, R.id.key_settings,
-            R.id.gesture_discard, R.id.gesture_lock,
+            R.id.gesture_discard, R.id.gesture_lock, R.id.key_refine, R.id.refine_row,
+            R.id.refine_off, R.id.refine_polish, R.id.refine_beautify, R.id.refine_summarize,
         )) {
             assertNotNull("ID fehlt: ${ctx.resources.getResourceEntryName(id)}", v.findViewById<View>(id))
         }
@@ -52,6 +53,7 @@ class KeyboardLayoutTest {
         // Die Wisch-Ziele zeigt erst die Geste — im Ruhezustand ist die Tastatur unveraendert.
         assertEquals(View.GONE, v.findViewById<View>(R.id.gesture_discard).visibility)
         assertEquals(View.GONE, v.findViewById<View>(R.id.gesture_lock).visibility)
+        assertEquals(View.GONE, v.findViewById<View>(R.id.refine_row).visibility)
     }
 
     @Test fun wischZieleSindBedienbarGross() {
@@ -81,6 +83,58 @@ class KeyboardLayoutTest {
             }
         }
         assertEquals(8, row.childCount)
+    }
+
+    /** Misst die Tastatur so breit, wie sie auf einem Geraet mit [breiteDp] waere. */
+    private fun messen(v: View, breiteDp: Int) {
+        val d = ctx.resources.displayMetrics.density
+        v.measure(
+            View.MeasureSpec.makeMeasureSpec((breiteDp * d).toInt(), View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+        )
+        v.layout(0, 0, v.measuredWidth, v.measuredHeight)
+    }
+
+    @Test fun derSchnellzugriffMachtDieTastaturNichtHoeher() {
+        // Gegen das Budget der Spec (§5.3, rund 240 dp), nicht gegen sich selbst — ein
+        // Vergleich "eingeklappt == eingeklappt" kann gar nicht fehlschlagen.
+        val v = inflate()
+        val d = ctx.resources.displayMetrics.density
+        messen(v, 360)
+        // 8 paddingTop + 41 status + 28 level + 112 mic_zone + 8 marginTop + 52 key_row
+        // + 12 paddingBottom. Die Spec nennt "rund 240 dp"; die Statuszeile ist hier
+        // zweizeilig, weil der Ruhe-Hinweis umbricht — ein kuerzerer Text macht die
+        // Tastatur entsprechend flacher (siehe PR-Hinweis).
+        assertEquals("Ruhehoehe der Tastatur", 261, (v.measuredHeight / d).toInt())
+
+        v.findViewById<View>(R.id.refine_row).visibility = View.VISIBLE
+        messen(v, 360)
+        assertTrue("Ausgeklappt muss die Tastatur hoeher werden", (v.measuredHeight / d).toInt() > 261)
+    }
+
+    /**
+     * Die Tastenreihe ist bei 360 dp — der haeufigsten Android-Breite — knapp. Die Leertaste
+     * ist das einzige Kind mit Gewicht und bekommt, was uebrig bleibt: bei einer Taste zu viel
+     * misst LinearLayout sie mit 0 dp, und das letzte Kind ragt aus der Reihe heraus.
+     */
+    @Test fun dieTastenreihePasstAufEinSchmalesGeraet() {
+        val v = inflate()
+        val d = ctx.resources.displayMetrics.density
+        messen(v, 360)
+        val row = v.findViewById<ViewGroup>(R.id.key_row)
+        val space = v.findViewById<View>(R.id.key_space)
+
+        assertTrue("Leertaste auf 0 dp gedrueckt — eine Taste zu viel in key_row", space.width > 0)
+        val letztes = (0 until row.childCount)
+            .map { row.getChildAt(it) }
+            .last { it.visibility != View.GONE }
+        assertTrue(
+            "Letzte Taste ragt aus der Reihe: ${letztes.right} > ${row.width}",
+            letztes.right <= row.width,
+        )
+        // Festgehalten, damit ein Wachsen der Reihe auffaellt: die Leertaste liegt hier schon
+        // unter dem 48-dp-Touchziel der Spec §5.6 — Altbestand, nicht durch den Schnellzugriff.
+        assertEquals("Leertaste bei 360 dp", 36, (space.width / d).toInt())
     }
 
     @Test fun masseNachSpec() {

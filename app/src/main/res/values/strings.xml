@@ -468,6 +468,14 @@
     <string name="kb_cancel_armed">Loslassen verwirft die Aufnahme</string>
     <string name="kb_locked">Aufnahme %1$s — senden oder verwerfen</string>
     <string name="kb_discarded">Aufnahme verworfen</string>
+    <string name="kb_refine_set">Textverbesserung: %1$s</string>
+    <string name="kb_refine_needs_llm">Für die KI-Stufen fehlt ein Zugang — tippe zum Einrichten</string>
+    <!-- Kurzfassungen der Stufen: in der Tastatur teilen sich vier Tasten eine Zeile,
+         "Verschönern" und "Zusammenfassen" passen dort nicht. -->
+    <string name="kb_level_off">Aus</string>
+    <string name="kb_level_smooth">Glätten</string>
+    <string name="kb_level_beautify">Schöner</string>
+    <string name="kb_level_summarize">Kürzen</string>
     <string name="refine_skipped">Textverbesserung übersprungen: %1$s</string>
     <string name="kb_space">Leer</string>
     <string name="cd_mic">Diktat-Mikrofon — antippen zum Starten, gedrückt halten zum Sprechen</string>
@@ -479,6 +487,8 @@
     <string name="cd_kb_enter">Eingabe</string>
     <string name="cd_kb_retry">Erneut senden</string>
     <string name="cd_kb_settings">WhisperLoom-Einstellungen</string>
+    <string name="cd_kb_refine">Textverbesserung</string>
+    <string name="cd_kb_refine_level">Textverbesserung: %1$s</string>
     <string name="cd_kb_discard">Aufnahme verwerfen</string>
     <string name="cd_kb_send">Aufnahme senden</string>
     <string name="cd_kb_lock">Aufnahme feststellen</string>

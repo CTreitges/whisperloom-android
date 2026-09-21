@@ -93,6 +93,23 @@
             android:tint="@color/gesture_lock_tint"
             android:visibility="gone" />
 
+        <!-- Ausloeser des Schnellzugriffs. Bewusst NICHT in der Tastenreihe: die ist bei
+             360 dp Breite schon mit acht Kindern voll, eine neunte Taste draengt die
+             Leertaste auf 0 dp. Hier ist Platz — und weil der Knopf nur im Ruhezustand
+             sichtbar ist, kommt er den Wisch-Zielen nie in die Quere. -->
+        <ImageButton
+            android:id="@+id/key_refine"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="top|end"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/refine_toggle_bg"
+            android:contentDescription="@string/cd_kb_refine"
+            android:padding="12dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_auto_fix_high"
+            android:tint="@color/refine_toggle_tint" />
+
         <!-- 88 dp, Icon 36 dp (Padding 26). Fuellung = Level-List, Level = BubbleVisual.Fill.ordinal. -->
         <ImageButton
             android:id="@+id/mic"
@@ -106,6 +123,39 @@
             android:src="@drawable/ic_mic"
             android:tint="@color/loom_primary" />
     </FrameLayout>
+
+    <!-- Schnellzugriff auf die Textverbesserung (UX-Spec §8.1): vier exklusive Stufen,
+         eingeklappt GONE — die Tastatur darf dadurch nicht hoeher werden. Auswahl und
+         Bedienbarkeit setzt der Service ueber RefineBar. -->
+    <LinearLayout
+        android:id="@+id/refine_row"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal"
+        android:baselineAligned="false"
+        android:visibility="gone">
+
+        <Button
+            android:id="@+id/refine_off"
+            style="@style/RefineKey"
+            android:text="@string/kb_level_off" />
+
+        <Button
+            android:id="@+id/refine_polish"
+            style="@style/RefineKey"
+            android:text="@string/kb_level_smooth" />
+
+        <Button
+            android:id="@+id/refine_beautify"
+            style="@style/RefineKey"
+            android:text="@string/kb_level_beautify" />
+
+        <Button
+            android:id="@+id/refine_summarize"
+            style="@style/RefineKey"
+            android:text="@string/kb_level_summarize" />
+    </LinearLayout>
 
     <!-- Tastenreihe 52 dp (Tasten 48, ab fontScale 1,3: 56/60 — ImeMetrics). Abstand 4 dp = 2 x margin 2. -->
     <LinearLayout

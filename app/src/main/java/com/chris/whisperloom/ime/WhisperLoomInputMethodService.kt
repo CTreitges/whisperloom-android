@@ -22,6 +22,8 @@ import com.chris.whisperloom.AudioRecorder
 import com.chris.whisperloom.Formats
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
+import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.SetupState
 import com.chris.whisperloom.TranscriptionEngine
 import com.chris.whisperloom.api.ApiNotConfiguredException
 import com.chris.whisperloom.api.isRetryable
@@ -68,6 +70,8 @@ class WhisperLoomInputMethodService : InputMethodService() {
     private var rings: MicRings? = null
     private var retryKey: View? = null
     private var gestureTargets: GestureTargets? = null
+    private var refineBar: RefineBar? = null
+    private var refineKey: View? = null
 
     /** Aktueller Stand der Wisch-Geste; nur waehrend eines liegenden Fingers aussagekraeftig. */
     private var gesturePhase = DictationGesture.Phase.RECORDING
@@ -110,7 +114,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
     /** Statuszeile: Farbe und Tipp-Ziel je Art (UX-Spec §5.3). */
     private enum class Status {
         HINT, LISTENING, LOCK_ARMED, CANCEL_ARMED, LOCKED, DISCARDED,
-        TRANSCRIBING, ERROR, NEED_PERMISSION, NOT_CONFIGURED,
+        TRANSCRIBING, ERROR, NEED_PERMISSION, NOT_CONFIGURED, NEEDS_LLM,
     }
 
     override fun onCreate() {
@@ -132,6 +136,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
         val discardTarget = root.findViewById<ImageButton>(R.id.gesture_discard)
         val lockTarget = root.findViewById<ImageButton>(R.id.gesture_lock)
         gestureTargets = GestureTargets(discardTarget, lockTarget, ::reduceMotion)
+        refineBar = RefineBar(root.findViewById(R.id.refine_row), ::reduceMotion)
         measureGesture()
         rings = MicRings(
             pulse = root.findViewById(R.id.mic_pulse),
@@ -163,7 +168,11 @@ class WhisperLoomInputMethodService : InputMethodService() {
         root.findViewById<View>(R.id.key_backspace).setOnClickListener { backspace() }
         root.findViewById<View>(R.id.key_enter).setOnClickListener { performEnter() }
         root.findViewById<View>(R.id.key_settings).setOnClickListener { startActivity(AppNav.settings(this)) }
+        refineKey = root.findViewById<View>(R.id.key_refine).also {
+            it.setOnClickListener { toggleRefineBar() }
+        }
         retryKey?.setOnClickListener { retry() }
+        refineBar?.bind(::pickRefineMode)
 
         // Nach dem Setzen der Listener, nicht davor: setOnClickListener macht eine View
         // wieder bedienbar. Im Ruhezustand sollen die Ziele weder anklickbar noch im
@@ -199,11 +208,14 @@ class WhisperLoomInputMethodService : InputMethodService() {
         val dp = ImeMetrics.keyHeightDp(resources.configuration.fontScale)
         if (dp == ImeMetrics.KEY_HEIGHT_DP) return
         val density = resources.displayMetrics.density
-        val row = root.findViewById<ViewGroup>(R.id.key_row)
-        row.layoutParams = row.layoutParams.apply { height = ((dp + KEY_ROW_EXTRA_DP) * density).toInt() }
-        for (i in 0 until row.childCount) {
-            val key = row.getChildAt(i)
-            key.layoutParams = key.layoutParams.apply { height = (dp * density).toInt() }
+        // Beide Reihen, sonst bleibt der Schnellzugriff bei grosser Schrift zu flach.
+        for (id in intArrayOf(R.id.key_row, R.id.refine_row)) {
+            val row = root.findViewById<ViewGroup>(id)
+            row.layoutParams = row.layoutParams.apply { height = ((dp + KEY_ROW_EXTRA_DP) * density).toInt() }
+            for (i in 0 until row.childCount) {
+                val key = row.getChildAt(i)
+                key.layoutParams = key.layoutParams.apply { height = (dp * density).toInt() }
+            }
         }
     }
 
@@ -217,6 +229,10 @@ class WhisperLoomInputMethodService : InputMethodService() {
             pendingSamples = null
             applyState(BubbleState.IDLE)
         }
+        // Der Eingabe-View wird ueber Feld- und App-Wechsel hinweg wiederverwendet. Eine
+        // offen stehende Leiste zeigte sonst die Stufe und den KI-Zugang von vorhin —
+        // beides kann sich inzwischen geaendert haben.
+        if (refineBar?.isShown == true) refineBar?.show(prefs.refineMode, hasLlmAccess())
         restoreStatus()
     }
 
@@ -413,6 +429,59 @@ class WhisperLoomInputMethodService : InputMethodService() {
 
     private fun elapsedMs() = SystemClock.elapsedRealtime() - recordingStartedAt
 
+    // --- Schnellzugriff Textverbesserung ------------------------------------
+
+    private fun toggleRefineBar() {
+        val bar = refineBar ?: return
+        if (bar.isShown) {
+            closeRefineBar()
+            return
+        }
+        val llmReady = hasLlmAccess()
+        bar.show(prefs.refineMode, llmReady)
+        refineKey?.isSelected = true
+        // Ohne Zugang sind die drei KI-Stufen abgeblendet — das braucht eine Erklaerung,
+        // sonst sieht es nach einem Fehler aus.
+        if (!llmReady && state == BubbleState.IDLE) showStatus(Status.NEEDS_LLM)
+    }
+
+    private fun closeRefineBar() {
+        val bar = refineBar ?: return
+        if (!bar.isShown) return
+        bar.hide()
+        refineKey?.isSelected = false
+        if (state == BubbleState.IDLE) showIdleStatus()
+    }
+
+    private fun pickRefineMode(mode: RefineMode) {
+        prefs.refineMode = mode
+        refineBar?.select(mode)
+        haptic(BubbleMotion.Haptic.CONTEXT_CLICK)
+        // Die naechste Transkription liest die Prefs frisch — die Wahl wirkt sofort.
+        if (state == BubbleState.IDLE) {
+            showStatus(Status.HINT, getString(R.string.kb_refine_set, refineLabel(mode)))
+            main.postDelayed({ if (state == BubbleState.IDLE) showIdleStatus() }, DISCARD_HINT_MS)
+        }
+    }
+
+    private fun refineLabel(mode: RefineMode) = getString(
+        when (mode) {
+            RefineMode.OFF -> R.string.level_off
+            RefineMode.POLISH, RefineMode.PARAGRAPHS -> R.string.level_smooth
+            RefineMode.BEAUTIFY -> R.string.level_beautify
+            RefineMode.SUMMARIZE -> R.string.level_summarize
+        },
+    )
+
+    /**
+     * Ob eine KI-Stufe ueberhaupt etwas ausrichten kann. Ohne Zugang kaeme nur der Rohtext
+     * zurueck (plus Hinweis) — ein Fehlgriff in der Leiste zerstoert also nichts, aber ins
+     * Leere fuehren soll sie trotzdem nicht.
+     */
+    private fun hasLlmAccess(): Boolean = prefs.llmAccess().let {
+        SetupState.sttComplete(it.baseUrl, it.apiKey, it.provider.needsKey)
+    }
+
     // --- Diktat -------------------------------------------------------------
 
     private fun startDictation() {
@@ -430,6 +499,8 @@ class WhisperLoomInputMethodService : InputMethodService() {
         if (recorder.isRecording) return
         if (recorder.start()) {
             pendingSamples = null
+            // Sonst bliebe die Leiste offen, waehrend ihr Ausloeser verschwindet.
+            closeRefineBar()
             recordingStartedAt = SystemClock.elapsedRealtime()
             applyState(BubbleState.RECORDING)
             showStatus(Status.LISTENING)
@@ -537,6 +608,13 @@ class WhisperLoomInputMethodService : InputMethodService() {
         rings?.show(visual.ring)
         retryKey?.visibility = if (next == BubbleState.ERROR) View.VISIBLE else View.GONE
         if (next == BubbleState.RECORDING) levelBand?.start() else levelBand?.stop()
+        // Der Zauberstab sitzt in der Mikro-Zone, wo bei einer laufenden Aufnahme die
+        // Wisch-Ziele erscheinen — waehrend des Diktierens hat er dort nichts verloren.
+        refineKey?.visibility = if (next == BubbleState.RECORDING || next == BubbleState.SENDING) {
+            View.GONE
+        } else {
+            View.VISIBLE
+        }
         updateMicDescription()
     }
 
@@ -593,6 +671,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
                 Status.ERROR -> R.string.kb_error
                 Status.NEED_PERMISSION -> R.string.kb_need_permission
                 Status.NOT_CONFIGURED -> R.string.kb_not_configured
+                Status.NEEDS_LLM -> R.string.kb_refine_needs_llm
             },
         )
         v.setTextColor(
@@ -602,7 +681,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
                     Status.LISTENING, Status.LOCKED -> R.color.loom_recordingText
                     Status.LOCK_ARMED -> R.color.loom_primary
                     Status.CANCEL_ARMED, Status.ERROR -> R.color.loom_error
-                    Status.NEED_PERMISSION, Status.NOT_CONFIGURED -> R.color.loom_warning
+                    Status.NEED_PERMISSION, Status.NOT_CONFIGURED, Status.NEEDS_LLM -> R.color.loom_warning
                 },
             ),
         )
@@ -610,9 +689,12 @@ class WhisperLoomInputMethodService : InputMethodService() {
         when (kind) {
             Status.NEED_PERMISSION -> v.setOnClickListener { startActivity(AppNav.setup(this, SETUP_STEP_MIC)) }
             Status.NOT_CONFIGURED -> v.setOnClickListener { startActivity(AppNav.setup(this)) }
+            // Der KI-Zugang wird in den Text-Einstellungen eingerichtet, nicht im Assistenten.
+            Status.NEEDS_LLM -> v.setOnClickListener { startActivity(AppNav.settings(this)) }
             else -> v.setOnClickListener(null)
         }
-        v.isClickable = kind == Status.NEED_PERMISSION || kind == Status.NOT_CONFIGURED
+        v.isClickable = kind == Status.NEED_PERMISSION || kind == Status.NOT_CONFIGURED ||
+            kind == Status.NEEDS_LLM
     }
 
     private fun reduceMotion() = BubbleAnimators.reduceMotion(this)

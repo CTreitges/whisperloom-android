@@ -237,6 +237,8 @@ Die Tastatur besteht aus drei Zonen:
 - **Pegelband und Mikrofon-Taste**: Die große Taste in der Mitte funktioniert mit **Halten-zum-Sprechen** — gedrückt halten, sprechen, loslassen. Das Pegelband darüber zeigt während der Aufnahme deine Lautstärke. Die Taste zeigt dieselben vier Zustände wie der schwebende Knopf (bereit, nimmt auf, sendet, Fehler).
 - **Tastenreihe** unten: Globus (Eingabemethode wechseln) · Komma · Leertaste · Punkt · Löschen · Eingabe · (nur nach einem Fehler:) **Erneut senden** · Zahnrad (WhisperLoom-Einstellungen).
 
+Rechts über dem Mikrofon sitzt außerdem ein **Zauberstab** — er klappt die Textverbesserung auf, siehe [5.4](#54-textverbesserung-direkt-in-der-tastatur).
+
 Der erkannte Text wird direkt an der Cursor-Position eingefügt — die Bedienungshilfe ist bei der Tastatur nicht nötig. Nach einem Fehler („Fehler bei der Erkennung — erneut versuchen") bleibt das Audio erhalten; die Taste **Erneut senden** wiederholt den Versuch.
 
 Wenn du „Leerzeichen nach Diktat anhängen" (Einstellungen → Text → Regeln ohne KI) aktiv hast, kannst du mehrere Diktate direkt hintereinander sprechen, ohne zwischendurch ein Leerzeichen zu tippen.
@@ -255,6 +257,20 @@ Die Aufnahme läuft dann **freihändig weiter**. Die Statuszeile zählt die Daue
 Zwei Feinheiten: Ziehst du stark nach oben oder unten weg, gilt das nicht mehr als Wischen und es rastet nichts ein. Und schließt du die Tastatur, während eine festgestellte Aufnahme läuft, wird sie noch fertig übertragen und eingefügt, solange das Eingabefeld erhalten bleibt; ist auch das Feld weg, wird die Aufnahme verworfen.
 
 **Mit TalkBack:** Gedrückthalten funktioniert dort nicht. Deshalb **startet ein Antippen** des Mikrofons die Aufnahme, und sie ist sofort festgestellt — ein zweiter Tipp sendet. Die Tasten Verwerfen und Senden sind dann ganz normal ansteuerbar.
+
+### 5.4 Textverbesserung direkt in der Tastatur
+
+Die Stufe der Textverbesserung musst du nicht in den Einstellungen suchen. Ein Tipp auf den **Zauberstab** rechts über dem Mikrofon klappt eine Zeile mit den vier Stufen auf:
+
+**Aus · Glätten · Schöner · Kürzen**
+
+(Das sind dieselben Stufen wie unter Einstellungen → Text, dort heißen sie ausgeschrieben „Verschönern" und „Zusammenfassen" — in der schmalen Tastenzeile passen nur die Kurzfassungen.)
+
+Die aktuelle Stufe ist hervorgehoben. Ein Tipp wählt eine andere — sie gilt ab dem nächsten Diktat, ohne Umweg über die Einstellungen. Änderst du sie hier, steht sie in den Einstellungen genauso. Ein zweiter Tipp auf den Zauberstab klappt die Zeile wieder ein; solange sie zu ist, ist die Tastatur genauso hoch wie vorher.
+
+Sobald du zu diktieren anfängst, verschwindet der Zauberstab — an seiner Stelle erscheinen dann die Ziele der Wisch-Geste. Eine offene Stufen-Zeile klappt dabei zu.
+
+Die drei oberen Stufen brauchen einen KI-Zugang. Hast du keinen eingerichtet, sind sie ausgegraut und die Statuszeile sagt es dir — ein Tipp darauf führt in die Einstellungen. **Aus** bleibt immer wählbar.
 
 ---
 

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Zauberstab: geoeffnet auf loom_primaryContainer, sonst auf loom_surfaceContainerHigh. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_selected="true" android:color="@color/loom_onPrimaryContainer" />
+    <item android:color="@color/loom_onSurfaceVariant" />
+</selector>
