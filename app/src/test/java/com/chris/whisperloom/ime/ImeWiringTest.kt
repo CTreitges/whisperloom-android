@@ -6,6 +6,8 @@ import android.view.View
 import android.widget.ImageButton
 import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
+import com.chris.whisperloom.Engine
+import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -80,9 +82,20 @@ class ImeWiringTest {
         assertNotNull(shadowOf(app).nextStartedActivity)
     }
 
-    @Test fun derRuhezustandLehrtDieGesteNochNicht() {
-        // Die Tastatur sieht im Ruhezustand aus wie bisher; die Geste zeigt sich erst beim Ziehen.
-        val status = inputView().findViewById<TextView>(R.id.status)
-        assertEquals(app.getString(R.string.kb_hint_hold), status.text.toString())
+    @Test fun dieStatuszeileStimmtSchonBeimAufbau() {
+        // Ohne Mikrofon-Berechtigung steht die Warnung sofort da — nicht erst der
+        // Ruhe-Hinweis aus dem Layout, bis das erste Eingabefeld kommt.
+        val ohne = inputView().findViewById<TextView>(R.id.status)
+        assertEquals(app.getString(R.string.kb_need_permission), ohne.text.toString())
+
+        shadowOf(app).grantPermissions(Manifest.permission.RECORD_AUDIO)
+        Prefs(app).apply {
+            engine = Engine.ONLINE
+            sttProviderId = "custom"
+            apiBaseUrl = "http://127.0.0.1:1/v1"
+        }
+        // Eingerichtet: der Ruhe-Hinweis. Die Geste zeigt sich erst beim Ziehen.
+        val mit = inputView().findViewById<TextView>(R.id.status)
+        assertEquals(app.getString(R.string.kb_hint_hold), mit.text.toString())
     }
 }

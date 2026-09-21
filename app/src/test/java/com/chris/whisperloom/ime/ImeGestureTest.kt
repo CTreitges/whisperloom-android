@@ -15,6 +15,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -67,6 +68,13 @@ class ImeGestureTest {
         mic = root.findViewById(R.id.mic)
     }
 
+    @After fun abbau() {
+        // Ohne das laesst jeder Test, der mit laufendem Mikrofon endet, einen Aufnahme- und
+        // einen io-Thread zurueck.
+        service.onFinishInputView(true)
+        service.onDestroy()
+    }
+
     private fun layout() {
         val w = View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY)
         val h = View.MeasureSpec.makeMeasureSpec(660, View.MeasureSpec.EXACTLY)
@@ -89,6 +97,38 @@ class ImeGestureTest {
         mitte().let { event(MotionEvent.ACTION_UP, it.first + dx, it.second + dy) }
 
     private fun idle() = shadowOf(Looper.getMainLooper()).idle()
+
+    /**
+     * Ereignis mit mehreren Zeigern. `MotionEvent.obtain(..., x, y, ...)` erzeugt immer nur
+     * EINEN Zeiger mit der ID 0 — damit laesst sich ueber Multitouch nichts aussagen.
+     */
+    private fun pointers(action: Int, vararg finger: Triple<Int, Float, Float>) {
+        val props = finger.map { (id, _, _) ->
+            MotionEvent.PointerProperties().apply {
+                this.id = id
+                toolType = MotionEvent.TOOL_TYPE_FINGER
+            }
+        }.toTypedArray()
+        val coords = finger.map { (_, x, y) ->
+            MotionEvent.PointerCoords().apply {
+                this.x = x
+                this.y = y
+            }
+        }.toTypedArray()
+        val ev = MotionEvent.obtain(
+            0L, 0L, action, finger.size, props, coords, 0, 0, 1f, 1f, 0, 0, 0, 0,
+        )
+        mic.dispatchTouchEvent(ev)
+        ev.recycle()
+    }
+
+    /** Aktion mit Zeiger-Index, z. B. ACTION_POINTER_UP fuer den zweiten Finger. */
+    private fun mitIndex(action: Int, index: Int) =
+        action or (index shl MotionEvent.ACTION_POINTER_INDEX_SHIFT)
+
+    /** Finger [id] an der Mikro-Mitte, um [dx]/[dy] verschoben. */
+    private fun finger(id: Int, dx: Float = 0f, dy: Float = 0f) =
+        mitte().let { Triple(id, it.first + dx, it.second + dy) }
 
     // --- Halten und loslassen -----------------------------------------------
 
@@ -158,8 +198,10 @@ class ImeGestureTest {
 
     @Test fun loslassenNachRechtsStelltFest() {
         feststellen()
-        assertTrue("Aufnahme muss weiterlaufen", statusText.startsWith("Aufnahme"))
-        assertNotEquals(app.getString(R.string.kb_transcribing), statusText)
+        // kb_locked = "Aufnahme %1$s — senden oder verwerfen"; startsWith("Aufnahme") wuerde
+        // auch auf "Aufnahme verworfen" passen.
+        assertTrue("Statuszeile zeigt nicht den festgestellten Zustand: $statusText",
+            statusText.endsWith("senden oder verwerfen"))
         assertEquals(View.VISIBLE, lock.visibility)
         assertTrue("Senden muss bedienbar sein", lock.isClickable)
         assertEquals(app.getString(R.string.cd_kb_send), lock.contentDescription)
@@ -228,20 +270,47 @@ class ImeGestureTest {
         assertTrue(lock.isClickable)
         assertEquals(app.getString(R.string.cd_kb_send), lock.contentDescription)
         assertEquals(View.VISIBLE, discard.visibility)
-        assertTrue(statusText.startsWith("Aufnahme"))
+        assertTrue(statusText.endsWith("senden oder verwerfen"))
         discard.performClick()
         assertEquals(app.getString(R.string.kb_discarded), statusText)
     }
 
-    @Test fun einZweiterFingerKapertDieGesteNicht() {
+    @Test fun dieGesteFolgtDemFuehrendenFingerNichtDemErstenZeiger() {
         down()
         move(dx = weit)
-        // Ein zweiter Finger kommt auf — die Mikro-Taste faengt ihn ein, weil sie das
-        // Touch-Ziel haelt. Die Geste muss trotzdem dem ersten Finger folgen.
-        event(MotionEvent.ACTION_POINTER_DOWN, 0f, 0f)
+        // Zweiter Finger links auf der Taste. Sie faengt ihn ein, obwohl er sie nicht
+        // beruehrt: findet der Touch-Dispatch kein passendes Kind, haengt er ihn ans
+        // bestehende Touch-Ziel.
+        pointers(mitIndex(MotionEvent.ACTION_POINTER_DOWN, 1), finger(0, weit), finger(1, -weit))
         assertTrue("Einrastung darf nicht verloren gehen", lock.isActivated)
-        up(dx = weit)
-        assertTrue("Feststellen muss trotz zweitem Finger greifen", lock.isClickable)
+
+        // Bewegung, bei der der fuehrende Finger NICHT an Index 0 steht. Wer blind getX(0)
+        // nimmt, liest hier den zweiten Finger und kippt auf Verwerfen.
+        pointers(MotionEvent.ACTION_MOVE, finger(1, -weit), finger(0, weit))
+        assertTrue("Geste ist dem falschen Finger gefolgt", lock.isActivated)
+        assertFalse(discard.isActivated)
+    }
+
+    @Test fun nachAbhebenDesFuehrendenFingersLoestDerZweiteNichtsAus() {
+        // Der zweite Finger liegt AUF der Taste — sonst faengt ihn schon die Bounds-Pruefung
+        // ab und der Test bewiese nichts.
+        val zweiter = 4f
+        down()
+        move(dx = weit)
+        pointers(mitIndex(MotionEvent.ACTION_POINTER_DOWN, 1), finger(0, weit), finger(1, zweiter))
+        // Der fuehrende Finger hebt ab: das stellt fest.
+        pointers(mitIndex(MotionEvent.ACTION_POINTER_UP, 0), finger(0, weit), finger(1, zweiter))
+        assertTrue("Abheben des fuehrenden Fingers muss feststellen", lock.isClickable)
+
+        // Jetzt hebt der zweite ab. Er hat die Geste nie gefuehrt — sonst folgte auf das
+        // Feststellen sofort das Senden, in einem einzigen Zug.
+        pointers(MotionEvent.ACTION_UP, finger(1, zweiter))
+        assertNotEquals(
+            "Abheben des zweiten Fingers darf nicht senden",
+            app.getString(R.string.kb_transcribing),
+            statusText,
+        )
+        assertTrue(statusText.endsWith("senden oder verwerfen"))
     }
 
     // --- Tastatur schliessen -------------------------------------------------
@@ -264,7 +333,7 @@ class ImeGestureTest {
         // Der Weg mit TalkBack: Gedrueckthalten kommt dort nicht an, also muss ein Antippen
         // eine Aufnahme starten, die von selbst weiterlaeuft.
         mic.performClick()
-        assertTrue("Klick muss festgestellt starten", statusText.startsWith("Aufnahme"))
+        assertTrue("Klick muss festgestellt starten", statusText.endsWith("senden oder verwerfen"))
         assertTrue(lock.isClickable)
         assertEquals(app.getString(R.string.cd_kb_send), lock.contentDescription)
         assertTrue(mic.contentDescription.contains("festgestellt"))

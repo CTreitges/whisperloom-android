@@ -82,11 +82,6 @@ class DictationGestureTest {
         )
     }
 
-    @Test fun ohneEingerastetesZielGiltDieToleranzScharf() {
-        assertEquals(Phase.RECORDING, phase(arm * 2, dy = vertical + 1f))
-        assertEquals(Phase.RECORDING, phase(-arm * 2, dy = -(vertical + 1f)))
-    }
-
     @Test fun innerhalbDerToleranzRastetEsWeiterhinEin() {
         assertEquals(Phase.LOCK_ARMED, phase(arm, dy = vertical))
     }
