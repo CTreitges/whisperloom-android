@@ -176,6 +176,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
         // waehrend das Mikrofon weiterlief und kein Weg mehr zum Verwerfen fuehrte.
         if (locked && recorder.isRecording) enterLockedUi() else gestureTargets?.hide()
         applyState(state, animate = false)
+        restoreStatus()
         return root
     }
 
@@ -208,15 +209,15 @@ class WhisperLoomInputMethodService : InputMethodService() {
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
-        // Ein alter Fehlerzustand gilt fuer das neue Feld nicht mehr; eine laufende
-        // Uebertragung bleibt sichtbar.
-        if (state == BubbleState.ERROR) {
+        // Ein alter Fehlerzustand gilt fuer das NEUE Feld nicht mehr. Bei [restarting] ist es
+        // aber dasselbe Feld — das Framework baut nur neu auf (Drehen, Dunkelmodus). Dann den
+        // Puffer behalten, sonst verliert eine Drehung das Audio eines fehlgeschlagenen
+        // Diktats, obwohl die Wiederholen-Taste danebensteht.
+        if (state == BubbleState.ERROR && !restarting) {
             pendingSamples = null
             applyState(BubbleState.IDLE)
         }
-        // Eine festgestellte Aufnahme laeuft weiter und behaelt ihre Zeile — sonst stuende
-        // dort nach einem Feldwechsel der Ruhe-Hinweis ueber einem laufenden Mikrofon.
-        if (locked) showLockedStatus(elapsedMs()) else if (state != BubbleState.SENDING) showIdleStatus()
+        restoreStatus()
     }
 
     /**
@@ -281,18 +282,22 @@ class WhisperLoomInputMethodService : InputMethodService() {
             }
 
             // Hebt der fuehrende Finger ab, ist die Geste vorbei — auch wenn noch andere liegen.
-            MotionEvent.ACTION_POINTER_UP -> {
-                if (ev.getPointerId(ev.actionIndex) == activePointerId) {
-                    releaseGesture(view, ev.getX(ev.actionIndex), ev.getY(ev.actionIndex))
-                }
+            MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_UP -> {
+                // Nur der fuehrende Finger loest aus. Ohne diese Pruefung beendet der letzte
+                // verbliebene Finger die Geste ein zweites Mal: erst stellt das Abheben des
+                // fuehrenden fest, dann schickt sein Abheben das Diktat gleich hinterher.
+                if (ev.getPointerId(ev.actionIndex) != activePointerId) return true
+                activePointerId = MotionEvent.INVALID_POINTER_ID
+                releaseGesture(view, ev.getX(ev.actionIndex), ev.getY(ev.actionIndex))
             }
-
-            MotionEvent.ACTION_UP -> releaseGesture(view, ev.x, ev.y)
 
             // Abgefangener Touch (Dialog, Fenster-Wechsel): ohne Feststellen wie bisher
             // senden, damit kein Diktat verloren geht. Mit Feststellen ist nichts zu retten —
             // die Aufnahme laeuft weiter und beide Tasten sind bedienbar.
-            MotionEvent.ACTION_CANCEL -> if (!locked) releaseGesture(view, ev.x, ev.y)
+            MotionEvent.ACTION_CANCEL -> {
+                activePointerId = MotionEvent.INVALID_POINTER_ID
+                if (!locked) releaseGesture(view, ev.x, ev.y)
+            }
 
             else -> return false
         }
@@ -552,6 +557,18 @@ class WhisperLoomInputMethodService : InputMethodService() {
 
     private fun showLockedStatus(elapsedMs: Long) =
         showStatus(Status.LOCKED, getString(R.string.kb_locked, Formats.duration(elapsedMs)))
+
+    /**
+     * Statuszeile zum aktuellen Zustand des Dienstes. Gebraucht nach dem Neuaufbau der
+     * Tastatur: die neue Zeile kommt mit dem Ruhe-Hinweis aus dem Layout, waehrend Mikrofon
+     * oder Uebertragung weiterlaufen.
+     */
+    private fun restoreStatus() = when {
+        locked -> showLockedStatus(elapsedMs())
+        state == BubbleState.SENDING -> showStatus(Status.TRANSCRIBING)
+        state == BubbleState.RECORDING -> showStatus(Status.LISTENING)
+        else -> showIdleStatus()
+    }
 
     /** Ruhe-Statuszeile: Hinweis oder Warnung (fehlende Berechtigung / kein Zugang). */
     private fun showIdleStatus() = showStatus(
