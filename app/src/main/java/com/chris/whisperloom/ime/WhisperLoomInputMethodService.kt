@@ -1,6 +1,7 @@
 package com.chris.whisperloom.ime
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.inputmethodservice.InputMethodService
 import android.os.Build
@@ -104,6 +105,10 @@ class WhisperLoomInputMethodService : InputMethodService() {
         prefs = Prefs(this)
     }
 
+    // performClick() aus onTouch heraus zu rufen (was Lint verlangt) wuerde hier doppelt
+    // feuern: der Touch-Pfad bedient die Aufnahme bereits, und der OnClickListener ist
+    // ausdruecklich nur fuer Bedienungshilfen da (siehe unten).
+    @SuppressLint("ClickableViewAccessibility")
     override fun onCreateInputView(): View {
         val root = layoutInflater.inflate(R.layout.keyboard_view, null)
         statusView = root.findViewById(R.id.status)
