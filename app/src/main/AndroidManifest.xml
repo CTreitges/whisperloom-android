@@ -107,6 +107,41 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
+        <!-- Sprachauftrag (Paket B): Widget -> Trampolin -> Mikrofon-Dienst -> WorkManager.
+
+             Das Trampolin ist unsichtbar und existiert nur, damit die App beim Start des
+             Mikrofon-Dienstes real im Vordergrund ist (ab Android 14 darf ein Foreground-Service
+             vom Typ microphone nicht aus dem Hintergrund starten — und der Fehlschlag waere
+             lautlos). taskAffinity="" + excludeFromRecents halten es aus der App-Uebersicht.
+             android:noHistory ist bewusst NICHT gesetzt: das wuerde onActivityResult killen
+             und jeden Permission-Dialog stillschweigend unbrauchbar machen. -->
+        <activity
+            android:name=".agent.VoiceTaskTrampolineActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:launchMode="singleTask" />
+
+        <service
+            android:name=".agent.VoiceTaskService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
+
+        <!-- exported="false": APPWIDGET_UPDATE ist ein geschuetzter System-Broadcast und
+             erreicht den Empfaenger trotzdem (so auch das offizielle Widget-Beispiel). -->
+        <receiver
+            android:name=".agent.VoiceTaskWidget"
+            android:exported="false"
+            android:label="@string/widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_task_info" />
+        </receiver>
+
         <service
             android:name=".a11y.TextInserterAccessibilityService"
             android:exported="true"

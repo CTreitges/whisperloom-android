@@ -5,10 +5,14 @@
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="sharedpref" path="whisperloom.xml" />
+        <exclude domain="sharedpref" path="whisperloom_agent.xml" />
         <exclude domain="file" path="models" />
+        <exclude domain="file" path="voice_task.pcm" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="sharedpref" path="whisperloom.xml" />
+        <exclude domain="sharedpref" path="whisperloom_agent.xml" />
         <exclude domain="file" path="models" />
+        <exclude domain="file" path="voice_task.pcm" />
     </device-transfer>
 </data-extraction-rules>

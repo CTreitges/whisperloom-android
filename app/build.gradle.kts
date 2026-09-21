@@ -154,6 +154,7 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.13.0")
     // collectAsStateWithLifecycle etc. — https://developer.android.com/jetpack/androidx/releases/lifecycle
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
+    implementation("androidx.work:work-runtime-ktx:2.11.2")
 
     // kotlinx-coroutines (StateFlow fuer ModelDownloads) kommt transitiv ueber Compose (core 1.9.0) —
     // bewusst nicht doppelt deklariert.
@@ -171,4 +172,5 @@ dependencies {
     // https://developer.android.com/jetpack/androidx/releases/test
     testImplementation("androidx.test:core:1.7.0")
     testImplementation("androidx.test.ext:junit:1.3.0")
+    testImplementation("androidx.work:work-testing:2.11.2")
 }

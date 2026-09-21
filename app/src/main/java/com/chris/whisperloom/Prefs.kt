@@ -267,6 +267,31 @@ class Prefs(context: Context) {
         get() = sp.getInt(KEY_FLOAT_Y, DEFAULT_FLOAT_Y)
         set(v) = sp.edit().putInt(KEY_FLOAT_Y, v).apply()
 
+    // --- Sprachauftrag (Widget -> eigener Agent) ------------------------------
+
+    /** Default aus: wer das Feature nicht nutzt, soll es nirgends bemerken. */
+    var agentEnabled: Boolean
+        get() = sp.getBoolean(KEY_AGENT_ENABLED, false)
+        set(v) = sp.edit().putBoolean(KEY_AGENT_ENABLED, v).apply()
+
+    /** Base-URL der Bridge ohne Pfad, z. B. https://hermes-bridge.example.de. */
+    var agentUrl: String
+        get() = sp.getString(KEY_AGENT_URL, "") ?: ""
+        set(v) = sp.edit().putString(KEY_AGENT_URL, v).apply()
+
+    /** Bearer-Token der Bridge. Wie die API-Keys unverschluesselt hier — allowBackup=false gilt. */
+    var agentToken: String
+        get() = sp.getString(KEY_AGENT_TOKEN, "") ?: ""
+        set(v) = sp.edit().putString(KEY_AGENT_TOKEN, v).apply()
+
+    /** Eigenes Flag: [tutorialSeen] bedeutet weiterhin "Einsteiger-Tutorial gesehen". */
+    var agentTutorialSeen: Boolean
+        get() = sp.getBoolean(KEY_AGENT_TUTORIAL_SEEN, false)
+        set(v) = sp.edit().putBoolean(KEY_AGENT_TUTORIAL_SEEN, v).apply()
+
+    /** Eingeschaltet UND vollstaendig — erst dann kann das Widget ueberhaupt etwas senden. */
+    val agentReady: Boolean get() = agentEnabled && agentUrl.isNotBlank() && agentToken.isNotBlank()
+
     // --- Aufgeloeste Zugaenge ------------------------------------------------
 
     fun sttAccess(): ApiAccess = AccessResolver.resolveStt(
@@ -317,6 +342,10 @@ class Prefs(context: Context) {
         private const val KEY_OFFLINE_MODEL = "offline_model"
         private const val KEY_OFFLINE_ACCURATE = "offline_accurate"
         private const val KEY_SHARE_HIDE_FILLERS = "share_hide_fillers"
+        private const val KEY_AGENT_ENABLED = "agent_enabled"
+        private const val KEY_AGENT_URL = "agent_url"
+        private const val KEY_AGENT_TOKEN = "agent_token"
+        private const val KEY_AGENT_TUTORIAL_SEEN = "agent_tutorial_seen"
         private const val KEY_FLOAT_X = "float_x"
         private const val KEY_FLOAT_Y = "float_y"
 

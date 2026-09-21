@@ -15,6 +15,7 @@ object AppNav {
     const val ROUTE_HOME = "home"
     const val ROUTE_SETUP = "setup"
     const val ROUTE_SETTINGS = "settings"
+    const val ROUTE_AGENT = "agent"
 
     /** Home (H): Notification-Tipp. */
     fun home(ctx: Context): Intent = intent(ctx, ROUTE_HOME)
@@ -27,6 +28,9 @@ object AppNav {
 
     /** Einstellungen (E): IME-Zahnrad. */
     fun settings(ctx: Context): Intent = intent(ctx, ROUTE_SETTINGS)
+
+    /** Erweiterte Optionen (Sprachauftrag): Widget-Tipp, solange nichts eingerichtet oder erlaubt ist. */
+    fun agent(ctx: Context): Intent = intent(ctx, ROUTE_AGENT)
 
     private fun intent(ctx: Context, route: String): Intent =
         Intent(ctx, MainActivity::class.java)
