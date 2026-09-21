@@ -1,0 +1,5 @@
+WhisperLoom 3.3.0 – Diktieren ohne Dauerhalten.
+• Wisch-Geste in der Diktat-Tastatur: beim Aufnehmen nach rechts ziehen stellt fest — die Aufnahme läuft freihändig weiter, dann senden oder verwerfen. Nach links ziehen verwirft sofort
+• Textverbesserung direkt in der Tastatur: der Zauberstab über dem Mikrofon klappt die vier Stufen auf (Aus, Glätten, Schöner, Kürzen)
+• Behoben: die Mikrofon-Taste der Tastatur war mit TalkBack nicht bedienbar
+• Behoben: die Einstellungen zeigten veraltete Werte, nachdem die Tastatur etwas geändert hatte
