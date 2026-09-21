@@ -1,6 +1,7 @@
 package com.chris.whisperloom
 
 import android.content.Context
+import android.content.SharedPreferences
 import com.chris.whisperloom.api.AccessResolver
 import com.chris.whisperloom.api.ApiAccess
 import com.chris.whisperloom.api.Provider
@@ -51,6 +52,22 @@ class Prefs(context: Context) {
 
     init {
         migrate()
+    }
+
+    /**
+     * Horcht auf Aenderungen, die NICHT ueber diese Instanz laufen: die Diktat-Tastatur ist
+     * ein eigener Dienst und schreibt mit ihrer eigenen [Prefs] in dieselbe Datei.
+     *
+     * SharedPreferences haelt Horcher nur SCHWACH — der Aufrufer muss eine harte Referenz
+     * behalten, sonst raeumt der Speicherbereiniger ihn weg und die Aenderungen kommen
+     * stillschweigend nicht mehr an.
+     */
+    fun observe(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
+        sp.registerOnSharedPreferenceChangeListener(listener)
+    }
+
+    fun unobserve(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
+        sp.unregisterOnSharedPreferenceChangeListener(listener)
     }
 
     /**
