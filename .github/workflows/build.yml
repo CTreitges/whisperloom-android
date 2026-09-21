@@ -35,7 +35,14 @@ jobs:
       # Gradle-Distribution + Dependency-Cache (auch Robolectrics android-all-Jar, ~100 MB)
       - uses: gradle/actions/setup-gradle@v4
 
+      # packages explizit setzen: der Action-Default "tools platform-tools" bricht seit
+      # Mitte September 2026, weil Google das laengst veraltete SDK-Paket "tools" nicht
+      # mehr ausliefert — sdkmanager endet dann mit "Failed to find package 'tools'"
+      # und Exit-Code 1 (android-actions/setup-android#537). NDK, CMake, Build-Tools und
+      # Platform installiert der naechste Schritt ohnehin selbst.
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: NDK, CMake, Build-Tools, Platform installieren
         run: sdkmanager --install "ndk;${NDK_VERSION}" "cmake;${CMAKE_VERSION}" "build-tools;${BUILD_TOOLS_VERSION}" "platforms;android-37.0"
