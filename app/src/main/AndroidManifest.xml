@@ -12,6 +12,13 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Mikrofon fuers Diktat, aber NICHT als Pflicht-Feature: die Funktion "Sprachnachricht teilen"
+         (Datei-Transkription) braucht kein Mikrofon, so bleibt die App auch auf mikrofonlosen
+         Geraeten (Chromebooks/manche Tablets) im Play Store installierbar. RECORD_AUDIO wird zur
+         Laufzeit geprueft. Ohne diese Zeile wuerde RECORD_AUDIO android.hardware.microphone
+         implizit als required=true werten und solche Geraete ausfiltern. -->
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+
     <!-- allowBackup=false: die Einstellungen enthalten API-Keys im Klartext (shared_prefs/whisperloom.xml).
          Ohne Backup-Regeln landeten sie im Google-Auto-Backup und beim Geraetewechsel — die App
          verspricht "Dein Key bleibt auf dem Geraet". Modelle (32-574 MB) sind ohnehin zu gross fuers Backup. -->

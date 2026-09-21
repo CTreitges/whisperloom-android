@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WhisperLoom – Datenschutzerklärung / Privacy Policy</title>
+<style>
+  :root { color-scheme: light dark; --bg:#ffffff; --fg:#1a1a1a; --muted:#5b5b5b; --card:#f5f5f7; --accent:#4f46e5; --line:#e2e2e6; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0f1115; --fg:#e9e9ee; --muted:#a2a2ad; --card:#191c22; --accent:#8b87ff; --line:#2a2e37; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.65 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 1.7rem; margin: 0 0 4px; }
+  h2 { font-size: 1.25rem; margin: 2.4em 0 .4em; padding-top:.6em; border-top:1px solid var(--line); }
+  h3 { font-size: 1.03rem; margin: 1.4em 0 .3em; }
+  .sub { color: var(--muted); margin: 0 0 8px; }
+  .nav { display:flex; gap:12px; margin: 18px 0 6px; }
+  .nav a { text-decoration:none; color:var(--accent); font-weight:600; border:1px solid var(--line); padding:6px 12px; border-radius:8px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 18px; margin:14px 0; }
+  ul { padding-left: 1.25em; }
+  li { margin: .25em 0; }
+  code { background:var(--card); padding:1px 5px; border-radius:5px; font-size:.9em; }
+  a { color: var(--accent); }
+  .lang { display:none; }
+  .lang.active { display:block; }
+  footer { color:var(--muted); font-size:.85rem; margin-top:40px; border-top:1px solid var(--line); padding-top:14px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="nav">
+    <a href="#" onclick="show('de');return false;">Deutsch</a>
+    <a href="#" onclick="show('en');return false;">English</a>
+  </div>
+
+  <!-- ===================== DEUTSCH ===================== -->
+  <section id="de" class="lang active">
+    <h1>Datenschutzerklärung – WhisperLoom</h1>
+    <p class="sub">Stand: 8. September 2026 · App-ID <code>com.chris.whisperloom</code></p>
+
+    <div class="card">
+      <strong>Kurzfassung:</strong> WhisperLoom hat keinen eigenen Server, kein Nutzerkonto, keine Werbung
+      und kein Tracking. Es werden keine Analyse- oder Absturz-SDKs eingesetzt. Ob Daten das Gerät
+      verlassen, entscheidest allein du über den gewählten Erkennungsweg.
+    </div>
+
+    <h2>1. Verantwortlicher</h2>
+    <p>Christof Treitges · Kontakt: <a href="mailto:Christof.Treitges@outlook.de">Christof.Treitges@outlook.de</a><br>
+    (Entwickler der App WhisperLoom, veröffentlicht als Einzelperson.)</p>
+
+    <h2>2. Welche Daten verarbeitet werden</h2>
+    <h3>Audioaufnahmen (Mikrofon)</h3>
+    <p>Beim Diktieren nimmt WhisperLoom Ton auf, um ihn in Text umzuwandeln. Die Aufnahme wird nur für
+    die laufende Erkennung genutzt und <strong>nicht dauerhaft gespeichert</strong>. Ein fehlgeschlagenes
+    Diktat bleibt nur bis zum erneuten Senden oder Verwerfen im Arbeitsspeicher.</p>
+
+    <h3>Geteilte Audiodateien</h3>
+    <p>Teilst du eine Sprachnachricht (z. B. aus WhatsApp, Telegram, Signal) an WhisperLoom, wird die
+    Datei einmalig zur Erkennung verarbeitet und danach nicht gespeichert.</p>
+
+    <h3>Auf dem Gerät gespeichert</h3>
+    <ul>
+      <li>Deine Einstellungen inklusive API-Key im privaten App-Speicher (für andere Apps unzugänglich).</li>
+      <li>Die von dir heruntergeladenen Offline-Modelle.</li>
+      <li>Die Position des schwebenden Knopfs.</li>
+    </ul>
+    <p>Keine Aufnahmen, keine erkannten Texte, keine Verläufe. WhisperLoom ist vom Android-System-Backup
+    ausgenommen (<code>allowBackup=false</code>) – dein Key landet weder im Google-Backup noch im
+    Geräte-zu-Gerät-Transfer.</p>
+
+    <h2>3. Wann Daten das Gerät verlassen</h2>
+    <h3>Online-Erkennung (optional)</h3>
+    <p>Wählst du einen Online-Anbieter, werden die Audioaufnahme und ein Kontext-Prompt zur Erkennung an
+    den <strong>von dir gewählten Anbieter</strong> gesendet. Bei aktivierter Textverbesserung wird der
+    erkannte Text an das gewählte Sprachmodell gesendet. Mögliche Anbieter:</p>
+    <ul>
+      <li>OpenAI (<code>api.openai.com</code>)</li>
+      <li>Groq (<code>api.groq.com</code>)</li>
+      <li>Mistral (<code>api.mistral.ai</code>)</li>
+      <li>Together AI (<code>api.together.ai</code>)</li>
+      <li>DeepInfra (<code>api.deepinfra.com</code>)</li>
+      <li>OpenRouter (<code>openrouter.ai</code>)</li>
+      <li>Anthropic (<code>api.anthropic.com</code>)</li>
+      <li>Google Gemini (<code>generativelanguage.googleapis.com</code>)</li>
+      <li>DeepSeek (<code>api.deepseek.com</code>)</li>
+      <li>Ein von dir selbst betriebener, OpenAI-kompatibler Server (Adresse gibst du selbst an).</li>
+    </ul>
+    <p>Die Übertragung erfolgt verschlüsselt (HTTPS). Was der jeweilige Anbieter mit den Daten macht,
+    regeln <strong>dessen eigene Datenschutzbestimmungen</strong>. WhisperLoom weist bei der Auswahl auf
+    Besonderheiten hin (z. B. Trainingsnutzung im kostenlosen Google-Gemini-Tarif, Serverstandort China
+    bei DeepSeek). Dein API-Key wird ausschließlich zur Authentifizierung beim gewählten Anbieter genutzt
+    und verlässt das Gerät sonst nicht.</p>
+
+    <h3>Offline-Erkennung</h3>
+    <p>Bei der Offline-Erkennung (whisper.cpp auf dem Gerät) verlässt <strong>nichts</strong> das Gerät.
+    Lediglich der einmalige Modell-Download erfolgt über das Internet von
+    <code>huggingface.co</code>.</p>
+
+    <h3>Eigener Server</h3>
+    <p>Wählst du „Eigener Server", gehen Audio und Text ausschließlich an die von dir angegebene Adresse.</p>
+
+    <h2>4. Weitergabe an Dritte</h2>
+    <p>Eine Weitergabe erfolgt <strong>nur</strong> an den von dir aktiv gewählten Erkennungs-/
+    Sprachmodell-Anbieter und ausschließlich zum Zweck der Spracherkennung bzw. Textverbesserung.
+    Es gibt keine Weitergabe zu Werbe- oder Analysezwecken. Bei kostenlosen Anbieter-Tarifen kann der
+    Anbieter die übertragenen Daten laut seinen Bedingungen für eigene Zwecke (z. B. Modelltraining)
+    verwenden – dies liegt außerhalb des Einflusses von WhisperLoom und wird bei der Auswahl kenntlich
+    gemacht.</p>
+
+    <h2>5. Berechtigungen</h2>
+    <ul>
+      <li><strong>Mikrofon</strong> – Sprachaufnahme fürs Diktat.</li>
+      <li><strong>Internet / Netzwerkstatus</strong> – Online-Erkennung und Modell-Download; Nachfrage vor Downloads über mobile Daten.</li>
+      <li><strong>Über anderen Apps anzeigen</strong> – der schwebende Mikro-Knopf.</li>
+      <li><strong>Benachrichtigungen</strong> – Beenden-Aktion und Download-Fortschritt.</li>
+      <li><strong>Vordergrund-Dienste</strong> – laufende Aufnahme und Modell-Download.</li>
+      <li><strong>Bedienungshilfe („WhisperLoom Text-Einfügen")</strong> – fügt ausschließlich den
+      diktierten Text in das gerade fokussierte Eingabefeld ein. Sie liest keine Bildschirminhalte mit
+      und speichert nichts. Die Nutzung erfolgt nur nach deiner aktiven Aktion (Antippen des Knopfs).
+      Die Aktivierung ist optional; ohne sie wird der Text in die Zwischenablage kopiert.</li>
+    </ul>
+
+    <h2>6. Löschung deiner Daten</h2>
+    <p>Alle von WhisperLoom gespeicherten Daten liegen ausschließlich lokal auf deinem Gerät. Du löschst
+    sie, indem du die App-Daten leerst (Android-Einstellungen → Apps → WhisperLoom → Speicher) oder die
+    App deinstallierst. Es gibt kein serverseitiges Konto, das gelöscht werden müsste.</p>
+
+    <h2>7. Kinder</h2>
+    <p>WhisperLoom richtet sich nicht gezielt an Kinder und erhebt wissentlich keine Daten von Kindern.</p>
+
+    <h2>8. Änderungen</h2>
+    <p>Diese Erklärung kann bei Funktionsänderungen angepasst werden. Das Datum oben weist die jeweils
+    gültige Fassung aus.</p>
+  </section>
+
+  <!-- ===================== ENGLISH ===================== -->
+  <section id="en" class="lang">
+    <h1>Privacy Policy – WhisperLoom</h1>
+    <p class="sub">Last updated: 8 September 2026 · App ID <code>com.chris.whisperloom</code></p>
+
+    <div class="card">
+      <strong>In short:</strong> WhisperLoom has no server of its own, no user account, no ads and no
+      tracking. It contains no analytics or crash-reporting SDKs. Whether any data leaves your device is
+      entirely your choice, made through the recognition method you select.
+    </div>
+
+    <h2>1. Controller</h2>
+    <p>Christof Treitges · Contact: <a href="mailto:Christof.Treitges@outlook.de">Christof.Treitges@outlook.de</a><br>
+    (Developer of the WhisperLoom app, published as an individual.)</p>
+
+    <h2>2. What data is processed</h2>
+    <h3>Audio recordings (microphone)</h3>
+    <p>When you dictate, WhisperLoom records audio to convert it into text. The recording is used only for
+    the current recognition and is <strong>not stored permanently</strong>. A failed dictation stays in
+    memory only until you resend or discard it.</p>
+
+    <h3>Shared audio files</h3>
+    <p>If you share a voice message (e.g. from WhatsApp, Telegram, Signal) to WhisperLoom, the file is
+    processed once for recognition and not stored afterwards.</p>
+
+    <h3>Stored on the device</h3>
+    <ul>
+      <li>Your settings including the API key, in private app storage (inaccessible to other apps).</li>
+      <li>The offline models you downloaded.</li>
+      <li>The position of the floating button.</li>
+    </ul>
+    <p>No recordings, no recognised text, no history. WhisperLoom is excluded from Android system backup
+    (<code>allowBackup=false</code>) – your key ends up neither in Google backup nor in device-to-device
+    transfer.</p>
+
+    <h2>3. When data leaves the device</h2>
+    <h3>Online recognition (optional)</h3>
+    <p>If you choose an online provider, the audio recording and a context prompt are sent for recognition
+    to the <strong>provider you selected</strong>. With text enhancement enabled, the recognised text is
+    sent to the selected language model. Possible providers:</p>
+    <ul>
+      <li>OpenAI, Groq, Mistral, Together AI, DeepInfra, OpenRouter, Anthropic, Google Gemini, DeepSeek,</li>
+      <li>or an OpenAI-compatible server you host yourself (address provided by you).</li>
+    </ul>
+    <p>Transmission is encrypted (HTTPS). What each provider does with the data is governed by
+    <strong>that provider's own privacy policy</strong>. WhisperLoom flags notable cases at selection
+    time (e.g. training use on Google Gemini's free tier, servers in China for DeepSeek). Your API key is
+    used solely to authenticate with the selected provider and does not otherwise leave the device.</p>
+
+    <h3>Offline recognition</h3>
+    <p>With offline recognition (whisper.cpp on-device), <strong>nothing</strong> leaves the device. Only
+    the one-time model download happens over the internet from <code>huggingface.co</code>.</p>
+
+    <h3>Your own server</h3>
+    <p>If you choose “Your own server", audio and text go only to the address you specify.</p>
+
+    <h2>4. Sharing with third parties</h2>
+    <p>Data is shared <strong>only</strong> with the recognition/language-model provider you actively
+    select, and solely for speech recognition or text enhancement. There is no sharing for advertising or
+    analytics. On free provider tiers, the provider may, per its own terms, use transmitted data for its
+    own purposes (e.g. model training); this is outside WhisperLoom's control and is indicated at
+    selection time.</p>
+
+    <h2>5. Permissions</h2>
+    <ul>
+      <li><strong>Microphone</strong> – voice capture for dictation.</li>
+      <li><strong>Internet / network state</strong> – online recognition and model download; prompt before downloads over mobile data.</li>
+      <li><strong>Display over other apps</strong> – the floating microphone button.</li>
+      <li><strong>Notifications</strong> – stop action and download progress.</li>
+      <li><strong>Foreground services</strong> – ongoing recording and model download.</li>
+      <li><strong>Accessibility service (“WhisperLoom text insertion")</strong> – inserts only the dictated
+      text into the currently focused input field. It does not read screen content and stores nothing. It
+      acts only after your explicit action (tapping the button). It is optional; without it the text is
+      copied to the clipboard.</li>
+    </ul>
+
+    <h2>6. Deleting your data</h2>
+    <p>All data stored by WhisperLoom is local to your device only. Delete it by clearing the app's data
+    (Android settings → Apps → WhisperLoom → Storage) or by uninstalling the app. There is no
+    server-side account to delete.</p>
+
+    <h2>7. Children</h2>
+    <p>WhisperLoom is not directed at children and does not knowingly collect data from children.</p>
+
+    <h2>8. Changes</h2>
+    <p>This policy may change as features change. The date above indicates the current version.</p>
+  </section>
+
+  <footer>
+    WhisperLoom · <a href="https://github.com/CTreitges/whisperloom-android">github.com/CTreitges/whisperloom-android</a>
+  </footer>
+</main>
+<script>
+  function show(l){
+    document.querySelectorAll('.lang').forEach(function(s){ s.classList.remove('active'); });
+    document.getElementById(l).classList.add('active');
+    document.documentElement.lang = l;
+    try { history.replaceState(null,'','#'+l); } catch(e){}
+  }
+  if (location.hash === '#en') show('en');
+</script>
+</body>
+</html>

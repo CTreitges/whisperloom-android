@@ -22,7 +22,11 @@ android {
     defaultConfig {
         applicationId = "com.chris.whisperloom"
         minSdk = 26
-        targetSdk = 35
+        // targetSdk 36 (Android 16): Pflicht fuer NEUE Play-Store-Apps/-Updates seit 31.08.2026
+        // (developer.android.com/google/play/requirements/target-sdk). API 35 wird fuer Neu-Uploads
+        // nicht mehr akzeptiert. compileSdk 37 deckt das ab. Laufzeit-Verhalten von Android 16
+        // (erzwungenes edge-to-edge — App nutzt enableEdgeToEdge — u.a.) am Geraet gegenpruefen.
+        targetSdk = 36
         versionCode = 5
         versionName = "3.2.0"
 

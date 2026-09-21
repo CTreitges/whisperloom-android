@@ -35,7 +35,14 @@ jobs:
       # Gradle-Distribution + Dependency-Cache (auch Robolectrics android-all-Jar, ~100 MB)
       - uses: gradle/actions/setup-gradle@v4
 
+      # packages explizit setzen: der Action-Default "tools platform-tools" bricht seit
+      # Mitte September 2026, weil Google das laengst veraltete SDK-Paket "tools" nicht
+      # mehr ausliefert — sdkmanager endet dann mit "Failed to find package 'tools'"
+      # und Exit-Code 1 (android-actions/setup-android#537). NDK, CMake, Build-Tools und
+      # Platform installiert der naechste Schritt ohnehin selbst.
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: NDK, CMake, Build-Tools, Platform installieren
         run: sdkmanager --install "ndk;${NDK_VERSION}" "cmake;${CMAKE_VERSION}" "build-tools;${BUILD_TOOLS_VERSION}" "platforms;android-37.0"
@@ -116,6 +123,38 @@ jobs:
         with:
           name: whisperloom-release-mapping
           path: app/build/outputs/mapping/release/mapping.txt
+          if-no-files-found: error
+
+      # ---- Play Store: signiertes Android App Bundle (.aab) ----
+      # Play verlangt fuer neue Apps ein AAB (kein APK). Signiert mit demselben Key wie das APK
+      # (dient als Play-Upload-Key). Der finale, an Nutzer ausgelieferte Build wird von Play App
+      # Signing separat signiert (Google-verwalteter App-Signing-Key).
+      - name: Signiertes Release-AAB (Play Store) bauen
+        env:
+          WHISPERLOOM_KEYSTORE: ${{ runner.temp }}/whisperloom-release.p12
+          WHISPERLOOM_KEYSTORE_PASSWORD: ${{ secrets.WHISPERLOOM_KEYSTORE_PASSWORD }}
+          WHISPERLOOM_KEY_ALIAS: whisperloom
+        run: ./gradlew --no-daemon bundleRelease
+
+      - name: Release-AAB pruefen (Native-Lib da, kein Modell, nur arm64)
+        run: |
+          set -euo pipefail
+          AAB=app/build/outputs/bundle/release/app-release.aab
+          unzip -l "$AAB" | tee /tmp/aab-list.txt | grep -E ' base/(lib|assets)/' || true
+          grep -qE ' base/lib/arm64-v8a/libwhisperloom\.so$' /tmp/aab-list.txt \
+            || { echo "::error::base/lib/arm64-v8a/libwhisperloom.so fehlt im AAB"; exit 1; }
+          if grep -qE ' base/assets/.*\.bin$' /tmp/aab-list.txt; then
+            echo "::error::Modell-Datei (assets/*.bin) im AAB — Modelle kommen nur per Download"; exit 1
+          fi
+          if grep -qE ' base/lib/(armeabi-v7a|x86|x86_64)/' /tmp/aab-list.txt; then
+            echo "::error::unerwartete ABI im AAB (nur arm64-v8a vorgesehen)"; exit 1
+          fi
+
+      - name: Release-AAB als Artefakt hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: whisperloom-release-aab
+          path: app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
 
       - name: Testberichte hochladen

@@ -178,6 +178,13 @@
     <string name="a11y_label">WhisperLoom Text-Einfügen</string>
     <string name="a11y_description">Fügt diktierten Text ins gerade fokussierte Feld ein, damit du beim Diktieren nicht die Tastatur wechseln musst. Es wird nichts mitgelesen oder gespeichert.</string>
 
+    <!-- Prominent Disclosure (Google-Play-Pflicht: eigener Consent-Hinweis vor Mikrofon-/Bedienungshilfe-Zugriff) -->
+    <string name="disclosure_mic_title">Mikrofon &amp; Diktat</string>
+    <string name="disclosure_mic_body">WhisperLoom nimmt beim Diktieren Ton auf, um ihn in Text umzuwandeln. Im Online-Modus wird die Aufnahme zur Erkennung an den von dir gewählten Anbieter gesendet (z. B. OpenAI oder Groq); im Offline-Modus verlässt nichts das Gerät. WhisperLoom speichert keine Aufnahmen.</string>
+    <string name="disclosure_a11y_title">Bedienungshilfe: Text einfügen</string>
+    <string name="disclosure_a11y_body">Die Bedienungshilfe „WhisperLoom Text-Einfügen“ fügt ausschließlich den diktierten Text in das gerade aktive Eingabefeld ein. Sie liest keine Bildschirminhalte mit und speichert nichts, und sie wird nur aktiv, wenn du den Knopf antippst.</string>
+    <string name="disclosure_continue">Fortfahren</string>
+
     <!-- Tutorial (T): einmal nach der Einrichtung, sonst Home „Mehr“ (Seite 3) und Hilfe „Tutorial erneut ansehen“ -->
     <string name="tutorial_skip">Überspringen</string>
     <string name="tutorial_next">Weiter</string>
