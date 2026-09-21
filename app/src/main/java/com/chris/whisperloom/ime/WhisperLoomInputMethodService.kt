@@ -1,14 +1,17 @@
 package com.chris.whisperloom.ime
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.inputmethodservice.InputMethodService
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
@@ -16,6 +19,7 @@ import android.widget.ImageButton
 import android.widget.TextView
 import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.AudioRecorder
+import com.chris.whisperloom.Formats
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import com.chris.whisperloom.TranscriptionEngine
@@ -28,11 +32,17 @@ import com.chris.whisperloom.overlay.BubbleVisuals
 import com.chris.whisperloom.overlay.MicIcon
 import com.chris.whisperloom.overlay.MicRings
 import java.util.concurrent.Executors
+import kotlin.math.abs
 
 /**
  * Diktier-Tastatur (UX-Spec §5.3): grosser Push-to-talk-Mikro-Knopf mit denselben vier
  * Zustaenden wie der schwebende Knopf ([BubbleState]), Pegelband und ein paar Basis-Tasten.
  * Halten = aufnehmen, loslassen = transkribieren und Text ins aktive Feld schreiben.
+ *
+ * Wer nicht dauerhaft halten will, wischt beim Aufnehmen nach rechts: die Aufnahme bleibt
+ * dann stehen ("festgestellt") und wird ueber die beiden eingeblendeten Tasten gesendet oder
+ * verworfen. Nach links wischen verwirft sofort. Die Auswertung selbst steht Android-frei in
+ * [DictationGesture].
  *
  * Scheitert die Anfrage (kein Netz, Server-Aussetzer), bleibt das Audio gepuffert und
  * die Wiederholen-Taste erscheint — sonst waere ein langes Diktat verloren.
@@ -57,15 +67,61 @@ class WhisperLoomInputMethodService : InputMethodService() {
     private var micButton: ImageButton? = null
     private var rings: MicRings? = null
     private var retryKey: View? = null
+    private var gestureTargets: GestureTargets? = null
+
+    /** Aktueller Stand der Wisch-Geste; nur waehrend eines liegenden Fingers aussagekraeftig. */
+    private var gesturePhase = DictationGesture.Phase.RECORDING
+
+    /** Aufnahme laeuft ohne liegenden Finger weiter (nach rechts gewischt oder per Klick gestartet). */
+    private var locked = false
+
+    private var recordingStartedAt = 0L
+    private var downX = 0f
+    private var downY = 0f
+
+    /**
+     * Der Finger, der die Geste fuehrt. Ohne das waere immer Zeiger 0 gemeint — und dessen
+     * Index wandert, sobald ein anderer Finger abhebt. Die Mikro-Taste faengt naemlich auch
+     * Finger ein, die sie gar nicht beruehren: findet der Touch-Dispatch kein anderes Kind,
+     * haengt er sie an das bestehende Touch-Ziel.
+     */
+    private var activePointerId = MotionEvent.INVALID_POINTER_ID
+
+    /** Ob der Finger die Systemschwelle ueberschritten hat; haelt bis zum Loslassen. */
+    private var dragged = false
+
+    // Gesten-Schwellen in Pixeln; berechnet, sobald die View steht (braucht die Dichte).
+    private var armPx = 0f
+    private var hysteresisPx = 0f
+    private var verticalPx = 0f
+    private var slopPx = 0f
+
+    /** Haelt die Dauer in der Statuszeile aktuell, solange die Aufnahme festgestellt ist. */
+    private val lockedTicker = object : Runnable {
+        override fun run() {
+            if (!locked) return
+            val elapsed = elapsedMs()
+            showLockedStatus(elapsed)
+            updateMicDescription()
+            main.postDelayed(this, TICK_MS - elapsed % TICK_MS)
+        }
+    }
 
     /** Statuszeile: Farbe und Tipp-Ziel je Art (UX-Spec §5.3). */
-    private enum class Status { HINT, LISTENING, TRANSCRIBING, ERROR, NEED_PERMISSION, NOT_CONFIGURED }
+    private enum class Status {
+        HINT, LISTENING, LOCK_ARMED, CANCEL_ARMED, LOCKED, DISCARDED,
+        TRANSCRIBING, ERROR, NEED_PERMISSION, NOT_CONFIGURED,
+    }
 
     override fun onCreate() {
         super.onCreate()
         prefs = Prefs(this)
     }
 
+    // performClick() aus onTouch heraus zu rufen (was Lint verlangt) wuerde hier doppelt
+    // feuern: der Touch-Pfad bedient die Aufnahme bereits, und der OnClickListener ist
+    // ausdruecklich nur fuer Bedienungshilfen da (siehe unten).
+    @SuppressLint("ClickableViewAccessibility")
     override fun onCreateInputView(): View {
         val root = layoutInflater.inflate(R.layout.keyboard_view, null)
         statusView = root.findViewById(R.id.status)
@@ -73,6 +129,10 @@ class WhisperLoomInputMethodService : InputMethodService() {
         micZone = root.findViewById(R.id.mic_zone)
         micButton = root.findViewById(R.id.mic)
         retryKey = root.findViewById(R.id.key_retry)
+        val discardTarget = root.findViewById<ImageButton>(R.id.gesture_discard)
+        val lockTarget = root.findViewById<ImageButton>(R.id.gesture_lock)
+        gestureTargets = GestureTargets(discardTarget, lockTarget, ::reduceMotion)
+        measureGesture()
         rings = MicRings(
             pulse = root.findViewById(R.id.mic_pulse),
             ring = root.findViewById(R.id.mic_ring),
@@ -86,13 +146,15 @@ class WhisperLoomInputMethodService : InputMethodService() {
             rings?.level = amp
         }
 
-        micButton?.setOnTouchListener { _, ev ->
-            when (ev.actionMasked) {
-                MotionEvent.ACTION_DOWN -> { startDictation(); true }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> { stopDictation(); true }
-                else -> false
-            }
-        }
+        micButton?.setOnTouchListener { view, ev -> onMicTouch(view, ev) }
+        // Zusaetzlich zum Touch-Listener, nicht statt seiner: onTouch liefert true, also ruft
+        // das System performClick() nicht von selbst — dieser Listener feuert praktisch nur
+        // ueber den Bedienungshilfen-Pfad (TalkBack loest ACTION_CLICK aus). Genau dort war die
+        // Taste bisher unbedienbar, weil Gedrueckthalten mit TalkBack nicht ankommt.
+        micButton?.setOnClickListener { onMicClick() }
+        discardTarget.setOnClickListener { discardDictation() }
+        // Im festgestellten Zustand traegt das rechte Ziel das Senden-Symbol (siehe GestureTargets).
+        lockTarget.setOnClickListener { stopDictation() }
 
         root.findViewById<View>(R.id.key_globe).setOnClickListener { showImePicker() }
         root.findViewById<View>(R.id.key_comma).setOnClickListener { commitRaw(", ") }
@@ -103,8 +165,33 @@ class WhisperLoomInputMethodService : InputMethodService() {
         root.findViewById<View>(R.id.key_settings).setOnClickListener { startActivity(AppNav.settings(this)) }
         retryKey?.setOnClickListener { retry() }
 
-        applyState(BubbleState.IDLE, animate = false)
+        // Nach dem Setzen der Listener, nicht davor: setOnClickListener macht eine View
+        // wieder bedienbar. Im Ruhezustand sollen die Ziele weder anklickbar noch im
+        // Bedienungshilfen-Baum sein.
+        //
+        // Und: aus dem Dienst-Zustand rekonstruieren statt blind auf Ruhe setzen. Bei einem
+        // Konfigurationswechsel (Drehen, Dunkelmodus, Schriftgroesse) baut das Framework den
+        // Eingabe-View neu auf, ruft dabei aber KEIN onFinishInputView — Aufnahme, locked und
+        // state gehoeren dem Dienst und ueberleben. Ohne das zeigte die neue Tastatur Ruhe,
+        // waehrend das Mikrofon weiterlief und kein Weg mehr zum Verwerfen fuehrte.
+        if (locked && recorder.isRecording) enterLockedUi() else gestureTargets?.hide()
+        applyState(state, animate = false)
+        restoreStatus()
         return root
+    }
+
+    /**
+     * Gesten-Schwellen in Pixel. Der System-Slop ist die Untergrenze: eine reine dp-Schwelle
+     * koennte auf sehr dichten Displays unter dem liegen, was das System ueberhaupt als
+     * Bewegung zaehlt — dann waere die Geste nicht zuverlaessig ausloesbar.
+     */
+    private fun measureGesture() {
+        val density = resources.displayMetrics.density
+        val slop = ViewConfiguration.get(this).scaledTouchSlop.toFloat()
+        slopPx = slop
+        armPx = maxOf(DictationGesture.ARM_DISTANCE_DP * density, slop)
+        hysteresisPx = DictationGesture.RELEASE_HYSTERESIS_DP * density
+        verticalPx = maxOf(DictationGesture.VERTICAL_TOLERANCE_DP * density, slop)
     }
 
     /** Ab fontScale 1,3 werden die Tasten 56 statt 48 dp hoch (UX-Spec §5.3). */
@@ -122,21 +209,209 @@ class WhisperLoomInputMethodService : InputMethodService() {
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
-        // Ein alter Fehlerzustand gilt fuer das neue Feld nicht mehr; eine laufende
-        // Uebertragung bleibt sichtbar.
-        if (state == BubbleState.ERROR) {
+        // Ein alter Fehlerzustand gilt fuer das NEUE Feld nicht mehr. Bei [restarting] ist es
+        // aber dasselbe Feld — das Framework baut nur neu auf (Drehen, Dunkelmodus). Dann den
+        // Puffer behalten, sonst verliert eine Drehung das Audio eines fehlgeschlagenen
+        // Diktats, obwohl die Wiederholen-Taste danebensteht.
+        if (state == BubbleState.ERROR && !restarting) {
             pendingSamples = null
             applyState(BubbleState.IDLE)
         }
-        if (state != BubbleState.SENDING) showIdleStatus()
+        restoreStatus()
     }
 
+    /**
+     * Bewusste Wahl fuer die festgestellte Aufnahme: [finishingInput] `false` heisst "nur die
+     * Tastatur geht zu, das Feld bleibt" — dann wird fertig transkribiert und der Text noch
+     * eingefuegt (kommt die [android.view.inputmethod.InputConnection] doch nicht mehr zurueck,
+     * faengt commitDictation das ab). Bei `true` ist die Eingabe ganz beendet, der Text haette
+     * nirgends hin — also verwerfen statt ins Leere zu senden.
+     *
+     * Ohne Feststellen bleibt es beim bisherigen harten Abbruch: dort liegt der Finger noch,
+     * die Aufnahme war nie eigenstaendig.
+     */
     override fun onFinishInputView(finishingInput: Boolean) {
-        if (recorder.isRecording) recorder.cancel()
+        if (locked && recorder.isRecording) {
+            if (finishingInput) discardDictation() else stopDictation()
+        } else if (recorder.isRecording) {
+            recorder.cancel()
+        }
+        endLockedMode()
         if (state == BubbleState.RECORDING) applyState(BubbleState.IDLE)
         levelBand?.stop()
         super.onFinishInputView(finishingInput)
     }
+
+    // --- Geste --------------------------------------------------------------
+
+    /**
+     * Push-to-talk plus Wisch-Geste. Gemessen wird relativ zum Druckpunkt, damit die Auswertung
+     * nicht davon abhaengt, wo auf der 88-dp-Taste der Finger aufsetzt — und immer am
+     * fuehrenden Finger, damit ein zweiter Finger die Geste nicht kapert.
+     */
+    private fun onMicTouch(view: View, ev: MotionEvent): Boolean {
+        when (ev.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                activePointerId = ev.getPointerId(ev.actionIndex)
+                downX = ev.x
+                downY = ev.y
+                dragged = false
+                gesturePhase = DictationGesture.Phase.RECORDING
+                // Im festgestellten Zustand entscheidet erst das Loslassen (= Tipp zum Senden).
+                if (!locked) startDictation()
+            }
+
+            // Weitere Finger gehoeren nicht zur Geste. Trotzdem konsumieren: sonst bekommt
+            // sie ein anderes Ziel und die Taste verliert womoeglich den Touch-Strom.
+            MotionEvent.ACTION_POINTER_DOWN -> Unit
+
+            MotionEvent.ACTION_MOVE -> {
+                if (locked || state != BubbleState.RECORDING) return true
+                val index = ev.findPointerIndex(activePointerId)
+                if (index < 0) return true
+                val dx = ev.getX(index) - downX
+                val dy = ev.getY(index) - downY
+                // Ein liegender Finger zittert; ohne diese Schwelle poppen die Ziele bei
+                // jedem Diktat auf. Sie haelt, sobald sie einmal ueberschritten wurde —
+                // dasselbe Muster wie beim schwebenden Knopf (FloatingMicService).
+                if (!dragged) {
+                    if (abs(dx) <= slopPx && abs(dy) <= slopPx) return true
+                    dragged = true
+                }
+                updateGesture(dx, dy)
+            }
+
+            // Hebt der fuehrende Finger ab, ist die Geste vorbei — auch wenn noch andere liegen.
+            MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_UP -> {
+                // Nur der fuehrende Finger loest aus. Ohne diese Pruefung beendet der letzte
+                // verbliebene Finger die Geste ein zweites Mal: erst stellt das Abheben des
+                // fuehrenden fest, dann schickt sein Abheben das Diktat gleich hinterher.
+                if (ev.getPointerId(ev.actionIndex) != activePointerId) return true
+                activePointerId = MotionEvent.INVALID_POINTER_ID
+                releaseGesture(view, ev.getX(ev.actionIndex), ev.getY(ev.actionIndex))
+            }
+
+            // Abgefangener Touch (Dialog, Fenster-Wechsel): ohne Feststellen wie bisher
+            // senden, damit kein Diktat verloren geht. Mit Feststellen ist nichts zu retten —
+            // die Aufnahme laeuft weiter und beide Tasten sind bedienbar.
+            MotionEvent.ACTION_CANCEL -> {
+                activePointerId = MotionEvent.INVALID_POINTER_ID
+                if (!locked) releaseGesture(view, ev.x, ev.y)
+            }
+
+            else -> return false
+        }
+        return true
+    }
+
+    /** [x]/[y] sind die Koordinaten des Loslassens, relativ zur Mikro-Taste. */
+    private fun releaseGesture(view: View, x: Float, y: Float) {
+        if (locked) {
+            // Nur senden, wenn wirklich auf der Taste losgelassen wurde. Die Mikro-Taste haelt
+            // den Touch-Strom, bekommt das Loslassen also auch weit ausserhalb ihrer Grenzen —
+            // wer den Finger zur Verwerfen-Taste zieht, wuerde sonst das Diktat abschicken.
+            // View.onTouchEvent pruefte das selbst; dieser Listener ersetzt es.
+            if (x >= 0f && y >= 0f && x < view.width && y < view.height) stopDictation()
+            return
+        }
+        if (state != BubbleState.RECORDING) {
+            gestureTargets?.hide()
+            return
+        }
+        when (DictationGesture.release(gesturePhase)) {
+            DictationGesture.Release.SEND -> stopDictation()
+            DictationGesture.Release.LOCK -> lockDictation()
+            DictationGesture.Release.DISCARD -> discardDictation()
+        }
+    }
+
+    /**
+     * Der Bedienungshilfen-Pfad (siehe [onCreateInputView]): ein Klick schaltet um, statt zu
+     * halten. Ein so gestartetes Diktat geht gleich in den festgestellten Zustand — ohne
+     * liegenden Finger gaebe es sonst nichts, was die Aufnahme beendet.
+     */
+    private fun onMicClick() {
+        when {
+            locked || state == BubbleState.RECORDING -> stopDictation()
+            state == BubbleState.SENDING -> Unit
+            state == BubbleState.ERROR -> retry()
+            else -> {
+                startDictation()
+                if (recorder.isRecording) lockDictation()
+            }
+        }
+    }
+
+    /** Ziele einblenden und das getroffene hervorheben, waehrend der Finger zieht. */
+    private fun updateGesture(dx: Float, dy: Float) {
+        val next = DictationGesture.phase(dx, dy, armPx, hysteresisPx, verticalPx, gesturePhase)
+        val wasShown = gestureTargets?.isShown == true
+        gestureTargets?.showDragging(next)
+        if (next == gesturePhase && wasShown) return
+        gesturePhase = next
+        if (next != DictationGesture.Phase.RECORDING) haptic(BubbleMotion.Haptic.CONFIRM)
+        showStatus(
+            when (next) {
+                DictationGesture.Phase.LOCK_ARMED -> Status.LOCK_ARMED
+                DictationGesture.Phase.CANCEL_ARMED -> Status.CANCEL_ARMED
+                DictationGesture.Phase.RECORDING -> Status.LISTENING
+            },
+        )
+    }
+
+    /** Aufnahme laeuft ohne Finger weiter; aus den Anzeigen werden Verwerfen und Senden. */
+    private fun lockDictation() {
+        if (!recorder.isRecording) return
+        locked = true
+        gesturePhase = DictationGesture.Phase.RECORDING
+        haptic(BubbleMotion.Haptic.CONFIRM)
+        enterLockedUi()
+    }
+
+    /**
+     * Anzeige des festgestellten Zustands aufbauen — beim Feststellen und beim Neuaufbau der
+     * Tastatur.
+     *
+     * Dabei verliert die Statuszeile ihre Live-Region: der Ticker schreibt sie im Sekundentakt
+     * neu, und TalkBack liest jede Aenderung einer Live-Region vor. Das waere eine Ansage pro
+     * Sekunde, die dem Nutzer ins eigene Diktat redet und seine Warteschlange nie leer laufen
+     * laesst. Der erste Lauf des Tickers passiert noch davor, das Feststellen selbst wird also
+     * angesagt; danach ist Ruhe. [endLockedMode] stellt die Live-Region zurueck.
+     */
+    private fun enterLockedUi() {
+        gestureTargets?.showLocked()
+        main.removeCallbacks(lockedTicker)
+        lockedTicker.run()
+        statusView?.accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_NONE
+    }
+
+    /** Aufnahme wegwerfen: nichts wird transkribiert, nichts eingefuegt. */
+    private fun discardDictation() {
+        if (!recorder.isRecording) return
+        endLockedMode()
+        pendingSamples = null
+        applyState(BubbleState.IDLE)
+        showStatus(Status.DISCARDED)
+        haptic(BubbleMotion.Haptic.REJECT)
+        // Bewusst zuletzt und bewusst synchron: cancel() wartet auf den Aufnahme-Thread
+        // (join bis 1 s), und die Haptik soll nicht darauf warten. Auf den io-Thread gehoert
+        // es trotzdem nicht — cancel() setzt `recording` als erstes zurueck, ein
+        // zwischenzeitliches start() wuerde dann auf einen noch laufenden Thread treffen.
+        recorder.cancel()
+        // Die Meldung ist eine Quittung, kein Zustand — danach wieder der Ruhe-Hinweis.
+        main.postDelayed({ if (state == BubbleState.IDLE && !locked) showIdleStatus() }, DISCARD_HINT_MS)
+    }
+
+    /** Zurueck aus dem festgestellten Zustand: Ticker aus, Ziele weg, Live-Region zurueck. */
+    private fun endLockedMode() {
+        locked = false
+        gesturePhase = DictationGesture.Phase.RECORDING
+        main.removeCallbacks(lockedTicker)
+        gestureTargets?.hide()
+        statusView?.accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+    }
+
+    private fun elapsedMs() = SystemClock.elapsedRealtime() - recordingStartedAt
 
     // --- Diktat -------------------------------------------------------------
 
@@ -155,6 +430,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
         if (recorder.isRecording) return
         if (recorder.start()) {
             pendingSamples = null
+            recordingStartedAt = SystemClock.elapsedRealtime()
             applyState(BubbleState.RECORDING)
             showStatus(Status.LISTENING)
             haptic(BubbleMotion.Haptic.CONFIRM)
@@ -165,6 +441,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
 
     private fun stopDictation() {
         if (!recorder.isRecording) return
+        endLockedMode()
         // Sofortiges UI-Feedback auf dem Main-Thread ...
         applyState(BubbleState.SENDING)
         showStatus(Status.TRANSCRIBING)
@@ -260,6 +537,37 @@ class WhisperLoomInputMethodService : InputMethodService() {
         rings?.show(visual.ring)
         retryKey?.visibility = if (next == BubbleState.ERROR) View.VISIBLE else View.GONE
         if (next == BubbleState.RECORDING) levelBand?.start() else levelBand?.stop()
+        updateMicDescription()
+    }
+
+    /**
+     * Beschreibung der Mikro-Taste je Zustand. Mit TalkBack ist sie das einzige Bedienelement
+     * der Aufnahme, deshalb muss sie sagen, was ein Antippen jetzt gerade tut.
+     */
+    private fun updateMicDescription() {
+        val mic = micButton ?: return
+        mic.contentDescription = when {
+            locked -> getString(R.string.cd_mic_locked, Formats.duration(elapsedMs()))
+            state == BubbleState.RECORDING -> getString(R.string.cd_mic_recording, Formats.duration(elapsedMs()))
+            state == BubbleState.SENDING -> getString(R.string.cd_mic_sending)
+            state == BubbleState.ERROR -> getString(R.string.cd_mic_error)
+            else -> getString(R.string.cd_mic)
+        }
+    }
+
+    private fun showLockedStatus(elapsedMs: Long) =
+        showStatus(Status.LOCKED, getString(R.string.kb_locked, Formats.duration(elapsedMs)))
+
+    /**
+     * Statuszeile zum aktuellen Zustand des Dienstes. Gebraucht nach dem Neuaufbau der
+     * Tastatur: die neue Zeile kommt mit dem Ruhe-Hinweis aus dem Layout, waehrend Mikrofon
+     * oder Uebertragung weiterlaufen.
+     */
+    private fun restoreStatus() = when {
+        locked -> showLockedStatus(elapsedMs())
+        state == BubbleState.SENDING -> showStatus(Status.TRANSCRIBING)
+        state == BubbleState.RECORDING -> showStatus(Status.LISTENING)
+        else -> showIdleStatus()
     }
 
     /** Ruhe-Statuszeile: Hinweis oder Warnung (fehlende Berechtigung / kein Zugang). */
@@ -277,6 +585,10 @@ class WhisperLoomInputMethodService : InputMethodService() {
             when (kind) {
                 Status.HINT -> R.string.kb_hint_hold
                 Status.LISTENING -> R.string.kb_listening
+                Status.LOCK_ARMED -> R.string.kb_lock_armed
+                Status.CANCEL_ARMED -> R.string.kb_cancel_armed
+                Status.LOCKED -> R.string.kb_locked
+                Status.DISCARDED -> R.string.kb_discarded
                 Status.TRANSCRIBING -> R.string.kb_transcribing
                 Status.ERROR -> R.string.kb_error
                 Status.NEED_PERMISSION -> R.string.kb_need_permission
@@ -286,9 +598,10 @@ class WhisperLoomInputMethodService : InputMethodService() {
         v.setTextColor(
             getColor(
                 when (kind) {
-                    Status.HINT, Status.TRANSCRIBING -> R.color.loom_onSurfaceVariant
-                    Status.LISTENING -> R.color.loom_recordingText
-                    Status.ERROR -> R.color.loom_error
+                    Status.HINT, Status.TRANSCRIBING, Status.DISCARDED -> R.color.loom_onSurfaceVariant
+                    Status.LISTENING, Status.LOCKED -> R.color.loom_recordingText
+                    Status.LOCK_ARMED -> R.color.loom_primary
+                    Status.CANCEL_ARMED, Status.ERROR -> R.color.loom_error
                     Status.NEED_PERMISSION, Status.NOT_CONFIGURED -> R.color.loom_warning
                 },
             ),
@@ -357,6 +670,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
     }
 
     override fun onDestroy() {
+        main.removeCallbacks(lockedTicker)
         if (recorder.isRecording) recorder.cancel()
         rings?.release()
         io.shutdown()
@@ -371,5 +685,11 @@ class WhisperLoomInputMethodService : InputMethodService() {
 
         /** Tastenreihe ist 4 dp hoeher als die Tasten (52/48 bzw. 60/56). */
         private const val KEY_ROW_EXTRA_DP = 4
+
+        /** Takt der Dauer-Anzeige im festgestellten Zustand. */
+        private const val TICK_MS = 1000L
+
+        /** Wie lange "Aufnahme verworfen" stehen bleibt, bevor der Ruhe-Hinweis zurueckkehrt. */
+        private const val DISCARD_HINT_MS = 2000L
     }
 }

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Linkes Wisch-Ziel der Diktier-Tastatur: Verwerfen. Ruhe loom_surfaceContainerHigh,
+     eingerastet loom_errorContainer (dasselbe Farbenpaar wie das Abbrechen-Ziel des
+     schwebenden Knopfs, UX-Spec §5.2). Eingerastet = android:state_activated. -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="@color/key_ripple">
+    <item>
+        <selector>
+            <item android:state_activated="true">
+                <shape android:shape="oval">
+                    <solid android:color="@color/loom_errorContainer" />
+                </shape>
+            </item>
+            <item>
+                <shape android:shape="oval">
+                    <solid android:color="@color/loom_surfaceContainerHigh" />
+                </shape>
+            </item>
+        </selector>
+    </item>
+</ripple>

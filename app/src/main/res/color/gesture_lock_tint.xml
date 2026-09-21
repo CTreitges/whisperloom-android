@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Symbol im Feststellen-Ziel: eingerastet auf loom_primaryContainer, sonst auf
+     loom_surfaceContainerHigh. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_activated="true" android:color="@color/loom_onPrimaryContainer" />
+    <item android:color="@color/loom_onSurfaceVariant" />
+</selector>

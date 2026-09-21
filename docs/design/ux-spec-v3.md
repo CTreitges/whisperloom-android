@@ -1148,13 +1148,13 @@ Regeln: bestehende Keys bleiben gültig (mit „(bestehend)" markiert; Text ggf.
 | Key | Text |
 |---|---|
 | `kb_hint_hold` (bestehend) | Halte das Mikrofon gedrückt und sprich |
-| `kb_listening` (bestehend) | Höre zu … loslassen zum Beenden |
+| `kb_listening` (bestehend) | Höre zu … rechts wischen stellt fest |
 | `kb_transcribing` (bestehend) | Wird übertragen … |
 | `kb_need_permission` (bestehend) | Mikrofon-Berechtigung fehlt — tippe zum Einrichten |
 | `kb_not_configured` | Kein Zugang eingerichtet — tippe zum Einrichten |
 | `kb_error` (bestehend) | Fehler bei der Erkennung — erneut versuchen |
 | `kb_space` (bestehend) | Leer |
-| `cd_mic` (bestehend) | Diktat-Mikrofon — halten zum Sprechen |
+| `cd_mic` (bestehend) | Diktat-Mikrofon — antippen zum Starten, gedrückt halten zum Sprechen |
 | `cd_kb_switch` | Eingabemethode wechseln |
 | `cd_kb_comma` | Komma |
 | `cd_kb_space` | Leerzeichen |
@@ -1163,6 +1163,43 @@ Regeln: bestehende Keys bleiben gültig (mit „(bestehend)" markiert; Text ggf.
 | `cd_kb_enter` | Eingabe |
 | `cd_kb_retry` | Erneut senden |
 | `cd_kb_settings` | WhisperLoom-Einstellungen |
+
+Wisch-Geste (V3):
+
+| Key | Text |
+|---|---|
+| `kb_lock_armed` | Loslassen stellt die Aufnahme fest |
+| `kb_cancel_armed` | Loslassen verwirft die Aufnahme |
+| `kb_locked` | Aufnahme %1$s — senden oder verwerfen |
+| `kb_discarded` | Aufnahme verworfen |
+| `cd_kb_discard` | Aufnahme verwerfen |
+| `cd_kb_send` | Aufnahme senden |
+| `cd_kb_lock` | Aufnahme feststellen |
+| `cd_mic_recording` | Aufnahme läuft, %1$s — antippen zum Senden |
+| `cd_mic_locked` | Aufnahme festgestellt, %1$s — antippen zum Senden |
+| `cd_mic_sending` | Wird übertragen |
+| `cd_mic_error` | Fehler — antippen für erneuten Versuch |
+
+**Geste (§5.3):** Aus der laufenden Aufnahme nach rechts ziehen stellt fest, nach links
+verwirft. Schwellen relativ zum Druckpunkt: einrasten ab 56 dp (wie `CANCEL_HIT_RADIUS_DP`),
+lösen erst unter 56 − 12 dp (Hysterese), senkrechte Toleranz 64 dp — für ein eingerastetes Ziel
+64 + 12 dp, weil ein Daumen-Wisch einen Bogen beschreibt und sonst auf der Grenzlinie die
+Einrast-Haptik prasselt. Die Ziele erscheinen erst, wenn der Finger den `scaledTouchSlop`
+überschritten hat (er ist auch die Untergrenze aller Schwellen); ein liegender Finger zittert. Haptik `CONFIRM` beim Einrasten und beim Feststellen, `REJECT`
+beim Verwerfen. Während des Ziehens sind die beiden 56-dp-Ziele in der Mikro-Zone reine
+Anzeigen (`state_activated` hebt das getroffene hervor, `importantForAccessibility=no`);
+festgestellt werden daraus Tasten, rechts mit `ic_send` statt `ic_lock`.
+
+**A11y (§5.6):** Die Mikro-Taste hat zusätzlich zum `OnTouchListener` einen `OnClickListener` —
+mit TalkBack kommt Gedrückthalten nicht an. Ein per Klick gestartetes Diktat geht sofort in den
+festgestellten Zustand, sonst gäbe es nichts, was die Aufnahme beendet. Die `contentDescription`
+der Taste folgt dem Zustand (`cd_mic*`).
+
+Die Statuszeile bleibt `accessibilityLiveRegion="polite"` — **außer im festgestellten Zustand**:
+dort schreibt der Sekunden-Ticker sie laufend neu, und jede Änderung einer Live-Region wird
+vorgelesen. Das wäre eine Ansage pro Sekunde in das eigene Diktat hinein. Das Feststellen selbst
+wird noch angesagt (der erste Tick läuft davor), danach schaltet der Dienst die Region auf `none`
+und beim Verlassen zurück auf `polite`.
 
 ---
 

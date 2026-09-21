@@ -2,6 +2,16 @@
 
 Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [Unveröffentlicht]
+
+### Hinzugefügt
+
+- **Wisch-Geste in der Diktat-Tastatur:** Beim Aufnehmen nach rechts ziehen stellt die Aufnahme fest — sie läuft freihändig weiter, die Statuszeile zählt die Dauer mit, und aus den beiden Wisch-Zielen werden die Tasten **Verwerfen** und **Senden**. Nach links ziehen verwirft sofort. Loslassen ohne Ziehen sendet wie bisher.
+
+### Behoben
+
+- **Diktat-Tastatur mit TalkBack bedienbar:** Die Mikrofon-Taste reagierte nur auf Gedrückthalten und war damit über Bedienungshilfen faktisch nicht zu bedienen. Über Bedienungshilfen startet ein Antippen die Aufnahme jetzt festgestellt, ein zweiter Tipp sendet; die Beschreibung der Taste folgt dem Zustand. (Ohne Bedienungshilfen bleibt es beim Halten — ein kurzer Tipp ist weiterhin zu kurz für ein Diktat und wird verworfen.)
+
 ## [3.2.0] — 2026-09-07
 
 ### Hinzugefügt
