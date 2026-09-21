@@ -1,0 +1,5 @@
+WhisperLoom 3.3.0 – dictate without holding.
+• Swipe gesture in the dictation keyboard: while recording, drag right to lock — recording continues hands-free, then send or discard. Drag left to discard right away
+• Text refinement straight from the keyboard: the wand above the microphone opens the four levels (off, smooth, nicer, shorter)
+• Fixed: the keyboard's microphone button could not be operated with TalkBack
+• Fixed: settings showed stale values after the keyboard changed something
