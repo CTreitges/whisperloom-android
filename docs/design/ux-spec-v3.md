@@ -1182,8 +1182,10 @@ Wisch-Geste (V3):
 
 **Geste (§5.3):** Aus der laufenden Aufnahme nach rechts ziehen stellt fest, nach links
 verwirft. Schwellen relativ zum Druckpunkt: einrasten ab 56 dp (wie `CANCEL_HIT_RADIUS_DP`),
-lösen erst unter 56 − 12 dp (Hysterese), senkrechte Toleranz 64 dp; Untergrenze ist immer der
-`scaledTouchSlop` des Systems. Haptik `CONFIRM` beim Einrasten und beim Feststellen, `REJECT`
+lösen erst unter 56 − 12 dp (Hysterese), senkrechte Toleranz 64 dp — für ein eingerastetes Ziel
+64 + 12 dp, weil ein Daumen-Wisch einen Bogen beschreibt und sonst auf der Grenzlinie die
+Einrast-Haptik prasselt. Die Ziele erscheinen erst, wenn der Finger den `scaledTouchSlop`
+überschritten hat (er ist auch die Untergrenze aller Schwellen); ein liegender Finger zittert. Haptik `CONFIRM` beim Einrasten und beim Feststellen, `REJECT`
 beim Verwerfen. Während des Ziehens sind die beiden 56-dp-Ziele in der Mikro-Zone reine
 Anzeigen (`state_activated` hebt das getroffene hervor, `importantForAccessibility=no`);
 festgestellt werden daraus Tasten, rechts mit `ic_send` statt `ic_lock`.
@@ -1191,7 +1193,13 @@ festgestellt werden daraus Tasten, rechts mit `ic_send` statt `ic_lock`.
 **A11y (§5.6):** Die Mikro-Taste hat zusätzlich zum `OnTouchListener` einen `OnClickListener` —
 mit TalkBack kommt Gedrückthalten nicht an. Ein per Klick gestartetes Diktat geht sofort in den
 festgestellten Zustand, sonst gäbe es nichts, was die Aufnahme beendet. Die `contentDescription`
-der Taste folgt dem Zustand (`cd_mic*`), die Statuszeile bleibt `accessibilityLiveRegion`.
+der Taste folgt dem Zustand (`cd_mic*`).
+
+Die Statuszeile bleibt `accessibilityLiveRegion="polite"` — **außer im festgestellten Zustand**:
+dort schreibt der Sekunden-Ticker sie laufend neu, und jede Änderung einer Live-Region wird
+vorgelesen. Das wäre eine Ansage pro Sekunde in das eigene Diktat hinein. Das Feststellen selbst
+wird noch angesagt (der erste Tick läuft davor), danach schaltet der Dienst die Region auf `none`
+und beim Verlassen zurück auf `polite`.
 
 ---
 
