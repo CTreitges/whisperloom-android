@@ -1,0 +1,3 @@
+WhisperLoom 3.4.1
+• Behoben: Fiel die KI-Textverbesserung aus, schickte das Sprachauftrag-Widget stillschweigend den Rohtext. Wer „Glätten“ an hatte, hielt dann die Erkennung für schlecht. Das Widget sagt es jetzt: „Gesendet — ohne Textverbesserung“
+• Beschreibung im Store nachgezogen: Wisch-Geste, Schnellzugriff auf die Textstufen und Sprachauftrag standen dort noch nicht

@@ -1,8 +1,9 @@
 WhisperLoom tippt für dich: Antippen, sprechen, fertig – der erkannte Text landet direkt im aktiven Textfeld, egal in welcher App.
 
-Zwei Wege zum Diktat:
+Drei Wege zum Diktat:
 • Schwebender Mikro-Knopf über allen Apps (Gboard bleibt deine Tastatur). Antippen startet die Aufnahme, erneut antippen fügt den Text ein, aufs ✕ ziehen verwirft.
-• Diktier-Tastatur mit Halten-zum-Sprechen für Apps ohne Overlay.
+• Diktier-Tastatur mit Halten-zum-Sprechen für Apps ohne Overlay. Beim Aufnehmen nach rechts wischen stellt die Aufnahme fest – sie läuft freihändig weiter, danach senden oder verwerfen; nach links wischen verwirft sofort. Der Zauberstab über dem Mikrofon klappt die vier Textstufen auf, ohne die App zu wechseln.
+• Widget auf dem Startbildschirm für Sprachaufträge an einen eigenen Agenten (siehe unten). Ab Werk aus.
 
 Erkennung nach Wahl:
 • Online über deinen eigenen Zugang bei OpenAI, Groq (kostenlos), Mistral, Together, DeepInfra, OpenRouter oder einem eigenen OpenAI-kompatiblen Server (z. B. speaches, whisper.cpp-Server).
@@ -13,5 +14,7 @@ Text nach Bedarf:
 • Optionale Textverbesserung per Sprachmodell in drei Stufen: Glätten, Verschönern, Zusammenfassen – mit eigenem oder dem Erkennungs-Zugang.
 
 Sprachnachrichten abtippen: In WhatsApp, Telegram oder Signal eine Nachricht teilen → WhisperLoom. Der Text erscheint gut lesbar in Absätzen, wahlweise wortgetreu oder ohne Füllwörter, zum Kopieren und Weitergeben.
+
+Sprachauftrag an deinen eigenen Agenten: Tippen, sprechen, tippen – WhisperLoom schreibt mit und schickt den Auftrag an einen Server, den du selbst betreibst; die Antwort kommt dort an, wo du deinem Agenten sonst schreibst. Übertragung läuft weiter, auch wenn der Bildschirm ausgeht. Braucht einen eigenen Server (die quelloffene Gegenstelle liegt auf GitHub) und ist ohne Einrichtung unsichtbar.
 
 Datenschutz: Dein API-Key bleibt auf dem Gerät. Online geht nur das Audio an den von dir gewählten Anbieter, offline verlässt nichts das Gerät. Keine Konten, keine Werbung, kein Tracking.

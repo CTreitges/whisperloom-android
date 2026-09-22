@@ -53,6 +53,20 @@ class VoiceTaskWidgetViewTest {
         assertTrue(status(VoiceTaskState.ERROR).contains(ctx.getString(R.string.kb_error)))
     }
 
+    @Test fun gesendetSagtEsWennOhneTextverbesserungGesendetWurde() {
+        // Sonst haelt der Nutzer den Rohtext fuer das Ergebnis von "Glaetten" und die
+        // Erkennung fuer schlecht — genau die Verwechslung, die es zu vermeiden gilt.
+        assertEquals(ctx.getString(R.string.widget_sent), status(VoiceTaskState.SENT))
+        assertEquals(
+            ctx.getString(R.string.widget_sent_raw),
+            status(VoiceTaskState.SENT, message = "API-Fehler 429"),
+        )
+    }
+
+    @Test fun derBildschirmleserNenntDenGrundDerAusgefallenenVeredelung() {
+        assertTrue(cd(VoiceTaskState.SENT, message = "API-Fehler 429").contains("API-Fehler 429"))
+    }
+
     @Test fun ausgeschaltetFuehrtInDieEinstellungen() {
         assertEquals(ctx.getString(R.string.widget_off), status(VoiceTaskState.OFF))
     }

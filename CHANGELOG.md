@@ -2,6 +2,16 @@
 
 Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [3.4.1] — 2026-09-22
+
+### Behoben
+
+- **Der Sprachauftrag sagt jetzt, wenn die Textverbesserung ausgefallen ist.** Scheitert die KI-Stufe (Anbieter zickt, Zeitüberschreitung, Rate-Limit), ging wie überall der Rohtext raus — beim Widget aber stillschweigend. Wer „Glätten" eingeschaltet hatte, bekam ungeglätteten Text und hielt die Erkennung für schlecht. Das Widget meldet den Ausfall jetzt („Gesendet — ohne Textverbesserung"), so wie es die Diktat-Tastatur schon immer getan hat.
+
+### Geändert
+
+- Store-Beschreibungen in beiden Sprachen nachgezogen: Wisch-Geste, Schnellzugriff auf die Textstufen und der Sprachauftrag fehlten dort.
+
 ## [3.4.0] — 2026-09-21
 
 ### Hinzugefügt

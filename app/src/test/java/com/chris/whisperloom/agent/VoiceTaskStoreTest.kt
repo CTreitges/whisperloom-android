@@ -104,4 +104,19 @@ class VoiceTaskStoreTest {
     @Test fun ohneAudioDateiKommtEinLeeresFeldZurueck() {
         assertEquals(0, store.loadSamples().size)
     }
+
+    @Test fun derHinweisZurTextverbesserungGehoertZumAuftrag() {
+        store.begin(ton(), 1000, "")
+        store.refineSkipped = "API-Fehler 429"
+        assertEquals("API-Fehler 429", VoiceTaskStore(ctx).refineSkipped)
+        store.clear()
+        assertEquals("Mit dem Auftrag ist auch sein Hinweis erledigt", "", store.refineSkipped)
+    }
+
+    @Test fun einNeuerAuftragStartetOhneAltenHinweis() {
+        store.begin(ton(), 1000, "")
+        store.refineSkipped = "alt"
+        store.begin(ton(), 1000, "")
+        assertEquals("", store.refineSkipped)
+    }
 }

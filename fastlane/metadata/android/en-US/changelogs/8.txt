@@ -1,0 +1,3 @@
+WhisperLoom 3.4.1
+• Fixed: when AI text refinement failed, the voice task widget silently sent the raw text. With "polish" enabled you would blame the recognition. The widget now says so: "Sent — without text refinement"
+• Store description brought up to date: the swipe gesture, the text-level shortcut and voice tasks were missing

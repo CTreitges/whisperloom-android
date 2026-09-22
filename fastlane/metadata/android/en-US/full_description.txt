@@ -1,8 +1,9 @@
 WhisperLoom types for you: tap, speak, done – the recognised text lands right in the active text field of any app.
 
-Two ways to dictate:
+Three ways to dictate:
 • A floating microphone button above all apps (your keyboard stays as it is). Tap to record, tap again to insert, drag to ✕ to discard.
-• A dictation keyboard with hold-to-talk for apps that block overlays.
+• A dictation keyboard with hold-to-talk for apps that block overlays. While recording, swipe right to lock – recording continues hands-free, then send or discard; swipe left to discard right away. The wand above the microphone opens the four text levels without leaving the app.
+• A home screen widget for voice tasks to your own agent (see below). Off by default.
 
 Recognition your way:
 • Online with your own account at OpenAI, Groq (free tier), Mistral, Together, DeepInfra, OpenRouter, or any OpenAI-compatible server you host yourself (speaches, whisper.cpp server).
@@ -13,5 +14,7 @@ Text the way you want it:
 • Optional clean-up by a language model in three levels: polish, rephrase, summarise – using your own or the recognition account.
 
 Transcribe voice messages: share a message from WhatsApp, Telegram or Signal → WhisperLoom. The text appears in readable paragraphs, verbatim or without fillers, ready to copy or forward.
+
+Voice tasks for your own agent: tap, speak, tap – WhisperLoom transcribes and sends the task to a server you run yourself; the reply arrives wherever you normally message your agent. Delivery keeps going with the screen off. Requires your own server (the open-source counterpart is on GitHub) and stays invisible until you set it up.
 
 Privacy: your API key never leaves the device. Online, only the audio goes to the provider you chose; offline, nothing leaves the phone. No accounts, no ads, no tracking.
