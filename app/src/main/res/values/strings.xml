@@ -503,6 +503,7 @@
     <string name="widget_ready">Tippen und sprechen</string>
     <string name="widget_working">Wird gesendet …</string>
     <string name="widget_sent">Gesendet</string>
+    <string name="widget_sent_raw">Gesendet — ohne Textverbesserung</string>
     <string name="widget_no_mic">Mikrofon nicht erlaubt — tippen</string>
     <string name="widget_off">Sprachauftrag ist aus — tippen</string>
     <string name="widget_fgs_failed">Aufnahme ließ sich nicht starten — App öffnen und erneut versuchen</string>
@@ -513,6 +514,7 @@
     <string name="cd_widget_recording">Nimmt auf, %1$s — antippen zum Senden</string>
     <string name="cd_widget_working">Auftrag wird gesendet</string>
     <string name="cd_widget_sent">Auftrag gesendet</string>
+    <string name="cd_widget_sent_raw">Auftrag gesendet, aber ohne Textverbesserung: %1$s</string>
     <string name="cd_widget_error">%1$s — antippen für erneuten Versuch</string>
     <string name="cd_widget_no_mic">Mikrofon nicht erlaubt — antippen, um es zu erlauben</string>
     <string name="agent_channel">Sprachauftrag</string>

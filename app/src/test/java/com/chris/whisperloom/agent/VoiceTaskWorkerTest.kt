@@ -45,11 +45,17 @@ class VoiceTaskWorkerTest {
     private fun pipeline(
         erkannt: String = "Kauf Milch",
         send: (String) -> Unit = { gesendet += it },
+        veredelungAusgefallen: String? = null,
     ) {
         VoiceTaskWorker.pipelineFactory = { _, s ->
             VoiceTaskPipeline(
                 samples = { s.loadSamples() },
-                transcribe = { transkribiert++; erkannt },
+                transcribe = {
+                    transkribiert++
+                    // So meldet die echte Fabrik einen Ausfall der Textverbesserung.
+                    veredelungAusgefallen?.let { grund -> s.refineSkipped = grund }
+                    erkannt
+                },
                 send = send,
             )
         }
@@ -134,5 +140,23 @@ class VoiceTaskWorkerTest {
         auftragAnlegen()
         lauf()
         assertEquals(1, transkribiert)
+    }
+
+    @Test fun eineAusgefalleneTextverbesserungIstNachHerSichtbar() {
+        // Der Rohtext geht trotzdem raus — aber der Nutzer soll erfahren, dass "Glaetten"
+        // diesmal nicht gegriffen hat, statt die Erkennung dafuer verantwortlich zu machen.
+        auftragAnlegen()
+        pipeline(veredelungAusgefallen = "API-Fehler 429")
+        assertTrue(lauf() is ListenableWorker.Result.Success)
+        assertEquals(listOf("Kauf Milch"), gesendet)
+        assertEquals(VoiceTaskState.SENT, store.state)
+        assertEquals("API-Fehler 429", store.message)
+    }
+
+    @Test fun ohneAusfallBleibtDieMeldungLeer() {
+        auftragAnlegen()
+        store.message = "alter Fehler"
+        lauf()
+        assertEquals("", store.message)
     }
 }

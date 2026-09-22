@@ -45,6 +45,17 @@ class VoiceTaskStore(context: Context) {
         get() = sp.getString(KEY_MESSAGE, "") ?: ""
         set(v) = sp.edit().putString(KEY_MESSAGE, v).apply()
 
+    /**
+     * Grund, warum die Textverbesserung ausgefallen ist ("" = alles normal gelaufen).
+     *
+     * Der Rohtext kommt dann trotzdem durch — so macht es auch die Tastatur. Nur sieht man
+     * es dort: ohne diesen Merker haette der Nutzer geglaubt, "Glaetten" sei angewandt
+     * worden, und haette den schlechteren Text der Erkennung angelastet.
+     */
+    var refineSkipped: String
+        get() = sp.getString(KEY_REFINE_SKIPPED, "") ?: ""
+        set(v) = sp.edit().putString(KEY_REFINE_SKIPPED, v).apply()
+
     var durationMs: Long
         get() = sp.getLong(KEY_DURATION, 0)
         private set(v) = sp.edit().putLong(KEY_DURATION, v).apply()
@@ -83,6 +94,7 @@ class VoiceTaskStore(context: Context) {
             .remove(KEY_TEXT)
             .remove(KEY_DURATION)
             .remove(KEY_RECORDED_AT)
+            .remove(KEY_REFINE_SKIPPED)
             .apply()
     }
 
@@ -96,6 +108,7 @@ class VoiceTaskStore(context: Context) {
         private const val KEY_MESSAGE = "message"
         private const val KEY_DURATION = "duration_ms"
         private const val KEY_RECORDED_AT = "recorded_at"
+        private const val KEY_REFINE_SKIPPED = "refine_skipped"
         private const val TAG = "VoiceTaskStore"
     }
 }

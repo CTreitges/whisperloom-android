@@ -96,8 +96,10 @@ class VoiceTaskWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, para
 
         return when (val outcome = pipeline(ctx, store).run(cached)) {
             is TaskOutcome.Sent -> {
+                // VOR dem Aufraeumen lesen — clear() loescht den Merker mit.
+                val hinweis = store.refineSkipped
                 store.clear()
-                finish(ctx, store, VoiceTaskState.SENT, "")
+                finish(ctx, store, VoiceTaskState.SENT, hinweis)
                 Result.success()
             }
 
@@ -154,8 +156,12 @@ class VoiceTaskWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, para
             VoiceTaskPipeline(
                 samples = { store.loadSamples() },
                 transcribe = { samples ->
+                    store.refineSkipped = ""
                     TranscriptionEngine.transcribe(ctx, samples) { hinweis ->
+                        // Nicht nur ins Log: sonst bekaeme der Nutzer stillschweigend Rohtext,
+                        // obwohl "Glaetten" eingeschaltet ist, und hielte die Erkennung fuer schlecht.
                         Log.w(TAG, ctx.getString(R.string.refine_skipped, hinweis))
+                        store.refineSkipped = hinweis
                     }
                 },
                 send = { text -> bridge.send(store.requestId, text, store.recordedAt, store.durationMs) },

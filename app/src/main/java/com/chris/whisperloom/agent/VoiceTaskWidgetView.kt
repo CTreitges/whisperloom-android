@@ -43,7 +43,9 @@ object VoiceTaskWidgetView {
         VoiceTaskState.READY -> ctx.getString(R.string.widget_ready)
         VoiceTaskState.RECORDING -> VoiceTaskUi.timerText(elapsedMs)
         VoiceTaskState.WORKING -> ctx.getString(R.string.widget_working)
-        VoiceTaskState.SENT -> ctx.getString(R.string.widget_sent)
+        VoiceTaskState.SENT ->
+            if (message.isBlank()) ctx.getString(R.string.widget_sent)
+            else ctx.getString(R.string.widget_sent_raw)
         VoiceTaskState.NO_MIC -> ctx.getString(R.string.widget_no_mic)
         VoiceTaskState.OFF -> ctx.getString(R.string.widget_off)
         VoiceTaskState.ERROR -> ctx.getString(R.string.widget_error_retry, reason(ctx, message))
@@ -53,7 +55,9 @@ object VoiceTaskWidgetView {
         VoiceTaskState.READY -> ctx.getString(R.string.cd_widget_ready)
         VoiceTaskState.RECORDING -> ctx.getString(R.string.cd_widget_recording, VoiceTaskUi.timerText(elapsedMs))
         VoiceTaskState.WORKING -> ctx.getString(R.string.cd_widget_working)
-        VoiceTaskState.SENT -> ctx.getString(R.string.cd_widget_sent)
+        VoiceTaskState.SENT ->
+            if (message.isBlank()) ctx.getString(R.string.cd_widget_sent)
+            else ctx.getString(R.string.cd_widget_sent_raw, message)
         VoiceTaskState.NO_MIC -> ctx.getString(R.string.cd_widget_no_mic)
         VoiceTaskState.OFF -> ctx.getString(R.string.widget_off)
         VoiceTaskState.ERROR -> ctx.getString(R.string.cd_widget_error, reason(ctx, message))
