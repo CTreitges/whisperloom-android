@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -87,13 +89,21 @@ fun DetailScaffold(
     )
 }
 
-/** Scrollende Spalte nach Layout-Regeln §1.3: 20 dp seitlich, 16 dp Kartenabstand, unten 24 dp. */
+/**
+ * Scrollende Spalte nach Layout-Regeln §1.3: 20 dp seitlich, 16 dp Kartenabstand, unten 24 dp.
+ *
+ * imePadding verkleinert die Spalte um die Tastatur (statt dass Android das Fenster verschiebt);
+ * consumeWindowInsets vorher, damit der Navigationsleisten-Anteil aus dem Scaffold-Padding nicht
+ * doppelt zaehlt. Das fokussierte Textfeld scrollt Compose dann selbst in den sichtbaren Bereich.
+ */
 @Composable
 fun ScrollColumn(padding: PaddingValues, content: @Composable ColumnScope.() -> Unit) {
     Column(
         Modifier
             .fillMaxSize()
             .padding(padding)
+            .consumeWindowInsets(padding)
+            .imePadding()
             .verticalScroll(rememberScrollState())
             .padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),

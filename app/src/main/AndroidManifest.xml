@@ -35,11 +35,16 @@
         android:theme="@style/AppTheme">
 
         <!-- Einzige Compose-Activity (UX-Spec §0.2): Router, Home, Assistent, Einstellungen.
-             singleTask: Deep-Links aus IME/Overlay/Notification (AppNav) landen per onNewIntent. -->
+             singleTask: Deep-Links aus IME/Overlay/Notification (AppNav) landen per onNewIntent.
+             adjustResize: die Tastatur liefert Insets, die Compose selbst verarbeitet (imePadding in
+             ScrollColumn/LoomSheet/Assistent). Ohne das waehlt Android adjustPan und schiebt das
+             GANZE Fenster hoch — Titelleiste weg, Inhalt unter der Statusleiste, und bei jeder
+             neuen Zeile im Textfeld ruckt es erneut ("die App springt"). -->
         <activity
             android:name=".ui.MainActivity"
             android:exported="false"
-            android:launchMode="singleTask" />
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize" />
 
         <!-- Launcher-Alias unter dem alten Namen: bestehende Startbildschirm-Verknuepfungen bleiben gueltig. -->
         <activity-alias
