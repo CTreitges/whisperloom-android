@@ -27,9 +27,11 @@
     <string name="cd_open_link">Link im Browser öffnen</string>
     <string name="cd_add_word">Wort hinzufügen</string>
     <string name="cd_remove_word">%1$s entfernen</string>
+    <string name="cd_add_term">Begriff hinzufügen</string>
     <string name="err_net">Keine Verbindung</string>
     <string name="err_timeout">Server antwortet nicht (Zeitüberschreitung)</string>
     <string name="err_401">Key ungültig (401)</string>
+    <string name="err_403">Zugriff verweigert (403) — Key oder Freigabe prüfen</string>
     <string name="err_429">Limit erreicht (429) — später erneut</string>
     <string name="err_server">Server-Fehler %1$d</string>
     <string name="err_unknown">Unbekannter Fehler: %1$s</string>
@@ -52,6 +54,8 @@
     <string name="provider_gemini">Google Gemini</string>
     <string name="provider_deepseek">DeepSeek</string>
     <string name="provider_custom">Eigener Server</string>
+    <string name="provider_ollama">Ollama (lokal / Homeserver)</string>
+    <string name="provider_ollama_cloud">Ollama Cloud</string>
     <string name="level_off">Aus</string>
     <string name="level_smooth">Glätten</string>
     <string name="level_beautify">Verschönern</string>
@@ -251,9 +255,41 @@
     <string name="rec_test_fail">Fehler: %1$s</string>
     <string name="rec_privacy_online">Audio wird zur Erkennung an %1$s gesendet.</string>
     <string name="rec_privacy_offline">Alles bleibt auf dem Gerät.</string>
-    <string name="rec_context_unsupported">Dieser Anbieter nimmt keinen Kontext entgegen — das Feld wirkt nur bei anderen Anbietern und offline.</string>
-    <string name="pref_api_prompt_hint">Kontext: Namen, Fachbegriffe, Schreibweisen</string>
+    <string name="rec_context_unsupported">Dieser Anbieter nimmt kein Vokabular entgegen — es wirkt nur bei anderen Anbietern und offline.</string>
     <string name="pref_api_prompt_info">Wird als Prompt mitgeschickt und hilft der Erkennung bei Eigennamen und Fachwörtern. Kostet nichts extra.</string>
+    <string name="vocab_title">Vokabular</string>
+    <string name="vocab_none">Noch keine Begriffe</string>
+    <plurals name="vocab_count">
+        <item quantity="one">%d Begriff</item>
+        <item quantity="other">%d Begriffe</item>
+    </plurals>
+    <string name="vocab_row_file">Datei: %1$s</string>
+    <string name="vocab_open">Bearbeiten</string>
+    <string name="vocab_intro">Namen, Fachbegriffe und Schreibweisen, die die Erkennung kennen soll. Ein Begriff pro Eintrag.</string>
+    <string name="vocab_add_hint">Begriff hinzufügen</string>
+    <string name="vocab_add_info">Mehrere auf einmal mit Komma trennen.</string>
+    <string name="vocab_own">Eigene Begriffe (%1$d)</string>
+    <string name="vocab_empty">Noch keine eigenen Begriffe.</string>
+    <string name="vocab_file">Datei (.md oder .txt)</string>
+    <string name="vocab_file_info">Für große Listen: eine Textdatei verknüpfen. Jede Zeile wird ein Begriff (Aufzählungszeichen und Überschriften fallen weg). Die Datei wird bei jedem Diktat neu gelesen, Änderungen daran wirken sofort.</string>
+    <string name="vocab_file_link">Datei verknüpfen</string>
+    <string name="vocab_file_change">Andere Datei</string>
+    <string name="vocab_file_reload">Neu lesen</string>
+    <string name="vocab_file_unlink">Lösen</string>
+    <string name="vocab_file_unnamed">Verknüpfte Datei</string>
+    <string name="vocab_file_unreadable">Datei nicht lesbar — verschoben oder gelöscht? Neu verknüpfen.</string>
+    <plurals name="vocab_file_terms">
+        <item quantity="one">%d Begriff · wird bei jedem Diktat neu gelesen</item>
+        <item quantity="other">%d Begriffe · werden bei jedem Diktat neu gelesen</item>
+    </plurals>
+    <string name="vocab_file_wrong_type">Bitte eine .md- oder .txt-Datei wählen.</string>
+    <string name="vocab_file_no_permission">Diese Datei lässt sich nicht dauerhaft verknüpfen. Bitte aus „Downloads“ oder einem lokalen Ordner wählen.</string>
+    <plurals name="vocab_usage">
+        <item quantity="one">%d Begriff wird mitgeschickt.</item>
+        <item quantity="other">Alle %d Begriffe werden mitgeschickt.</item>
+    </plurals>
+    <string name="vocab_usage_truncated">%1$d von %2$d Begriffen werden mitgeschickt: Whisper beachtet nur rund 200 Wörter Kontext. Eigene Begriffe haben Vorrang vor der Datei.</string>
+    <string name="vocab_clear">Eigene löschen</string>
     <string name="pref_language">Sprache</string>
     <string name="model_custom_title">Eigenes Modell</string>
     <string name="model_custom_hint">Modell-ID</string>
@@ -272,6 +308,8 @@
     <string name="pref_smart_fillers">Füllwörter intelligent entfernen</string>
     <string name="pref_smart_fillers_info">Statt fester Wortliste entscheidet die KI selbst, welche Füllwörter, Versprecher und Wiederholungen weg können. Im Zweifel bleibt das Wort.</string>
     <string name="text_smart_needs_level">Braucht eine Stufe über „Aus“.</string>
+    <string name="pref_refine_paragraphs">Automatische Absätze</string>
+    <string name="pref_refine_paragraphs_info">Die KI gliedert längere Diktate in Absätze. Ausgeschaltet kommt alles als ein durchgehender Text.</string>
     <string name="text_card_access">Zugang für die Textverbesserung</string>
     <string name="text_own_access">Eigenen Zugang verwenden</string>
     <string name="text_own_access_off">Nutzt Anbieter und Key der Erkennung (%1$s).</string>
@@ -283,6 +321,18 @@
     <string name="text_gemini_warning">Free-Tier: Google darf Inhalte zum Training nutzen.</string>
     <string name="text_deepseek_warning">Server in China — Datenschutz beachten.</string>
     <string name="text_anthropic_note">OpenAI-Kompatibilitätsschicht — von Anthropic als Test-Werkzeug eingestuft.</string>
+    <string name="text_ollama_local_note">Dein eigenes Ollama, z. B. auf einem Homeserver. Das Handy muss ihn erreichen (gleiches WLAN oder VPN wie Tailscale). Auf dem Server OLLAMA_HOST=0.0.0.0 setzen, sonst hört Ollama nur auf sich selbst. Der Text verlässt dein Netz nicht.</string>
+    <string name="text_ollama_cloud_note">Modelle laufen auf ollama.com. Den Key legst du unter ollama.com/settings/keys an. Weitere Modelle holt „Modelle vom Server laden“.</string>
+    <string name="text_ollama_url">Server-Adresse</string>
+    <string name="text_ollama_url_hint">Adresse deines Ollama-Servers mit Port, meist :11434. http:// nur im eigenen Netz (LAN/VPN).</string>
+    <string name="text_ollama_load_models">Modelle vom Server laden</string>
+    <string name="text_ollama_loading">Lade Modelle …</string>
+    <string name="text_ollama_no_models">Der Server hat keine Modelle. Auf dem Server z. B. „ollama pull gemma3“ ausführen.</string>
+    <plurals name="text_ollama_models_found">
+        <item quantity="one">%d Modell gefunden</item>
+        <item quantity="other">%d Modelle gefunden</item>
+    </plurals>
+    <string name="text_ollama_models_failed">Modelle nicht geladen: %1$s</string>
     <string name="text_needs_online">Textverbesserung braucht einen Online-Zugang.</string>
     <string name="text_add_access">Eigenen Zugang eintragen</string>
     <string name="text_test">Zugang prüfen</string>
@@ -382,13 +432,14 @@
     <string name="help_key_anthropic">platform.claude.com registrieren → Billing → Settings → Keys → Create Key. Nur Textverbesserung.</string>
     <string name="help_key_gemini">aistudio.google.com/apikey öffnen → Create API key. Gratis, aber Free-Tier-Inhalte dürfen zum Training genutzt werden. Nur Textverbesserung.</string>
     <string name="help_key_deepseek">platform.deepseek.com registrieren → Top up → API keys → Create new API key. Nur Textverbesserung.</string>
+    <string name="help_key_ollama_cloud">ollama.com registrieren → Settings → Keys → Add API Key. Nur Textverbesserung. Für ein lokales Ollama brauchst du keinen Key.</string>
     <string name="help_prices_note">Preise Stand 09/2026, ohne Gewähr.</string>
     <string name="help_s4_title">Eigener Server</string>
-    <string name="help_s4_body">Jeder OpenAI-kompatible Server funktioniert: Endpunkte /v1/audio/transcriptions (Erkennung) und /v1/chat/completions (Textverbesserung). Unter Erkennung → Anbieter „Eigener Server“ die Base-URL eintragen, Key nur wenn der Server einen verlangt. Empfohlene Server: speaches, whisper.cpp-server, LocalAI; für Textverbesserung Ollama. http:// nur im eigenen Netz oder per VPN — sonst https.</string>
+    <string name="help_s4_body">Jeder OpenAI-kompatible Server funktioniert: Endpunkte /v1/audio/transcriptions (Erkennung) und /v1/chat/completions (Textverbesserung). Unter Erkennung → Anbieter „Eigener Server“ die Base-URL eintragen, Key nur wenn der Server einen verlangt. Empfohlene Server: speaches, whisper.cpp-server, LocalAI. Für die Textverbesserung gibt es eigene Anbieter „Ollama (lokal / Homeserver)“ (Server-Adresse wie http://homeserver:11434, kein Key) und „Ollama Cloud“ (Key von ollama.com); die Modelle kommen direkt vom Server. http:// nur im eigenen Netz oder per VPN — sonst https.</string>
     <string name="help_s5_title">Offline-Modus</string>
     <string name="help_s5_body">Ein Offline-Modell erkennt Sprache direkt auf dem Gerät. Es wird einmalig geladen (32–574 MB) und liegt im App-Speicher; löschen kannst du es unter Offline-Modelle. Small ist für Deutsch die beste Balance. Die Erkennung dauert je Modell 2–10 Sekunden.</string>
     <string name="help_s6_title">Datenschutz</string>
-    <string name="help_s6_online">Online: Audio und Kontext-Prompt gehen an den gewählten Anbieter. Bei Textverbesserung geht der erkannte Text an das Sprachmodell. Dein Key bleibt auf dem Gerät. WhisperLoom speichert keine Aufnahmen.</string>
+    <string name="help_s6_online">Online: Audio und Vokabular gehen an den gewählten Anbieter. Bei Textverbesserung geht der erkannte Text an das Sprachmodell — mit Ollama im eigenen Netz bleibt er dort. Dein Key bleibt auf dem Gerät. WhisperLoom speichert keine Aufnahmen; eine verknüpfte Vokabular-Datei wird nur gelesen.</string>
     <string name="help_s6_offline">Offline: Nichts verlässt das Gerät — nur der Modell-Download geht ins Netz.</string>
     <string name="help_s6_a11y">Die Bedienungshilfe liest nichts mit und speichert nichts; sie fügt nur den diktierten Text ein.</string>
     <string name="help_s7_title">Wenn etwas nicht klappt</string>

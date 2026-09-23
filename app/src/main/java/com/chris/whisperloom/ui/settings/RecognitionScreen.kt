@@ -4,21 +4,24 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.chris.whisperloom.Engine
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
+import com.chris.whisperloom.Vocabulary
 import com.chris.whisperloom.ui.access.PrivacyLine
 import com.chris.whisperloom.ui.access.SttAccessSection
 import com.chris.whisperloom.ui.components.DetailScaffold
@@ -50,6 +53,7 @@ fun RecognitionScreen(nav: NavState) {
     val offline = prefs.engine == Engine.OFFLINE
     val modelInstalled = prefs.offlineModel in status.installedModels
     val stt = prefs.sttAccess()
+    var showVocabulary by rememberSaveable { mutableStateOf(false) }
 
     DetailScaffold(title = stringResource(R.string.rec_title), onBack = { nav.pop() }, snack = snack) { padding ->
         ScrollColumn(padding) {
@@ -96,16 +100,22 @@ fun RecognitionScreen(nav: NavState) {
                 // Mistral/OpenRouter kennen kein prompt-Feld; eine context_bias-Wortliste ist nicht
                 // umgesetzt (Spec §2.4, offen) — also ehrlich sagen, dass der Kontext dort nicht ankommt.
                 val unsupported = !offline && !stt.provider.sttSendsPrompt
-                OutlinedTextField(
-                    value = prefs.apiPrompt,
-                    onValueChange = { prefs.apiPrompt = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text(stringResource(R.string.pref_api_prompt_hint)) },
-                    minLines = 2,
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                    supportingText = {
-                        Text(stringResource(if (unsupported) R.string.rec_context_unsupported else R.string.pref_api_prompt_info))
+                val count = Vocabulary.entries(prefs.apiPrompt).size
+                LoomRow(
+                    headline = stringResource(R.string.vocab_title),
+                    supporting = listOfNotNull(
+                        if (count == 0) stringResource(R.string.vocab_none) else pluralStringResource(R.plurals.vocab_count, count, count),
+                        prefs.vocabFileName.takeIf { prefs.vocabFileUri.isNotBlank() }
+                            ?.let { stringResource(R.string.vocab_row_file, it.ifBlank { "…" }) },
+                    ).joinToString(" · "),
+                    trailing = {
+                        FilledTonalButton(onClick = { showVocabulary = true }) { Text(stringResource(R.string.vocab_open)) }
                     },
+                )
+                Text(
+                    stringResource(if (unsupported) R.string.rec_context_unsupported else R.string.pref_api_prompt_info),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
@@ -115,4 +125,6 @@ fun RecognitionScreen(nav: NavState) {
             )
         }
     }
+
+    if (showVocabulary) VocabularySheet(snack) { showVocabulary = false }
 }

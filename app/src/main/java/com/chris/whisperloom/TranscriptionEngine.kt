@@ -48,9 +48,16 @@ object TranscriptionEngine {
         }
     }
 
-    internal fun backend(prefs: Prefs): TranscriptionBackend = when (prefs.engine) {
-        Engine.ONLINE -> OnlineBackend(prefs.sttAccess(), prefs.apiPrompt)
-        Engine.OFFLINE -> OfflineBackend(prefs.offlineModel, prefs.offlineAccurate, prefs.apiPrompt)
+    /**
+     * @param prompt Vokabular fuer den Erkenner — die Aufrufer mit Context geben
+     *   [VocabularySource.prompt] mit, damit die verknuepfte Datei bei JEDEM Diktat frisch gelesen wird.
+     */
+    internal fun backend(
+        prefs: Prefs,
+        prompt: String = Vocabulary.prompt(Vocabulary.entries(prefs.apiPrompt)).text,
+    ): TranscriptionBackend = when (prefs.engine) {
+        Engine.ONLINE -> OnlineBackend(prefs.sttAccess(), prompt)
+        Engine.OFFLINE -> OfflineBackend(prefs.offlineModel, prefs.offlineAccurate, prompt)
         null -> throw ApiNotConfiguredException()
     }
 
@@ -73,7 +80,8 @@ object TranscriptionEngine {
         requireConfigured(app, prefs)
 
         val trimmed = AudioUtils.trimSilence(samples)
-        val result = backend(prefs).transcribe(WavUpload.fromSamples(trimmed), prefs.language)
+        val result = backend(prefs, VocabularySource.prompt(app, prefs).text)
+            .transcribe(WavUpload.fromSamples(trimmed), prefs.language)
         val raw = result.text
         if (raw.isBlank()) return ""
 
@@ -93,6 +101,7 @@ object TranscriptionEngine {
             smartFillers = prefs.smartFillers,
             customFillers = prefs.customFillers,
             disabledFillers = prefs.disabledFillers,
+            paragraphs = prefs.refineParagraphs,
         )
         return TextPolisher.polish(refined, options)
     }
@@ -104,7 +113,7 @@ object TranscriptionEngine {
      */
     private fun refineOrRaw(raw: String, language: String, mode: RefineMode, prefs: Prefs, onSkipped: (String) -> Unit): String =
         try {
-            TextRefiner(prefs.llmAccess()).refine(raw, language, mode, prefs.smartFillers)
+            TextRefiner(prefs.llmAccess()).refine(raw, language, mode, prefs.smartFillers, prefs.refineParagraphs)
         } catch (e: Exception) {
             Log.w(TAG, "Textverbesserung uebersprungen: ${e.message}", e)
             onSkipped(e.message ?: e.javaClass.simpleName)
@@ -165,7 +174,7 @@ object SharedAudioTranscriber {
         val app = context.applicationContext
         val prefs = Prefs(app)
         TranscriptionEngine.requireConfigured(app, prefs)
-        val backend = TranscriptionEngine.backend(prefs)
+        val backend = TranscriptionEngine.backend(prefs, VocabularySource.prompt(app, prefs).text)
 
         val name = displayName(app, uri)
         val temp = File.createTempFile("shared-", ".pcm", app.cacheDir)

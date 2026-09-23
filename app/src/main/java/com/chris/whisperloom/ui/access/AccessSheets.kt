@@ -53,6 +53,7 @@ fun helpKeyText(providerId: String): String? = when (providerId) {
     "anthropic" -> stringResource(R.string.help_key_anthropic)
     "gemini" -> stringResource(R.string.help_key_gemini)
     "deepseek" -> stringResource(R.string.help_key_deepseek)
+    "ollama-cloud" -> stringResource(R.string.help_key_ollama_cloud)
     else -> null
 }
 

@@ -42,6 +42,11 @@ class PrefsTest {
         assertEquals("small", p.offlineModel)
         assertTrue(p.offlineAccurate)
         assertTrue(p.shareHideFillers)
+        // Automatische Absaetze an = Verhalten bis 3.4; kein Vokabular, keine Datei.
+        assertTrue(p.refineParagraphs)
+        assertEquals("", p.apiPrompt)
+        assertEquals("", p.vocabFileUri)
+        assertEquals("", p.vocabFileName)
         assertFalse(p.welcomeSeen)
         assertFalse(p.overlaySkipped)
         assertFalse(p.a11ySkipped)

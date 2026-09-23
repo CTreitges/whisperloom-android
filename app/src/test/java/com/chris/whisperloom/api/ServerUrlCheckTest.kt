@@ -65,6 +65,18 @@ class ServerUrlCheckTest {
         assertEquals(ServerUrlCheck.MSG_V1, ServerUrlCheck.check("http://192.168.1.50:8000/api/", custom)!!.message)
     }
 
+    @Test fun ollamaImHeimnetzOhneV1Hinweis() {
+        val ollama = ProviderCatalog.byId(ProviderCatalog.OLLAMA_ID)
+        assertNull(ServerUrlCheck.check("http://192.168.1.10:11434", ollama))
+        assertNull(ServerUrlCheck.check("http://homeserver.local:11434", ollama))
+        assertEquals(ServerUrlCheck.Severity.WARNING, ServerUrlCheck.check("http://example.com:11434", ollama)?.severity)
+    }
+
+    @Test fun ollamaCloudVerlangtHttps() {
+        val cloud = ProviderCatalog.byId(ProviderCatalog.OLLAMA_CLOUD_ID)
+        assertEquals(ServerUrlCheck.MSG_HTTPS_REQUIRED, ServerUrlCheck.check("http://ollama.com", cloud)?.message)
+    }
+
     @Test fun ungueltigeEingaben() {
         assertEquals(ServerUrlCheck.MSG_INVALID, ServerUrlCheck.check("http://bad url/v1", custom)!!.message)
         assertEquals(ServerUrlCheck.MSG_SCHEME, ServerUrlCheck.check("192.168.1.50:8000/v1", custom)!!.message)

@@ -67,6 +67,13 @@ fun TextSettingsScreen(nav: NavState) {
                     onCheckedChange = { prefs.smartFillers = it },
                     enabled = !off,
                 )
+                SwitchRow(
+                    headline = stringResource(R.string.pref_refine_paragraphs),
+                    supporting = stringResource(if (off) R.string.text_smart_needs_level else R.string.pref_refine_paragraphs_info),
+                    checked = prefs.refineParagraphs,
+                    onCheckedChange = { prefs.refineParagraphs = it },
+                    enabled = !off,
+                )
             }
 
             SectionCard(title = stringResource(R.string.text_card_access)) {

@@ -1,6 +1,7 @@
 package com.chris.whisperloom.api
 
 import com.chris.whisperloom.RefineMode
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -37,6 +38,40 @@ class RefinePromptTest {
         assertFalse(RefinePrompt.build(RefineMode.POLISH, true, false).contains("Kernaussagen"))
         assertFalse(RefinePrompt.build(RefineMode.PARAGRAPHS, true, false).contains("verstaendlicher"))
         assertFalse(RefinePrompt.build(RefineMode.BEAUTIFY, true, false).contains("Wortlaut sonst unveraendert"))
+    }
+
+    @Test fun standardBleibtBeimBisherigenWortlaut() {
+        // Absaetze an = Verhalten bis 3.4 — der Prompt darf sich dadurch nicht veraendern.
+        assertEquals(
+            "Du korrigierst diktierten Text. Setze Zeichensetzung, Gross- und Kleinschreibung sowie " +
+                "Absaetze richtig. Aendere den Inhalt nicht, uebersetze nicht, ergaenze nichts und " +
+                "kommentiere nicht. Antworte ausschliesslich mit dem bearbeiteten Text.",
+            RefinePrompt.build(RefineMode.POLISH, german = true, smartFillers = false),
+        )
+        assertEquals(
+            "You clean up dictated text. Fix punctuation, capitalisation and paragraphs. Do not change " +
+                "the meaning, do not translate, do not add anything and do not comment. Reply only with the edited text.",
+            RefinePrompt.build(RefineMode.POLISH, german = false, smartFillers = false),
+        )
+    }
+
+    @Test fun ohneAutomatischeAbsaetzeEinFliesstext() {
+        for (mode in listOf(RefineMode.POLISH, RefineMode.BEAUTIFY, RefineMode.SUMMARIZE)) {
+            val de = RefinePrompt.build(mode, german = true, smartFillers = false, paragraphs = false)
+            assertTrue(mode.name, de.contains("Setze keine Absaetze"))
+            assertFalse(mode.name, de.contains("sowie Absaetze"))
+            assertFalse(mode.name, de.contains("Zeichensetzung und Absaetze"))
+            assertFalse(mode.name, de.contains("Stichpunkten"))
+            val en = RefinePrompt.build(mode, german = false, smartFillers = false, paragraphs = false)
+            assertTrue(mode.name, en.contains("Do not add paragraphs"))
+            assertFalse(mode.name, en.contains("bullet points"))
+        }
+    }
+
+    @Test fun absatzModusIgnoriertDenSchalter() {
+        val p = RefinePrompt.build(RefineMode.PARAGRAPHS, german = true, smartFillers = false, paragraphs = false)
+        assertEquals(RefinePrompt.build(RefineMode.PARAGRAPHS, german = true, smartFillers = false), p)
+        assertFalse(p.contains("Setze keine Absaetze"))
     }
 
     @Test fun ohneSmartFillersKeineFuellwortAnweisung() {

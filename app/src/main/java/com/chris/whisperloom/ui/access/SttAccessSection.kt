@@ -23,6 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.chris.whisperloom.R
+import com.chris.whisperloom.Vocabulary
 import com.chris.whisperloom.api.ProviderCatalog
 import com.chris.whisperloom.api.ServerUrlCheck
 import com.chris.whisperloom.ui.components.ApiKeyField
@@ -116,7 +117,7 @@ fun SttAccessSection(snack: SnackController, showPrivacy: Boolean = true) {
         }
 
         TestAccessRow(label = stringResource(R.string.rec_test)) {
-            AccessTest.stt(prefs.sttAccess(), prefs.apiPrompt, prefs.language)
+            AccessTest.stt(prefs.sttAccess(), Vocabulary.prompt(Vocabulary.entries(prefs.apiPrompt)).text, prefs.language)
         }
 
         if (showPrivacy) PrivacyLine(stringResource(R.string.rec_privacy_online, providerShortName(provider)))

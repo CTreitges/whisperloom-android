@@ -42,6 +42,10 @@ class TranscriptionEngineTest {
     private var sttResponse = """{"text":"also ähm hallo welt"}"""
     private var chatResponse = """{"choices":[{"message":{"content":"<think>ueberlegen</think>Hallo Welt."}}]}"""
     private var chatStatus = 200
+    private var ollamaBody: String? = null
+    private var ollamaAuth: String? = "unset"
+    private var ollamaResponse = """{"message":{"role":"assistant","content":"Hallo Welt.","thinking":"nachdenken"},"done":true}"""
+    private var ollamaStatus = 200
 
     @Before fun setUp() {
         ctx.getSharedPreferences("whisperloom", Context.MODE_PRIVATE).edit().clear().commit()
@@ -58,6 +62,14 @@ class TranscriptionEngineTest {
             chatBody = ex.requestBody.readBytes().toString(Charsets.UTF_8)
             val out = chatResponse.toByteArray()
             ex.sendResponseHeaders(chatStatus, out.size.toLong())
+            ex.responseBody.use { it.write(out) }
+        }
+        // Native Ollama-API (lokal und ollama.com): POST /api/chat
+        server.createContext("/api/chat") { ex ->
+            ollamaAuth = ex.requestHeaders.getFirst("Authorization")
+            ollamaBody = ex.requestBody.readBytes().toString(Charsets.UTF_8)
+            val out = ollamaResponse.toByteArray()
+            ex.sendResponseHeaders(ollamaStatus, out.size.toLong())
             ex.responseBody.use { it.write(out) }
         }
         server.start()
@@ -180,6 +192,98 @@ class TranscriptionEngineTest {
         val messages = chat.getJSONArray("messages")
         assertTrue(messages.getJSONObject(0).getString("content").contains("Zeichensetzung"))
         assertEquals("also ähm hallo welt", messages.getJSONObject(1).getString("content"))
+    }
+
+    // --- Ollama (lokal / Cloud) ----------------------------------------------------------
+
+    private fun useOllama(provider: String, key: String = "", model: String = "gemma4:31b") {
+        useLocalServer()
+        prefs.refineMode = RefineMode.POLISH
+        prefs.llmProviderId = provider
+        // Mit /v1 eingetippt, wie in vielen Anleitungen — die Wurzel wird daraus abgeleitet.
+        prefs.llmUrl = "http://127.0.0.1:${server.address.port}/v1"
+        prefs.llmKey = key
+        prefs.llmModel = model
+    }
+
+    @Test fun diktatMitOllamaImHeimnetz() {
+        useOllama("ollama")
+        val text = TranscriptionEngine.transcribe(ctx, speech)
+
+        assertEquals("Hallo Welt.", text) // nur content, das Nachdenken bleibt draussen
+        assertNull(chatBody) // nicht ueber /v1/chat/completions
+        assertNull(ollamaAuth) // lokal ohne Key
+        val chat = JSONObject(ollamaBody!!)
+        assertEquals("gemma4:31b", chat.getString("model"))
+        assertFalse(chat.getBoolean("stream"))
+        assertFalse(chat.has("think"))
+        assertEquals(0, chat.getJSONObject("options").getInt("temperature"))
+        val messages = chat.getJSONArray("messages")
+        assertTrue(messages.getJSONObject(0).getString("content").contains("Zeichensetzung"))
+        assertEquals("also ähm hallo welt", messages.getJSONObject(1).getString("content"))
+    }
+
+    @Test fun diktatMitOllamaCloudSendetDenKey() {
+        useOllama("ollama-cloud", key = "ok-cloud", model = "gpt-oss:20b")
+        assertEquals("Hallo Welt.", TranscriptionEngine.transcribe(ctx, speech))
+        assertEquals("Bearer ok-cloud", ollamaAuth)
+        assertEquals("low", JSONObject(ollamaBody!!).getString("think"))
+    }
+
+    @Test fun ollamaFehlerLiefertDenRohtextMitHinweis() {
+        useOllama("ollama-cloud", key = "falsch")
+        ollamaStatus = 401
+        ollamaResponse = """{"error":"Unauthorized"}"""
+        var hinweis = ""
+        val text = TranscriptionEngine.transcribe(ctx, speech) { hinweis = it }
+        assertEquals("Also hallo welt", text)
+        assertTrue(hinweis, hinweis.contains("Unauthorized"))
+    }
+
+    // --- Automatische Absaetze ------------------------------------------------------------
+
+    @Test fun absaetzeBleibenStandardmaessigErhalten() {
+        useOllama("ollama")
+        ollamaResponse = """{"message":{"content":"Erster Absatz.\n\nZweiter Absatz."}}"""
+        assertEquals("Erster Absatz.\n\nZweiter Absatz.", TranscriptionEngine.transcribe(ctx, speech))
+    }
+
+    @Test fun ohneAutomatischeAbsaetzeKommtEinFliesstext() {
+        useOllama("ollama")
+        prefs.refineParagraphs = false
+        // Auch wenn das Modell die Anweisung ignoriert: die Nachbearbeitung zieht zusammen.
+        ollamaResponse = """{"message":{"content":"Erster Absatz.\n\nZweiter Absatz."}}"""
+        assertEquals("Erster Absatz. Zweiter Absatz.", TranscriptionEngine.transcribe(ctx, speech))
+        val system = JSONObject(ollamaBody!!).getJSONArray("messages").getJSONObject(0).getString("content")
+        assertTrue(system, system.contains("Setze keine Absaetze"))
+    }
+
+    // --- Vokabular: Liste + verknuepfte Datei ---------------------------------------------
+
+    @Test fun vokabularAusListeUndDateiGehtAlsPrompt() {
+        useLocalServer()
+        prefs.apiPrompt = "Anna\nKubernetes"
+        val file = java.io.File(ctx.filesDir, "vokabular.md")
+        file.writeText("# Namen\n- Treitges\n- anna\n")
+        prefs.vocabFileUri = android.net.Uri.fromFile(file).toString()
+
+        TranscriptionEngine.transcribe(ctx, speech)
+        assertTrue(sttBody, sttBody.contains("name=\"prompt\"\r\n\r\nAnna, Kubernetes, Treitges\r\n"))
+
+        // Bei jedem Diktat neu gelesen: eine Aenderung an der Datei wirkt sofort.
+        file.writeText("- Treitges\n- WhisperLoom\n")
+        TranscriptionEngine.transcribe(ctx, speech)
+        assertTrue(sttBody, sttBody.contains("name=\"prompt\"\r\n\r\nAnna, Kubernetes, Treitges, WhisperLoom\r\n"))
+    }
+
+    @Test fun verschwundeneDateiBrichtKeinDiktatAb() {
+        useLocalServer()
+        prefs.apiPrompt = "Anna"
+        prefs.vocabFileUri = android.net.Uri.fromFile(java.io.File(ctx.filesDir, "gibtsnicht.md")).toString()
+
+        assertEquals("Also hallo welt", TranscriptionEngine.transcribe(ctx, speech))
+        assertTrue(sttBody, sttBody.contains("name=\"prompt\"\r\n\r\nAnna\r\n"))
+        assertEquals(null, VocabularySource.fileTerms(ctx, prefs.vocabFileUri))
     }
 
     // --- Review API-1: die Veredelung darf ein Diktat nie verschlucken -------------------

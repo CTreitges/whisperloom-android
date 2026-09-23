@@ -24,6 +24,8 @@ fun providerLabel(provider: Provider): String = when (provider.id) {
     "gemini" -> stringResource(R.string.provider_gemini)
     "deepseek" -> stringResource(R.string.provider_deepseek)
     "custom" -> stringResource(R.string.provider_custom)
+    "ollama" -> stringResource(R.string.provider_ollama)
+    "ollama-cloud" -> stringResource(R.string.provider_ollama_cloud)
     else -> provider.name
 }
 

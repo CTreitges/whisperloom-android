@@ -23,7 +23,7 @@ class NetworkSecurityConfigTest {
     @Test fun jederCloudAnbieterIstHttpsPflichtig() {
         val domains = strictDomains()
         assertTrue(domains.isNotEmpty())
-        val hosts = ProviderCatalog.providers.filter { !it.isCustom }
+        val hosts = ProviderCatalog.providers.filter { !it.needsUrl }
             .flatMap { listOfNotNull(it.baseUrl, it.sttPathOverride) }
             .map { URI(it).host }
         for (host in hosts) {

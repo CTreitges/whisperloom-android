@@ -22,5 +22,6 @@
         <domain includeSubdomains="true">anthropic.com</domain>
         <domain includeSubdomains="true">googleapis.com</domain>
         <domain includeSubdomains="true">deepseek.com</domain>
+        <domain includeSubdomains="true">ollama.com</domain>
     </domain-config>
 </network-security-config>

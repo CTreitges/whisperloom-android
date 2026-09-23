@@ -31,6 +31,8 @@ class PrefsState(val prefs: Prefs) {
     var apiKey: String by pref({ prefs.apiKey }) { prefs.apiKey = it }
     var apiModel: String by pref({ prefs.apiModel }) { prefs.apiModel = it }
     var apiPrompt: String by pref({ prefs.apiPrompt }) { prefs.apiPrompt = it }
+    var vocabFileUri: String by pref({ prefs.vocabFileUri }) { prefs.vocabFileUri = it }
+    var vocabFileName: String by pref({ prefs.vocabFileName }) { prefs.vocabFileName = it }
 
     // Textverbesserung
     var llmProviderId: String by pref({ prefs.llmProviderId }) { prefs.llmProviderId = it }
@@ -39,6 +41,7 @@ class PrefsState(val prefs: Prefs) {
     var llmModel: String by pref({ prefs.llmModel }) { prefs.llmModel = it }
     var refineMode: RefineMode by pref({ prefs.refineMode }) { prefs.refineMode = it }
     var smartFillers: Boolean by pref({ prefs.smartFillers }) { prefs.smartFillers = it }
+    var refineParagraphs: Boolean by pref({ prefs.refineParagraphs }) { prefs.refineParagraphs = it }
 
     // Regeln ohne KI
     var removeFillers: Boolean by pref({ prefs.removeFillers }) { prefs.removeFillers = it }
