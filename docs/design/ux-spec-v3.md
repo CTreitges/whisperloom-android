@@ -302,6 +302,7 @@ Column(padding 20, gap 16)
 │    OutlinedTextField pref_api_prompt_hint (bestehend), minLines 2, capitalization Sentences; supportingText pref_api_prompt_info (bestehend)
 │    Bei Anbieter Mistral/OpenRouter (sttSendsPrompt=false): Label rec_context_words "Kontext-Wörter (kommagetrennt)", supportingText rec_context_words_info "Wird als Wortliste (context_bias) mitgeschickt."
 │    [Stand 3.0.0: context_bias ist NICHT umgesetzt (Mistral-Doku: nur Englisch belastbar, OpenRouter kennt es nicht) — supportingText rec_context_unsupported "Dieser Anbieter nimmt keinen Kontext entgegen — …", Label bleibt pref_api_prompt_hint.]
+│    [Stand 3.5.0: Das Textfeld ist ersetzt durch ListItem vocab_title "Vokabular" (Supporting vocab_count bzw. vocab_none, · vocab_row_file "Datei: %1$s") + FilledTonalButton vocab_open "Bearbeiten" → VocabularySheet (LoomSheet): Feld vocab_add_hint (Komma trennt), Liste der eigenen Begriffe mit ✕, Abschnitt vocab_file (Datei verknüpfen/Neu lesen/Andere Datei/Lösen, SAF mit persistenter Leseberechtigung, bei jedem Diktat neu gelesen), Zeile vocab_usage/vocab_usage_truncated. Speicherung weiter in apiPrompt (ein Eintrag pro Zeile) + vocab_file_uri/vocab_file_name. rec_context_unsupported lautet jetzt „Dieser Anbieter nimmt kein Vokabular entgegen — …".]
 └─ Datenschutz-Zeile bodySmall onSurfaceVariant, Leading ic_privacy_tip 16: rec_privacy_online "Audio wird zur Erkennung an %1$s gesendet." | rec_privacy_offline "Alles bleibt auf dem Gerät."
 ```
 
@@ -321,11 +322,13 @@ Column(padding 20, gap 16)
 │    → Prefs.refineLevel (off|smooth|beautify|summarize). Migration: llmPolish==true → smooth.
 │    bodySmall onSurfaceVariant  text_level_cost "Zweite Anfrage · ca. 1–2 s länger · geringe Zusatzkosten"
 │    ListItem + Switch  pref_smart_fillers (bestehend "Füllwörter intelligent entfernen") Supporting pref_smart_fillers_info (bestehend); enabled = level != off, sonst Supporting text_smart_needs_level "Braucht eine Stufe über „Aus"."
+│    [Stand 3.5.0] ListItem + Switch pref_refine_paragraphs "Automatische Absätze" Supporting pref_refine_paragraphs_info; Pref refine_paragraphs (Default an); enabled wie pref_smart_fillers.
 ├─ ElevatedCard text_card_access "Zugang für die Textverbesserung"
 │    ListItem + Switch text_own_access "Eigenen Zugang verwenden" → Prefs.llmUseOwn (Default AUS)
 │      AUS: Supporting text_own_access_off "Nutzt Anbieter und Key der Erkennung (%1$s)."
 │      AN : Supporting text_own_access_on  "Eigener Anbieter, Key und Modell."
 │    AnimatedVisibility(AN): ExposedDropdownMenuBox text_llm_provider "Anbieter" (OpenAI · Groq · Mistral · OpenRouter · Anthropic · Google Gemini · DeepSeek · Eigener Server) · Base-URL (nur Eigener Server) · API-Key (Passwort, Auge, Einfügen) · Hinweis-Chip warning bei Gemini text_gemini_warning "Free-Tier: Google darf Inhalte zum Training nutzen." · bei DeepSeek text_deepseek_warning "Server in China — Datenschutz beachten."
+│    [Stand 3.5.0] Anbieter zusätzlich „Ollama (lokal / Homeserver)" (Feld text_ollama_url „Server-Adresse", Key optional, InfoCard text_ollama_local_note) und „Ollama Cloud" (https://ollama.com, Key, InfoCard text_ollama_cloud_note), beide vor „Eigener Server". Bei Ollama: Modell-Auswahl aus Katalog + /api/tags (automatisch geladen, sobald verbunden) mit „Eigenes Modell …", TextButton text_ollama_load_models. „Eigenen Zugang verwenden" an leert URL/Key/Modell.
 │    ExposedDropdownMenuBox text_llm_model "Modell": LLM-Modelle des wirksamen Anbieters (§8.2) + text_model_custom "Eigenes Modell…" → B2.
 │      Wirksamer Anbieter ohne LLM-Modelle (Together, DeepInfra, Eigener Server): nur Freitextfeld text_llm_model mit Placeholder "z. B. qwen3:8b".
 │      engine == offline und Switch AUS: Karte zeigt statt Modell-Dropdown OutlinedCard warning: text_needs_online "Textverbesserung braucht einen Online-Zugang." + FilledTonalButton text_add_access "Eigenen Zugang eintragen" (schaltet Switch AN).

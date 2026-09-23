@@ -36,7 +36,7 @@
   <!-- ===================== DEUTSCH ===================== -->
   <section id="de" class="lang active">
     <h1>Datenschutzerklärung – WhisperLoom</h1>
-    <p class="sub">Stand: 8. September 2026 · App-ID <code>com.chris.whisperloom</code></p>
+    <p class="sub">Stand: 24. September 2026 · App-ID <code>com.chris.whisperloom</code></p>
 
     <div class="card">
       <strong>Kurzfassung:</strong> WhisperLoom hat keinen eigenen Server, kein Nutzerkonto, keine Werbung
@@ -70,7 +70,7 @@
 
     <h2>3. Wann Daten das Gerät verlassen</h2>
     <h3>Online-Erkennung (optional)</h3>
-    <p>Wählst du einen Online-Anbieter, werden die Audioaufnahme und ein Kontext-Prompt zur Erkennung an
+    <p>Wählst du einen Online-Anbieter, werden die Audioaufnahme und dein Vokabular (Namen, Fachbegriffe) zur Erkennung an
     den <strong>von dir gewählten Anbieter</strong> gesendet. Bei aktivierter Textverbesserung wird der
     erkannte Text an das gewählte Sprachmodell gesendet. Mögliche Anbieter:</p>
     <ul>
@@ -83,9 +83,10 @@
       <li>Anthropic (<code>api.anthropic.com</code>)</li>
       <li>Google Gemini (<code>generativelanguage.googleapis.com</code>)</li>
       <li>DeepSeek (<code>api.deepseek.com</code>)</li>
-      <li>Ein von dir selbst betriebener, OpenAI-kompatibler Server (Adresse gibst du selbst an).</li>
+      <li>Ollama Cloud (<code>ollama.com</code>, nur Textverbesserung)</li>
+      <li>Ein von dir selbst betriebener, OpenAI-kompatibler Server oder ein eigenes Ollama (Adresse gibst du selbst an).</li>
     </ul>
-    <p>Die Übertragung erfolgt verschlüsselt (HTTPS). Was der jeweilige Anbieter mit den Daten macht,
+    <p>Die Übertragung zu Cloud-Anbietern erfolgt verschlüsselt (HTTPS); unverschlüsseltes http:// lässt die App nur zu Adressen im eigenen Netz ohne Warnung zu. Was der jeweilige Anbieter mit den Daten macht,
     regeln <strong>dessen eigene Datenschutzbestimmungen</strong>. WhisperLoom weist bei der Auswahl auf
     Besonderheiten hin (z. B. Trainingsnutzung im kostenlosen Google-Gemini-Tarif, Serverstandort China
     bei DeepSeek). Dein API-Key wird ausschließlich zur Authentifizierung beim gewählten Anbieter genutzt
@@ -96,8 +97,14 @@
     Lediglich der einmalige Modell-Download erfolgt über das Internet von
     <code>huggingface.co</code>.</p>
 
-    <h3>Eigener Server</h3>
-    <p>Wählst du „Eigener Server", gehen Audio und Text ausschließlich an die von dir angegebene Adresse.</p>
+    <h3>Eigener Server und eigenes Ollama</h3>
+    <p>Wählst du „Eigener Server" oder „Ollama (lokal / Homeserver)", gehen Audio bzw. Text ausschließlich an die von dir angegebene Adresse – bei einem Server im eigenen Netz verlässt nichts dein Netz.</p>
+
+    <h3>Vokabular-Datei</h3>
+    <p>Verknüpfst du eine .md- oder .txt-Datei als Vokabular, liest WhisperLoom sie über die Android-Dateiauswahl (nur Lesezugriff auf genau diese Datei) bei jedem Diktat. Die Datei wird weder kopiert noch hochgeladen; mitgeschickt werden nur die daraus gebildeten Begriffe, wie oben beschrieben.</p>
+
+    <h3>Sprachauftrag (optional, ab Werk aus)</h3>
+    <p>Schaltest du unter „Erweiterte Optionen" den Sprachauftrag ein, geht der erkannte Text eines Auftrags an die Server-Adresse, die du dort selbst einträgst (dein eigener Agent), authentifiziert mit deinem Token.</p>
 
     <h2>4. Weitergabe an Dritte</h2>
     <p>Eine Weitergabe erfolgt <strong>nur</strong> an den von dir aktiv gewählten Erkennungs-/
@@ -136,7 +143,7 @@
   <!-- ===================== ENGLISH ===================== -->
   <section id="en" class="lang">
     <h1>Privacy Policy – WhisperLoom</h1>
-    <p class="sub">Last updated: 8 September 2026 · App ID <code>com.chris.whisperloom</code></p>
+    <p class="sub">Last updated: 24 September 2026 · App ID <code>com.chris.whisperloom</code></p>
 
     <div class="card">
       <strong>In short:</strong> WhisperLoom has no server of its own, no user account, no ads and no
@@ -170,14 +177,15 @@
 
     <h2>3. When data leaves the device</h2>
     <h3>Online recognition (optional)</h3>
-    <p>If you choose an online provider, the audio recording and a context prompt are sent for recognition
+    <p>If you choose an online provider, the audio recording and your vocabulary (names, terms) are sent for recognition
     to the <strong>provider you selected</strong>. With text enhancement enabled, the recognised text is
     sent to the selected language model. Possible providers:</p>
     <ul>
-      <li>OpenAI, Groq, Mistral, Together AI, DeepInfra, OpenRouter, Anthropic, Google Gemini, DeepSeek,</li>
-      <li>or an OpenAI-compatible server you host yourself (address provided by you).</li>
+      <li>OpenAI, Groq, Mistral, Together AI, DeepInfra, OpenRouter, Anthropic, Google Gemini, DeepSeek,
+      Ollama Cloud (<code>ollama.com</code>, text enhancement only),</li>
+      <li>or an OpenAI-compatible server or Ollama instance you host yourself (address provided by you).</li>
     </ul>
-    <p>Transmission is encrypted (HTTPS). What each provider does with the data is governed by
+    <p>Transmission to cloud providers is encrypted (HTTPS); the app only allows plain http:// without a warning for addresses on your own network. What each provider does with the data is governed by
     <strong>that provider's own privacy policy</strong>. WhisperLoom flags notable cases at selection
     time (e.g. training use on Google Gemini's free tier, servers in China for DeepSeek). Your API key is
     used solely to authenticate with the selected provider and does not otherwise leave the device.</p>
@@ -186,8 +194,14 @@
     <p>With offline recognition (whisper.cpp on-device), <strong>nothing</strong> leaves the device. Only
     the one-time model download happens over the internet from <code>huggingface.co</code>.</p>
 
-    <h3>Your own server</h3>
-    <p>If you choose “Your own server", audio and text go only to the address you specify.</p>
+    <h3>Your own server and your own Ollama</h3>
+    <p>If you choose “Your own server" or “Ollama (local / home server)", audio or text go only to the address you specify – with a server on your own network, nothing leaves your network.</p>
+
+    <h3>Vocabulary file</h3>
+    <p>If you link a .md or .txt file as vocabulary, WhisperLoom reads it through the Android file picker (read access to that single file only) for every dictation. The file is neither copied nor uploaded; only the terms derived from it are sent, as described above.</p>
+
+    <h3>Voice tasks (optional, off by default)</h3>
+    <p>If you enable voice tasks under “Advanced options", the recognised text of a task is sent to the server address you enter there yourself (your own agent), authenticated with your token.</p>
 
     <h2>4. Sharing with third parties</h2>
     <p>Data is shared <strong>only</strong> with the recognition/language-model provider you actively

@@ -600,7 +600,7 @@ whisper.example.de {
 }
 ```
 
-`WHISPERLOOM_TOKEN` als Umgebungsvariable des Caddy-Dienstes setzen (nicht in die Datei schreiben). In WhisperLoom: Base-URL `https://whisper.example.de/v1`, API-Key = Token. Vorteil: Erkennung und Textverbesserung laufen hinter **einer** URL — in WhisperLoom bleibt „Eigenen Zugang verwenden" dann einfach aus, und die Textverbesserung nutzt automatisch denselben Zugang.
+`WHISPERLOOM_TOKEN` als Umgebungsvariable des Caddy-Dienstes setzen (nicht in die Datei schreiben). In WhisperLoom: Base-URL `https://whisper.example.de/v1`, API-Key = Token. Vorteil: Erkennung und Textverbesserung laufen hinter **einer** URL — in WhisperLoom bleibt „Eigenen Zugang verwenden" dann einfach aus, und die Textverbesserung nutzt automatisch denselben Zugang. Diese Variante nutzt für die Textverbesserung den OpenAI-kompatiblen Weg über `/v1/chat/*`. Willst du hinter Caddy stattdessen den Anbieter **Ollama (lokal / Homeserver)** verwenden, braucht es zusätzlich einen `handle /api/*`-Block zum Ollama-Port (die App ruft dort `/api/chat` und `/api/tags` auf); dann „Eigenen Zugang verwenden" einschalten und als Server-Adresse `https://whisper.example.de` mit dem Token als Key eintragen.
 
 ### Schritt 4 — Testen (vom Rechner aus)
 
