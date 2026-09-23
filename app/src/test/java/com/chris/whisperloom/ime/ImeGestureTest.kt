@@ -63,6 +63,8 @@ class ImeGestureTest {
             engine = Engine.ONLINE
             sttProviderId = "custom"
             apiBaseUrl = "http://127.0.0.1:1/v1"
+            // Ohne Textmodell gilt die KI-Stufe nicht als bereit (Review 3.5.0).
+            llmModel = "qwen3:8b"
         }
         service = Robolectric.buildService(WhisperLoomInputMethodService::class.java).create().get()
         root = service.onCreateInputView()

@@ -479,7 +479,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
      * Leere fuehren soll sie trotzdem nicht.
      */
     private fun hasLlmAccess(): Boolean = prefs.llmAccess().let {
-        SetupState.sttComplete(it.baseUrl, it.apiKey, it.provider.needsKey)
+        SetupState.llmComplete(it.baseUrl, it.apiKey, it.provider.needsKey, it.model)
     }
 
     // --- Diktat -------------------------------------------------------------

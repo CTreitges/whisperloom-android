@@ -6,14 +6,16 @@ Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](ht
 
 ### Hinzugefügt
 
-- **Vokabular als Liste statt Freitextfeld.** Einstellungen → Erkennung → **Vokabular** → **Bearbeiten** öffnet eine Liste: Namen, Fachbegriffe und Schreibweisen einzeln hinzufügen (mehrere auf einmal mit Komma) und einzeln löschen. Ein vorhandener Freitext bleibt als Eintrag erhalten und kommt unverändert beim Anbieter an.
-- **Vokabular aus einer Datei.** Eine .md- oder .txt-Datei lässt sich dauerhaft verknüpfen; sie wird bei **jedem Diktat neu gelesen** — Änderungen an der Datei wirken sofort. Eine Zeile ist ein Begriff; Aufzählungszeichen, Checkboxen und Hervorhebungen fallen weg, Überschriften und Codeblöcke werden übersprungen. Eigene Begriffe haben Vorrang; mitgeschickt werden höchstens 800 Zeichen, weil Whisper ohnehin nur rund 200 Wörter Kontext beachtet — das Sheet sagt, wie viele Begriffe ankommen. Eine verschwundene Datei bricht kein Diktat ab.
+- **Vokabular als Liste statt Freitextfeld.** Einstellungen → Erkennung → **Vokabular** → **Bearbeiten** öffnet eine Liste: Namen, Fachbegriffe und Schreibweisen einzeln hinzufügen (mehrere auf einmal mit Komma) und einzeln löschen. Ein vorhandener Freitext bleibt erhalten: jede seiner Zeilen wird ein Eintrag.
+- **Vokabular aus einer Datei.** Eine .md- oder .txt-Datei lässt sich dauerhaft verknüpfen; sie wird bei **jedem Diktat neu gelesen** — Änderungen an der Datei wirken sofort. Eine Zeile ist ein Begriff; Aufzählungszeichen, Checkboxen und Hervorhebungen fallen weg, Überschriften und Codeblöcke werden übersprungen. Mitgeschickt werden höchstens 800 Zeichen, weil Whisper nur rund 200 Wörter Kontext beachtet — und zwar die am Ende. Deshalb stehen die eigenen Begriffe hinten und haben Vorrang; wird es zu lang, fallen zuerst die vorderen Datei-Begriffe weg. Das Sheet sagt, wie viele Begriffe ankommen. Eine verschwundene Datei bricht kein Diktat ab.
 - **Textverbesserung mit Ollama.** Zwei neue Anbieter: **Ollama (lokal / Homeserver)** mit Server-Adresse und ohne Key — der Text verlässt das eigene Netz nicht — und **Ollama Cloud** mit Key von ollama.com. Sobald Ollama verbunden ist, lädt die App die Modelle vom Server ins Auswahlfeld; über **Eigenes Modell …** lässt sich jeder Name eintragen. Empfohlen für die Cloud: Gemma 4 31B (schnell, denkt nicht nach). Alle bisherigen Anbieter bleiben.
 - **Schalter „Automatische Absätze“** unter Einstellungen → Text. An (wie bisher): Die KI gliedert längere Diktate in Absätze. Aus: ein durchgehender Text — auch wenn das Modell trotzdem Umbrüche liefert.
 
 ### Behoben
 
 - **Die App sprang beim Tippen.** Android schob das ganze Fenster hoch, sobald die Tastatur aufging — die Titelleiste verschwand, der Inhalt rutschte unter die Statusleiste, und bei jeder neuen Zeile ruckte es erneut. Jetzt macht der Inhalt der Tastatur Platz, und das Feld scrollt ruhig in den sichtbaren Bereich.
+- **Einstellungen → Text:** Wer „Eigenen Zugang verwenden“ aus- und wieder einschaltete, nahm Adresse und Key des vorherigen Anbieters mit — der Key konnte so beim falschen Anbieter landen. Die Felder werden jetzt geleert, wie beim Anbieterwechsel.
+- Die Diktat-Tastatur zählt einen Textverbesserungs-Zugang ohne Modell (Ollama lokal, eigener Server) nicht mehr als bereit.
 - **Ollama Cloud war vom Handy aus nicht erreichbar:** ollama.com sperrt die Standard-Kennung von Android-Apps. WhisperLoom meldet sich jetzt mit eigener Kennung, und „Zugang prüfen" unterscheidet „Zugriff verweigert (403)" von „Key ungültig (401)".
 
 ### Sicherheit

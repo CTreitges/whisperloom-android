@@ -268,12 +268,13 @@ class TranscriptionEngineTest {
         prefs.vocabFileUri = android.net.Uri.fromFile(file).toString()
 
         TranscriptionEngine.transcribe(ctx, speech)
-        assertTrue(sttBody, sttBody.contains("name=\"prompt\"\r\n\r\nAnna, Kubernetes, Treitges\r\n"))
+        // Datei vorn, eigene Begriffe am Ende (Whisper beachtet das Ende); "anna" doppelt -> faellt weg.
+        assertTrue(sttBody, sttBody.contains("name=\"prompt\"\r\n\r\nTreitges, Anna, Kubernetes\r\n"))
 
         // Bei jedem Diktat neu gelesen: eine Aenderung an der Datei wirkt sofort.
         file.writeText("- Treitges\n- WhisperLoom\n")
         TranscriptionEngine.transcribe(ctx, speech)
-        assertTrue(sttBody, sttBody.contains("name=\"prompt\"\r\n\r\nAnna, Kubernetes, Treitges, WhisperLoom\r\n"))
+        assertTrue(sttBody, sttBody.contains("name=\"prompt\"\r\n\r\nTreitges, WhisperLoom, Anna, Kubernetes\r\n"))
     }
 
     @Test fun verschwundeneDateiBrichtKeinDiktatAb() {

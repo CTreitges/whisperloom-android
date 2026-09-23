@@ -14,9 +14,9 @@ package com.chris.whisperloom
 object Vocabulary {
 
     /**
-     * Obergrenze fuer den mitgeschickten Kontext. Whisper beachtet nur die letzten 224 Token
-     * (OpenAI-Doku zu `prompt`, whisper.cpp kappt initial_prompt genauso); 800 Zeichen deutscher
-     * Text sind knapp darunter. Was darueber hinausgeht, wuerde der Erkenner ohnehin verwerfen.
+     * Obergrenze fuer den mitgeschickten Kontext. Whisper beachtet nur die LETZTEN 224 Token
+     * (OpenAI-Doku zu `prompt`, whisper.cpp kappt initial_prompt genauso von vorn); 800 Zeichen
+     * sind grob diese Menge. Weil vorn gekappt wird, stehen die eigenen Begriffe am ENDE.
      */
     const val MAX_PROMPT_CHARS = 800
 
@@ -64,11 +64,15 @@ object Vocabulary {
                 continue
             }
             // Ueberschriften gliedern die Datei ("# Namen", "## Technik") — sie sind keine Begriffe.
-            if (inCodeBlock || line.isEmpty() || line.startsWith("---") || HEADING.containsMatchIn(line)) continue
+            // Tabellenzeilen ("| a | b |") ebenso wenig.
+            if (inCodeBlock || line.isEmpty() || line.startsWith("---") || line.startsWith("|") ||
+                HEADING.containsMatchIn(line)
+            ) continue
             val content = LINE_MARKER.replace(line, "")
             for (part in content.split(',', ';')) {
                 val term = part.trim().trim(*EMPHASIS).trim()
-                if (term.isNotEmpty()) out += term
+                // Ohne Buchstabe/Ziffer ist es kein Begriff: "-" allein, leere Checkbox "[ ]", "***".
+                if (term.any { it.isLetterOrDigit() }) out += term
             }
         }
         return dedupe(out)
@@ -76,34 +80,40 @@ object Vocabulary {
 
     /**
      * Ergebnis fuer den Erkenner: [text] geht als `prompt` bzw. initial_prompt raus;
-     * [used] von [total] Begriffen passten unter [MAX_PROMPT_CHARS].
+     * [used] von [total] Begriffen passten unter [MAX_PROMPT_CHARS]; [cut] = ein einzelner
+     * Begriff war selbst zu lang und wurde gekuerzt.
      */
-    data class Prompt(val text: String, val used: Int, val total: Int) {
-        val truncated: Boolean get() = used < total
+    data class Prompt(val text: String, val used: Int, val total: Int, val cut: Boolean = false) {
+        val truncated: Boolean get() = used < total || cut
     }
 
     /**
-     * Eigene Eintraege zuerst, dann die Datei-Begriffe; Duplikate fallen weg. Es wird nur
-     * ganzheitlich gekuerzt — nie mitten in einem Begriff.
+     * Datei-Begriffe vorn, eigene Eintraege am Ende (Whisper verwirft von vorn); Duplikate
+     * fallen weg, dabei gewinnt der eigene Eintrag. Wird es zu lang, fallen zuerst die vorderen
+     * Datei-Begriffe weg — gekuerzt wird nur ganzheitlich, nie mitten in einem Begriff.
      */
     fun prompt(own: List<String>, file: List<String> = emptyList(), maxChars: Int = MAX_PROMPT_CHARS): Prompt {
-        val all = dedupe(own + file)
-        val sb = StringBuilder()
-        var used = 0
-        for (term in all) {
-            if (sb.isEmpty() && term.length > maxChars) {
-                // Ein einzelner langer Eintrag (z. B. Freitext aus v3.4): lieber gekuerzt als gar nicht.
-                sb.append(term.take(maxChars).substringBeforeLast(' ').ifEmpty { term.take(maxChars) })
-                used++
-                break
-            }
-            val extra = if (sb.isEmpty()) term.length else term.length + 2
-            if (sb.length + extra > maxChars) break
-            if (sb.isNotEmpty()) sb.append(", ")
-            sb.append(term)
-            used++
+        val ownTerms = dedupe(own)
+        val ownKeys = ownTerms.map { it.lowercase() }.toHashSet()
+        val ordered = dedupe(file).filter { it.lowercase() !in ownKeys } + ownTerms
+        if (ordered.isEmpty()) return Prompt("", 0, 0)
+
+        val last = ordered.last()
+        if (last.length > maxChars) {
+            // Ein einzelner langer Eintrag (z. B. Freitext aus v3.4): lieber gekuerzt als gar nicht.
+            val head = last.take(maxChars).substringBeforeLast(' ').ifEmpty { last.take(maxChars) }
+            return Prompt(head, 1, ordered.size, cut = true)
         }
-        return Prompt(sb.toString(), used, all.size)
+        // Von hinten auffuellen, solange es passt.
+        val kept = ArrayDeque<String>()
+        var length = 0
+        for (term in ordered.asReversed()) {
+            val extra = if (kept.isEmpty()) term.length else term.length + 2
+            if (length + extra > maxChars) break
+            kept.addFirst(term)
+            length += extra
+        }
+        return Prompt(kept.joinToString(", "), kept.size, ordered.size)
     }
 
     private fun dedupe(terms: List<String>): List<String> {

@@ -30,8 +30,7 @@ object VocabularySource {
         if (uri.isBlank()) return emptyList()
         return try {
             context.contentResolver.openInputStream(Uri.parse(uri))?.use { input ->
-                val bytes = input.readNBytesCompat(Vocabulary.MAX_FILE_BYTES)
-                Vocabulary.parseFile(String(bytes, Charsets.UTF_8))
+                Vocabulary.parseFile(decode(input.readNBytesCompat(Vocabulary.MAX_FILE_BYTES)))
             }
         } catch (e: Exception) {
             // SecurityException (Berechtigung weg), FileNotFoundException (geloescht/verschoben) …
@@ -40,9 +39,19 @@ object VocabularySource {
         }
     }
 
-    /** Taugt der Dateiname als Vokabular? Unbekannter Name (null) wird zugelassen. */
-    fun isTextFile(name: String?): Boolean =
-        name == null || EXTENSIONS.any { name.lowercase().endsWith(it) }
+    /**
+     * UTF-8, sonst Windows-1252: eine unter Windows gespeicherte .txt mit Umlauten kaeme sonst
+     * mit Ersatzzeichen beim Erkenner an. Ein am Leselimit angeschnittenes UTF-8-Zeichen zaehlt nicht.
+     */
+    fun decode(bytes: ByteArray): String {
+        val utf8 = String(bytes, Charsets.UTF_8)
+        val body = if (bytes.size >= Vocabulary.MAX_FILE_BYTES) utf8.dropLast(1) else utf8
+        return if ('\uFFFD' in body) String(bytes, charset("windows-1252")) else utf8
+    }
+
+    /** Taugt die Datei als Vokabular? Endung .md/.txt oder ein MIME-Typ "text/…"; unbekannter Name wird zugelassen. */
+    fun isTextFile(name: String?, mimeType: String? = null): Boolean =
+        name == null || EXTENSIONS.any { name.lowercase().endsWith(it) } || mimeType?.startsWith("text/") == true
 
     /** Anzeigename der Datei (z. B. "namen.md"), sonst das letzte Pfadstueck. */
     fun displayName(context: Context, uri: Uri): String? {

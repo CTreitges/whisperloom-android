@@ -115,7 +115,7 @@ Ein persistenter PKCS12-Keystore liegt als GitHub-Secrets `WHISPERLOOM_KEYSTORE_
 
 ## Tests
 
-Alle Tests laufen ohne Gerät und ohne Emulator (`./gradlew testDebugUnitTest`): reine JVM-Tests für die Logik, Robolectric (SDK 35) für alles, was Android-Ressourcen, `org.json`, SharedPreferences oder Layout-Inflation braucht. HTTP-Pfade werden gegen einen lokalen JDK-`HttpServer` getestet. Stand 3.5.0: 81 Testklassen in 77 Dateien, 689 `@Test`-Methoden.
+Alle Tests laufen ohne Gerät und ohne Emulator (`./gradlew testDebugUnitTest`): reine JVM-Tests für die Logik, Robolectric (SDK 35) für alles, was Android-Ressourcen, `org.json`, SharedPreferences oder Layout-Inflation braucht. HTTP-Pfade werden gegen einen lokalen JDK-`HttpServer` getestet. Stand 3.5.0: 81 Testklassen in 77 Dateien, 695 `@Test`-Methoden.
 
 | Testklasse | Deckt ab |
 |---|---|
@@ -132,7 +132,7 @@ Alle Tests laufen ohne Gerät und ohne Emulator (`./gradlew testDebugUnitTest`):
 | `SetupStateTest` | Transkriptions-Zugang vollständig (URL, Key je nach Anbieter) |
 | `TextPolisherTest` | Füllwörter (eingebaut, eigene, abgewählte, mehrwortig), Groß-Schreibung, Whitespace, Zeilenumbrüche |
 | `TranscriptionEngineTest` | Backend-Wahl und kompletter Diktat-Pfad gegen einen lokalen „eigenen Server": Multipart-Felder, kein Header ohne Key, Ollama-Body, Politur, Offline-Konfiguration; Diktat mit Ollama lokal/Cloud (Key nur bei der Cloud, Fehler → Rohtext mit Hinweis), Absatz-Schalter an/aus, Vokabular aus Liste + Datei (bei jedem Diktat neu gelesen), verschwundene Datei bricht kein Diktat ab |
-| `VocabularyTest` | Eigene Begriffe (Komma/Semikolon, Duplikate, Entfernen), alter Freitext bleibt ein Eintrag, Datei-Parser (Markdown-Zeichen, BOM, Windows-Zeilenenden, Duplikate ohne Groß-/Kleinschreibung), eigene Begriffe vor der Datei, Kappung nur zwischen ganzen Begriffen |
+| `VocabularyTest` | Eigene Begriffe (Komma/Semikolon, Duplikate, Entfernen), alter Freitext (auch mehrzeilig) bleibt erhalten, Datei-Parser (Markdown-Zeichen, BOM, Windows-Zeilenenden, Duplikate ohne Groß-/Kleinschreibung), eigene Begriffe am Ende (Whisper beachtet das Ende), Kappung von vorn nur zwischen ganzen Begriffen, Tabellen/leere Aufgaben, Windows-1252 |
 | `WavEncoderTest`, `WavHeaderTest`, `WavSamplesTest` | WAV-Header und PCM-Kodierung, getrennter Kopf fürs Streaming, Rückweg PCM → Float |
 | `a11y/TextInsertionTest` | Einfügen an Cursor/Auswahl, leeres Feld (Hint-Regression), Leerzeichen-Logik |
 | `api/AccessResolverTest` | STT-/LLM-Zugänge: Defaults, `same`, nie der STT-Key an einen anderen Anbieter; Ollama Cloud mit Katalog-URL und eigenem Key, Ollama lokal ohne Adresse bleibt leer |

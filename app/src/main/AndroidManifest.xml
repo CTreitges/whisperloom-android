@@ -37,7 +37,7 @@
         <!-- Einzige Compose-Activity (UX-Spec §0.2): Router, Home, Assistent, Einstellungen.
              singleTask: Deep-Links aus IME/Overlay/Notification (AppNav) landen per onNewIntent.
              adjustResize: die Tastatur liefert Insets, die Compose selbst verarbeitet (imePadding in
-             ScrollColumn/LoomSheet/Assistent). Ohne das waehlt Android adjustPan und schiebt das
+             ScrollColumn und im Assistenten; ModalBottomSheet regelt die Tastatur selbst). Ohne das waehlt Android adjustPan und schiebt das
              GANZE Fenster hoch — Titelleiste weg, Inhalt unter der Statusleiste, und bei jeder
              neuen Zeile im Textfeld ruckt es erneut ("die App springt"). -->
         <activity

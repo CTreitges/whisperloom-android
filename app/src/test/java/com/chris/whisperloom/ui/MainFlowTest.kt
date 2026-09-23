@@ -307,6 +307,30 @@ class MainFlowTest {
         assertEquals(false, Prefs(ctx).refineParagraphs)
     }
 
+    /** Review 3.5.0 HOCH: nach aus/an darf weder die Ollama-Adresse noch der Ollama-Key haengen bleiben. */
+    @Test fun eigenerZugangAusUndAnVergisstAlteAdresseUndKey() {
+        prefs.engine = Engine.ONLINE
+        prefs.sttProviderId = "groq"
+        prefs.apiKey = "gsk-stt"
+        prefs.refineMode = RefineMode.POLISH
+        prefs.llmProviderId = "ollama"
+        prefs.llmUrl = "http://homeserver:11434"
+        prefs.llmKey = "ollama-key"
+        prefs.llmModel = "gemma3"
+        screen(env()) { TextSettingsScreen(it) }
+        compose.onNodeWithText("Eigenen Zugang verwenden").performClick() // aus
+        compose.waitForIdle()
+        compose.onNodeWithText("Eigenen Zugang verwenden").performClick() // wieder an
+        compose.waitForIdle()
+        val p = Prefs(ctx)
+        assertEquals("groq", p.llmProviderId)
+        assertEquals("", p.llmUrl)
+        assertEquals("", p.llmKey)
+        val llm = p.llmAccess()
+        assertEquals("https://api.groq.com/openai/v1", llm.baseUrl)
+        assertEquals("gsk-stt", llm.apiKey) // der eigene Groq-Key, nicht der von Ollama
+    }
+
     @Test fun ollamaImHeimnetzFragtNachDerServerAdresse() {
         prefs.refineMode = RefineMode.POLISH
         prefs.llmProviderId = "ollama"

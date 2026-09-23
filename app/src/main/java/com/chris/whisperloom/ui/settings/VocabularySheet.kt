@@ -70,7 +70,7 @@ fun VocabularySheet(snack: SnackController, onDismiss: () -> Unit) {
         if (uri == null) return@rememberLauncherForActivityResult
         val name = VocabularySource.displayName(ctx, uri)
         when {
-            !VocabularySource.isTextFile(name) -> snack.show(res.getString(R.string.vocab_file_wrong_type))
+            !VocabularySource.isTextFile(name, ctx.contentResolver.getType(uri)) -> snack.show(res.getString(R.string.vocab_file_wrong_type))
             !VocabularySource.link(ctx, prefs.prefs, uri, name) -> snack.show(res.getString(R.string.vocab_file_no_permission))
             else -> {
                 // PrefsState-Spiegel nachziehen: link() schreibt ueber die rohen Prefs.

@@ -84,8 +84,13 @@ fun LlmAccessSection(snack: SnackController) {
     }
 
     // Eigener Zugang: den Erkennungs-Anbieter uebernehmen, wenn er Textmodelle hat, sonst OpenAI.
+    // Alte Felder leeren wie beim Anbieterwechsel: sonst ginge nach aus/an z. B. die Ollama-Adresse
+    // mit dem Groq-Key (oder der ollama.com-Key an Groq) raus — Review 3.5.0, HOCH.
     fun switchToOwn() {
         prefs.llmProviderId = if (stt.provider.hasLlm) stt.provider.id else ProviderCatalog.OPENAI_ID
+        prefs.llmUrl = ""
+        prefs.llmKey = ""
+        prefs.llmModel = ""
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -193,9 +198,12 @@ fun LlmAccessSection(snack: SnackController) {
                 enabled = !loadingModels && llm.baseUrl.isNotBlank(),
                 onClick = {
                     loadingModels = true
+                    val startedFor = prefs.llmProviderId to prefs.llmUrl
                     scope.launch {
                         val result = withContext(Dispatchers.IO) { runCatching { OllamaApi.listModels(prefs.llmAccess()) } }
                         loadingModels = false
+                        // Inzwischen anderer Anbieter oder andere Adresse: Ergebnis gehoert nicht mehr hierher.
+                        if (prefs.llmProviderId to prefs.llmUrl != startedFor) return@launch
                         result.onSuccess { names ->
                             serverModels = names
                             // Lokal gibt es kein Default-Modell: das erste gefundene uebernehmen.
