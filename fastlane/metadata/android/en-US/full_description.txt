@@ -8,10 +8,12 @@ Three ways to dictate:
 Recognition your way:
 • Online with your own account at OpenAI, Groq (free tier), Mistral, Together, DeepInfra, OpenRouter, or any OpenAI-compatible server you host yourself (speaches, whisper.cpp server).
 • Offline on the device with whisper.cpp. Models (Tiny to Large v3 Turbo) are downloaded on demand – none is bundled.
+• Vocabulary for names and technical terms: as a list in the app or as a linked .md/.txt file that is re-read with every dictation – edits to the file take effect right away.
 
 Text the way you want it:
 • Remove filler words (editable list), automatic capitalisation.
-• Optional clean-up by a language model in three levels: polish, rephrase, summarise – using your own or the recognition account.
+• Optional clean-up by a language model in three levels: polish, rephrase, summarise – using your own or the recognition account, including Ollama: locally on your home server without a key (the text never leaves your network) or via Ollama Cloud. The model list comes straight from the server.
+• "Automatic paragraphs" switch: the AI splits longer dictations into paragraphs – or, when switched off, returns everything as one continuous text.
 
 Transcribe voice messages: share a message from WhatsApp, Telegram or Signal → WhisperLoom. The text appears in readable paragraphs, verbatim or without fillers, ready to copy or forward.
 

@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -53,6 +54,7 @@ import kotlinx.coroutines.withContext
 fun VocabularySheet(snack: SnackController, onDismiss: () -> Unit) {
     val prefs = LocalAppEnv.current.prefs
     val ctx = LocalContext.current
+    val res = LocalResources.current
     var input by rememberSaveable { mutableStateOf("") }
     val entries = Vocabulary.entries(prefs.apiPrompt)
 
@@ -68,8 +70,8 @@ fun VocabularySheet(snack: SnackController, onDismiss: () -> Unit) {
         if (uri == null) return@rememberLauncherForActivityResult
         val name = VocabularySource.displayName(ctx, uri)
         when {
-            !VocabularySource.isTextFile(name) -> snack.show(ctx.getString(R.string.vocab_file_wrong_type))
-            !VocabularySource.link(ctx, prefs.prefs, uri, name) -> snack.show(ctx.getString(R.string.vocab_file_no_permission))
+            !VocabularySource.isTextFile(name) -> snack.show(res.getString(R.string.vocab_file_wrong_type))
+            !VocabularySource.link(ctx, prefs.prefs, uri, name) -> snack.show(res.getString(R.string.vocab_file_no_permission))
             else -> {
                 // PrefsState-Spiegel nachziehen: link() schreibt ueber die rohen Prefs.
                 prefs.vocabFileUri = prefs.prefs.vocabFileUri

@@ -22,7 +22,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -66,7 +66,7 @@ fun LlmAccessSection(snack: SnackController) {
     var serverModels by remember(provider.id, llm.baseUrl) { mutableStateOf(emptyList<String>()) }
     var loadingModels by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val ctx = LocalContext.current
+    val res = LocalResources.current
 
     // Ollama verbunden (Adresse da, bei der Cloud auch der Key): Modell-Liste still im Hintergrund
     // holen, damit das Auswahlfeld sofort die Server-Modelle zeigt. Die Pause entprellt das
@@ -203,11 +203,11 @@ fun LlmAccessSection(snack: SnackController) {
                                 prefs.llmModel = names.first()
                             }
                             snack.show(
-                                if (names.isEmpty()) ctx.getString(R.string.text_ollama_no_models)
-                                else ctx.resources.getQuantityString(R.plurals.text_ollama_models_found, names.size, names.size),
+                                if (names.isEmpty()) res.getString(R.string.text_ollama_no_models)
+                                else res.getQuantityString(R.plurals.text_ollama_models_found, names.size, names.size),
                             )
                         }.onFailure { e ->
-                            snack.show(ctx.getString(R.string.text_ollama_models_failed, e.message ?: e.javaClass.simpleName))
+                            snack.show(res.getString(R.string.text_ollama_models_failed, e.message ?: e.javaClass.simpleName))
                         }
                     }
                 },

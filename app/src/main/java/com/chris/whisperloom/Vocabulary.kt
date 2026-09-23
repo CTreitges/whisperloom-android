@@ -23,6 +23,8 @@ object Vocabulary {
     /** Groesste Datei, die gelesen wird — ein Vokabular hat nie Megabytes. */
     const val MAX_FILE_BYTES = 256 * 1024
 
+    private const val BOM = "\uFEFF"
+
     private val SEPARATORS = Regex("[,;\\n]")
 
     private val HEADING = Regex("^#{1,6}\\s")
@@ -55,7 +57,7 @@ object Vocabulary {
     fun parseFile(text: String): List<String> {
         val out = mutableListOf<String>()
         var inCodeBlock = false
-        for (rawLine in text.removePrefix("﻿").lines()) {
+        for (rawLine in text.removePrefix(BOM).lines()) {
             val line = rawLine.trim()
             if (line.startsWith("```") || line.startsWith("~~~")) {
                 inCodeBlock = !inCodeBlock
