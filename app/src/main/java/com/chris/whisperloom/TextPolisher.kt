@@ -67,6 +67,7 @@ object PolishPlan {
         smartFillers: Boolean,
         customFillers: Collection<String> = emptyList(),
         disabledFillers: Set<String> = emptySet(),
+        paragraphs: Boolean = true,
     ): PolishOptions {
         val refined = refineMode != RefineMode.OFF
         val aiDecidesFillers = refined && smartFillers
@@ -76,8 +77,10 @@ object PolishPlan {
             language = language,
             customFillers = customFillers,
             disabledFillers = disabledFillers,
-            // Das Sprachmodell setzt Absaetze/Stichpunkte bewusst — nicht plattziehen.
-            keepLineBreaks = refined,
+            // Das Sprachmodell setzt Absaetze/Stichpunkte bewusst — nicht plattziehen. Mit
+            // "Automatische Absaetze" aus werden Umbrueche, die das Modell trotzdem liefert,
+            // hier zuverlaessig zu einem Fliesstext zusammengezogen.
+            keepLineBreaks = refined && paragraphs,
         )
     }
 

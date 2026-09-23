@@ -297,6 +297,105 @@ class MainFlowTest {
         compose.onNodeWithText("sozusagen").assertExists()
     }
 
+    @Test fun absatzSchalterIstAnUndWirktNurMitStufe() {
+        screen(env()) { TextSettingsScreen(it) }
+        compose.onNodeWithText("Automatische Absätze").assertIsNotEnabled()
+        compose.onNodeWithText("Glätten").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Automatische Absätze").assertIsEnabled().performClick()
+        compose.waitForIdle()
+        assertEquals(false, Prefs(ctx).refineParagraphs)
+    }
+
+    /** Review 3.5.0 HOCH: nach aus/an darf weder die Ollama-Adresse noch der Ollama-Key haengen bleiben. */
+    @Test fun eigenerZugangAusUndAnVergisstAlteAdresseUndKey() {
+        prefs.engine = Engine.ONLINE
+        prefs.sttProviderId = "groq"
+        prefs.apiKey = "gsk-stt"
+        prefs.refineMode = RefineMode.POLISH
+        prefs.llmProviderId = "ollama"
+        prefs.llmUrl = "http://homeserver:11434"
+        prefs.llmKey = "ollama-key"
+        prefs.llmModel = "gemma3"
+        screen(env()) { TextSettingsScreen(it) }
+        compose.onNodeWithText("Eigenen Zugang verwenden").performClick() // aus
+        compose.waitForIdle()
+        compose.onNodeWithText("Eigenen Zugang verwenden").performClick() // wieder an
+        compose.waitForIdle()
+        val p = Prefs(ctx)
+        assertEquals("groq", p.llmProviderId)
+        assertEquals("", p.llmUrl)
+        assertEquals("", p.llmKey)
+        val llm = p.llmAccess()
+        assertEquals("https://api.groq.com/openai/v1", llm.baseUrl)
+        assertEquals("gsk-stt", llm.apiKey) // der eigene Groq-Key, nicht der von Ollama
+    }
+
+    @Test fun ollamaImHeimnetzFragtNachDerServerAdresse() {
+        prefs.refineMode = RefineMode.POLISH
+        prefs.llmProviderId = "ollama"
+        screen(env()) { TextSettingsScreen(it) }
+        compose.onNodeWithText("Dein eigenes Ollama", substring = true).assertExists()
+        compose.onNodeWithText("Modelle vom Server laden").assertIsNotEnabled()
+        compose.onNode(hasSetTextAction() and hasText("Server-Adresse")).performTextInput("http://127.0.0.1:1")
+        compose.waitForIdle()
+        assertEquals("http://127.0.0.1:1", Prefs(ctx).llmUrl)
+        compose.onNodeWithText("Modelle vom Server laden").assertIsEnabled()
+        // Ohne Modell-Liste bleibt die freie Eingabe des Modellnamens.
+        compose.onNode(hasSetTextAction() and hasText("Modell")).performTextInput("gemma3:4b")
+        compose.waitForIdle()
+        assertEquals("gemma3:4b", Prefs(ctx).llmModel)
+    }
+
+    @Test fun ollamaCloudZeigtModellAuswahlUndFreieEingabe() {
+        prefs.refineMode = RefineMode.POLISH
+        prefs.llmProviderId = "ollama-cloud"
+        screen(env()) { TextSettingsScreen(it) }
+        compose.onNodeWithText("https://ollama.com").assertExists()
+        compose.onNodeWithTag("dropdown:Modell").assertTextContains("Gemma 4 31B (empfohlen)")
+        compose.onNodeWithTag("dropdown:Modell").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("GLM 5.3 Flash").assertExists()
+        compose.onNodeWithText("Eigenes Modell …").performClick()
+        compose.waitForIdle()
+        compose.onNode(hasSetTextAction() and hasText("Modell-ID")).performTextInput("kimi-k2.6")
+        compose.onNodeWithText("Übernehmen").performClick()
+        compose.waitForIdle()
+        assertEquals("kimi-k2.6", Prefs(ctx).llmModel)
+    }
+
+    // --- Vokabular -------------------------------------------------------------------
+
+    @Test fun vokabularAlsListeImSheet() {
+        prefs.engine = Engine.ONLINE
+        prefs.sttProviderId = "groq"
+        prefs.apiKey = "k"
+        screen(env()) { RecognitionScreen(it) }
+        compose.onNodeWithText("Noch keine Begriffe").assertExists()
+        compose.onNodeWithText("Bearbeiten").performClick()
+        compose.waitForIdle()
+        compose.onNode(hasSetTextAction() and hasText("Begriff hinzufügen")).performTextInput("Anna, Kubernetes")
+        compose.onNodeWithContentDescription("Begriff hinzufügen").performClick()
+        compose.waitForIdle()
+        assertEquals("Anna\nKubernetes", Prefs(ctx).apiPrompt)
+        compose.onNodeWithText("Eigene Begriffe (2)").assertExists()
+        compose.onNodeWithContentDescription("Anna entfernen").performClick()
+        compose.waitForIdle()
+        assertEquals("Kubernetes", Prefs(ctx).apiPrompt)
+        compose.onNodeWithText("Datei verknüpfen").assertExists()
+    }
+
+    @Test fun vokabularZeileNenntAnzahlUndDatei() {
+        prefs.engine = Engine.ONLINE
+        prefs.sttProviderId = "groq"
+        prefs.apiKey = "k"
+        prefs.apiPrompt = "Anna\nBernd"
+        prefs.vocabFileUri = "content://x/namen.md"
+        prefs.vocabFileName = "namen.md"
+        screen(env()) { RecognitionScreen(it) }
+        compose.onNodeWithText("2 Begriffe · Datei: namen.md").assertExists()
+    }
+
     // --- E4 Offline-Modelle -------------------------------------------------------
 
     @Test fun modelleZeigenVierEintraegeEmpfehlungUndGrossGedimmt() {
@@ -349,7 +448,7 @@ class MainFlowTest {
         prefs.sttProviderId = "mistral"
         prefs.apiKey = "k"
         screen(env()) { RecognitionScreen(it) }
-        compose.onNodeWithText("Dieser Anbieter nimmt keinen Kontext entgegen — das Feld wirkt nur bei anderen Anbietern und offline.")
+        compose.onNodeWithText("Dieser Anbieter nimmt kein Vokabular entgegen — es wirkt nur bei anderen Anbietern und offline.")
             .assertExists()
         compose.onNodeWithText("Kontext-Wörter (kommagetrennt)").assertDoesNotExist()
     }

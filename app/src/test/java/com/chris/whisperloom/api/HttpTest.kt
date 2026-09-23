@@ -23,12 +23,14 @@ class HttpTest {
 
     private lateinit var server: HttpServer
     private var lastAuth: String? = "unset"
+    private var lastAgent: String? = null
     private var lastBody = ""
 
     @Before fun startServer() {
         server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
         server.createContext("/ok") { ex ->
             lastAuth = ex.requestHeaders.getFirst("Authorization")
+            lastAgent = ex.requestHeaders.getFirst("User-Agent")
             lastBody = ex.requestBody.readBytes().toString(Charsets.UTF_8)
             val out = """{"text":"hi"}""".toByteArray()
             ex.sendResponseHeaders(200, out.size.toLong())
@@ -78,6 +80,21 @@ class HttpTest {
     @Test fun leerzeichenKeyZaehltAlsKeinKey() {
         Http.post(url("/ok"), apiKey = "   ", contentType = "text/plain") { it.write("x".toByteArray()) }
         assertNull(lastAuth)
+    }
+
+    /** ollama.com sperrt "Dalvik/…" mit 403 — jeder Request traegt deshalb die App-Kennung. */
+    @Test fun eigenerUserAgentStattDalvik() {
+        Http.post(url("/ok"), apiKey = "", contentType = "text/plain") { it.write("x".toByteArray()) }
+        assertTrue(lastAgent!!, lastAgent!!.startsWith("WhisperLoom/"))
+        lastAgent = null
+        Http.get(url("/ok"), apiKey = "")
+        assertTrue(lastAgent!!, lastAgent!!.startsWith("WhisperLoom/"))
+    }
+
+    @Test fun ollamaFehlerformWirdLesbar() {
+        assertEquals("Unauthorized", Http.errorDetail("""{"error":"Unauthorized"}"""))
+        assertEquals("invalid api key", Http.errorDetail("""{"error":{"message":"invalid api key"}}"""))
+        assertEquals("keine Antwort", Http.errorDetail(""))
     }
 
     @Test fun fehlerstatusWirdLesbar() {

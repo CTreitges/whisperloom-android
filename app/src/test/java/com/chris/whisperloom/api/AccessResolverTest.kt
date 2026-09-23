@@ -123,6 +123,25 @@ class AccessResolverTest {
         assertNull(l.modelOption)
     }
 
+    @Test fun ollamaCloudNutztDenKatalogUndDenEigenenKey() {
+        val l = AccessResolver.resolveLlm(stt, "ollama-cloud", "", "ok-key", "")
+        assertEquals("https://ollama.com", l.baseUrl)
+        assertEquals("ok-key", l.apiKey)
+        assertEquals("gemma4:31b", l.model)
+        assertEquals(90_000, l.readTimeoutMs)
+        // Der Key des Transkriptions-Anbieters darf nie an ollama.com gehen.
+        assertEquals("", AccessResolver.resolveLlm(stt, "ollama-cloud", "", "", "").apiKey)
+    }
+
+    @Test fun ollamaLokalOhneAdresseBleibtLeer() {
+        val l = AccessResolver.resolveLlm(stt, "ollama", "", "", "")
+        assertEquals("", l.baseUrl)
+        assertEquals("", l.model)
+        val mitAdresse = AccessResolver.resolveLlm(stt, "ollama", "http://192.168.1.10:11434", "", "gemma3")
+        assertEquals("http://192.168.1.10:11434", mitAdresse.baseUrl)
+        assertEquals(600_000, mitAdresse.readTimeoutMs)
+    }
+
     @Test fun ollamaNebenCloudStt() {
         val l = AccessResolver.resolveLlm(stt, "custom", "http://192.168.1.50:11434/v1", "", "qwen3:8b")
         assertEquals("http://192.168.1.50:11434/v1", l.baseUrl)

@@ -29,7 +29,8 @@ class ProviderCatalogTest {
     }
 
     @Test fun cloudAnbieterNutzenHttpsUndVerlangenEinenKey() {
-        for (p in ProviderCatalog.providers.filter { !it.isCustom }) {
+        // needsUrl = eigener Server bzw. Ollama im Heimnetz: Adresse und http:// kommen vom Nutzer.
+        for (p in ProviderCatalog.providers.filter { !it.needsUrl }) {
             assertTrue(p.id, p.baseUrl.startsWith("https://"))
             assertTrue(p.id, p.needsKey)
             assertTrue(p.id, p.keyUrl.startsWith("https://"))
@@ -102,8 +103,39 @@ class ProviderCatalogTest {
             ProviderCatalog.sttProviders.map { it.id },
         )
         assertEquals(
-            listOf("openai", "groq", "mistral", "openrouter", "anthropic", "gemini", "deepseek", "custom"),
+            listOf("openai", "groq", "mistral", "openrouter", "anthropic", "gemini", "deepseek", "ollama", "ollama-cloud", "custom"),
             ProviderCatalog.llmProviders.map { it.id },
+        )
+    }
+
+    @Test fun ollamaLokalBrauchtAdresseAberKeinenKey() {
+        val o = ProviderCatalog.byId(ProviderCatalog.OLLAMA_ID)
+        assertTrue(o.isOllama)
+        assertTrue(o.needsUrl)
+        assertFalse(o.needsKey)
+        assertTrue(o.allowsHttp)
+        assertEquals(600, o.defaultReadTimeoutSec)
+        assertTrue(o.hasLlm)
+        // Ollama kann kein Audio: nie in der Transkriptions-Auswahl.
+        assertFalse(o.hasStt)
+        assertEquals("", o.defaultLlmModel)
+    }
+
+    @Test fun ollamaCloudMitKeyUndEmpfohlenemModell() {
+        val c = ProviderCatalog.byId(ProviderCatalog.OLLAMA_CLOUD_ID)
+        assertTrue(c.isOllama)
+        assertEquals("https://ollama.com", c.baseUrl)
+        assertTrue(c.needsKey)
+        assertEquals("https://ollama.com/settings/keys", c.keyUrl)
+        assertFalse(c.hasStt)
+        // Schnellstes Modell ohne Nachdenken (live gemessen) ist der Default.
+        assertEquals("gemma4:31b", c.defaultLlmModel)
+    }
+
+    @Test fun nurOllamaSprichtDieNativeApi() {
+        assertEquals(
+            listOf("ollama", "ollama-cloud"),
+            ProviderCatalog.providers.filter { it.api == ApiStyle.OLLAMA }.map { it.id },
         )
     }
 

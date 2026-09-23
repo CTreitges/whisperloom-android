@@ -19,7 +19,14 @@ data class ModelOption(
 )
 
 /**
- * Ein Anbieter mit OpenAI-kompatibler API. Inhalt siehe [ProviderCatalog].
+ * Welches Protokoll ein Anbieter spricht. [OLLAMA] = native Ollama-API (POST /api/chat,
+ * GET /api/tags) — lokal und auf ollama.com gleich, deshalb dieselbe Code-Strecke.
+ */
+enum class ApiStyle { OPENAI, OLLAMA }
+
+/**
+ * Ein Anbieter mit OpenAI-kompatibler API (oder nativer Ollama-API, siehe [api]).
+ * Inhalt siehe [ProviderCatalog].
  *
  * @param allowsHttp Unverschluesseltes http:// nur fuer den eigenen Server (LAN/VPN).
  * @param sttSendsPrompt / [sttSendsResponseFormat] Extra-Felder, die nicht jeder Anbieter
@@ -27,6 +34,7 @@ data class ModelOption(
  * @param sttPathOverride Kompletter Transkriptions-Endpunkt, wenn er nicht unter
  *   `baseUrl + /audio/transcriptions` liegt (DeepInfra).
  * @param sttMaxBytes Dokumentiertes Upload-Limit (null = unbekannt).
+ * @param api Protokoll; bei [ApiStyle.OLLAMA] ist [baseUrl] die Server-Wurzel ohne /api bzw. /v1.
  */
 data class Provider(
     val id: String,
@@ -42,15 +50,21 @@ data class Provider(
     val sttSendsResponseFormat: Boolean = true,
     val sttPathOverride: String? = null,
     val sttMaxBytes: Int? = null,
+    val api: ApiStyle = ApiStyle.OPENAI,
     val notes: String = "",
 ) {
     val isCustom: Boolean get() = id == ProviderCatalog.CUSTOM_ID
 
-    /** Taugt fuer die Transkriptions-Auswahl (eigener Server: Modell-ID frei). */
+    val isOllama: Boolean get() = api == ApiStyle.OLLAMA
+
+    /** Der Nutzer traegt die Server-Adresse selbst ein (eigener Server, Ollama im Heimnetz). */
+    val needsUrl: Boolean get() = baseUrl.isBlank()
+
+    /** Taugt fuer die Transkriptions-Auswahl (eigener Server: Modell-ID frei). Ollama kann kein Audio. */
     val hasStt: Boolean get() = isCustom || sttModels.isNotEmpty()
 
-    /** Taugt fuer die Textverbesserungs-Auswahl. */
-    val hasLlm: Boolean get() = isCustom || llmModels.isNotEmpty()
+    /** Taugt fuer die Textverbesserungs-Auswahl. Ollama-Modelle kommen vom Server selbst (/api/tags). */
+    val hasLlm: Boolean get() = isCustom || isOllama || llmModels.isNotEmpty()
 
     /** Erstes Modell der Liste = Empfehlung; "" beim eigenen Server. */
     val defaultSttModel: String get() = sttModels.firstOrNull()?.id.orEmpty()
@@ -71,6 +85,8 @@ object ProviderCatalog {
     const val CATALOG_DATE = "2026-09-06"
     const val CUSTOM_ID = "custom"
     const val OPENAI_ID = "openai"
+    const val OLLAMA_ID = "ollama"
+    const val OLLAMA_CLOUD_ID = "ollama-cloud"
 
     private const val MB_25 = 26_214_400
     private const val MB_80 = 83_886_080
@@ -281,6 +297,34 @@ object ProviderCatalog {
             notes = "Nur Textverbesserung. Kein Free-Tier. Server in China -> Datenschutz-Hinweis.",
         ),
         Provider(
+            id = OLLAMA_ID,
+            name = "Ollama (lokal)",
+            baseUrl = "",
+            needsKey = false,
+            allowsHttp = true,
+            // Ein Homeserver ohne GPU braucht fuer ein langes Diktat mehr als 90 s.
+            defaultReadTimeoutSec = 600,
+            api = ApiStyle.OLLAMA,
+            notes = "Eigener Ollama-Server im Heimnetz/VPN, z. B. http://homeserver:11434. Modelle kommen per /api/tags vom Server. " +
+                "Auf dem Server OLLAMA_HOST=0.0.0.0 setzen, sonst lauscht Ollama nur auf localhost.",
+        ),
+        Provider(
+            id = OLLAMA_CLOUD_ID,
+            name = "Ollama Cloud",
+            baseUrl = "https://ollama.com",
+            keyUrl = "https://ollama.com/settings/keys",
+            api = ApiStyle.OLLAMA,
+            // Live gemessen 2026-09-24 (ein Satz, ohne think-Parameter): gemma4 0,8 s ohne Nachdenken,
+            // glm-5.3-flash 1,4 s, gpt-oss:20b 3,7 s (Nachdenken nur auf "low" drosselbar).
+            llmModels = listOf(
+                ModelOption("gemma4:31b", "Gemma 4 31B (empfohlen)", "Schnell, denkt nicht nach — gut für Diktate."),
+                ModelOption("glm-5.3-flash", "GLM 5.3 Flash", "Schnell, denkt kurz nach."),
+                ModelOption("gpt-oss:20b", "GPT-OSS 20B", "Denkt nach (think=low), dadurch langsamer."),
+                ModelOption("gpt-oss:120b", "GPT-OSS 120B", "Groß, denkt nach (think=low)."),
+            ),
+            notes = "Cloud-Modelle auf ollama.com, Key unter ollama.com/settings/keys. Weitere Modelle per /api/tags.",
+        ),
+        Provider(
             id = CUSTOM_ID,
             name = "Eigener Server (OpenAI-kompatibel)",
             baseUrl = "",
@@ -289,7 +333,7 @@ object ProviderCatalog {
             allowsHttp = true,
             // CPU-Server brauchen fuer ein 5-Minuten-Stueck Minuten, nicht Sekunden.
             defaultReadTimeoutSec = 600,
-            notes = "Freie Base-URL + Modell-IDs (z. B. faster-whisper-server, speaches, LocalAI, Ollama). Key optional.",
+            notes = "Freie Base-URL + Modell-IDs (z. B. faster-whisper-server, speaches, LocalAI). Für Ollama gibt es eigene Einträge. Key optional.",
         ),
     )
 

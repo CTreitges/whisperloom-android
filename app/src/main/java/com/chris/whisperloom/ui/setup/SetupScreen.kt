@@ -16,9 +16,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -106,7 +108,7 @@ fun SetupScreen(step: Int, nav: NavState) {
         },
         snackbarHost = { SnackbarHost(snack.host) },
     ) { padding ->
-        Column(Modifier.padding(padding).fillMaxSize()) {
+        Column(Modifier.padding(padding).consumeWindowInsets(padding).fillMaxSize()) {
             if (inSteps) ProgressRow(shown, facts)
             AnimatedContent(
                 targetState = shown,
@@ -193,7 +195,9 @@ private fun ProgressRow(step: Int, facts: SetupFacts) {
 /** Eine Schritt-Seite: Icon-Kreis, Titel, Erklaerung, Status-Chip, Inhalt; darunter die Bottom-Bar. */
 @Composable
 private fun StepPage(ui: StepUi, showBack: Boolean, onBack: () -> Unit) {
-    Column(Modifier.fillMaxSize()) {
+    // imePadding aussen: die Bottom-Bar sitzt ueber der Tastatur, und ihr navigationBarsPadding
+    // greift dann nicht doppelt (die Tastatur-Insets enthalten die Navigationsleiste schon).
+    Column(Modifier.fillMaxSize().imePadding()) {
         Column(
             Modifier
                 .weight(1f)

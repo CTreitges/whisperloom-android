@@ -1,0 +1,5 @@
+WhisperLoom 3.5.0
+• Vocabulary as a list: add and remove names and terms one by one, plus link a .md/.txt file permanently – it is re-read for every dictation
+• Text refinement with Ollama: local on your home server or Ollama Cloud, models are loaded from the server, any name can be typed in
+• New switch "Automatic paragraphs"
+• Fixed: the app jumped around while typing

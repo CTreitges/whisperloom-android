@@ -88,7 +88,7 @@ private fun ResultChip(outcome: AccessTest.Outcome) {
 
 @Composable
 fun failureText(f: AccessTest.Outcome.Failed): String = when (f.kind) {
-    AccessTest.Kind.UNAUTHORIZED -> stringResource(R.string.err_401)
+    AccessTest.Kind.UNAUTHORIZED -> stringResource(if (f.code == 403) R.string.err_403 else R.string.err_401)
     AccessTest.Kind.RATE_LIMIT -> stringResource(R.string.err_429)
     AccessTest.Kind.SERVER -> stringResource(R.string.err_server, f.code)
     AccessTest.Kind.TIMEOUT -> stringResource(R.string.err_timeout)

@@ -140,12 +140,23 @@ class Prefs(context: Context) {
         set(v) = sp.edit().putString(KEY_API_MODEL, v).apply()
 
     /**
-     * Kontext fuer die Erkennung (Eigennamen, Fachbegriffe, gewuenschte Schreibweisen).
-     * Geht als `prompt` an die API (offline: initial_prompt) — kostet nichts extra.
+     * Vokabular fuer die Erkennung (Eigennamen, Fachbegriffe, gewuenschte Schreibweisen), ein
+     * Eintrag pro Zeile ([Vocabulary]). Geht zusammen mit [vocabFileUri] als `prompt` an die API
+     * (offline: initial_prompt) — kostet nichts extra.
      */
     var apiPrompt: String
         get() = sp.getString(KEY_API_PROMPT, "") ?: ""
         set(v) = sp.edit().putString(KEY_API_PROMPT, v).apply()
+
+    /** content://-URI der verknuepften .md/.txt-Datei ("" = keine), siehe [VocabularySource]. */
+    var vocabFileUri: String
+        get() = sp.getString(KEY_VOCAB_FILE_URI, "") ?: ""
+        set(v) = sp.edit().putString(KEY_VOCAB_FILE_URI, v).apply()
+
+    /** Anzeigename der verknuepften Datei (z. B. "namen.md"). */
+    var vocabFileName: String
+        get() = sp.getString(KEY_VOCAB_FILE_NAME, "") ?: ""
+        set(v) = sp.edit().putString(KEY_VOCAB_FILE_NAME, v).apply()
 
     /** Read-Timeout in Sekunden; 0 = Anbieter-Default (90, eigener Server 600). */
     var apiReadTimeoutSec: Int
@@ -185,6 +196,14 @@ class Prefs(context: Context) {
     var smartFillers: Boolean
         get() = sp.getBoolean(KEY_SMART_FILLERS, false)
         set(v) = sp.edit().putBoolean(KEY_SMART_FILLERS, v).apply()
+
+    /**
+     * Das Sprachmodell gliedert laengere Diktate in Absaetze (Default, bisheriges Verhalten).
+     * Aus: ein durchgehender Text ohne Zeilenumbrueche. Wirkt nur mit [refineMode] != OFF.
+     */
+    var refineParagraphs: Boolean
+        get() = sp.getBoolean(KEY_REFINE_PARAGRAPHS, true)
+        set(v) = sp.edit().putBoolean(KEY_REFINE_PARAGRAPHS, v).apply()
 
     // --- Nachbearbeitung -----------------------------------------------------
 
@@ -327,6 +346,8 @@ class Prefs(context: Context) {
         private const val KEY_API_KEY = "api_key"
         private const val KEY_API_MODEL = "api_model"
         private const val KEY_API_PROMPT = "api_prompt"
+        private const val KEY_VOCAB_FILE_URI = "vocab_file_uri"
+        private const val KEY_VOCAB_FILE_NAME = "vocab_file_name"
         private const val KEY_READ_TIMEOUT = "api_read_timeout_sec"
         private const val KEY_LLM_PROVIDER = "llm_provider"
         private const val KEY_LLM_URL = "llm_url"
@@ -335,6 +356,7 @@ class Prefs(context: Context) {
         private const val KEY_REFINE_MODE = "refine_mode"
         private const val KEY_LLM_POLISH_LEGACY = "llm_polish"
         private const val KEY_SMART_FILLERS = "smart_fillers"
+        private const val KEY_REFINE_PARAGRAPHS = "refine_paragraphs"
         private const val KEY_REMOVE_FILLERS = "remove_fillers"
         private const val KEY_AUTO_CAP = "auto_capitalize"
         private const val KEY_TRAILING_SPACE = "trailing_space"

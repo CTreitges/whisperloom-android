@@ -16,6 +16,7 @@ class PolishPlanTest {
         smartFillers: Boolean = false,
         customFillers: List<String> = emptyList(),
         disabledFillers: Set<String> = emptySet(),
+        paragraphs: Boolean = true,
     ) = PolishPlan.options(
         removeFillers = removeFillers,
         autoCapitalize = true,
@@ -24,7 +25,16 @@ class PolishPlanTest {
         smartFillers = smartFillers,
         customFillers = customFillers,
         disabledFillers = disabledFillers,
+        paragraphs = paragraphs,
     )
+
+    @Test fun ohneAutomatischeAbsaetzeWirdKiTextZuEinemAbsatz() {
+        assertTrue(plan(refineMode = RefineMode.POLISH, paragraphs = true).keepLineBreaks)
+        assertFalse(plan(refineMode = RefineMode.POLISH, paragraphs = false).keepLineBreaks)
+        assertFalse(plan(refineMode = RefineMode.OFF, paragraphs = true).keepLineBreaks)
+        val flat = TextPolisher.polish("Erster Absatz.\n\nZweiter Absatz.", plan(refineMode = RefineMode.BEAUTIFY, paragraphs = false))
+        assertEquals("Erster Absatz. Zweiter Absatz.", flat)
+    }
 
     @Test fun ohneKiGreiftDieWortliste() {
         assertTrue(plan(removeFillers = true).removeFillers)

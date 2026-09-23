@@ -22,6 +22,15 @@ class ManifestBackupTest {
         assertTrue(application.contains("android:dataExtractionRules=\"@xml/data_extraction_rules\""))
     }
 
+    /**
+     * Ohne adjustResize waehlt Android adjustPan und schiebt beim Tippen das ganze Fenster hoch —
+     * die App "springt" (Fehlerbericht 2026-09-24, im Emulator nachgestellt).
+     */
+    @Test fun hauptActivityVerschiebtBeiTastaturNichtDasFenster() {
+        val main = manifest().readText().substringAfter("android:name=\".ui.MainActivity\"").substringBefore("/>")
+        assertTrue("windowSoftInputMode fehlt: $main", main.contains("android:windowSoftInputMode=\"adjustResize\""))
+    }
+
     @Test fun backupRegelnSchliessenDiePrefsDateiAus() {
         // Falls allowBackup kuenftig ignoriert wird: die Prefs-Datei (api_key, llm_key) bleibt ausgeschlossen —
         // fuer Cloud-Backup UND Geraete-Transfer.

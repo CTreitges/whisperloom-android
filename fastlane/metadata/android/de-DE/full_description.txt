@@ -8,10 +8,12 @@ Drei Wege zum Diktat:
 Erkennung nach Wahl:
 • Online über deinen eigenen Zugang bei OpenAI, Groq (kostenlos), Mistral, Together, DeepInfra, OpenRouter oder einem eigenen OpenAI-kompatiblen Server (z. B. speaches, whisper.cpp-Server).
 • Offline direkt auf dem Gerät mit whisper.cpp. Die Modelle (Tiny bis Large v3 Turbo) lädst du einmalig nach – nichts davon steckt in der App.
+• Vokabular für Namen und Fachbegriffe: als Liste in der App oder als verknüpfte .md-/.txt-Datei, die bei jedem Diktat neu gelesen wird – Änderungen an der Datei wirken sofort.
 
 Text nach Bedarf:
 • Füllwörter entfernen (Liste selbst anpassbar), automatische Groß-Schreibung.
-• Optionale Textverbesserung per Sprachmodell in drei Stufen: Glätten, Verschönern, Zusammenfassen – mit eigenem oder dem Erkennungs-Zugang.
+• Optionale Textverbesserung per Sprachmodell in drei Stufen: Glätten, Verschönern, Zusammenfassen – mit eigenem oder dem Erkennungs-Zugang, auch über Ollama: lokal auf deinem Homeserver ohne Key (der Text verlässt dein Netz nicht) oder über Ollama Cloud. Die Modell-Liste kommt direkt vom Server.
+• Schalter „Automatische Absätze“: Die KI gliedert längere Diktate in Absätze – oder, ausgeschaltet, alles als ein durchgehender Text.
 
 Sprachnachrichten abtippen: In WhatsApp, Telegram oder Signal eine Nachricht teilen → WhisperLoom. Der Text erscheint gut lesbar in Absätzen, wahlweise wortgetreu oder ohne Füllwörter, zum Kopieren und Weitergeben.
 

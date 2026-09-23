@@ -1,0 +1,5 @@
+WhisperLoom 3.5.0
+• Vokabular als Liste: Namen und Fachbegriffe einzeln anlegen und löschen, dazu eine .md/.txt-Datei dauerhaft verknüpfen – sie wird bei jedem Diktat neu gelesen
+• Textverbesserung mit Ollama: lokal auf dem Homeserver oder Ollama Cloud, Modelle kommen direkt vom Server, Name auch frei eintragbar
+• Neuer Schalter „Automatische Absätze“
+• Behoben: Die App sprang beim Tippen durch die Gegend
