@@ -13,6 +13,7 @@ Erkennung nach Wahl:
 Text nach Bedarf:
 • Füllwörter entfernen (Liste selbst anpassbar), automatische Groß-Schreibung.
 • Optionale Textverbesserung per Sprachmodell in drei Stufen: Glätten, Verschönern, Zusammenfassen – mit eigenem oder dem Erkennungs-Zugang, auch über Ollama: lokal auf deinem Homeserver ohne Key (der Text verlässt dein Netz nicht) oder über Ollama Cloud. Die Modell-Liste kommt direkt vom Server.
+• Für KI-Nutzer, in den erweiterten Optionen einschaltbar: die Stufe „Prompt“ formt ein Diktat zu einem gut gegliederten Prompt für ChatGPT, Claude & Co.
 • Schalter „Automatische Absätze“: Die KI gliedert längere Diktate in Absätze – oder, ausgeschaltet, alles als ein durchgehender Text.
 
 Sprachnachrichten abtippen: In WhatsApp, Telegram oder Signal eine Nachricht teilen → WhisperLoom. Der Text erscheint gut lesbar in Absätzen, wahlweise wortgetreu oder ohne Füllwörter, zum Kopieren und Weitergeben.

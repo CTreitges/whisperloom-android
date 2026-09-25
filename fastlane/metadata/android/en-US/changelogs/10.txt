@@ -1,0 +1,4 @@
+WhisperLoom 3.6.0
+• New "Prompt" text level (advanced options): turns a dictation into a well-structured prompt for ChatGPT, Claude & co. – short questions stay short, big requests get goal, context, requirements
+• Fixed: "config.Yaml", "3.13 Gegenüber" – capitals only after a real sentence end; "all .log files" stays separate
+• Fixed: filler words stayed when text refinement failed

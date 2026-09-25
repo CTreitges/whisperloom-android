@@ -13,6 +13,7 @@ Recognition your way:
 Text the way you want it:
 • Remove filler words (editable list), automatic capitalisation.
 • Optional clean-up by a language model in three levels: polish, rephrase, summarise – using your own or the recognition account, including Ollama: locally on your home server without a key (the text never leaves your network) or via Ollama Cloud. The model list comes straight from the server.
+• For AI users, switchable in the advanced options: the "Prompt" level turns a dictation into a well-structured prompt for ChatGPT, Claude & co.
 • "Automatic paragraphs" switch: the AI splits longer dictations into paragraphs – or, when switched off, returns everything as one continuous text.
 
 Transcribe voice messages: share a message from WhatsApp, Telegram or Signal → WhisperLoom. The text appears in readable paragraphs, verbatim or without fillers, ready to copy or forward.
