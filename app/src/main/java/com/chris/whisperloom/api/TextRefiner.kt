@@ -21,6 +21,7 @@ class TextRefiner(private val access: ApiAccess) {
      *
      * @throws ApiNotConfiguredException wenn die Base-URL leer ist (eigener Server ohne URL) —
      *   sonst ginge die Anfrage an "/chat/completions" ohne Host.
+     * @throws RefineRejectedException wenn die Stufe "Prompt" eine Antwort statt eines Prompts liefert.
      */
     fun refine(
         raw: String,
@@ -32,10 +33,14 @@ class TextRefiner(private val access: ApiAccess) {
         if (raw.isBlank() || mode == RefineMode.OFF) return raw
         if (access.baseUrl.isBlank()) throw ApiNotConfiguredException()
 
-        val systemPrompt = RefinePrompt.build(mode, german = language == "de", smartFillers = smartFillers, paragraphs = paragraphs)
-        val text = (if (access.provider.isOllama) ollama(systemPrompt, raw) else openAi(systemPrompt, raw))
+        val german = language == "de"
+        val short = mode == RefineMode.PROMPT && RefinePrompt.isShort(raw)
+        val systemPrompt = RefinePrompt.build(mode, german, smartFillers, paragraphs, short)
+        val userText = RefinePrompt.userText(mode, raw, german)
+        val text = (if (access.provider.isOllama) ollama(systemPrompt, userText) else openAi(systemPrompt, userText))
             ?.let { stripThinking(it) }
             ?.trim()
+            ?.let { if (mode == RefineMode.PROMPT) cleanPrompt(raw, it) else it }
 
         return if (text.isNullOrBlank()) raw else text
     }
@@ -74,5 +79,66 @@ class TextRefiner(private val access: ApiAccess) {
         private val THINK_BLOCK = Regex("(?s)^\\s*<think>.*?</think>\\s*")
 
         fun stripThinking(content: String): String = THINK_BLOCK.replace(content, "")
+
+        /**
+         * Nacharbeit der Stufe "Prompt". Kleine Modelle lassen gern Reste stehen: eine Vorrede
+         * ("Hier ist dein Prompt:"), das "Prompt:" aus den Beispielen, die Markierung um das
+         * Diktat, Anfuehrungszeichen oder einen Codeblock um alles.
+         *
+         * Dazu die Plausibilitaet: Ist die Ausgabe weit laenger als das Diktat, hat das Modell die
+         * Bitte erfuellt statt sie umzuschreiben ("schreib mir ein Gedicht" -> Gedicht). Dann
+         * werfen, der Aufrufer faellt mit Hinweis auf den Rohtext zurueck. Die Grenze ist
+         * grosszuegig, weil Beschriftungen den Text verlaengern — sie faengt deshalb nur LANGE
+         * Antworten. Eine kurze ("17 mal 23 ist 391.", ein Haiku) kommt durch; dagegen steht
+         * allein der System-Prompt.
+         *
+         * @throws RefineRejectedException bei unplausibel langer Ausgabe.
+         */
+        fun cleanPrompt(raw: String, output: String): String {
+            var text = MARKER.replace(output, "").trim()
+            text = stripPreamble(text)
+            // unwrap vor UND nach dem Label: "```\nPrompt: …\n```" wie "Prompt: „…“".
+            text = unwrap(text)
+            text = unwrap(PROMPT_LABEL.replace(text, "").trim())
+            if (RefinePrompt.wordCount(text) > MAX_GROWTH * RefinePrompt.wordCount(raw) + GROWTH_SLACK) {
+                throw RefineRejectedException("Modell hat geantwortet, statt einen Prompt zu formulieren")
+            }
+            return text
+        }
+
+        private const val MAX_GROWTH = 2
+        private const val GROWTH_SLACK = 30
+        private const val QUOTES = "\"„“”«»"
+        private const val FENCE_MARK = "```"
+
+        private val MARKER = Regex("</?(diktat|dictation)>", RegexOption.IGNORE_CASE)
+
+        // Eine erste Zeile, die wie eine Vorrede anfaengt ("Hier ist dein Prompt:"), vom Prompt
+        // DES NUTZERS spricht und mit "Prompt:" endet. "Hier ist ein Prompt, den ich nutze. Mach
+        // ihn besser:" und "Schreib mir einen Prompt fuer Midjourney:" sind Anweisungen — bleiben.
+        private val PREAMBLE = Regex(
+            "^(hier|here|sure|klar|gerne?|natürlich|okay|ok|certainly)\\b[^\\n]*" +
+                "\\b(dein|deine|deines|der|die|ihr|your|the)\\b[^\\n]*\\bprompts?\\s*:[ \\t]*\\r?\\n",
+            RegexOption.IGNORE_CASE,
+        )
+        private val PROMPT_LABEL = Regex("^prompt\\s*:\\s*", RegexOption.IGNORE_CASE)
+        private val FENCE = Regex("(?s)^```[\\w-]*\\r?\\n(.*)\\r?\\n```$")
+        private val QUOTED = Regex("(?s)^[\"„“«»](.*)[\"“”»«]$")
+
+        /** Bleibt nach der Vorrede nur Material ("<text>…") uebrig, war sie die Anweisung selbst. */
+        private fun stripPreamble(text: String): String {
+            val match = PREAMBLE.find(text) ?: return text
+            val rest = text.substring(match.range.last + 1).trim()
+            return if (rest.isEmpty() || rest.startsWith("<")) text else rest
+        }
+
+        /** Codeblock oder Anfuehrungszeichen um den GANZEN Text weg — innen stehende bleiben. */
+        private fun unwrap(text: String): String {
+            FENCE.matchEntire(text)?.groupValues?.get(1)?.let { inner ->
+                return if (FENCE_MARK in inner) text else inner.trim()
+            }
+            val inner = QUOTED.matchEntire(text)?.groupValues?.get(1) ?: return text
+            return if (inner.none { it in QUOTES }) inner.trim() else text
+        }
     }
 }

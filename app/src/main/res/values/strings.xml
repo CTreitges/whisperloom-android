@@ -60,6 +60,7 @@
     <string name="level_smooth">Glätten</string>
     <string name="level_beautify">Verschönern</string>
     <string name="level_summarize">Zusammenfassen</string>
+    <string name="level_prompt">Prompt</string>
 
     <!-- §6.2 Home (H) -->
     <string name="home_cd_help">Anleitung und Hilfe</string>
@@ -304,6 +305,7 @@
     <string name="text_level_smooth_sub">Zeichensetzung, Groß-/Kleinschreibung, Absätze. Inhalt unverändert.</string>
     <string name="text_level_beautify_sub">Formuliert verständlicher, zieht Sätze zusammen, bewahrt den Inhalt.</string>
     <string name="text_level_summarize_sub">Kürzt auf die Kernaussagen.</string>
+    <string name="text_level_prompt_sub">Formt das Diktat zu einem gegliederten Prompt für ChatGPT, Claude &amp; Co.</string>
     <string name="text_level_cost">Zweite Anfrage · ca. 1–2 s länger · geringe Zusatzkosten</string>
     <string name="pref_smart_fillers">Füllwörter intelligent entfernen</string>
     <string name="pref_smart_fillers_info">Statt fester Wortliste entscheidet die KI selbst, welche Füllwörter, Versprecher und Wiederholungen weg können. Im Zweifel bleibt das Wort.</string>
@@ -521,12 +523,13 @@
     <string name="kb_discarded">Aufnahme verworfen</string>
     <string name="kb_refine_set">Textverbesserung: %1$s</string>
     <string name="kb_refine_needs_llm">Für die KI-Stufen fehlt ein Zugang — tippe zum Einrichten</string>
-    <!-- Kurzfassungen der Stufen: in der Tastatur teilen sich vier Tasten eine Zeile,
-         "Verschönern" und "Zusammenfassen" passen dort nicht. -->
+    <!-- Kurzfassungen der Stufen: in der Tastatur teilen sich vier Tasten eine Zeile (mit
+         „Prompt“ fünf), "Verschönern" und "Zusammenfassen" passen dort nicht. -->
     <string name="kb_level_off">Aus</string>
     <string name="kb_level_smooth">Glätten</string>
     <string name="kb_level_beautify">Schöner</string>
     <string name="kb_level_summarize">Kürzen</string>
+    <string name="kb_level_prompt">Prompt</string>
     <string name="refine_skipped">Textverbesserung übersprungen: %1$s</string>
     <string name="kb_space">Leer</string>
     <string name="cd_mic">Diktat-Mikrofon — antippen zum Starten, gedrückt halten zum Sprechen</string>
@@ -597,6 +600,10 @@
     <string name="agent_mic_missing">Für den Sprachauftrag fehlt die Mikrofon-Berechtigung.</string>
     <string name="agent_mic_allow">Mikrofon erlauben</string>
     <string name="agent_widget_hint">Widget hinzufügen: Startbildschirm lange drücken → Widgets → WhisperLoom → „Sprachauftrag“.</string>
+    <string name="settings_prompt_sub">Stufe „Prompt“</string>
+    <string name="prompt_card">Textverbesserung</string>
+    <string name="prompt_enable">Stufe „Prompt“ anbieten</string>
+    <string name="prompt_enable_sub">Zusätzliche Stufe der Textverbesserung (Tastatur und Einstellungen → Text): formt ein Diktat zu einem gut gegliederten Prompt für KI-Assistenten wie ChatGPT oder Claude. Gewählt gilt sie wie jede Stufe für alle Diktate.</string>
     <string name="tutorial_agent_p1_title">Das Widget auf den Startbildschirm</string>
     <string name="tutorial_agent_p1_body">Drücke lange auf eine freie Stelle deines Startbildschirms, tippe auf „Widgets“, suche WhisperLoom und ziehe „Sprachauftrag“ dorthin, wo du es haben willst.</string>
     <string name="tutorial_agent_p2_title">Server und Token eintragen</string>

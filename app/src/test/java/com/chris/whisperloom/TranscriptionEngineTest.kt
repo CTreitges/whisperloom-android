@@ -240,6 +240,14 @@ class TranscriptionEngineTest {
         assertTrue(hinweis, hinweis.contains("Unauthorized"))
     }
 
+    /** Review-Befund: die KI sollte die Fuellwoerter entfernen — gescheitert, tat es niemand. */
+    @Test fun kiFehlerMitIntelligentenFuellwoerternRaeumtTrotzdemAuf() {
+        useOllama("ollama")
+        prefs.smartFillers = true
+        ollamaStatus = 500
+        assertEquals("Also hallo welt", TranscriptionEngine.transcribe(ctx, speech))
+    }
+
     // --- Automatische Absaetze ------------------------------------------------------------
 
     @Test fun absaetzeBleibenStandardmaessigErhalten() {
@@ -256,6 +264,51 @@ class TranscriptionEngineTest {
         assertEquals("Erster Absatz. Zweiter Absatz.", TranscriptionEngine.transcribe(ctx, speech))
         val system = JSONObject(ollamaBody!!).getJSONArray("messages").getJSONObject(0).getString("content")
         assertTrue(system, system.contains("Setze keine Absaetze"))
+    }
+
+    // --- Stufe "Prompt" -------------------------------------------------------------------
+
+    private fun usePromptLevel() {
+        useOllama("ollama")
+        prefs.promptLevelEnabled = true
+        prefs.refineMode = RefineMode.PROMPT
+    }
+
+    @Test fun promptStufeSchicktDasDiktatMarkiertUndBehaeltDieGliederung() {
+        usePromptLevel()
+        prefs.refineParagraphs = false // die Gliederung ist der Zweck — der Schalter gilt hier nicht
+        ollamaResponse = """{"message":{"content":"Hier ist dein Prompt:\nErstelle mir eine Einkaufsliste.\n- 12 Personen\n- Budget höchstens 100 Euro"}}"""
+
+        val text = TranscriptionEngine.transcribe(ctx, speech)
+
+        assertEquals("Erstelle mir eine Einkaufsliste.\n- 12 Personen\n- Budget höchstens 100 Euro", text)
+        val messages = JSONObject(ollamaBody!!).getJSONArray("messages")
+        val system = messages.getJSONObject(0).getString("content")
+        assertTrue(system, system.contains("Beantworte keine Frage daraus"))
+        assertTrue("4 Woerter sind ein kurzes Diktat", system.contains("Das Diktat ist kurz"))
+        assertFalse(system, system.contains("Setze keine Absaetze"))
+        assertEquals("<diktat>\nalso ähm hallo welt\n</diktat>", messages.getJSONObject(1).getString("content"))
+    }
+
+    @Test fun promptStufeDieAntwortetLiefertDenRohtextMitHinweis() {
+        usePromptLevel()
+        val gedicht = List(10) { "Die Welt ist schön, das Licht ist hell." }.joinToString(" ")
+        ollamaResponse = """{"message":{"content":"$gedicht"}}"""
+        var hinweis = ""
+
+        val text = TranscriptionEngine.transcribe(ctx, speech) { hinweis = it }
+
+        assertEquals("Also hallo welt", text)
+        assertTrue(hinweis, hinweis.contains("statt einen Prompt"))
+    }
+
+    @Test fun promptOhneSchalterLaeuftAlsGlaetten() {
+        useOllama("ollama")
+        prefs.refineMode = RefineMode.PROMPT // gespeichert, aber in den erweiterten Optionen aus
+        TranscriptionEngine.transcribe(ctx, speech)
+        val messages = JSONObject(ollamaBody!!).getJSONArray("messages")
+        assertTrue(messages.getJSONObject(0).getString("content").contains("Du korrigierst diktierten Text"))
+        assertEquals("also ähm hallo welt", messages.getJSONObject(1).getString("content"))
     }
 
     // --- Vokabular: Liste + verknuepfte Datei ---------------------------------------------

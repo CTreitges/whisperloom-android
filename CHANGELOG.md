@@ -2,6 +2,18 @@
 
 Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [Unveröffentlicht]
+
+### Hinzugefügt
+
+- **Textverbesserungs-Stufe „Prompt“** (erweiterte Option, ab Werk aus). Einstellungen → Erweiterte Optionen → **Stufe „Prompt“ anbieten** schaltet eine fünfte Stufe in Tastatur und Einstellungen frei. Sie formt ein Diktat zu einem Prompt für KI-Assistenten wie ChatGPT, Claude oder Gemini: Eine kurze Frage bleibt ein bis drei Sätze, mehrere Vorgaben werden eine Liste, ein großer Auftrag bekommt Abschnitte („Ziel:“, „Hintergrund:“, „Aufgabe:“, „Vorgaben:“, „Format:“). Nichts wird dazuerfunden, Selbstkorrekturen („nee, warte …“) werden aufgelöst, die Sprache bleibt. Beantwortet das Modell die diktierte Bitte, statt sie umzuformulieren, und ist die Antwort deutlich länger als dein Diktat (das lange Gedicht, um das du gebeten hast), kommt der Rohtext mit Hinweis. Eine kurze Antwort lässt sich so nicht erkennen. Die Gliederung bleibt auch mit „Automatische Absätze“ aus erhalten.
+
+### Behoben
+
+- **Großschreibung mitten im Satz.** Nach einem Punkt ohne folgendes Leerzeichen wurde großgeschrieben: „config.Yaml“, „www.Example.Com“, „Python 3.13 Gegenüber“, „GPT 4.1 Mini“. Ein Satz endet jetzt erst mit Punkt, Ausrufe- oder Fragezeichen und Leerraum danach.
+- **„alle .log-Dateien“ wurde zu „alle.log-Dateien“.** Ein Punkt direkt vor einem Wort (Dateiendung, versteckte Datei) behält das Leerzeichen davor.
+- **Füllwörter blieben stehen, wenn die Textverbesserung ausfiel.** Mit „Füllwörter intelligent entfernen“ sollte die KI sie entfernen — scheiterte sie (Netz, Anbieter, Zeitüberschreitung), tat es niemand, und im Rohtext standen die „ähm“s. Jetzt räumt WhisperLoom den Rohtext in dem Fall mit den festen Regeln auf.
+
 ## [3.5.0] — 2026-09-24
 
 ### Hinzugefügt

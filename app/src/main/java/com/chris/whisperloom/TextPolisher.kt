@@ -58,6 +58,13 @@ object PolishPlan {
      * Wortliste nicht nochmal daruebergehen — sonst wuerde zweimal gefiltert und die
      * Entscheidung der KI ("im Zweifel behalten") wieder ausgehebelt. Die restliche
      * Normalisierung (Whitespace, Satzzeichen, Gross-Schreibung) laeuft weiter.
+     *
+     * Ausnahme "Prompt": Fuellwoerter und Gross-Schreibung erledigt dort das Modell (steht im
+     * System-Prompt), und diktiertes Material zwischen `<text>`-Tags soll unveraendert bleiben —
+     * die Satzanfang-Regel machte sonst aus `</text>` nach einem Punkt `</Text>`.
+     *
+     * Ist die Textverbesserung gescheitert, uebergibt der Aufrufer [RefineMode.OFF]: der
+     * Rohtext wurde von niemandem bearbeitet und braucht die vollen Regeln.
      */
     fun options(
         removeFillers: Boolean,
@@ -70,17 +77,19 @@ object PolishPlan {
         paragraphs: Boolean = true,
     ): PolishOptions {
         val refined = refineMode != RefineMode.OFF
-        val aiDecidesFillers = refined && smartFillers
+        val prompt = refineMode == RefineMode.PROMPT
+        val aiDecidesFillers = refined && (smartFillers || prompt)
         return PolishOptions(
             removeFillers = removeFillers && !aiDecidesFillers,
-            autoCapitalize = autoCapitalize,
+            autoCapitalize = autoCapitalize && !prompt,
             language = language,
             customFillers = customFillers,
             disabledFillers = disabledFillers,
             // Das Sprachmodell setzt Absaetze/Stichpunkte bewusst — nicht plattziehen. Mit
             // "Automatische Absaetze" aus werden Umbrueche, die das Modell trotzdem liefert,
-            // hier zuverlaessig zu einem Fliesstext zusammengezogen.
-            keepLineBreaks = refined && paragraphs,
+            // hier zuverlaessig zu einem Fliesstext zusammengezogen. Die Stufe "Prompt" ist
+            // ausgenommen: ihre Gliederung ist der Zweck, nicht Beiwerk.
+            keepLineBreaks = refined && (paragraphs || prompt),
         )
     }
 
@@ -113,7 +122,9 @@ object TextPolisher {
 
     private val MULTI_WS = Pattern.compile("\\s+")
     private val MANY_BLANK_LINES = Pattern.compile("\\n{3,}")
-    private val SPACE_BEFORE_PUNCT = Pattern.compile("\\s+([,.;:!?…])")
+    // Ein Punkt direkt vor Buchstabe oder Ziffer ist kein Satzzeichen, sondern Teil des
+    // naechsten Worts (".log", ".env", ".5") — dort bleibt das Leerzeichen davor stehen.
+    private val SPACE_BEFORE_PUNCT = Pattern.compile("\\s+([,;:!?…]|\\.(?![\\p{L}\\p{N}]))")
     private val COMMA_BEFORE_END = Pattern.compile(",\\s*(?=[.!?…])")
 
     fun polish(raw: String, options: PolishOptions = PolishOptions()): String {
@@ -169,19 +180,31 @@ object TextPolisher {
         return FILLERS[language] ?: emptyList()
     }
 
-    /** Erster Buchstabe + jeder Buchstabe nach . ! ? gross. */
+    /**
+     * Erster Buchstabe + jeder Satzanfang gross. Ein Satz endet erst mit . ! ? UND folgendem
+     * Leerraum; Zeichen dazwischen, die weder Buchstabe noch Ziffer sind (Anfuehrungszeichen,
+     * Klammern, Emojis, Sternchen), aendern daran nichts. Sonst wuerde aus "config.yaml"
+     * "config.Yaml" und aus "Python 3.13 gegenueber" "3.13 Gegenueber". Beginnt ein Satz mit
+     * einer Ziffer, bleibt das folgende Wort, wie es ist ("- 12 people").
+     */
     private fun capitalizeSentences(text: String): String {
         val sb = StringBuilder(text.length)
         var capitalizeNext = true
+        var sentenceEnd = false
         for (ch in text) {
-            if (capitalizeNext && ch.isLetter()) {
+            if (capitalizeNext && ch.isLetterOrDigit()) {
                 sb.append(ch.uppercaseChar())
                 capitalizeNext = false
             } else {
                 sb.append(ch)
             }
-            when (ch) {
-                '.', '!', '?' -> capitalizeNext = true
+            when {
+                ch == '.' || ch == '!' || ch == '?' -> sentenceEnd = true
+                ch.isLetterOrDigit() -> sentenceEnd = false
+                sentenceEnd && ch.isWhitespace() -> {
+                    capitalizeNext = true
+                    sentenceEnd = false
+                }
             }
         }
         return sb.toString()

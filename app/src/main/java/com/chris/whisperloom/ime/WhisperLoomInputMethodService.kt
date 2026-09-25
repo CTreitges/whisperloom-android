@@ -232,7 +232,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
         // Der Eingabe-View wird ueber Feld- und App-Wechsel hinweg wiederverwendet. Eine
         // offen stehende Leiste zeigte sonst die Stufe und den KI-Zugang von vorhin —
         // beides kann sich inzwischen geaendert haben.
-        if (refineBar?.isShown == true) refineBar?.show(prefs.refineMode, hasLlmAccess())
+        if (refineBar?.isShown == true) refineBar?.show(prefs.refineMode, hasLlmAccess(), prefs.promptLevelEnabled)
         restoreStatus()
     }
 
@@ -438,7 +438,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
             return
         }
         val llmReady = hasLlmAccess()
-        bar.show(prefs.refineMode, llmReady)
+        bar.show(prefs.refineMode, llmReady, prefs.promptLevelEnabled)
         refineKey?.isSelected = true
         // Ohne Zugang sind die drei KI-Stufen abgeblendet — das braucht eine Erklaerung,
         // sonst sieht es nach einem Fehler aus.
@@ -470,6 +470,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
             RefineMode.POLISH, RefineMode.PARAGRAPHS -> R.string.level_smooth
             RefineMode.BEAUTIFY -> R.string.level_beautify
             RefineMode.SUMMARIZE -> R.string.level_summarize
+            RefineMode.PROMPT -> R.string.level_prompt
         },
     )
 

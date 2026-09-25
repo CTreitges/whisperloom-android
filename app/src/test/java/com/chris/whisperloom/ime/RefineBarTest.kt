@@ -42,8 +42,39 @@ class RefineBarTest {
         val f = fixture()
         f.bar.show(RefineMode.OFF, llmReady = true)
         assertTrue(f.bar.isShown)
-        assertEquals(4, f.row.childCount)
+        assertEquals(5, f.row.childCount)
         for (id in f.alle) assertEquals(View.VISIBLE, f.key(id).visibility)
+        assertEquals("Prompt ohne Schalter sichtbar", View.GONE, f.key(R.id.refine_prompt).visibility)
+    }
+
+    // --- Stufe "Prompt" (nur mit Schalter in den erweiterten Optionen) --------
+
+    @Test fun promptErscheintNurMitSchalter() {
+        val f = fixture()
+        assertEquals("Default im Layout", View.GONE, f.key(R.id.refine_prompt).visibility)
+        f.bar.show(RefineMode.OFF, llmReady = true, promptEnabled = true)
+        assertEquals(View.VISIBLE, f.key(R.id.refine_prompt).visibility)
+
+        // Schalter in der App ausgeschaltet, Leiste erneut geoeffnet: wieder weg.
+        f.bar.hide()
+        f.bar.show(RefineMode.OFF, llmReady = true, promptEnabled = false)
+        assertEquals(View.GONE, f.key(R.id.refine_prompt).visibility)
+    }
+
+    @Test fun promptVerhaeltSichWieDieAnderenKiStufen() {
+        val f = fixture()
+        val gewaehlt = mutableListOf<RefineMode>()
+        f.bar.bind { gewaehlt += it }
+        f.bar.show(RefineMode.PROMPT, llmReady = true, promptEnabled = true)
+        val prompt = f.key(R.id.refine_prompt)
+        assertTrue(prompt.isSelected)
+        assertEquals(1, (f.alle + R.id.refine_prompt).count { f.key(it).isSelected })
+        assertTrue(prompt.contentDescription.contains("Textverbesserung"))
+        prompt.performClick()
+        assertEquals(listOf(RefineMode.PROMPT), gewaehlt)
+
+        f.bar.show(RefineMode.OFF, llmReady = false, promptEnabled = true)
+        assertFalse("KI-Stufe ohne Zugang bedienbar: Prompt", prompt.isEnabled)
     }
 
     @Test fun genauDieGewaehlteStufeIstMarkiert() {
