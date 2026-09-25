@@ -1,0 +1,4 @@
+WhisperLoom 3.6.0
+• Neue Textstufe „Prompt“ (Erweiterte Optionen): formt ein Diktat zu einem gut gegliederten Prompt für ChatGPT, Claude & Co. – kurze Fragen bleiben kurz, große Aufträge bekommen Ziel, Hintergrund, Vorgaben
+• Behoben: „config.Yaml“, „3.13 Gegenüber“ – Großschreibung nur noch nach echtem Satzende; „alle .log-Dateien“ bleibt getrennt
+• Behoben: Füllwörter blieben stehen, wenn die Textverbesserung ausfiel
