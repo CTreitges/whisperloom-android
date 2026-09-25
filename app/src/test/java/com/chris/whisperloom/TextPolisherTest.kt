@@ -35,6 +35,39 @@ class TextPolisherTest {
         )
     }
 
+    // --- Satzende nur mit Leerraum danach (Regression, Stufe "Prompt") --------------------
+
+    @Test fun punktInZahlenUndDateinamenBeendetKeinenSatz() {
+        assertEquals(
+            "Was ist neu in Python 3.13 gegenüber 3.12?",
+            TextPolisher.polish("was ist neu in Python 3.13 gegenüber 3.12?", full),
+        )
+        assertEquals("Lohnt sich GPT 4.1 mini", TextPolisher.polish("lohnt sich GPT 4.1 mini", full))
+        assertEquals("Öffne config.yaml und www.example.com", TextPolisher.polish("öffne config.yaml und www.example.com", full))
+    }
+
+    @Test fun satzendeMitAnfuehrungszeichenOderKlammerZaehltWeiter() {
+        assertEquals("Er sagte „Stopp.“ Dann ging er.", TextPolisher.polish("er sagte „Stopp.“ dann ging er.", full))
+        assertEquals("(Siehe oben.) Weiter geht's.", TextPolisher.polish("(siehe oben.) weiter geht's.", full))
+    }
+
+    @Test fun zeilenanfangMitZifferBleibtKlein() {
+        val lines = full.copy(keepLineBreaks = true)
+        assertEquals(
+            "Make me a plan.\n- 12 people, 2 of them vegan",
+            TextPolisher.polish("make me a plan.\n- 12 people, 2 of them vegan", lines),
+        )
+        assertEquals("Hallo.\nWelt", TextPolisher.polish("hallo.\nwelt", lines))
+    }
+
+    @Test fun punktVorWortBleibtVomVorwortGetrennt() {
+        assertEquals(
+            "Lösche alle .log-Dateien und die Datei .env.",
+            TextPolisher.polish("lösche alle .log-Dateien und die Datei .env .", full),
+        )
+        assertEquals("Ende. Hallo, welt!", TextPolisher.polish("ende . hallo , welt !", full))
+    }
+
     @Test fun deutscheFuellwoerterEntfernt() {
         assertEquals(
             "Ich denke das ist gut.",

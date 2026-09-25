@@ -113,7 +113,9 @@ object TextPolisher {
 
     private val MULTI_WS = Pattern.compile("\\s+")
     private val MANY_BLANK_LINES = Pattern.compile("\\n{3,}")
-    private val SPACE_BEFORE_PUNCT = Pattern.compile("\\s+([,.;:!?…])")
+    // Ein Punkt direkt vor Buchstabe oder Ziffer ist kein Satzzeichen, sondern Teil des
+    // naechsten Worts (".log", ".env", ".5") — dort bleibt das Leerzeichen davor stehen.
+    private val SPACE_BEFORE_PUNCT = Pattern.compile("\\s+([,;:!?…]|\\.(?![\\p{L}\\p{N}]))")
     private val COMMA_BEFORE_END = Pattern.compile(",\\s*(?=[.!?…])")
 
     fun polish(raw: String, options: PolishOptions = PolishOptions()): String {
@@ -169,21 +171,36 @@ object TextPolisher {
         return FILLERS[language] ?: emptyList()
     }
 
-    /** Erster Buchstabe + jeder Buchstabe nach . ! ? gross. */
+    /**
+     * Erster Buchstabe + jeder Satzanfang gross. Ein Satz endet erst mit . ! ? UND folgendem
+     * Leerraum (schliessende Anfuehrungszeichen/Klammern duerfen dazwischen stehen) — sonst
+     * wuerde aus "config.yaml" "config.Yaml" und aus "Python 3.13 gegenueber" "3.13 Gegenueber".
+     * Beginnt ein Satz mit einer Ziffer, bleibt das folgende Wort, wie es ist ("- 12 people").
+     */
     private fun capitalizeSentences(text: String): String {
         val sb = StringBuilder(text.length)
         var capitalizeNext = true
+        var sentenceEnd = false
         for (ch in text) {
-            if (capitalizeNext && ch.isLetter()) {
+            if (capitalizeNext && ch.isLetterOrDigit()) {
                 sb.append(ch.uppercaseChar())
                 capitalizeNext = false
             } else {
                 sb.append(ch)
             }
-            when (ch) {
-                '.', '!', '?' -> capitalizeNext = true
+            when {
+                ch == '.' || ch == '!' || ch == '?' -> sentenceEnd = true
+                !sentenceEnd -> {}
+                ch.isWhitespace() -> {
+                    capitalizeNext = true
+                    sentenceEnd = false
+                }
+                ch in SENTENCE_CLOSERS -> {}
+                else -> sentenceEnd = false
             }
         }
         return sb.toString()
     }
+
+    private const val SENTENCE_CLOSERS = "\"'“”„»«)]’"
 }
