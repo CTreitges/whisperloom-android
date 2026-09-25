@@ -43,6 +43,15 @@ class PolishPlanTest {
         assertEquals(prompt, TextPolisher.polish(prompt, options))
     }
 
+    /** Review-Befund: aus `</text>` nach einem Punkt wurde `</Text>`, Fuellwoerter im Material verschwanden. */
+    @Test fun promptMaterialBleibtUnangetastet() {
+        val options = plan(refineMode = RefineMode.PROMPT, customFillers = listOf("halt"))
+        assertFalse("Gross-Schreibung erledigt das Modell", options.autoCapitalize)
+        assertFalse("Fuellwoerter erledigt das Modell", options.removeFillers)
+        val prompt = "Fasse den Text zusammen.\n\n<text>\nDas Meeting war halt gut. wir machen weiter.\n</text>"
+        assertEquals(prompt, TextPolisher.polish(prompt, options))
+    }
+
     @Test fun ohneKiGreiftDieWortliste() {
         assertTrue(plan(removeFillers = true).removeFillers)
     }

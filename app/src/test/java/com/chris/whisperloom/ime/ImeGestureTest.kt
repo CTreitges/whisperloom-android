@@ -427,6 +427,30 @@ class ImeGestureTest {
         assertTrue(refineKey(R.id.refine_polish).isEnabled)
     }
 
+    @Test fun diePromptTasteGibtEsNurMitSchalter() {
+        root.findViewById<View>(R.id.key_refine).performClick()
+        assertEquals("Ohne Schalter unsichtbar", View.GONE, refineKey(R.id.refine_prompt).visibility)
+        root.findViewById<View>(R.id.key_refine).performClick() // zu
+
+        Prefs(app).promptLevelEnabled = true
+        root.findViewById<View>(R.id.key_refine).performClick() // auf, liest die Prefs frisch
+        assertEquals(View.VISIBLE, refineKey(R.id.refine_prompt).visibility)
+        refineKey(R.id.refine_prompt).performClick()
+        assertEquals(RefineMode.PROMPT, Prefs(app).refineMode)
+        assertEquals(app.getString(R.string.kb_refine_set, app.getString(R.string.level_prompt)), statusText)
+    }
+
+    @Test fun einFeldwechselFuehrtDenPromptSchalterNach() {
+        Prefs(app).promptLevelEnabled = true
+        root.findViewById<View>(R.id.key_refine).performClick()
+        assertEquals(View.VISIBLE, refineKey(R.id.refine_prompt).visibility)
+
+        Prefs(app).promptLevelEnabled = false
+        service.onStartInputView(null, false)
+
+        assertEquals("Ausgeschaltete Stufe noch in der Leiste", View.GONE, refineKey(R.id.refine_prompt).visibility)
+    }
+
     // --- Bedienungshilfen ----------------------------------------------------
 
     @Test fun klickStartetDieAufnahmeGleichFestgestellt() {

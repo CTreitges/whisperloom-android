@@ -240,6 +240,14 @@ class TranscriptionEngineTest {
         assertTrue(hinweis, hinweis.contains("Unauthorized"))
     }
 
+    /** Review-Befund: die KI sollte die Fuellwoerter entfernen — gescheitert, tat es niemand. */
+    @Test fun kiFehlerMitIntelligentenFuellwoerternRaeumtTrotzdemAuf() {
+        useOllama("ollama")
+        prefs.smartFillers = true
+        ollamaStatus = 500
+        assertEquals("Also hallo welt", TranscriptionEngine.transcribe(ctx, speech))
+    }
+
     // --- Automatische Absaetze ------------------------------------------------------------
 
     @Test fun absaetzeBleibenStandardmaessigErhalten() {

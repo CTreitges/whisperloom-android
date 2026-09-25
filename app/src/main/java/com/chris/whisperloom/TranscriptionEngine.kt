@@ -87,8 +87,12 @@ object TranscriptionEngine {
 
         val language = effectiveLanguage(prefs.language, result.detectedLanguage)
         val mode = prefs.refineMode
+        var refineFailed = false
         val refined = if (mode != RefineMode.OFF) {
-            refineOrRaw(raw, language, mode, prefs, onRefineSkipped)
+            refineOrRaw(raw, language, mode, prefs) {
+                refineFailed = true
+                onRefineSkipped(it)
+            }
         } else {
             raw
         }
@@ -97,7 +101,9 @@ object TranscriptionEngine {
             removeFillers = prefs.removeFillers,
             autoCapitalize = prefs.autoCapitalize,
             language = language,
-            refineMode = mode,
+            // Gescheitert = Rohtext, den keine KI bearbeitet hat: volle Regeln, sonst blieben
+            // mit "Fuellwoerter intelligent entfernen" (oder bei "Prompt") die "ähm"s stehen.
+            refineMode = if (refineFailed) RefineMode.OFF else mode,
             smartFillers = prefs.smartFillers,
             customFillers = prefs.customFillers,
             disabledFillers = prefs.disabledFillers,

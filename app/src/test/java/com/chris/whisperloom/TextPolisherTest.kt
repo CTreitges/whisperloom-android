@@ -49,6 +49,10 @@ class TextPolisherTest {
     @Test fun satzendeMitAnfuehrungszeichenOderKlammerZaehltWeiter() {
         assertEquals("Er sagte „Stopp.“ Dann ging er.", TextPolisher.polish("er sagte „Stopp.“ dann ging er.", full))
         assertEquals("(Siehe oben.) Weiter geht's.", TextPolisher.polish("(siehe oben.) weiter geht's.", full))
+        // Review-Befund: auch Emojis, Sternchen und das deutsche ‚…‘ stehen zwischen Satzende und Leerraum.
+        assertEquals("Super!😀 Danke", TextPolisher.polish("super!😀 danke", full))
+        assertEquals("**Wichtig.** Danach", TextPolisher.polish("**wichtig.** danach", full))
+        assertEquals("Er sagte ‚Stopp.‘ Dann", TextPolisher.polish("er sagte ‚Stopp.‘ dann", full))
     }
 
     @Test fun zeilenanfangMitZifferBleibtKlein() {

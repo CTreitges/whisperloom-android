@@ -58,6 +58,13 @@ object PolishPlan {
      * Wortliste nicht nochmal daruebergehen — sonst wuerde zweimal gefiltert und die
      * Entscheidung der KI ("im Zweifel behalten") wieder ausgehebelt. Die restliche
      * Normalisierung (Whitespace, Satzzeichen, Gross-Schreibung) laeuft weiter.
+     *
+     * Ausnahme "Prompt": Fuellwoerter und Gross-Schreibung erledigt dort das Modell (steht im
+     * System-Prompt), und diktiertes Material zwischen `<text>`-Tags soll unveraendert bleiben —
+     * die Satzanfang-Regel machte sonst aus `</text>` nach einem Punkt `</Text>`.
+     *
+     * Ist die Textverbesserung gescheitert, uebergibt der Aufrufer [RefineMode.OFF]: der
+     * Rohtext wurde von niemandem bearbeitet und braucht die vollen Regeln.
      */
     fun options(
         removeFillers: Boolean,
@@ -70,10 +77,11 @@ object PolishPlan {
         paragraphs: Boolean = true,
     ): PolishOptions {
         val refined = refineMode != RefineMode.OFF
-        val aiDecidesFillers = refined && smartFillers
+        val prompt = refineMode == RefineMode.PROMPT
+        val aiDecidesFillers = refined && (smartFillers || prompt)
         return PolishOptions(
             removeFillers = removeFillers && !aiDecidesFillers,
-            autoCapitalize = autoCapitalize,
+            autoCapitalize = autoCapitalize && !prompt,
             language = language,
             customFillers = customFillers,
             disabledFillers = disabledFillers,
@@ -81,7 +89,7 @@ object PolishPlan {
             // "Automatische Absaetze" aus werden Umbrueche, die das Modell trotzdem liefert,
             // hier zuverlaessig zu einem Fliesstext zusammengezogen. Die Stufe "Prompt" ist
             // ausgenommen: ihre Gliederung ist der Zweck, nicht Beiwerk.
-            keepLineBreaks = refined && (paragraphs || refineMode == RefineMode.PROMPT),
+            keepLineBreaks = refined && (paragraphs || prompt),
         )
     }
 
@@ -174,9 +182,10 @@ object TextPolisher {
 
     /**
      * Erster Buchstabe + jeder Satzanfang gross. Ein Satz endet erst mit . ! ? UND folgendem
-     * Leerraum (schliessende Anfuehrungszeichen/Klammern duerfen dazwischen stehen) — sonst
-     * wuerde aus "config.yaml" "config.Yaml" und aus "Python 3.13 gegenueber" "3.13 Gegenueber".
-     * Beginnt ein Satz mit einer Ziffer, bleibt das folgende Wort, wie es ist ("- 12 people").
+     * Leerraum; Zeichen dazwischen, die weder Buchstabe noch Ziffer sind (Anfuehrungszeichen,
+     * Klammern, Emojis, Sternchen), aendern daran nichts. Sonst wuerde aus "config.yaml"
+     * "config.Yaml" und aus "Python 3.13 gegenueber" "3.13 Gegenueber". Beginnt ein Satz mit
+     * einer Ziffer, bleibt das folgende Wort, wie es ist ("- 12 people").
      */
     private fun capitalizeSentences(text: String): String {
         val sb = StringBuilder(text.length)
@@ -191,17 +200,13 @@ object TextPolisher {
             }
             when {
                 ch == '.' || ch == '!' || ch == '?' -> sentenceEnd = true
-                !sentenceEnd -> {}
-                ch.isWhitespace() -> {
+                ch.isLetterOrDigit() -> sentenceEnd = false
+                sentenceEnd && ch.isWhitespace() -> {
                     capitalizeNext = true
                     sentenceEnd = false
                 }
-                ch in SENTENCE_CLOSERS -> {}
-                else -> sentenceEnd = false
             }
         }
         return sb.toString()
     }
-
-    private const val SENTENCE_CLOSERS = "\"'“”„»«)]’"
 }

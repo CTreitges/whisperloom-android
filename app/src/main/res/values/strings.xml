@@ -603,7 +603,7 @@
     <string name="settings_prompt_sub">Stufe „Prompt“</string>
     <string name="prompt_card">Textverbesserung</string>
     <string name="prompt_enable">Stufe „Prompt“ anbieten</string>
-    <string name="prompt_enable_sub">Zusätzliche Stufe in Tastatur und Einstellungen: formt ein Diktat zu einem gut gegliederten Prompt für KI-Assistenten wie ChatGPT oder Claude.</string>
+    <string name="prompt_enable_sub">Zusätzliche Stufe der Textverbesserung (Tastatur und Einstellungen → Text): formt ein Diktat zu einem gut gegliederten Prompt für KI-Assistenten wie ChatGPT oder Claude. Gewählt gilt sie wie jede Stufe für alle Diktate.</string>
     <string name="tutorial_agent_p1_title">Das Widget auf den Startbildschirm</string>
     <string name="tutorial_agent_p1_body">Drücke lange auf eine freie Stelle deines Startbildschirms, tippe auf „Widgets“, suche WhisperLoom und ziehe „Sprachauftrag“ dorthin, wo du es haben willst.</string>
     <string name="tutorial_agent_p2_title">Server und Token eintragen</string>
