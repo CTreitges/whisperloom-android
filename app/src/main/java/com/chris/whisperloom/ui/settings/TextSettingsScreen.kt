@@ -45,7 +45,7 @@ fun TextSettingsScreen(nav: NavState) {
                 gap = 4.dp,
             ) {
                 Column(Modifier.selectableGroup()) {
-                    RefineMode.SETTINGS.forEach { mode ->
+                    RefineMode.settings(prefs.promptLevelEnabled).forEach { mode ->
                         val selected = prefs.refineMode == mode
                         LoomRow(
                             headline = levelLabel(mode),
@@ -119,6 +119,7 @@ private fun levelSubtitle(mode: RefineMode): Int = when (mode) {
     RefineMode.POLISH, RefineMode.PARAGRAPHS -> R.string.text_level_smooth_sub
     RefineMode.BEAUTIFY -> R.string.text_level_beautify_sub
     RefineMode.SUMMARIZE -> R.string.text_level_summarize_sub
+    RefineMode.PROMPT -> R.string.text_level_prompt_sub
 }
 
 private val Int.dp get() = androidx.compose.ui.unit.Dp(this.toFloat())

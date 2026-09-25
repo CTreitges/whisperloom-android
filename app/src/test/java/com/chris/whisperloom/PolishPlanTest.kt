@@ -36,6 +36,13 @@ class PolishPlanTest {
         assertEquals("Erster Absatz. Zweiter Absatz.", flat)
     }
 
+    @Test fun promptBehaeltSeineGliederungAuchOhneAutomatischeAbsaetze() {
+        val options = plan(refineMode = RefineMode.PROMPT, paragraphs = false)
+        assertTrue(options.keepLineBreaks)
+        val prompt = "Erstelle mir eine Einkaufsliste.\n- 12 Personen, davon 2 vegan\n- Budget höchstens 100 Euro"
+        assertEquals(prompt, TextPolisher.polish(prompt, options))
+    }
+
     @Test fun ohneKiGreiftDieWortliste() {
         assertTrue(plan(removeFillers = true).removeFillers)
     }

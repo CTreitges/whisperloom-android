@@ -97,6 +97,17 @@ class PrefsStateTest {
         assertEquals(RefineMode.SUMMARIZE, Prefs(ctx).refineMode)
     }
 
+    @Test fun promptSchalterZiehtDieAngezeigteStufeMit() {
+        state.promptLevelEnabled = true
+        state.refineMode = RefineMode.PROMPT
+        assertEquals(RefineMode.PROMPT, state.refineMode)
+
+        // Schalter aus: der Einstellungs-Screen darf keine unsichtbare Stufe als gewaehlt zeigen.
+        state.promptLevelEnabled = false
+        assertEquals(RefineMode.POLISH, state.refineMode)
+        assertFalse(Prefs(ctx).promptLevelEnabled)
+    }
+
     @Test fun nachDisposeKommtNichtsMehrAn() {
         state.refineMode = RefineMode.OFF
         state.dispose()

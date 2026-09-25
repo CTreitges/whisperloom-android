@@ -25,17 +25,24 @@ enum class Engine(val key: String) {
 /**
  * Was das Sprachmodell nach der Erkennung mit dem Text tun soll.
  * [PARAGRAPHS] ist nicht in den Einstellungen waehlbar (nur fuer geteilte Audios).
+ * [PROMPT] nur, wenn in den erweiterten Optionen eingeschaltet ([Prefs.promptLevelEnabled]).
  */
 enum class RefineMode(val key: String) {
     OFF("off"),
     POLISH("polish"),
     BEAUTIFY("beautify"),
     SUMMARIZE("summarize"),
-    PARAGRAPHS("paragraphs");
+    PARAGRAPHS("paragraphs"),
+
+    /** Formt das Diktat zu einem Prompt fuer einen KI-Assistenten (ChatGPT, Claude, Gemini). */
+    PROMPT("prompt");
 
     companion object {
         /** Reihenfolge im Einstellungs-Dropdown. */
         val SETTINGS = listOf(OFF, POLISH, BEAUTIFY, SUMMARIZE)
+
+        /** Die waehlbaren Stufen — "Prompt" nur fuer die, die sie eingeschaltet haben. */
+        fun settings(promptEnabled: Boolean): List<RefineMode> = if (promptEnabled) SETTINGS + PROMPT else SETTINGS
 
         fun fromKey(key: String?): RefineMode = entries.firstOrNull { it.key == key } ?: OFF
     }
@@ -185,9 +192,20 @@ class Prefs(context: Context) {
         get() = sp.getString(KEY_LLM_MODEL, "") ?: ""
         set(v) = sp.edit().putString(KEY_LLM_MODEL, v).apply()
 
+    /**
+     * Gespeicherte Stufe. "Prompt" gilt nur, solange sie eingeschaltet ist — sonst waere sie
+     * unsichtbar und trotzdem aktiv; dann gilt "Glaetten", die naechste unauffaellige Stufe.
+     */
     var refineMode: RefineMode
-        get() = RefineMode.fromKey(sp.getString(KEY_REFINE_MODE, null))
+        get() = RefineMode.fromKey(sp.getString(KEY_REFINE_MODE, null)).let {
+            if (it == RefineMode.PROMPT && !promptLevelEnabled) RefineMode.POLISH else it
+        }
         set(v) = sp.edit().putString(KEY_REFINE_MODE, v.key).apply()
+
+    /** Erweiterte Optionen: Stufe "Prompt" in Tastatur und Einstellungen anbieten. */
+    var promptLevelEnabled: Boolean
+        get() = sp.getBoolean(KEY_PROMPT_LEVEL, false)
+        set(v) = sp.edit().putBoolean(KEY_PROMPT_LEVEL, v).apply()
 
     /**
      * Statt fester Wortliste entscheidet das Sprachmodell selbst, welche Fuellwoerter,
@@ -357,6 +375,7 @@ class Prefs(context: Context) {
         private const val KEY_LLM_POLISH_LEGACY = "llm_polish"
         private const val KEY_SMART_FILLERS = "smart_fillers"
         private const val KEY_REFINE_PARAGRAPHS = "refine_paragraphs"
+        private const val KEY_PROMPT_LEVEL = "refine_prompt_enabled"
         private const val KEY_REMOVE_FILLERS = "remove_fillers"
         private const val KEY_AUTO_CAP = "auto_capitalize"
         private const val KEY_TRAILING_SPACE = "trailing_space"

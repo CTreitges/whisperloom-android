@@ -273,6 +273,8 @@ Sobald du zu diktieren anfängst, verschwindet der Zauberstab — an seiner Stel
 
 Die drei oberen Stufen brauchen einen KI-Zugang. Hast du keinen eingerichtet, sind sie ausgegraut und die Statuszeile sagt es dir — ein Tipp darauf führt in die Einstellungen. **Aus** bleibt immer wählbar.
 
+Hast du unter Einstellungen → Erweiterte Optionen die **Stufe „Prompt“** eingeschaltet, steht sie als fünfte Taste am Ende der Zeile ([Kapitel 8.1](#81-textverbesserung-ki--vier-stufen)).
+
 ---
 
 ## 6. Sprachnachrichten abtippen
@@ -391,6 +393,14 @@ Einstellungen → **Text**. Hier stellst du ein, was mit dem erkannten Text pass
 | **Zusammenfassen** | Kürzt auf die Kernaussagen. |
 
 Jede Stufe außer „Aus" bedeutet: „Zweite Anfrage · ca. 1–2 s länger · geringe Zusatzkosten". Für Alltagsdiktate ist **Glätten** die sinnvolle Wahl — der Wortlaut bleibt, nur Kommas, Punkte und Groß-/Kleinschreibung werden richtig gesetzt. „Verschönern" eignet sich für E-Mails aus einem Gedankenstrom, „Zusammenfassen" für lange Notizen. Die KI wird ausdrücklich angewiesen, nichts zu übersetzen und nichts zu erfinden.
+
+**Stufe „Prompt“ (erweiterte Option):** Einstellungen → Erweiterte Optionen → **Stufe „Prompt“ anbieten** schaltet eine fünfte Stufe frei — in der Tastatur und hier in der Liste. Sie formt ein Diktat zu einem Prompt für einen KI-Assistenten (ChatGPT, Claude, Gemini …). Die Gliederung richtet sich nach dem Diktat:
+
+- eine Frage oder einfache Bitte (unter 25 Wörtern immer): ein bis drei Sätze, ohne Liste,
+- mehrere Vorgaben: ein Satz mit dem Auftrag, darunter die Vorgaben als „- “-Liste,
+- ein großer Auftrag mit Hintergrund: Abschnitte „Ziel:“, „Hintergrund:“, „Aufgabe:“, „Vorgaben:“, „Format:“ — nur die, zu denen du etwas gesagt hast.
+
+Diktierst du Material mit (eine E-Mail, einen Text), steht es am Ende zwischen Tags wie `<text>` … `</text>` — so trennen die Assistenten Auftrag und Inhalt am zuverlässigsten. Bewusst ohne Markdown (`#`, `**`): liest sich im Eingabefeld roh genauso gut und verleitet den Assistenten nicht zu Markdown-Antworten. Die KI erfindet keine Rolle, Länge oder Zielgruppe dazu, löst Selbstkorrekturen („nee, warte …") auf und bleibt in deiner Sprache. Beantwortet das Modell deine Bitte, statt sie umzuformulieren (aus „schreib mir ein Gedicht" wird ein Gedicht), erkennt WhisperLoom das an der Länge und fügt den Rohtext mit Hinweis ein. Die Gliederung bleibt auch bei ausgeschalteten „Automatischen Absätzen" erhalten. Wie die anderen Stufen gilt „Prompt", bis du umschaltest; schaltest du die Option aus, gilt wieder „Glätten".
 
 **Füllwörter intelligent entfernen:** „Statt fester Wortliste entscheidet die KI selbst, welche Füllwörter, Versprecher und Wiederholungen weg können. Im Zweifel bleibt das Wort." Braucht eine Stufe über „Aus" (bei „Zusammenfassen" ohne Wirkung). Solange dieser Schalter aktiv ist, pausiert die feste Wortliste der Regeln — sonst würde zweimal gefiltert.
 

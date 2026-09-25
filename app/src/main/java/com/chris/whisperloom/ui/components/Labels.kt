@@ -58,6 +58,7 @@ fun levelLabel(mode: RefineMode): String = when (mode) {
     RefineMode.POLISH, RefineMode.PARAGRAPHS -> stringResource(R.string.level_smooth)
     RefineMode.BEAUTIFY -> stringResource(R.string.level_beautify)
     RefineMode.SUMMARIZE -> stringResource(R.string.level_summarize)
+    RefineMode.PROMPT -> stringResource(R.string.level_prompt)
 }
 
 @Composable

@@ -48,10 +48,11 @@ import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.tutorial.TutorialKind
 
 /**
- * E7 — Erweiterte Optionen: Sprachauftrag an einen eigenen Agenten.
+ * E7 — Erweiterte Optionen: Sprachauftrag an einen eigenen Agenten und die Stufe "Prompt".
  *
- * Bewusst der einzige Ort, an dem das Feature auftaucht: Startbildschirm, Assistent und
- * Home-Status bleiben unangetastet. Wer den Sprachauftrag nicht nutzt, soll ihn nicht bemerken.
+ * Bewusst der einzige Ort, an dem der Sprachauftrag auftaucht: Startbildschirm, Assistent und
+ * Home-Status bleiben unangetastet. Wer ihn nicht nutzt, soll ihn nicht bemerken. Dasselbe gilt
+ * fuer "Prompt": die Stufe erscheint in Tastatur und Einstellungen erst mit dem Schalter hier.
  */
 @Composable
 fun AgentScreen(nav: NavState) {
@@ -79,6 +80,16 @@ fun AgentScreen(nav: NavState) {
 
     DetailScaffold(title = stringResource(R.string.settings_group_agent), onBack = { nav.pop() }, snack = snack) { padding ->
         ScrollColumn(padding) {
+            // Fuer normale Nutzer unsichtbar: die Stufe "Prompt" erscheint erst mit diesem Schalter.
+            SectionCard(title = stringResource(R.string.prompt_card), gap = 4.dp) {
+                SwitchRow(
+                    headline = stringResource(R.string.prompt_enable),
+                    supporting = stringResource(R.string.prompt_enable_sub),
+                    checked = prefs.promptLevelEnabled,
+                    onCheckedChange = { prefs.promptLevelEnabled = it },
+                )
+            }
+
             SectionCard(title = stringResource(R.string.agent_card_task), gap = 4.dp) {
                 SwitchRow(
                     headline = stringResource(R.string.agent_enable),

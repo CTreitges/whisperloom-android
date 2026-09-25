@@ -79,8 +79,9 @@ object PolishPlan {
             disabledFillers = disabledFillers,
             // Das Sprachmodell setzt Absaetze/Stichpunkte bewusst — nicht plattziehen. Mit
             // "Automatische Absaetze" aus werden Umbrueche, die das Modell trotzdem liefert,
-            // hier zuverlaessig zu einem Fliesstext zusammengezogen.
-            keepLineBreaks = refined && paragraphs,
+            // hier zuverlaessig zu einem Fliesstext zusammengezogen. Die Stufe "Prompt" ist
+            // ausgenommen: ihre Gliederung ist der Zweck, nicht Beiwerk.
+            keepLineBreaks = refined && (paragraphs || refineMode == RefineMode.PROMPT),
         )
     }
 

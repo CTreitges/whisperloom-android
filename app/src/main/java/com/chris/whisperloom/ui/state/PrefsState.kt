@@ -42,6 +42,7 @@ class PrefsState(val prefs: Prefs) {
     var refineMode: RefineMode by pref({ prefs.refineMode }) { prefs.refineMode = it }
     var smartFillers: Boolean by pref({ prefs.smartFillers }) { prefs.smartFillers = it }
     var refineParagraphs: Boolean by pref({ prefs.refineParagraphs }) { prefs.refineParagraphs = it }
+    var promptLevelEnabled: Boolean by pref({ prefs.promptLevelEnabled }) { prefs.promptLevelEnabled = it }
 
     // Regeln ohne KI
     var removeFillers: Boolean by pref({ prefs.removeFillers }) { prefs.removeFillers = it }

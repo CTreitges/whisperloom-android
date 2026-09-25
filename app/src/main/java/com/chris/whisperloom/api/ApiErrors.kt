@@ -12,6 +12,12 @@ class ApiNotConfiguredException :
     RuntimeException("Anbieter nicht eingerichtet — Base-URL und API-Key in den Einstellungen prüfen")
 
 /**
+ * Das Sprachmodell hat geantwortet, aber offensichtlich nicht das Verlangte getan — etwa die
+ * diktierte Bitte erfuellt, statt sie umzuformulieren. Der Aufrufer faellt auf den Rohtext zurueck.
+ */
+class RefineRejectedException(message: String) : RuntimeException(message)
+
+/**
  * Der Server hat mit einem Fehlerstatus geantwortet. Bei den typischen Stolperfallen
  * eines eigenen Servers haengt ein Hinweis an der Meldung.
  */

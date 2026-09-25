@@ -135,6 +135,29 @@ class PrefsTest {
         assertEquals(RefineMode.OFF, Prefs(ctx).refineMode)
     }
 
+    // --- Stufe "Prompt" ------------------------------------------------------
+
+    @Test fun promptStufeIstStandardmaessigAus() {
+        assertFalse(Prefs(ctx).promptLevelEnabled)
+        assertEquals(RefineMode.SETTINGS, RefineMode.settings(promptEnabled = false))
+        assertEquals(RefineMode.SETTINGS + RefineMode.PROMPT, RefineMode.settings(promptEnabled = true))
+    }
+
+    @Test fun promptGiltNurMitSchalterUndKommtDanachZurueck() {
+        val p = Prefs(ctx)
+        p.promptLevelEnabled = true
+        p.refineMode = RefineMode.PROMPT
+        assertEquals(RefineMode.PROMPT, Prefs(ctx).refineMode)
+
+        // Unsichtbar und trotzdem aktiv waere die schlimmste Kombination.
+        p.promptLevelEnabled = false
+        assertEquals(RefineMode.POLISH, Prefs(ctx).refineMode)
+        assertEquals("gespeicherte Wahl bleibt", "prompt", sp.getString("refine_mode", null))
+
+        p.promptLevelEnabled = true
+        assertEquals(RefineMode.PROMPT, Prefs(ctx).refineMode)
+    }
+
     @Test fun neuerNutzerBekommtGptTranscribe() {
         val p = Prefs(ctx)
         p.engine = Engine.ONLINE

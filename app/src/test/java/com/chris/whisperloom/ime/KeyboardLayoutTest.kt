@@ -43,7 +43,7 @@ class KeyboardLayoutTest {
             R.id.key_row, R.id.key_globe, R.id.key_comma, R.id.key_space, R.id.key_period,
             R.id.key_backspace, R.id.key_enter, R.id.key_retry, R.id.key_settings,
             R.id.gesture_discard, R.id.gesture_lock, R.id.key_refine, R.id.refine_row,
-            R.id.refine_off, R.id.refine_polish, R.id.refine_beautify, R.id.refine_summarize,
+            R.id.refine_off, R.id.refine_polish, R.id.refine_beautify, R.id.refine_summarize, R.id.refine_prompt,
         )) {
             assertNotNull("ID fehlt: ${ctx.resources.getResourceEntryName(id)}", v.findViewById<View>(id))
         }

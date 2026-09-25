@@ -66,8 +66,11 @@ fun SettingsHubScreen(nav: NavState) {
     val button = stringResource(if (status.bubbleRunning) R.string.settings_val_bubble_on else R.string.settings_val_bubble_off) +
         " · " + stringResource(if (status.imeEnabled) R.string.settings_val_kb_on else R.string.settings_val_kb_off)
     // Kein Schalter auf Hub-Ebene (Spec §2.3) — nur der aktuelle Wert als Unterzeile.
-    val agent = if (prefs.agentReady) stringResource(R.string.settings_agent_sub)
-    else stringResource(R.string.settings_agent_off)
+    val advanced = buildList {
+        if (prefs.agentReady) add(stringResource(R.string.settings_agent_sub))
+        if (prefs.promptLevelEnabled) add(stringResource(R.string.settings_prompt_sub))
+    }
+    val agent = if (advanced.isEmpty()) stringResource(R.string.settings_agent_off) else advanced.joinToString(" · ")
     val n = status.installedModels.size
     val models = if (n > 0) stringResource(R.string.home_val_models, n, fileSize(status.modelsUsedBytes))
     else stringResource(R.string.settings_models_none)
