@@ -396,7 +396,7 @@ Jede Stufe außer „Aus" bedeutet: „Zweite Anfrage · ca. 1–2 s länger · 
 
 **Stufe „Prompt“ (erweiterte Option):** Einstellungen → Erweiterte Optionen → **Stufe „Prompt“ anbieten** schaltet eine fünfte Stufe frei — in der Tastatur und hier in der Liste. Sie formt ein Diktat zu einem Prompt für einen KI-Assistenten (ChatGPT, Claude, Gemini …). Die Gliederung richtet sich nach dem Diktat:
 
-- eine Frage oder einfache Bitte (unter 25 Wörtern immer): ein bis drei Sätze, ohne Liste,
+- eine Frage oder einfache Bitte (unter 15 Wörtern immer): ein bis drei Sätze, ohne Liste,
 - mehrere Vorgaben: ein Satz mit dem Auftrag, darunter die Vorgaben als „- “-Liste,
 - ein großer Auftrag mit Hintergrund: Abschnitte „Ziel:“, „Hintergrund:“, „Aufgabe:“, „Vorgaben:“, „Format:“ — nur die, zu denen du etwas gesagt hast.
 

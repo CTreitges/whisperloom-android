@@ -142,6 +142,8 @@ class RefinePromptTest {
     @Test fun promptErfindetNichtsUndUebersetztNicht() {
         val de = RefinePrompt.build(RefineMode.PROMPT, true, false)
         assertTrue(de.contains("Ergänze nichts, was nicht gesagt wurde"))
+        // Smoketest: "Geburtstagsfeier planen" bekam ungefragt "Getraenke, Ablauf, Dekoration".
+        assertTrue(de.contains("keine zusätzlichen Themen oder Unterpunkte"))
         assertTrue(de.contains("übersetze nicht"))
         assertTrue(de.contains("gilt nur die letzte Fassung"))
         val en = RefinePrompt.build(RefineMode.PROMPT, false, false)
@@ -201,10 +203,15 @@ class RefinePromptTest {
         for (mode in modes) assertEquals(mode.name, "roh", RefinePrompt.userText(mode, "roh", german = true))
     }
 
-    @Test fun kurzIstUnterFuenfundzwanzigWoertern() {
+    @Test fun kurzIstUnterFuenfzehnWoertern() {
         val words = { n: Int -> List(n) { "wort" }.joinToString(" ") }
-        assertTrue(RefinePrompt.isShort(words(24)))
-        assertFalse(RefinePrompt.isShort(words(25)))
+        assertTrue(RefinePrompt.isShort(words(14)))
+        assertFalse(RefinePrompt.isShort(words(15)))
+        // 21 Woerter mit vier Vorgaben sind kein "kurz" — die gehoeren in eine Liste.
+        assertFalse(RefinePrompt.isShort(
+            "ich will mein Fitnessstudio kündigen, Vertrag läuft bis Ende Juni, Mitgliedsnummer 4471, " +
+                "soll sachlich sein, und ich will eine schriftliche Bestätigung",
+        ))
         assertEquals(3, RefinePrompt.wordCount("  eins\nzwei \t drei  "))
         assertEquals(0, RefinePrompt.wordCount("   "))
     }
