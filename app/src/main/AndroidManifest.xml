@@ -133,6 +133,24 @@
             android:exported="false"
             android:foregroundServiceType="microphone" />
 
+        <!-- Profilwahl beim Platzieren und "Neu konfigurieren" (android:configure in
+             xml/widget_task_info). exported + Filter: der Launcher startet sie von aussen; welche
+             Widget-Ids sie annimmt, prueft sie selbst. Durchsichtig wie das Trampolin, damit nur
+             das Sheet ueber dem Startbildschirm erscheint.
+             KEIN launchMode singleTask/singleInstance und KEINE taskAffinity: das Ergebnis
+             (RESULT_OK/CANCELED) kaeme sonst nicht beim Launcher an, und das Widget wuerde nie
+             hinzugefuegt. Auch kein noHistory: der Photo Picker aus dem Profil-Editor wuerde sie
+             sonst beenden. -->
+        <activity
+            android:name=".agent.WidgetConfigActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:excludeFromRecents="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
         <!-- exported="false": APPWIDGET_UPDATE ist ein geschuetzter System-Broadcast und
              erreicht den Empfaenger trotzdem (so auch das offizielle Widget-Beispiel). -->
         <receiver

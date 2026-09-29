@@ -58,7 +58,7 @@ Diese Datei ist die **einzige Vorlage** für die Implementierungs-Agenten. Wo di
 | N1 | Foreground-Notification | Framework | „Diktat aktiv" + Beenden |
 | E7 | Erweiterte Optionen | Compose | Sprachauftrag: Schalter · Server-Adresse · Token · Verbindung prüfen · Anleitung |
 | T2 | Tutorial „Sprachauftrag" | Compose, `HorizontalPager` | 4 Seiten; eigenes Gesehen-Flag (`agent_tutorial_seen`) |
-| W1w | **Sprachauftrag-Widget** | RemoteViews (`AppWidgetProvider`) | 4 Zustände auf dem Startbildschirm; `updatePeriodMillis=0` |
+| W1w | **Sprachauftrag-Widget** | RemoteViews (`AppWidgetProvider`) | 4 Zustände auf dem Startbildschirm; `updatePeriodMillis=0`; skalierbar 1×1 bis 4×2, Profil je Widget (§6.14) |
 | N2 | Foreground-Notification Sprachauftrag | Framework | „Nimmt auf …" + Senden |
 
 ### 1.2 Startlogik (Router) — präzise Bedingung „eingerichtet"
@@ -1308,6 +1308,61 @@ lautlos verworfen. Ein Tipp auf „gesendet" startet ohnehin eine neue Aufnahme.
 
 Höchstdauer einer Aufnahme: 5 Minuten (`VoiceTaskService.MAX_DURATION_MS`). Start und Stopp sind zwei
 getrennte Tipps — anders als Overlay und Tastatur hat dieser Weg kein natürliches Ende.
+
+### 6.14 Widgets — Profile, Größen, Auto-Stopp, Profilwahl
+
+**Profile.** Jedes Widget zeigt ein Profil: Name (max. 24 Zeichen, leer = `widget_label`), Symbol
+(22 eingebaute oder ein Galerie-Bild, rund zugeschnitten) und Auto-Stopp mit Sprechpause. Das
+Standardprofil gibt es immer; es ist bearbeitbar, aber nicht löschbar, und fängt jedes verwaiste
+Widget auf. Der Zustand bleibt global (eine Aufnahme zur Zeit, alle Widgets zeigen sie); Auto-Stopp
+richtet sich nach dem Widget, das gestartet hat. Das Profil-Symbol erscheint nur in „bereit“ und
+„Fehler“, sonst die Zustands-Symbole aus §6.13.
+
+**Größen.** Frei ziehbar von 1×1 bis 4×2, platziert wird 2×2. Drei Varianten: ICON (nur Symbol, unter
+120 dp Breite), ROW (Symbol links, Name und Status rechts, ab 48 dp Höhe), STACK (untereinander, ab
+110 dp Höhe). Ab Android 12 wählt das System aus der Größen-Map, darunter die App aus den gemeldeten
+Spannen.
+
+**Auto-Stopp** (pro Profil, ab Werk aus): nach erkannter Sprache und einer Pause von Kurz 1,2 s /
+Normal 2 s / Lang 3,5 s wird wie per Tipp gesendet; frühestens nach 1,5 s. 8 s ohne erkannte Sprache:
+Aufnahme verwerfen, nichts senden, Fehler `widget_no_speech`. Tipp und 5-min-Notbremse wirken weiter.
+
+**Einstieg E8 „Widgets“:** Hub-Zeile immer sichtbar (`ic_layers`, Unterzeile „2 Profile · 1 auf dem
+Startbildschirm“), zweiter Einstieg aus E7 (`agent_widget_manage`). Ist der Sprachauftrag nicht
+eingerichtet, steht oben `widgets_agent_off` mit Link zu E7. Karten: Profile · Auf dem Startbildschirm
+(nur mit platzierten Widgets; Tipp öffnet die Profilwahl) · So geht’s.
+
+**Profilwahl W1c** (`WidgetConfigActivity`, durchsichtig, nur ein Sheet über dem Startbildschirm;
+`android:configure` + `widgetFeatures="reconfigurable"`, **ohne** `configuration_optional`):
+
+- Platzieren mit nur dem Standardprofil: unsichtbar, das Widget landet sofort.
+- Sonst Sheet `widget_config_title` mit der Profilliste und „Neues Profil“ (öffnet den Editor, danach
+  ist das neue Profil vorgewählt). Ein Tipp auf ein Profil bestätigt. Wegwischen/Zurück = Abbruch,
+  beim Platzieren wird das Widget dann nicht hinzugefügt.
+- Neu konfigurieren (ab Android 12: Widget lange drücken → „Neu konfigurieren“) zeigt die Auswahl
+  immer, vorgewählt ist das aktuelle Profil. Unter Android 12 startet die Auswahl bei jedem
+  Hinzufügen; umstellen geht dort über E8.
+
+| Key | Text |
+|---|---|
+| `settings_group_widgets` | Widgets |
+| `widgets_sub_profiles` / `widgets_sub_placed` / `widgets_sub_none_placed` | %d Profil(e) / %d auf dem Startbildschirm / noch keins auf dem Startbildschirm |
+| `widgets_agent_off` | Der Sprachauftrag ist aus. Die Widgets nehmen erst auf, wenn er unter „Erweiterte Optionen“ eingerichtet ist. |
+| `widgets_card_profiles` / `widgets_card_placed` / `widgets_card_help` | Profile / Auf dem Startbildschirm / So geht’s |
+| `widgets_add_profile` | Neues Profil |
+| `widgets_placed_row` / `widgets_placed_sub` | Widget %1$d · %2$s / Tippen, um das Profil zu wechseln |
+| `widgets_help_size` | Größe ändern: Widget lange drücken und an den Rändern ziehen. … |
+| `widgets_help_shared` | Alle Widgets zeigen dieselbe Aufnahme. Auto-Stopp richtet sich nach dem Widget, mit dem du gestartet hast. |
+| `widget_config_title` | Welches Profil? |
+| `widget_mode_toggle` / `widget_mode_autostop` | Tippen startet und stoppt / Stoppt nach Sprechpause · %1$s |
+| `widget_profile_title` / `widget_profile_name` / `widget_profile_icon` | Profil bearbeiten / Name / Symbol |
+| `widget_profile_gallery` / `widget_profile_remove_photo` / `widget_photo_failed` | Aus Galerie / Bild entfernen / Bild konnte nicht geladen werden. |
+| `widget_profile_autostop` | Automatisch senden nach Sprechpause |
+| `widget_profile_pause`, `widget_pause_short/normal/long` (+ `_sub`) | Sprechpause, Kurz / Normal / Lang |
+| `widget_profile_delete` / `widget_profile_delete_confirm` | Profil löschen / %1$d Widget(s) zeigt/zeigen danach „%2$s“. |
+| `widget_no_speech` | Nichts gehört (über `widget_error_retry`: „Nichts gehört — tippen für erneuten Versuch“) |
+| `cd_widget_named` | %1$s: %2$s (Profilname: Zustand) |
+| `widget_icon_*` | TalkBack-Namen der 22 Symbole |
 
 ---
 

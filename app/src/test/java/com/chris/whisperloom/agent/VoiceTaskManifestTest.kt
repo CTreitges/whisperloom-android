@@ -18,12 +18,15 @@ class VoiceTaskManifestTest {
 
     private fun manifest(): File = datei("src/main/AndroidManifest.xml", "app/src/main/AndroidManifest.xml")
 
+    /** Das Element mit diesem Namen: nur der Kopf, wenn es sich selbst schliesst, sonst bis zum Ende-Tag. */
     private fun block(tag: String, name: String): String {
         val text = manifest().readText()
         val start = text.indexOf("""android:name=".$name"""")
         assertTrue("$name steht nicht im Manifest", start > 0)
         val anfang = text.lastIndexOf("<$tag", start)
-        return text.substring(anfang, text.indexOf(">", start).let { text.indexOf("</$tag>", anfang).takeIf { e -> e in 0..(it + 4000) } ?: it })
+        val kopfEnde = text.indexOf(">", start)
+        val ende = if (text[kopfEnde - 1] == '/') kopfEnde + 1 else text.indexOf("</$tag>", kopfEnde) + "</$tag>".length
+        return text.substring(anfang, ende)
     }
 
     private fun providerXml(): String =
@@ -87,6 +90,47 @@ class VoiceTaskManifestTest {
         assertEquals(110, dp("minWidth"))
         assertEquals(110, dp("minHeight"))
         assertTrue(providerXml().contains("""android:resizeMode="horizontal|vertical""""))
+    }
+
+    // --- Profilwahl beim Platzieren und Neu-Konfigurieren ---------------------------------
+
+    @Test fun dieProfilwahlIstVollQualifiziertAngemeldet() {
+        // Der Launcher loest den Namen ausserhalb unseres Pakets auf — ".agent.…" ginge ins Leere.
+        val configure = Regex("""android:configure="([^"]+)"""").find(providerXml())?.groupValues?.get(1)
+        assertEquals(WidgetConfigActivity::class.java.name, configure)
+        block("activity", "agent.WidgetConfigActivity")
+    }
+
+    @Test fun dasWidgetIstNeuKonfigurierbarOhneDieWahlZuUeberspringen() {
+        // Genau dieser Wert: "reconfigurable|configuration_optional" liesse den Pixel-Launcher die
+        // Profilwahl beim Platzieren ueberspringen.
+        val features = Regex("""android:widgetFeatures="([^"]+)"""").find(providerXml())?.groupValues?.get(1)
+        assertEquals("reconfigurable", features)
+    }
+
+    @Test fun dieProfilwahlIstVonAussenErreichbarUndLiefertIhrErgebnisAb() {
+        val activity = block("activity", "agent.WidgetConfigActivity")
+        assertTrue(activity.contains("""android:exported="true""""))
+        assertTrue(activity.contains("""<action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />"""))
+        assertTrue(activity.contains("""android:theme="@android:style/Theme.Translucent.NoTitleBar""""))
+        assertTrue(activity.contains("""android:excludeFromRecents="true""""))
+        // Eigene Task: das Ergebnis erreichte den Launcher nicht. noHistory: der Photo Picker beendete sie.
+        listOf("singleTask", "singleInstance", "taskAffinity", "noHistory").forEach {
+            assertFalse("$it verschluckt das Ergebnis der Profilwahl", activity.contains(it))
+        }
+    }
+
+    @Test fun dasTrampolinBlockEndetBeiSeinemEigenenKopf() {
+        // Regression fuer block(): das selbstschliessende Trampolin darf nicht in die Profilwahl hineinlesen.
+        assertFalse(block("activity", "agent.VoiceTaskTrampolineActivity").contains("APPWIDGET_CONFIGURE"))
+    }
+
+    @Test fun fuerGalerieBilderBrauchtEsKeineSpeicherBerechtigung() {
+        // Photo Picker: Leserecht nur fuer das gewaehlte Bild, ohne Berechtigung.
+        val text = manifest().readText()
+        listOf("READ_MEDIA_IMAGES", "READ_MEDIA_VISUAL_USER_SELECTED", "READ_EXTERNAL_STORAGE").forEach {
+            assertFalse("$it ist unnoetig", text.contains(it))
+        }
     }
 
     @Test fun derOffeneAuftragBleibtAufDemGeraet() {

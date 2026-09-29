@@ -6,8 +6,14 @@
      Groessen: platziert wird 2x2 (minWidth/minHeight 110 dp, targetCell 2x2); frei ziehbar von
      1x1 (minResize 40 dp, eine Zelle ist hochkant 57 dp breit) bis 4x2. maxResizeWidth 340 dp:
      4 Spalten = 73*4-16 = 276 dp passen, 5 Spalten = 349 dp nicht mehr. Welche Layout-Variante
-     bei welcher Groesse erscheint, entscheidet WidgetLayouts. -->
+     bei welcher Groesse erscheint, entscheidet WidgetLayouts.
+     configure: voll qualifiziert, weil der Launcher den Namen ausserhalb unseres Pakets aufloest.
+     widgetFeatures="reconfigurable" (ab Android 12, darunter ignoriert): lange druecken ->
+     "Neu konfigurieren". Bewusst OHNE configuration_optional — sonst ueberspringt der
+     Pixel-Launcher die Profilwahl beim Platzieren. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:configure="com.chris.whisperloom.agent.WidgetConfigActivity"
+    android:widgetFeatures="reconfigurable"
     android:minWidth="110dp"
     android:minHeight="110dp"
     android:minResizeWidth="40dp"
