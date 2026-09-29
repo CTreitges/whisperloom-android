@@ -209,7 +209,8 @@ class Prefs(context: Context) {
 
     /**
      * Statt fester Wortliste entscheidet das Sprachmodell selbst, welche Fuellwoerter,
-     * Versprecher und Wiederholungen weg koennen. Wirkt nur mit [refineMode] != OFF.
+     * Versprecher und Wiederholungen weg koennen. Wirkt nur mit einer KI-Stufe ([refineMode] oder
+     * [shareRefineMode] != OFF).
      */
     var smartFillers: Boolean
         get() = sp.getBoolean(KEY_SMART_FILLERS, false)

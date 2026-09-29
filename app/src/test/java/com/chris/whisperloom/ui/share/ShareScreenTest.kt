@@ -183,6 +183,25 @@ class ShareScreenTest {
         compose.onNodeWithText("Füllwörter ausblenden").assertIsDisplayed()
     }
 
+    /** Review: bei gemischtem Ergebnis sah die KI-Fassung der anderen Dateien wie gescheitert aus. */
+    @Test fun teilweiseGescheiterteKiNenntDieAnzahl() {
+        val ok = done.copy(source = "a.ogg", paragraphsRefined = listOf("Geglättet A."), refineMode = RefineMode.BEAUTIFY)
+        val kaputt = transcript("b.ogg", cleaned = listOf("Roh B.")).copy(refineMode = RefineMode.BEAUTIFY, refineSkipped = "API-Fehler 429")
+        val state = ShareUiState(
+            phase = SharePhase.DONE,
+            files = listOf(ShareFile("a.ogg", result = ok), ShareFile("b.ogg", result = kaputt)),
+        )
+        assertEquals(1, state.refineFailures)
+        assertTrue(state.hasUnrefined)
+        assertEquals(RefineMode.BEAUTIFY, state.refineMode)
+        show(state)
+        compose.onNodeWithText("Geglättet A.").assertIsDisplayed()
+        compose.onNodeWithText("Roh B.").assertIsDisplayed()
+        compose.onNodeWithText("Textverbesserung: Verschönern · bei 1 von 2 Dateien übersprungen: API-Fehler 429").assertIsDisplayed()
+        // Der Schalter bleibt — er wirkt auf die Datei ohne KI-Fassung.
+        compose.onNodeWithText("Füllwörter ausblenden").assertIsDisplayed()
+    }
+
     @Test fun fehlerkarteZeigtErneutNurFuerDieseDatei() {
         var retried = -1
         show(

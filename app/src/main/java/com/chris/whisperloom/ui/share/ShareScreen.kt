@@ -168,17 +168,23 @@ private fun TranscriptContent(
     }
 }
 
-/** Hinweiszeile zur KI-Stufe fuer geteilte Audios: aktiv oder gescheitert (mit Grund); bei "Aus" nichts. */
+/**
+ * Hinweiszeile zur KI-Stufe fuer geteilte Audios: aktiv, gescheitert (mit Grund) oder bei mehreren
+ * Dateien nur teilweise gescheitert — dann mit Anzahl, sonst saehe die KI-Fassung der anderen Dateien
+ * wie gescheitert aus. Bei "Aus" nichts.
+ */
 @Composable
 private fun RefineNote(state: ShareUiState) {
     val mode = state.refineMode
     if (mode == RefineMode.OFF) return
     val skipped = state.refineSkipped
+    val failures = state.refineFailures
     Text(
-        if (skipped != null) {
-            stringResource(R.string.refine_skipped, skipped)
-        } else {
-            stringResource(R.string.share_refine_note, levelLabel(mode))
+        when {
+            skipped == null -> stringResource(R.string.share_refine_note, levelLabel(mode))
+            failures < state.results.size ->
+                stringResource(R.string.share_refine_partly, levelLabel(mode), failures, state.results.size, skipped)
+            else -> stringResource(R.string.refine_skipped, skipped)
         },
         style = MaterialTheme.typography.labelMedium,
         color = if (skipped != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,

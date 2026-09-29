@@ -306,6 +306,20 @@ class MainFlowTest {
         compose.onNode(hasText("Zusammenfassen") and inShareCard).assertIsSelected()
     }
 
+    /** Review: "intelligent entfernen" wirkt auch auf geteilte Audios — also auch dann bedienbar. */
+    @Test fun intelligenteFuellwoerterSindMitNurDerShareStufeBedienbar() {
+        screen(env()) { TextSettingsScreen(it) }
+        compose.onNodeWithText("Füllwörter intelligent entfernen").assertIsNotEnabled()
+        compose.onNode(hasText("Glätten") and hasAnyAncestor(hasTestTag(SHARE_REFINE_TAG))).performClick()
+        compose.waitForIdle()
+        assertEquals(RefineMode.OFF, Prefs(ctx).refineMode)
+        compose.onNodeWithText("Füllwörter intelligent entfernen").assertIsEnabled().performClick()
+        compose.waitForIdle()
+        assertEquals(true, Prefs(ctx).smartFillers)
+        // Die Absaetze bleiben Sache des Diktats: ohne Diktat-Stufe weiter gesperrt.
+        compose.onNodeWithText("Automatische Absätze").assertIsNotEnabled()
+    }
+
     @Test fun fuellwoerterSheetFuegtEigenesWortHinzu() {
         screen(env()) { TextSettingsScreen(it) }
         compose.onNodeWithText("Liste bearbeiten").performClick()

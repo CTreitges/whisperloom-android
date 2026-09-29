@@ -39,6 +39,8 @@ fun TextSettingsScreen(nav: NavState) {
     val snack = rememberSnack()
     var showFillers by rememberSaveable { mutableStateOf(false) }
     val off = prefs.refineMode == RefineMode.OFF
+    // "Intelligent entfernen" wirkt auch auf geteilte Audios — bedienbar, sobald irgendeine KI-Stufe gilt.
+    val noAi = off && prefs.shareRefineMode == RefineMode.OFF
 
     DetailScaffold(title = stringResource(R.string.text_title), onBack = { nav.pop() }, snack = snack) { padding ->
         ScrollColumn(padding) {
@@ -66,10 +68,10 @@ fun TextSettingsScreen(nav: NavState) {
                 )
                 SwitchRow(
                     headline = stringResource(R.string.pref_smart_fillers),
-                    supporting = stringResource(if (off) R.string.text_smart_needs_level else R.string.pref_smart_fillers_info),
+                    supporting = stringResource(if (noAi) R.string.text_smart_needs_level else R.string.pref_smart_fillers_info),
                     checked = prefs.smartFillers,
                     onCheckedChange = { prefs.smartFillers = it },
-                    enabled = !off,
+                    enabled = !noAi,
                 )
                 SwitchRow(
                     headline = stringResource(R.string.pref_refine_paragraphs),
@@ -127,7 +129,7 @@ fun TextSettingsScreen(nav: NavState) {
                     checked = prefs.trailingSpace,
                     onCheckedChange = { prefs.trailingSpace = it },
                 )
-                if (prefs.smartFillers && !off) {
+                if (prefs.smartFillers && !noAi) {
                     Text(
                         stringResource(R.string.text_fillers_paused),
                         style = MaterialTheme.typography.bodySmall,

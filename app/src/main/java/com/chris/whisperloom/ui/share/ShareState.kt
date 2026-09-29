@@ -63,8 +63,11 @@ data class ShareUiState(
     /** Die fuer geteilte Audios eingestellte KI-Stufe dieses Laufs; OFF = keine. */
     val refineMode: RefineMode get() = results.firstOrNull { it.refineMode != RefineMode.OFF }?.refineMode ?: RefineMode.OFF
 
-    /** Grund, falls die Textverbesserung bei einer Datei gescheitert ist. */
+    /** Grund, falls die Textverbesserung bei einer Datei gescheitert ist (der erste). */
     val refineSkipped: String? get() = results.firstNotNullOfOrNull { it.refineSkipped }
+
+    /** Bei wie vielen Dateien die Textverbesserung gescheitert ist. */
+    val refineFailures: Int get() = results.count { it.refineSkipped != null }
 
     fun withFile(index: Int, change: (ShareFile) -> ShareFile): ShareUiState =
         copy(files = files.mapIndexed { i, f -> if (i == index) change(f) else f })

@@ -160,7 +160,7 @@ data class SharedTranscript(
  * Getrennt von [TranscriptionEngine]: geteiltes Audio wird ab Werk WORTGETREU ausgegeben —
  * bei einer fremden Sprachnachricht will man wissen, was gesagt wurde. Die Fuellwort-freie
  * Fassung ist ein Umschalter in der Ansicht. Eine KI-Stufe gibt es nur, wenn sie in den
- * Einstellungen fuer geteilte Audios eingeschaltet ist ([Prefs.shareRefineMode]).
+ * Einstellungen fuer geteilte Audios eingeschaltet ist ([SharedRefine]).
  */
 object SharedAudioTranscriber {
 
@@ -225,23 +225,9 @@ object SharedAudioTranscriber {
             val paragraphsVerbatim = paragraphsForChunks(parts.map { TextPolisher.polish(it, verbatimOptions) })
             val paragraphsCleaned = paragraphsForChunks(parts.map { TextPolisher.polish(it, cleanedOptions) })
 
-            val mode = prefs.shareRefineMode
-            var refineSkipped: String? = null
-            val paragraphsRefined = if (mode == RefineMode.OFF) null else {
-                if (isCancelled()) throw UnsupportedAudioException("Abgebrochen")
+            val refined = SharedRefine.run(prefs, parts, language, isCancelled, onStart = {
                 onProgress(chunks.size, chunks.size, app.getString(R.string.share_refining))
-                try {
-                    refinedParagraphs(parts, refinedOptions(prefs, language, mode)) { raw ->
-                        TextRefiner(prefs.llmAccess()).refine(raw, language, mode, prefs.smartFillers)
-                    }
-                } catch (e: Exception) {
-                    // Wie beim Diktat: die KI darf eine erkannte Nachricht nie verschlucken —
-                    // dann bleibt es bei der wortgetreuen Fassung, mit Hinweis statt Fehler.
-                    Log.w(TAG, "Textverbesserung uebersprungen: ${e.message}", e)
-                    refineSkipped = e.message ?: e.javaClass.simpleName
-                    null
-                }
-            }
+            })
             return SharedTranscript(
                 source = name,
                 verbatimText = paragraphsVerbatim.joinToString("\n\n"),
@@ -251,49 +237,14 @@ object SharedAudioTranscriber {
                 durationMs = decoded.durationMs,
                 backendLabel = backend.label,
                 chunkCount = chunks.size,
-                paragraphsRefined = paragraphsRefined,
-                refineMode = mode,
-                refineSkipped = refineSkipped,
+                paragraphsRefined = refined.paragraphs,
+                refineMode = refined.mode,
+                refineSkipped = refined.skipped,
             )
         } finally {
             temp.delete()
         }
     }
-
-    /**
-     * Nachbearbeitung der KI-Fassung — dieselben Regeln wie beim Diktat, nur die Absaetze
-     * sind immer an: eine Sprachnachricht am Stueck liest sich schlecht, und der Schalter
-     * "Automatische Absaetze" gilt fuer geteilte Audios nicht.
-     */
-    private fun refinedOptions(prefs: Prefs, language: String, mode: RefineMode) = PolishPlan.options(
-        removeFillers = prefs.removeFillers,
-        autoCapitalize = prefs.autoCapitalize,
-        language = language,
-        refineMode = mode,
-        smartFillers = prefs.smartFillers,
-        customFillers = prefs.customFillers,
-        disabledFillers = prefs.disabledFillers,
-        paragraphs = true,
-    )
-
-    /**
-     * KI-Fassung einer geteilten Datei, rein und testbar: alle Stuecke gehen als EIN Text an
-     * [refine] — bei "Zusammenfassen" soll eine Zusammenfassung des Ganzen herauskommen, nicht
-     * eine je 5-Minuten-Stueck. Die Absaetze setzt das Modell (Leerzeilen trennen sie), danach
-     * laeuft [TextPolisher] mit [options]. Nichts erkannt = leere Liste, ohne Anfrage.
-     *
-     * Fehler von [refine] werden durchgereicht; der Aufrufer faellt auf die wortgetreue Fassung zurueck.
-     */
-    internal fun refinedParagraphs(parts: List<String>, options: PolishOptions, refine: (String) -> String): List<String> {
-        val raw = parts.map { it.trim() }.filter { it.isNotEmpty() }.joinToString("\n\n")
-        if (raw.isEmpty()) return emptyList()
-        return TextPolisher.polish(refine(raw), options)
-            .split(BLANK_LINE)
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-    }
-
-    private const val TAG = "SharedAudioTranscriber"
 
     /** Leerzeile im Text = vorhandene Absatzgrenze (Regel 1). */
     private val BLANK_LINE = Regex("\\n\\s*\\n")
