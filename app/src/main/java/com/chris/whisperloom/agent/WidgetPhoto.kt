@@ -1,6 +1,8 @@
 package com.chris.whisperloom.agent
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import java.io.File
 
 /**
@@ -22,6 +24,15 @@ object WidgetPhoto {
     /** Die Datei zum Namen, null bei unbrauchbarem Namen. Existenz wird nicht geprueft. */
     fun file(ctx: Context, name: String): File? =
         if (isValidName(name)) File(File(ctx.filesDir, DIR), name) else null
+
+    /**
+     * Das Foto zum Zeichnen; null, wenn die Datei fehlt oder nicht lesbar ist — das Widget zeigt
+     * dann das Standardsymbol statt eines Lochs. Die Datei ist beim Import schon rund und klein.
+     */
+    fun load(ctx: Context, name: String): Bitmap? {
+        val f = file(ctx, name)?.takeIf { it.isFile } ?: return null
+        return runCatching { BitmapFactory.decodeFile(f.path) }.getOrNull()
+    }
 
     fun delete(ctx: Context, name: String) {
         file(ctx, name)?.let { runCatching { it.delete() } }

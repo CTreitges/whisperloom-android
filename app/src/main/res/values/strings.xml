@@ -573,6 +573,8 @@
     <string name="cd_widget_sent_raw">Auftrag gesendet, aber ohne Textverbesserung: %1$s</string>
     <string name="cd_widget_error">%1$s — antippen für erneuten Versuch</string>
     <string name="cd_widget_no_mic">Mikrofon nicht erlaubt — antippen, um es zu erlauben</string>
+    <!-- Widget mit eigenem Profilnamen: %1$s = Name, %2$s = Zustandstext wie oben -->
+    <string name="cd_widget_named">%1$s: %2$s</string>
     <string name="agent_channel">Sprachauftrag</string>
     <string name="agent_notif_title">Sprachauftrag</string>
     <string name="agent_notif_recording">Nimmt auf …</string>

@@ -1,29 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Vorschau des Sprachauftrag-Widgets in der Widget-Auswahl (previewLayout statt previewImage): grosse Flaeche mit Mikrofon-Symbol, darunter eine
-     Statuszeile. Der gesamte Bereich ist die Tippflaeche — kleine Ziele sind auf dem
-     Startbildschirm unbrauchbar. Hintergrund, Symbol, Farben und Text setzt
-     VoiceTaskWidgetView je Zustand; das Layout selbst kennt keinen Zustand. -->
+<!-- Vorschau des Sprachauftrag-Widgets in der Widget-Auswahl (previewLayout statt previewImage).
+     Zeigt die Standardgroesse 2x2 so, wie sie nach dem Platzieren aussieht: Variante STACK
+     (widget_task.xml) mit dem Standardprofil im Zustand "bereit". Eigene Ids, damit die
+     Vorschau nie mit dem echten Widget verwechselt wird. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_preview_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center"
-    android:padding="8dp"
+    android:padding="6dp"
     android:background="@drawable/widget_bg_ready">
 
     <ImageView
         android:id="@+id/widget_preview_icon"
-        android:layout_width="44dp"
-        android:layout_height="44dp"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
         android:src="@drawable/ic_mic"
         android:importantForAccessibility="no" />
+
+    <TextView
+        android:id="@+id/widget_preview_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:gravity="center"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textColor="@color/loom_onSurfaceVariant"
+        android:text="@string/widget_label" />
 
     <TextView
         android:id="@+id/widget_preview_status"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="2dp"
         android:gravity="center"
         android:maxLines="2"
         android:ellipsize="end"

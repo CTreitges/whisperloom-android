@@ -2,13 +2,19 @@
 <!-- updatePeriodMillis="0": kein Polling. Das Widget wird ausschliesslich von Dienst und
      Auftrag per updateAppWidget neu gezeichnet — alles andere kostet nur Akku.
      previewLayout (nicht previewImage): zeigt in der Auswahl die echte Optik,
-     previewImage ist seit Android 12 abgekuendigt. -->
+     previewImage ist seit Android 12 abgekuendigt.
+     Groessen: platziert wird 2x2 (minWidth/minHeight 110 dp, targetCell 2x2); frei ziehbar von
+     1x1 (minResize 40 dp, eine Zelle ist hochkant 57 dp breit) bis 4x2. maxResizeWidth 340 dp:
+     4 Spalten = 73*4-16 = 276 dp passen, 5 Spalten = 349 dp nicht mehr. Welche Layout-Variante
+     bei welcher Groesse erscheint, entscheidet WidgetLayouts. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:minWidth="110dp"
     android:minHeight="110dp"
+    android:minResizeWidth="40dp"
+    android:minResizeHeight="40dp"
     android:targetCellWidth="2"
     android:targetCellHeight="2"
-    android:maxResizeWidth="250dp"
+    android:maxResizeWidth="340dp"
     android:maxResizeHeight="250dp"
     android:resizeMode="horizontal|vertical"
     android:updatePeriodMillis="0"

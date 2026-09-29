@@ -5,7 +5,13 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.os.Build
+import android.os.Bundle
+import android.util.SizeF
+import android.view.View
 import android.widget.RemoteViews
+import androidx.annotation.VisibleForTesting
 import com.chris.whisperloom.R
 
 /**
@@ -13,36 +19,133 @@ import com.chris.whisperloom.R
  * ein paar Zahlen eine komplette [RemoteViews] gebaut und ueber den AppWidgetManager an ALLE
  * Instanzen geschickt.
  *
+ * Der Zustand ist global (ein Auftrag zur Zeit, alle Widgets zeigen ihn), das Aussehen gilt je
+ * Instanz: jedes Widget zeigt Namen und Symbol seines Profils ([WidgetProfileStore.forWidget])
+ * in der Variante, die zu seiner Groesse passt ([WidgetLayouts]).
+ *
  * Die Entscheidung, was ein Tipp bedeutet, faellt in [VoiceTaskUi.tap]; hier wird sie nur in
  * den passenden PendingIntent uebersetzt.
  */
 object VoiceTaskWidgetView {
 
-    fun build(ctx: Context, state: VoiceTaskState, elapsedMs: Long = 0, message: String = ""): RemoteViews {
-        val v = RemoteViews(ctx.packageName, R.layout.widget_task)
+    /** Standardprofil in der Variante STACK, ohne Instanz — die Optik vor den Profilen. */
+    fun build(ctx: Context, state: VoiceTaskState, elapsedMs: Long = 0, message: String = ""): RemoteViews =
+        build(
+            ctx, WidgetLayout.STACK, WidgetProfile.DEFAULT, null, state, elapsedMs, message,
+            tapIntent(ctx, VoiceTaskUi.tap(state), AppWidgetManager.INVALID_APPWIDGET_ID),
+        )
+
+    /**
+     * Eine Variante fuer ein Profil. [photo] nur, wenn das Profil ein Foto hat; gezeigt wird es
+     * nur in bereit/Fehler ([WidgetLayouts.showsProfileIcon]).
+     *
+     * Setzt JEDE veraenderliche Eigenschaft, auch die scheinbar unveraenderten: der Launcher
+     * recycelt die View bei gleichem Layout und spielt nur die neuen Aktionen darauf ab
+     * (`AppWidgetHostView` → `reapply`). Was hier fehlt, bliebe vom vorigen Bild stehen — etwa
+     * ein Foto, obwohl gerade aufgenommen wird.
+     */
+    fun build(
+        ctx: Context,
+        layout: WidgetLayout,
+        profile: WidgetProfile,
+        photo: Bitmap?,
+        state: VoiceTaskState,
+        elapsedMs: Long,
+        message: String,
+        click: PendingIntent?,
+    ): RemoteViews {
+        val v = RemoteViews(ctx.packageName, layout.layoutRes)
         v.setInt(R.id.widget_root, "setBackgroundResource", background(state))
-        v.setImageViewResource(R.id.widget_icon, icon(state))
+        val showPhoto = photo != null && WidgetLayouts.showsProfileIcon(state)
+        v.setViewVisibility(R.id.widget_icon, if (showPhoto) View.GONE else View.VISIBLE)
+        v.setViewVisibility(R.id.widget_photo, if (showPhoto) View.VISIBLE else View.GONE)
+        if (showPhoto) v.setImageViewBitmap(R.id.widget_photo, photo)
+        v.setImageViewResource(R.id.widget_icon, icon(state, profile))
         v.setInt(R.id.widget_icon, "setColorFilter", ctx.getColor(iconColor(state)))
+        if (layout != WidgetLayout.ICON) {
+            v.setTextViewText(R.id.widget_name, profile.displayName(ctx))
+            v.setTextColor(R.id.widget_name, ctx.getColor(textColor(state)))
+        }
         v.setTextColor(R.id.widget_status, ctx.getColor(textColor(state)))
         v.setTextViewText(R.id.widget_status, status(ctx, state, elapsedMs, message))
-        v.setContentDescription(R.id.widget_root, contentDescription(ctx, state, elapsedMs, message))
-        val intent = pendingIntent(ctx, VoiceTaskUi.tap(state))
-        if (intent != null) v.setOnClickPendingIntent(R.id.widget_root, intent)
+        v.setContentDescription(R.id.widget_root, contentDescription(ctx, profile, state, elapsedMs, message))
+        if (click != null) v.setOnClickPendingIntent(R.id.widget_root, click)
         return v
     }
 
     /**
      * Alle Instanzen des Widgets neu zeichnen. Ohne Widget auf dem Startbildschirm folgenlos.
      *
-     * Ueber die Ids statt `updateAppWidget(ComponentName, …)`: fuer das Geraet dasselbe, aber nur
-     * diesen Weg bildet Robolectric ab — so pruefen die Tests, was der Nutzer wirklich sieht.
+     * Ueber die Ids statt `updateAppWidget(ComponentName, …)`: nur so bekommt jede Instanz ihr
+     * eigenes Profil — und nur diesen Weg bildet Robolectric ab.
      */
     fun push(ctx: Context, state: VoiceTaskState, elapsedMs: Long = 0, message: String = "") {
         val manager = AppWidgetManager.getInstance(ctx)
         val ids = manager.getAppWidgetIds(ComponentName(ctx, VoiceTaskWidget::class.java))
         if (ids.isEmpty()) return
-        manager.updateAppWidget(ids, build(ctx, state, elapsedMs, message))
+        pushTo(ctx, manager, ids, state, elapsedMs, message)
     }
+
+    /**
+     * Bestimmte Instanzen zeichnen, jede mit ihrem Profil. Ein Foto wird nur geladen, wenn es
+     * gerade zu sehen ist, und je Aufruf nur einmal — auch wenn mehrere Widgets es teilen.
+     */
+    fun pushTo(
+        ctx: Context,
+        manager: AppWidgetManager,
+        ids: IntArray,
+        state: VoiceTaskState,
+        elapsedMs: Long = 0,
+        message: String = "",
+    ) {
+        val store = WidgetProfileStore(ctx)
+        val photos = HashMap<String, Bitmap?>()
+        for (id in ids) {
+            val profile = store.forWidget(id)
+            val photoName = (profile.icon as? ProfileIcon.Photo)?.fileName
+                ?.takeIf { WidgetLayouts.showsProfileIcon(state) }
+            val photo = photoName?.let { name ->
+                if (name !in photos) photos[name] = WidgetPhoto.load(ctx, name)
+                photos[name]
+            }
+            manager.updateAppWidget(id, views(ctx, manager, id, profile, photo, state, elapsedMs, message))
+        }
+    }
+
+    /**
+     * Ab Android 12 alle drei Varianten als Groessen-Map — das System waehlt je nach Groesse,
+     * auch beim Ziehen, ohne dass die App gefragt wird. Darunter waehlt [WidgetLayouts.legacy]
+     * aus den gemeldeten Spannen, je eine Variante fuer Hoch- und Querformat.
+     * Der Tipp ist je Instanz ein eigener PendingIntent und steckt in jeder Variante.
+     */
+    @VisibleForTesting
+    internal fun views(
+        ctx: Context,
+        manager: AppWidgetManager,
+        widgetId: Int,
+        profile: WidgetProfile,
+        photo: Bitmap?,
+        state: VoiceTaskState,
+        elapsedMs: Long,
+        message: String,
+    ): RemoteViews {
+        val click = tapIntent(ctx, VoiceTaskUi.tap(state), widgetId)
+        fun variant(layout: WidgetLayout) = build(ctx, layout, profile, photo, state, elapsedMs, message, click)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            return RemoteViews(WidgetLayout.entries.associate { SizeF(it.w, it.h) to variant(it) })
+        }
+        val pick = legacyLayouts(manager.getAppWidgetOptions(widgetId) ?: Bundle.EMPTY)
+        return if (pick.portrait == pick.landscape) variant(pick.portrait)
+        else RemoteViews(variant(pick.landscape), variant(pick.portrait))
+    }
+
+    @VisibleForTesting
+    internal fun legacyLayouts(options: Bundle): LegacyLayouts = WidgetLayouts.legacy(
+        minW = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH),
+        maxW = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH),
+        minH = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT),
+        maxH = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT),
+    )
 
     fun status(ctx: Context, state: VoiceTaskState, elapsedMs: Long, message: String): String = when (state) {
         VoiceTaskState.READY -> ctx.getString(R.string.widget_ready)
@@ -73,6 +176,21 @@ object VoiceTaskWidgetView {
         VoiceTaskState.ERROR -> ctx.getString(R.string.cd_widget_error, reason(ctx, message))
     }
 
+    /**
+     * Mit eigenem Profilnamen nennt TalkBack ihn zuerst ("Einkauf: Sprachauftrag aufnehmen") —
+     * sonst klingen zwei Widgets gleich. Ohne Namen bleibt es beim Text ohne Profile.
+     */
+    fun contentDescription(
+        ctx: Context,
+        profile: WidgetProfile,
+        state: VoiceTaskState,
+        elapsedMs: Long,
+        message: String,
+    ): String {
+        val text = contentDescription(ctx, state, elapsedMs, message)
+        return if (profile.name.isEmpty()) text else ctx.getString(R.string.cd_widget_named, profile.name, text)
+    }
+
     /** Ohne eigene Meldung bleibt es bei einem allgemeinen Hinweis statt einer leeren Zeile. */
     private fun reason(ctx: Context, message: String): String =
         message.ifBlank { ctx.getString(R.string.kb_error) }
@@ -85,11 +203,13 @@ object VoiceTaskWidgetView {
         VoiceTaskState.READY, VoiceTaskState.OFF -> R.drawable.widget_bg_ready
     }
 
-    private fun icon(state: VoiceTaskState): Int = when (state) {
+    /** In bereit/Fehler das Symbol des Profils; hat es ein Foto, steht hier (unsichtbar) das Mikrofon. */
+    private fun icon(state: VoiceTaskState, profile: WidgetProfile): Int = when (state) {
         VoiceTaskState.RECORDING -> R.drawable.ic_stop
         VoiceTaskState.WORKING, VoiceTaskState.SENT -> R.drawable.ic_send
         VoiceTaskState.NO_MIC, VoiceTaskState.OFF -> R.drawable.ic_mic_off
-        VoiceTaskState.READY, VoiceTaskState.ERROR -> R.drawable.ic_mic
+        VoiceTaskState.READY, VoiceTaskState.ERROR ->
+            WidgetIcons.of((profile.icon as? ProfileIcon.BuiltIn)?.key ?: WidgetIcons.DEFAULT_KEY).drawable
     }
 
     private fun iconColor(state: VoiceTaskState): Int = when (state) {
@@ -114,12 +234,17 @@ object VoiceTaskWidgetView {
      * Start des Mikrofon-Dienstes real im Vordergrund, und die Hintergrund-Beschraenkungen
      * ab Android 14 koennen gar nicht erst greifen (die scheitern sonst STILL — ohne
      * Exception, nur ohne Ton). Das Beenden darf direkt an den Dienst gehen: der laeuft
-     * zu dem Zeitpunkt bereits im Vordergrund.
+     * zu dem Zeitpunkt bereits im Vordergrund — und jedes Widget beendet dieselbe Aufnahme.
+     *
+     * Mit gueltiger [widgetId] traegt die Trampolin-Intent die Instanz in `data`: sonst hielte
+     * das System die Tipps zweier Widgets fuer denselben PendingIntent (Extras zaehlen beim
+     * Vergleich nicht), und das zuletzt gezeichnete Widget bestimmte das Profil aller.
      *
      * [TapIntent.NONE] ist der einzige Zustand ohne Tippflaeche — den vergibt [VoiceTaskUi.tap]
      * nicht, er bleibt als Rueckfallwert fuer eine Intent ohne Angabe.
      */
-    private fun pendingIntent(ctx: Context, intent: TapIntent): PendingIntent? {
+    @VisibleForTesting
+    internal fun tapIntent(ctx: Context, intent: TapIntent, widgetId: Int): PendingIntent? {
         val flags = PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         return when (intent) {
             TapIntent.NONE -> null
@@ -130,7 +255,7 @@ object VoiceTaskWidgetView {
             )
             else -> PendingIntent.getActivity(
                 ctx, REQ_TRAMPOLINE + intent.ordinal,
-                VoiceTaskTrampolineActivity.intent(ctx, intent),
+                VoiceTaskTrampolineActivity.intent(ctx, intent, widgetId),
                 flags,
             )
         }

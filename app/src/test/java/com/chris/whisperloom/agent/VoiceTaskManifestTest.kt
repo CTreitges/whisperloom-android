@@ -1,5 +1,6 @@
 package com.chris.whisperloom.agent
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -67,6 +68,25 @@ class VoiceTaskManifestTest {
         listOf("targetCellWidth", "targetCellHeight", "maxResizeWidth", "maxResizeHeight").forEach {
             assertTrue("$it fehlt", providerXml().contains("android:$it"))
         }
+    }
+
+    private fun dp(attribut: String): Int {
+        val wert = Regex("""android:$attribut="(\d+)dp"""").find(providerXml())
+        assertTrue("$attribut fehlt oder ist nicht in dp", wert != null)
+        return wert!!.groupValues[1].toInt()
+    }
+
+    @Test fun dasWidgetIstVon1x1Bis4x2Ziehbar() {
+        // Zellmasse laut Doku: hochkant (73n-16) x (118m-16) dp.
+        assertTrue("1x1 (57 dp breit) muss erreichbar sein", dp("minResizeWidth") <= 73 - 16)
+        assertTrue("1x1 (102 dp hoch) muss erreichbar sein", dp("minResizeHeight") <= 118 - 16)
+        assertTrue("4 Spalten (276 dp) muessen passen", dp("maxResizeWidth") >= 73 * 4 - 16)
+        assertTrue("5 Spalten (349 dp) nicht mehr", dp("maxResizeWidth") < 73 * 5 - 16)
+        assertTrue("2 Zeilen (220 dp) muessen passen", dp("maxResizeHeight") >= 118 * 2 - 16)
+        // Platziert wird weiter als 2x2 — Bestandswidgets aendern ihre Groesse nicht.
+        assertEquals(110, dp("minWidth"))
+        assertEquals(110, dp("minHeight"))
+        assertTrue(providerXml().contains("""android:resizeMode="horizontal|vertical""""))
     }
 
     @Test fun derOffeneAuftragBleibtAufDemGeraet() {
