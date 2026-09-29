@@ -232,6 +232,20 @@ class VoiceTaskTrampolineTest {
         assertEquals(listOf(true), aufrufe)
     }
 
+    @Test fun eineLaufendeOfflineErkennungWirdAuchNachDerStallZeitNichtErsetzt() {
+        // Ein Ersatz stellte sich hinter die laufende whisper-Erkennung und verdoppelte die Wartezeit.
+        auftrag()
+        store.state = VoiceTaskState.WORKING
+        store.attemptStartedAt = SystemClock.elapsedRealtime()
+        store.offlineRecognition = true
+        phase = JobPhase.RUNNING
+        ShadowSystemClock.advanceBy(Duration.ofMillis(VoiceTaskUi.STALL_MS * 2))
+
+        tippen(TapIntent.REFRESH)
+
+        assertEquals(emptyList<Boolean>(), aufrufe)
+    }
+
     @Test fun ohneOffenenAuftragWirdNurDerEchteZustandGezeichnet() {
         val w = widget()
         store.state = VoiceTaskState.WORKING

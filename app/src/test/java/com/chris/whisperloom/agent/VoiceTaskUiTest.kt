@@ -104,6 +104,16 @@ class VoiceTaskUiTest {
         assertEquals(Nudge.SEND_NOW, VoiceTaskUi.nudge(true, JobPhase.RUNNING, VoiceTaskUi.STALL_MS))
     }
 
+    @Test fun eineLaufendeOfflineErkennungWirdNieErsetzt() {
+        // whisper rechnet auf EINEM Thread und laesst sich nicht abbrechen: ein Ersatz stellte
+        // sich nur dahinter an, jeder Tipp verlaengerte die Wartezeit um eine volle Erkennung.
+        assertEquals(Nudge.WAIT, VoiceTaskUi.nudge(true, JobPhase.RUNNING, VoiceTaskUi.STALL_MS * 3, offlineRecognition = true))
+        // Ein wartender Job rechnet nicht — ein liegengebliebener Merker darf ihn nicht festhalten.
+        assertEquals(Nudge.SEND_NOW, VoiceTaskUi.nudge(true, JobPhase.WAITING, 0, offlineRecognition = true))
+        assertEquals(Nudge.SEND_NOW, VoiceTaskUi.nudge(true, JobPhase.NONE, 0, offlineRecognition = true))
+        assertEquals(Nudge.REDRAW, VoiceTaskUi.nudge(false, JobPhase.RUNNING, 0, offlineRecognition = true))
+    }
+
     @Test fun laufzeitOhneBekanntenBeginnIstNull() {
         assertEquals(0, VoiceTaskUi.runningFor(0, 5_000))
         assertEquals(0, VoiceTaskUi.runningFor(-1, 5_000))

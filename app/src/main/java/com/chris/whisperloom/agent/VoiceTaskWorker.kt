@@ -14,6 +14,7 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import com.chris.whisperloom.Engine
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import com.chris.whisperloom.TranscriptionEngine
@@ -149,8 +150,16 @@ class VoiceTaskWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, para
         VoiceTaskWidgetView.push(ctx, VoiceTaskState.WORKING)
         // Bereits erkannter Text wird NICHT neu transkribiert — das kostet beim Anbieter Geld.
         val cached = store.text.ifBlank { null }
+        // Offline laesst sich die Erkennung nicht abbrechen: bis sie vorbei ist, ersetzt kein Tipp
+        // diesen Lauf (siehe [VoiceTaskStore.offlineRecognition]).
+        store.offlineRecognition = cached == null && Prefs(ctx).engine == Engine.OFFLINE
+        val current = { !isStopped && store.requestId == id }
 
-        val outcome = pipeline(ctx, store) { !isStopped && store.requestId == id }.run(cached)
+        val outcome = pipeline(ctx, store, current).run(cached) {
+            // Nur solange der Lauf zustaendig ist, gehoert ihm der Merker — ein abgeloester Lauf
+            // loeschte sonst den seines Nachfolgers.
+            if (current()) store.offlineRecognition = false
+        }
 
         // Eigentuemer-Wache: abgeloest (REPLACE), verworfen oder vom System gestoppt. Dann gehoeren
         // Store und Widget einem anderen — nichts ueberschreiben, vor allem kein clear(), das

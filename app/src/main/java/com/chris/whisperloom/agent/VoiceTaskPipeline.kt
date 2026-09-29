@@ -41,11 +41,17 @@ class VoiceTaskPipeline(
     private val stillCurrent: () -> Boolean = { true },
 ) {
 
-    fun run(cachedText: String? = null): TaskOutcome {
+    /**
+     * @param recognized wird gerufen, sobald die Erkennung vorbei ist — mit Text, leer oder
+     *   gescheitert, in jedem Fall VOR dem Senden. Nicht, wenn [cachedText] sie erspart.
+     */
+    fun run(cachedText: String? = null, recognized: () -> Unit = {}): TaskOutcome {
         val text = cachedText ?: try {
             transcribe(samples())
         } catch (e: Exception) {
             return outcome(e, null)
+        } finally {
+            recognized()
         }
         if (text.isBlank()) return TaskOutcome.Failed(MSG_EMPTY, null)
         if (!stillCurrent()) return TaskOutcome.Superseded(text)

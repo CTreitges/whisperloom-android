@@ -10,6 +10,8 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.work.ListenableWorker
 import androidx.work.WorkInfo
 import androidx.work.testing.TestListenableWorkerBuilder
+import android.os.SystemClock
+import com.chris.whisperloom.Engine
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import com.chris.whisperloom.api.ApiHttpException
@@ -25,7 +27,9 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowSystemClock
 import java.net.SocketTimeoutException
+import java.time.Duration
 
 /**
  * Die Huelle um [VoiceTaskPipeline]: was der WorkManager als Ergebnis bekommt und was danach
@@ -279,6 +283,75 @@ class VoiceTaskWorkerTest {
         assertTrue(gesendet.isEmpty())
         assertNotEquals(VoiceTaskState.ERROR, store.state)
         assertFalse(store.hasWork)
+    }
+
+    // --- Offline-Erkennung: kein Ersatz per Tipp (sie laesst sich nicht abbrechen) ---
+
+    /** Was ein Tipp in diesem Moment taete, wenn der Lauf schon doppelt so lange wie die Stall-Zeit liefe. */
+    private fun tippNachDerStallZeit(): Nudge {
+        ShadowSystemClock.advanceBy(Duration.ofMillis(VoiceTaskUi.STALL_MS * 2))
+        val laeuftSeit = VoiceTaskUi.runningFor(store.attemptStartedAt, SystemClock.elapsedRealtime())
+        return VoiceTaskUi.nudge(store.hasWork, JobPhase.RUNNING, laeuftSeit, store.offlineRecognition)
+    }
+
+    @Test fun eineLaufendeOfflineErkennungErsetztKeinTipp() {
+        Prefs(app).engine = Engine.OFFLINE
+        auftragAnlegen()
+        var beimErkennen: Nudge? = null
+        var beimSenden: Nudge? = null
+        pipeline(
+            beimErkennen = { beimErkennen = tippNachDerStallZeit() },
+            send = { beimSenden = tippNachDerStallZeit(); gesendet += it },
+        )
+
+        assertTrue(lauf() is ListenableWorker.Result.Success)
+
+        assertEquals("Waehrend whisper rechnet, stellte sich ein Ersatz nur dahinter an", Nudge.WAIT, beimErkennen)
+        assertEquals("Ein haengender Versand danach bleibt ersetzbar", Nudge.SEND_NOW, beimSenden)
+        assertFalse(store.offlineRecognition)
+    }
+
+    @Test fun eineOnlineErkennungBleibtNachDerStallZeitErsetzbar() {
+        Prefs(app).engine = Engine.ONLINE
+        auftragAnlegen()
+        var beimErkennen: Nudge? = null
+        pipeline(beimErkennen = { beimErkennen = tippNachDerStallZeit() })
+
+        lauf()
+
+        assertEquals(Nudge.SEND_NOW, beimErkennen)
+    }
+
+    @Test fun mitGecachtemTextGibtEsKeineOfflineErkennung() {
+        // Liegengeblieben nach einem Prozesstod mitten in der Erkennung — der naechste Lauf raeumt ihn weg.
+        Prefs(app).engine = Engine.OFFLINE
+        auftragAnlegen()
+        store.text = "Schon erkannt"
+        store.offlineRecognition = true
+        var beimSenden: Nudge? = null
+        pipeline(send = { beimSenden = tippNachDerStallZeit(); gesendet += it })
+
+        lauf(attempt = 1)
+
+        assertEquals(Nudge.SEND_NOW, beimSenden)
+    }
+
+    @SuppressLint("RestrictedApi") // stop() ist die Stelle, an der WorkManager einen Worker abbricht.
+    @Test fun einGestoppterOfflineLaufLaesstDenMerkerDesNachfolgersStehen() {
+        // WorkManager stoppt den Lauf (Deadline), der Nachfolger mit derselben Kennung steht schon
+        // hinter der Erkennung an. Der alte Lauf darf dessen Merker nicht loeschen.
+        Prefs(app).engine = Engine.OFFLINE
+        auftragAnlegen()
+        val w = worker()
+        pipeline(beimErkennen = {
+            w.stop(WorkInfo.STOP_REASON_TIMEOUT)
+            store.offlineRecognition = true // so setzt ihn der Nachfolger zu seinem Laufbeginn
+        })
+
+        w.startWork().get()
+
+        assertTrue(store.offlineRecognition)
+        assertTrue(gesendet.isEmpty())
     }
 
     @Test fun einLeererLaufStelltEinStehengebliebenesSendenRichtig() {

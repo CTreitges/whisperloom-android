@@ -112,8 +112,13 @@ object VoiceTaskUi {
      * Bridge claimt die request_id vor ihrer synchronen Arbeit, ein Duplikat bekaeme dann
      * "202 duplicate" und zeigte "Gesendet", obwohl der erste Versand noch scheitern kann.
      * Obergrenze: unter der 10-min-Deadline des WorkManagers, sonst kaeme der Ausweg nie.
-     * Eine legitim lange CPU-Transkription kann laenger dauern; wer dann tippt, zahlt die
-     * Erkennung doppelt — das ist der bewusste Preis gegen die Sackgasse.
+     * Eine legitim lange Erkennung beim Anbieter kann laenger dauern; wer dann tippt, zahlt sie
+     * doppelt — das ist der bewusste Preis gegen die Sackgasse.
+     *
+     * Offline gilt die Frist waehrend der Erkennung NICHT ([VoiceTaskStore.offlineRecognition]):
+     * whisper rechnet auf einem einzigen Thread und laesst sich von WorkManager nicht abbrechen.
+     * Ein Ersatz stellte sich hinter die laufende Erkennung, und jeder Tipp verlaengerte die
+     * Wartezeit um eine volle Erkennung, statt sie abzukuerzen.
      */
     const val STALL_MS = 180_000L
 
@@ -159,10 +164,11 @@ object VoiceTaskUi {
      * Was ein Tipp auf "Wird gesendet …" bzw. "erneut senden" tut. Wartet der Job nur (oder gibt
      * es keinen), wird sofort gesendet. Arbeitet ein Worker, wird er erst nach [STALL_MS]
      * ersetzt — sonst kostete jeder ungeduldige Tipp eine zweite, bezahlte Transkription.
+     * Eine laufende Offline-Erkennung ([offlineRecognition]) wird nie ersetzt, siehe [STALL_MS].
      */
-    fun nudge(hasWork: Boolean, phase: JobPhase, runningForMs: Long): Nudge = when {
+    fun nudge(hasWork: Boolean, phase: JobPhase, runningForMs: Long, offlineRecognition: Boolean = false): Nudge = when {
         !hasWork -> Nudge.REDRAW
-        phase == JobPhase.RUNNING && runningForMs < STALL_MS -> Nudge.WAIT
+        phase == JobPhase.RUNNING && (offlineRecognition || runningForMs < STALL_MS) -> Nudge.WAIT
         else -> Nudge.SEND_NOW
     }
 

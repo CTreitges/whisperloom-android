@@ -81,7 +81,7 @@ class VoiceTaskTrampolineActivity : Activity() {
         val phase = VoiceTaskWork.phase(this)
         val store = VoiceTaskStore(this)
         val laeuftSeit = VoiceTaskUi.runningFor(store.attemptStartedAt, SystemClock.elapsedRealtime())
-        when (VoiceTaskUi.nudge(store.hasWork, phase, laeuftSeit)) {
+        when (VoiceTaskUi.nudge(store.hasWork, phase, laeuftSeit, store.offlineRecognition)) {
             Nudge.REDRAW -> VoiceTaskWidget.refresh(this)
             Nudge.SEND_NOW -> {
                 store.state = VoiceTaskState.WORKING

@@ -122,6 +122,15 @@ class VoiceTaskStoreTest {
         assertEquals(0, store.attemptStartedAt)
     }
 
+    @Test fun derOfflineMerkerGehtMitDemAuftrag() {
+        // Sonst hielte ein Merker aus einem verworfenen Auftrag den naechsten fest.
+        store.begin(ton(), 1000, "")
+        store.offlineRecognition = true
+        assertTrue(VoiceTaskStore(ctx).offlineRecognition)
+        store.begin(ton(), 1000, "")
+        assertFalse(store.offlineRecognition)
+    }
+
     @Test fun einNeuerAuftragStartetOhneAltenHinweis() {
         store.begin(ton(), 1000, "")
         store.refineSkipped = "alt"

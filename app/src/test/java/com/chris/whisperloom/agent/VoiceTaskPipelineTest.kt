@@ -66,6 +66,33 @@ class VoiceTaskPipelineTest {
         assertEquals(listOf("transcribe", "stillCurrent", "send"), reihenfolge)
     }
 
+    @Test fun dasEndeDerErkennungWirdVorDemSendenGemeldet() {
+        // Daran haengt der Offline-Merker: waehrend der Erkennung ersetzt kein Tipp den Lauf,
+        // ein haengender Versand danach soll aber wieder ersetzbar sein.
+        val reihenfolge = mutableListOf<String>()
+        val p = VoiceTaskPipeline(
+            samples = { FloatArray(100) },
+            transcribe = { reihenfolge += "transcribe"; "Kauf Milch" },
+            send = { reihenfolge += "send" },
+            stillCurrent = { reihenfolge += "stillCurrent"; true },
+        )
+        p.run { reihenfolge += "recognized" }
+        assertEquals(listOf("transcribe", "recognized", "stillCurrent", "send"), reihenfolge)
+    }
+
+    @Test fun auchEineGescheiterteErkennungIstVorbei() {
+        var gemeldet = 0
+        pipeline(transcribe = { throw ApiNetworkException(SocketTimeoutException("read")) }).run { gemeldet++ }
+        pipeline(transcribe = { "   " }).run { gemeldet++ }
+        assertEquals(2, gemeldet)
+    }
+
+    @Test fun ohneErkennungGibtEsNichtsZuMelden() {
+        var gemeldet = 0
+        pipeline().run(cachedText = "Schon erkannt") { gemeldet++ }
+        assertEquals(0, gemeldet)
+    }
+
     @Test fun glatterDurchlaufSendetDenErkanntenText() {
         val outcome = pipeline().run()
         assertEquals(TaskOutcome.Sent("Kauf Milch"), outcome)

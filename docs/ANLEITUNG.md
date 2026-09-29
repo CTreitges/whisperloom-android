@@ -764,7 +764,7 @@ Unter Erweiterte Optionen → **Anleitung ansehen** liegt dieselbe Erklärung no
 |---|---|---|
 | Mikrofon, „Tippen und sprechen" | bereit | startet die Aufnahme |
 | rot, laufende Zeit | nimmt auf | beendet die Aufnahme und schickt den Auftrag los |
-| blau, „Wird gesendet …" | schreibt mit und überträgt | sendet sofort, wenn der Auftrag nur wartet. Läuft gerade ein Versuch, passiert erst nach drei Minuten etwas — ein ungeduldiger zweiter Tipp soll nichts doppelt bezahlen |
+| blau, „Wird gesendet …" | schreibt mit und überträgt | sendet sofort, wenn der Auftrag nur wartet. Läuft gerade ein Versuch, passiert erst nach drei Minuten etwas (bei der Offline-Erkennung erst, wenn sie fertig gerechnet hat) — ein ungeduldiger zweiter Tipp soll nichts doppelt bezahlen |
 | rot mit Fehlergrund | etwas hat nicht geklappt | schickt **denselben** Auftrag noch einmal, ohne neu aufzunehmen |
 
 Ist ein Versuch gescheitert und folgt noch ein weiterer, bleibt das Widget blau und nennt den Grund: „Zeitüberschreitung … — neuer Versuch folgt, tippen = jetzt". Ein Tipp sendet dann sofort, statt auf den nächsten Versuch zu warten.
@@ -788,7 +788,7 @@ Es kam nichts am Mikrofon an — etwa weil eine andere App es belegt (Telefonat,
 Der zweite Tipp kam zu schnell. Unter einer knappen Sekunde ist es ein Fehlgriff, kein Auftrag.
 
 **Das Widget bleibt auf „Wird gesendet …" stehen oder zeigt „… — neuer Versuch folgt"**
-Ein Versuch ist gescheitert, meist am Netz oder an einem Server, der gerade erst startet. WhisperLoom versucht es von allein erneut, mit wachsendem Abstand. Ein Tipp auf die Fläche sendet sofort, ohne auf den nächsten Termin oder auf Netz zu warten. Läuft gerade ein Versuch, lässt der Tipp ihn in Ruhe; hängt er länger als drei Minuten, ersetzt ihn der Tipp. Doppelt ankommen kann dabei nichts: die Bridge führt jeden Auftrag nur einmal aus. Ohne Netz scheitert der sofortige Versuch ehrlich, und nach einigen Versuchen wird das Widget rot.
+Ein Versuch ist gescheitert, meist am Netz oder an einem Server, der gerade erst startet. WhisperLoom versucht es von allein erneut, mit wachsendem Abstand. Ein Tipp auf die Fläche sendet sofort, ohne auf den nächsten Termin oder auf Netz zu warten. Läuft gerade ein Versuch, lässt der Tipp ihn in Ruhe; hängt er länger als drei Minuten, ersetzt ihn der Tipp. Das gilt nicht, solange die Offline-Erkennung noch rechnet: sie lässt sich nicht abbrechen, ein zweiter Versuch müsste hinter ihr warten und würde alles nur verlängern. Der Tipp tut dann nichts — bei einer langen Aufnahme mit „Genau" kann das einige Minuten dauern. Doppelt ankommen kann dabei nichts: die Bridge führt jeden Auftrag nur einmal aus. Ohne Netz scheitert der sofortige Versuch ehrlich, und nach einigen Versuchen wird das Widget rot.
 
 Hängt es trotzdem immer wieder: Einstellungen des Telefons → Apps → WhisperLoom → Akku → **Nicht eingeschränkt**. Manche Hersteller halten Hintergrundaufträge sonst lange zurück. Für die Fehlersuche am Rechner zeigt `adb shell dumpsys jobscheduler com.chris.whisperloom`, worauf der Auftrag wartet, und `adb shell am get-standby-bucket com.chris.whisperloom` die Standby-Stufe der App.
 
