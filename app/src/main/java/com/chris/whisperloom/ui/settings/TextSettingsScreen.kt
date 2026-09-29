@@ -13,6 +13,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import com.chris.whisperloom.R
@@ -28,7 +29,10 @@ import com.chris.whisperloom.ui.components.rememberSnack
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.state.LocalAppEnv
 
-/** E2 — Text (UX-Spec §2.5): Stufe, KI-Fuellwoerter, eigener LLM-Zugang, Regeln ohne KI, Sheet B3. */
+/** Die Stufen-Auswahl fuer geteilte Audios — ihre Labels gibt es in der Diktat-Karte ein zweites Mal. */
+const val SHARE_REFINE_TAG = "share-refine"
+
+/** E2 — Text (UX-Spec §2.5): Stufe, KI-Fuellwoerter, Stufe fuer geteilte Audios, eigener LLM-Zugang, Regeln ohne KI, Sheet B3. */
 @Composable
 fun TextSettingsScreen(nav: NavState) {
     val prefs = LocalAppEnv.current.prefs
@@ -74,6 +78,29 @@ fun TextSettingsScreen(nav: NavState) {
                     onCheckedChange = { prefs.refineParagraphs = it },
                     enabled = !off,
                 )
+            }
+
+            SectionCard(
+                title = stringResource(R.string.text_card_share),
+                titleIcon = R.drawable.ic_voicemail,
+                gap = 4.dp,
+            ) {
+                Text(
+                    stringResource(R.string.text_share_intro),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Column(Modifier.selectableGroup().testTag(SHARE_REFINE_TAG)) {
+                    RefineMode.SETTINGS.forEach { mode ->
+                        val selected = prefs.shareRefineMode == mode
+                        LoomRow(
+                            headline = levelLabel(mode),
+                            supporting = stringResource(if (mode == RefineMode.OFF) R.string.text_share_off_sub else levelSubtitle(mode)),
+                            modifier = Modifier.selectable(selected = selected, role = Role.RadioButton) { prefs.shareRefineMode = mode },
+                            trailing = { RadioButton(selected = selected, onClick = null) },
+                        )
+                    }
+                }
             }
 
             SectionCard(title = stringResource(R.string.text_card_access)) {

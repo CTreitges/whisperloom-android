@@ -1,5 +1,6 @@
 package com.chris.whisperloom.ui.share
 
+import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.SharedTranscript
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -40,6 +41,19 @@ class ShareTextTest {
         assertEquals("Ähm A eins.\n\nA zwei.", ShareText.plain(listOf(a), hideFillers = false, withHeadings = false))
         assertEquals(listOf("Ähm A eins.", "A zwei."), ShareText.paragraphs(a, hideFillers = false))
         assertEquals(listOf("A eins.", "A zwei."), ShareText.paragraphs(a, hideFillers = true))
+    }
+
+    @Test fun kiFassungGehtVorUndIgnoriertDenSchalter() {
+        val k = a.copy(paragraphsRefined = listOf("A geglättet."), refineMode = RefineMode.POLISH)
+        assertEquals(listOf("A geglättet."), ShareText.paragraphs(k, hideFillers = true))
+        assertEquals(listOf("A geglättet."), ShareText.paragraphs(k, hideFillers = false))
+        assertEquals("A geglättet.", ShareText.plain(listOf(k), hideFillers = false, withHeadings = false))
+    }
+
+    @Test fun gescheiterteKiFaelltAufDieBisherigenFassungenZurueck() {
+        val k = a.copy(refineMode = RefineMode.POLISH, refineSkipped = "API-Fehler 401")
+        assertEquals(listOf("A eins.", "A zwei."), ShareText.paragraphs(k, hideFillers = true))
+        assertEquals(listOf("Ähm A eins.", "A zwei."), ShareText.paragraphs(k, hideFillers = false))
     }
 
     @Test fun leeresErgebnisWirdPlatzhalter() {

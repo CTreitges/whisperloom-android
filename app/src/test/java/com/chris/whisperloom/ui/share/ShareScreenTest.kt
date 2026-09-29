@@ -12,6 +12,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.Prefs
+import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.SharedTranscript
 import com.chris.whisperloom.ui.theme.WhisperLoomTheme
 import org.junit.Assert.assertEquals
@@ -157,6 +158,29 @@ class ShareScreenTest {
         compose.onNodeWithText("Wortgetreu, 100 %").assertIsDisplayed()
         assertFalse(Prefs(ctx).shareHideFillers)
         assertEquals("Ähm hallo Welt.", controller.plainText())
+    }
+
+    @Test fun kiFassungErsetztDenSchalterUndNenntDieStufe() {
+        val k = done.copy(paragraphsRefined = listOf("Geglätteter Absatz."), refineMode = RefineMode.POLISH)
+        show(ShareUiState(phase = SharePhase.DONE, files = listOf(ShareFile("a.ogg", result = k))))
+        compose.onNodeWithText("Geglätteter Absatz.").assertIsDisplayed()
+        compose.onNodeWithText("Erster Absatz.").assertDoesNotExist()
+        compose.onNodeWithText("Füllwörter ausblenden").assertDoesNotExist()
+        compose.onNodeWithText("Textverbesserung: Glätten · änderbar unter Einstellungen › Text").assertIsDisplayed()
+    }
+
+    @Test fun gescheiterteKiZeigtGrundUndDenSchalter() {
+        val k = done.copy(refineMode = RefineMode.BEAUTIFY, refineSkipped = "API-Fehler 401")
+        show(ShareUiState(phase = SharePhase.DONE, files = listOf(ShareFile("a.ogg", result = k))))
+        compose.onNodeWithText("Erster Absatz.").assertIsDisplayed()
+        compose.onNodeWithText("Textverbesserung übersprungen: API-Fehler 401").assertIsDisplayed()
+        compose.onNodeWithText("Füllwörter ausblenden").assertIsDisplayed()
+    }
+
+    @Test fun ohneStufeKeinHinweis() {
+        show(ShareUiState(phase = SharePhase.DONE, files = listOf(ShareFile("a.ogg", result = done))))
+        compose.onNodeWithText("Textverbesserung", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Füllwörter ausblenden").assertIsDisplayed()
     }
 
     @Test fun fehlerkarteZeigtErneutNurFuerDieseDatei() {

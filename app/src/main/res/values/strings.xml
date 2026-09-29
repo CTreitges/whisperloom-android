@@ -312,6 +312,9 @@
     <string name="text_smart_needs_level">Braucht eine Stufe über „Aus“.</string>
     <string name="pref_refine_paragraphs">Automatische Absätze</string>
     <string name="pref_refine_paragraphs_info">Die KI gliedert längere Diktate in Absätze. Ausgeschaltet kommt alles als ein durchgehender Text.</string>
+    <string name="text_card_share">Geteilte Sprachnachrichten</string>
+    <string name="text_share_intro">Für Audios, die du per Teilen an WhisperLoom schickst (z. B. aus WhatsApp). Eigene Stufe, unabhängig vom Diktat; bei „Aus“ bleibt der Text wortgetreu.</string>
+    <string name="text_share_off_sub">Wortgetreu, Füllwörter per Schalter ausblendbar. Keine zweite Anfrage.</string>
     <string name="text_card_access">Zugang für die Textverbesserung</string>
     <string name="text_own_access">Eigenen Zugang verwenden</string>
     <string name="text_own_access_off">Nutzt Anbieter und Key der Erkennung (%1$s).</string>
@@ -463,6 +466,8 @@
     <string name="share_starting">Wird vorbereitet …</string>
     <string name="share_decoding">Audio wird entpackt …</string>
     <string name="share_sending">Wird übertragen …</string>
+    <string name="share_refining">Text wird verbessert …</string>
+    <string name="share_refine_note">Textverbesserung: %1$s · änderbar unter Einstellungen › Text</string>
     <string name="share_file_of">Datei %1$d/%2$d</string>
     <string name="share_copy">Kopieren</string>
     <string name="share_forward">Teilen</string>

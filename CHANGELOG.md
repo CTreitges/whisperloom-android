@@ -2,6 +2,12 @@
 
 Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [Unveröffentlicht]
+
+### Hinzugefügt
+
+- **KI-Textverbesserung für geteilte Sprachnachrichten** (ab Werk aus). Einstellungen → Text → **Geteilte Sprachnachrichten**: eigene Stufe **Glätten**, **Verschönern** oder **Zusammenfassen**, unabhängig von der Stufe fürs Diktat. Die ganze Nachricht geht als ein Text an die KI, der Transkriptions-Bildschirm zeigt dann die verbesserte Fassung mit dem Hinweis „Textverbesserung: …". Scheitert die KI, bleibt es bei der wortgetreuen Fassung mit Hinweis.
+
 ## [3.6.0] — 2026-09-25
 
 ### Hinzugefügt

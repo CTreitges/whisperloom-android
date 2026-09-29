@@ -6,9 +6,9 @@ import com.chris.whisperloom.SharedTranscript
 /** Reiner Text fuer Kopieren/Teilen — ohne Android, JVM-testbar. */
 object ShareText {
 
-    /** Die angezeigte Fassung: ohne Fuellwoerter oder wortgetreu. */
+    /** Die angezeigte Fassung: die KI-Fassung, wenn es eine gibt — sonst ohne Fuellwoerter oder wortgetreu. */
     fun paragraphs(t: SharedTranscript, hideFillers: Boolean): List<String> =
-        if (hideFillers) t.paragraphsCleaned else t.paragraphsVerbatim
+        t.paragraphsRefined ?: if (hideFillers) t.paragraphsCleaned else t.paragraphsVerbatim
 
     /** Ueberschrift eines Abschnitts: "— Quelle · Dauer —". */
     fun heading(t: SharedTranscript): String = "— ${t.source} · ${Formats.duration(t.durationMs)} —"

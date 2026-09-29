@@ -293,6 +293,7 @@ WhisperLoom öffnet den Bildschirm **Transkription**. Oben steht die Quelle mit 
 
 - Der Text erscheint in **Absätzen** — WhisperLoom setzt sie an Satzgrenzen, bevorzugt vor Wörtern wie „Also", „Außerdem", „Dann". Bei mehreren Dateien gibt es je Datei einen Abschnitt mit Quelle und Dauer. Der Text ist markierbar.
 - Schalter **Füllwörter ausblenden** (standardmäßig **an**): Blendet „ähm, äh …" aus. Ausgeschaltet zeigt WhisperLoom den Text **wortgetreu, 100 %** — bei fremden Nachrichten will man manchmal genau wissen, was gesagt wurde. Der Schalter wirkt sofort auf die Anzeige und auf Kopieren/Teilen; es wird nichts neu hochgeladen.
+- Ist unter Einstellungen → Text → **Geteilte Sprachnachrichten** eine KI-Stufe gewählt ([Kapitel 8.1](#81-textverbesserung-ki--vier-stufen)), zeigt der Bildschirm die verbesserte Fassung; der Füllwort-Schalter entfällt dann, darunter steht z. B. „Textverbesserung: Glätten · änderbar unter Einstellungen › Text". Scheitert die KI (Netz, Anbieter, kein Zugang), erscheint wie gewohnt die wortgetreue Fassung mit Schalter und dem Hinweis „Textverbesserung übersprungen: …".
 - **Kopieren** legt den angezeigten Text in die Zwischenablage („In die Zwischenablage kopiert"); **Teilen** gibt ihn als Text an eine andere App weiter. Die Zwischenablage wird nie automatisch überschrieben.
 - Ist eine Datei fehlgeschlagen, steht der Grund bei ihr („Fehlgeschlagen: …") mit **Erneut** nur für diese Datei; bei mehreren Fehlern gibt es zusätzlich **Alles erneut**.
 - Ist noch kein Zugang eingerichtet, zeigt der Bildschirm „Kein Zugang eingerichtet" mit **Einrichtung öffnen**.
@@ -305,7 +306,7 @@ Beim Offline-Modus dauern lange Nachrichten entsprechend länger; Schließen des
 
 ### 6.4 Was nicht passiert
 
-Geteilte Nachrichten werden **nicht** durch die KI-Textverbesserung geschickt — sie erscheinen so, wie sie erkannt wurden (nur die lokale Füllwort-Ausblendung und die Absatzbildung kommen dazu). Und sie werden nirgends gespeichert: Wenn du den Bildschirm schließt, ist der Text weg — außer du hast ihn kopiert oder geteilt.
+Geteilte Nachrichten werden ab Werk **nicht** durch die KI-Textverbesserung geschickt — sie erscheinen so, wie sie erkannt wurden (nur die lokale Füllwort-Ausblendung und die Absatzbildung kommen dazu). Die Stufe fürs Diktat gilt hier nicht; wer auch Sprachnachrichten glätten, verschönern oder zusammenfassen lassen will, stellt das getrennt unter Einstellungen → Text → **Geteilte Sprachnachrichten** ein. Und sie werden nirgends gespeichert: Wenn du den Bildschirm schließt, ist der Text weg — außer du hast ihn kopiert oder geteilt.
 
 ---
 
@@ -405,6 +406,8 @@ Diktierst du Material mit (eine E-Mail, einen Text), steht es am Ende zwischen T
 **Füllwörter intelligent entfernen:** „Statt fester Wortliste entscheidet die KI selbst, welche Füllwörter, Versprecher und Wiederholungen weg können. Im Zweifel bleibt das Wort." Braucht eine Stufe über „Aus" (bei „Zusammenfassen" ohne Wirkung). Solange dieser Schalter aktiv ist, pausiert die feste Wortliste der Regeln — sonst würde zweimal gefiltert.
 
 **Automatische Absätze** (direkt darunter): „Die KI gliedert längere Diktate in Absätze. Ausgeschaltet kommt alles als ein durchgehender Text." Ab Werk **an** — das ist das bisherige Verhalten. Ausgeschaltet bekommt die KI die Anweisung, keine Absätze und Zeilenumbrüche zu setzen (bei „Zusammenfassen": wenige Sätze statt Absätzen oder Stichpunkten); liefert das Modell trotzdem Zeilenumbrüche, zieht WhisperLoom sie zu einem Fließtext zusammen. Wie „Füllwörter intelligent entfernen" braucht der Schalter eine Stufe über „Aus". Für geteilte Sprachnachrichten gilt er nicht — dort bleibt die eigene Absatzbildung ([Kapitel 6](#6-sprachnachrichten-abtippen)).
+
+**Geteilte Sprachnachrichten** (eigene Karte darunter): „Für Audios, die du per Teilen an WhisperLoom schickst (z. B. aus WhatsApp). Eigene Stufe, unabhängig vom Diktat; bei „Aus" bleibt der Text wortgetreu." Zur Wahl stehen **Aus** (ab Werk), **Glätten**, **Verschönern** und **Zusammenfassen** — „Prompt" nicht, das ergibt für eine fremde Nachricht keinen Sinn. Die ganze Nachricht geht als ein Text an die KI (bei langen Nachrichten also eine Zusammenfassung des Ganzen, nicht eine je 5-Minuten-Stück); Absätze setzt die KI immer, der Schalter „Automatische Absätze" gilt hier nicht. „Füllwörter intelligent entfernen" und die Regeln ohne KI wirken wie beim Diktat. Es gilt derselbe Zugang wie für die Textverbesserung ([8.2](#82-zugang-für-die-textverbesserung)); jede Nachricht kostet damit eine zweite Anfrage.
 
 ### 8.2 Zugang für die Textverbesserung
 
