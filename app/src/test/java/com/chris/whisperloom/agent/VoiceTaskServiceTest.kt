@@ -38,6 +38,9 @@ class VoiceTaskServiceTest {
     private val app: Application = ApplicationProvider.getApplicationContext()
     private lateinit var store: VoiceTaskStore
     private var eingereiht = 0
+
+    /** `manual` jeder Einreihung — der Dienst ist der automatische Weg (mit Netz-Bedingung). */
+    private val manuell = mutableListOf<Boolean>()
     private val echterEnqueue = VoiceTaskWork.enqueueImpl
     private var controller: ServiceController<VoiceTaskService>? = null
     private lateinit var gelesen: CountDownLatch
@@ -53,7 +56,10 @@ class VoiceTaskServiceTest {
             agentToken = "geheim"
         }
         shadowOf(app).grantPermissions(Manifest.permission.RECORD_AUDIO)
-        VoiceTaskWork.enqueueImpl = { eingereiht++ }
+        VoiceTaskWork.enqueueImpl = { _, manual ->
+            eingereiht++
+            manuell += manual
+        }
     }
 
     @After fun abbauen() {
@@ -172,6 +178,7 @@ class VoiceTaskServiceTest {
         assertTrue(store.requestId.isNotEmpty())
         assertTrue("Aufnahmezeitpunkt fehlt", store.recordedAt.isNotEmpty())
         assertEquals("Genau einmal einreihen", 1, eingereiht)
+        assertEquals("Automatischer Weg: mit Netz-Bedingung, nicht wie ein Tipp", listOf(false), manuell)
     }
 
     @Test fun eineStilleAufnahmeGiltAlsFehlschlagNichtAlsAuftrag() {

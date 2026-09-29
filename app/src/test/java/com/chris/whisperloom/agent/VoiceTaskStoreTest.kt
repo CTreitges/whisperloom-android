@@ -113,6 +113,15 @@ class VoiceTaskStoreTest {
         assertEquals("Mit dem Auftrag ist auch sein Hinweis erledigt", "", store.refineSkipped)
     }
 
+    @Test fun derVersuchsbeginnUeberlebtEineNeueInstanzUndGehtMitDemAuftrag() {
+        assertEquals("Unbekannt ist 0", 0, store.attemptStartedAt)
+        store.begin(ton(), 1000, "")
+        store.attemptStartedAt = 12_345
+        assertEquals(12_345, VoiceTaskStore(ctx).attemptStartedAt)
+        store.clear()
+        assertEquals(0, store.attemptStartedAt)
+    }
+
     @Test fun einNeuerAuftragStartetOhneAltenHinweis() {
         store.begin(ton(), 1000, "")
         store.refineSkipped = "alt"

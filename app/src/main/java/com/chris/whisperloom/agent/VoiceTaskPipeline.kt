@@ -11,6 +11,12 @@ sealed class TaskOutcome {
 
     /** Endgueltig: falsches Token, kaputte Adresse, nichts erkannt. Erneutes Senden hilft nur nach einer Aenderung. */
     data class Failed(val reason: String, val text: String?) : TaskOutcome()
+
+    /**
+     * Nicht gesendet, weil der Lauf nicht mehr zustaendig ist (abgeloest, verworfen, gestoppt).
+     * [text] ist bezahlt — der Aufrufer darf ihn cachen, wenn der Auftrag noch derselbe ist.
+     */
+    data class Superseded(val text: String) : TaskOutcome()
 }
 
 /**
@@ -22,11 +28,17 @@ sealed class TaskOutcome {
  *  1. Transkribieren (teuer, kostet ggf. Geld) — das Ergebnis wird deshalb vom Aufrufer
  *     gespeichert und beim naechsten Versuch als [cachedText] wieder hereingereicht.
  *  2. An die Bridge schicken.
+ *
+ * [stillCurrent] wird direkt vor dem Senden gefragt, also nach der (langen) Transkription:
+ * ein abgeloester, verworfener oder gestoppter Lauf darf nichts mehr an die Bridge schicken.
+ * Die Bridge claimt die request_id VOR ihrer Arbeit — ein Zombie-Versand wuerde sonst den
+ * echten Auftrag als Duplikat verdraengen.
  */
 class VoiceTaskPipeline(
     private val samples: () -> FloatArray,
     private val transcribe: (FloatArray) -> String,
     private val send: (String) -> Unit,
+    private val stillCurrent: () -> Boolean = { true },
 ) {
 
     fun run(cachedText: String? = null): TaskOutcome {
@@ -36,6 +48,7 @@ class VoiceTaskPipeline(
             return outcome(e, null)
         }
         if (text.isBlank()) return TaskOutcome.Failed(MSG_EMPTY, null)
+        if (!stillCurrent()) return TaskOutcome.Superseded(text)
 
         return try {
             send(text)

@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.os.SystemClock
 import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.Prefs
 
@@ -26,7 +27,7 @@ class VoiceTaskTrampolineActivity : Activity() {
         when (intentOf(intent)) {
             TapIntent.START -> start()
             TapIntent.RETRY -> retry()
-            TapIntent.REFRESH -> nachsehen()
+            TapIntent.REFRESH -> anstossen()
             else -> openApp()
         }
         finish()
@@ -49,7 +50,8 @@ class VoiceTaskTrampolineActivity : Activity() {
     /**
      * Erneut senden braucht kein Mikrofon — der Auftrag liegt schon auf der Platte. Deshalb
      * kein Dienst, sondern direkt der Auftrag; das spart einen Foreground-Service, der nur
-     * Warten wuerde.
+     * Warten wuerde. Ueber [anstossen], damit ein Doppeltipp einen gerade gestarteten Job
+     * nicht wieder abbricht.
      */
     private fun retry() {
         // Nichts zu wiederholen (z. B. nach "Kein Ton aufgenommen") — dann ist der Tipp
@@ -58,22 +60,38 @@ class VoiceTaskTrampolineActivity : Activity() {
             start()
             return
         }
-        VoiceTaskWidgetView.push(this, VoiceTaskState.WORKING)
-        VoiceTaskWork.enqueue(this)
+        anstossen()
     }
 
     /**
-     * Tipp auf "arbeitet". Sichtbar passiert normalerweise nichts — es sei denn, es gibt zwar
-     * einen Auftrag, aber keinen Job mehr dazu. Genau das passiert, wenn der Prozess zwischen
-     * dem Ablegen des Auftrags und dem Einreihen stirbt; ohne diesen Weg stuende das Widget
-     * dann fuer immer auf "Wird gesendet …", ohne dass eine neue Aufnahme moeglich waere.
+     * Tipp auf "Wird gesendet …" (und erneut senden mit Auftrag): sendet jetzt, ausser ein
+     * Worker arbeitet gerade wirklich ([VoiceTaskUi.nudge]). Frueher reihte der Tipp nur ein,
+     * wenn gar kein Job mehr bestand — ein Job im Backoff blieb liegen, und das Widget hing (#10).
+     *
+     * Die Job-Phase wird ZUERST gelesen, der Store danach: erledigt der Worker den Auftrag
+     * genau waehrend der Abfrage, sieht der Tipp keinen Auftrag mehr und zeichnet nur neu,
+     * statt "Gesendet" mit "Wird gesendet …" zu uebermalen.
+     *
+     * SEND_NOW zeichnet VOR dem Einreihen: so ist der Push des Workers immer der letzte, und
+     * ein Doppeltipp trifft auf RUNNING mit frischem Stempel. Der Store kommt dabei mit auf
+     * WORKING — sonst zeichnete ein spaeteres onUpdate waehrend des Laufs noch den alten Fehler.
+     * WAIT zeichnet gar nichts: die Flaeche gehoert dem laufenden Worker.
      */
-    private fun nachsehen() {
+    private fun anstossen() {
+        val phase = VoiceTaskWork.phase(this)
         val store = VoiceTaskStore(this)
-        if (store.hasWork && !VoiceTaskWork.isScheduled(this)) {
-            VoiceTaskWork.enqueue(this)
+        val laeuftSeit = VoiceTaskUi.runningFor(store.attemptStartedAt, SystemClock.elapsedRealtime())
+        when (VoiceTaskUi.nudge(store.hasWork, phase, laeuftSeit)) {
+            Nudge.REDRAW -> VoiceTaskWidget.refresh(this)
+            Nudge.SEND_NOW -> {
+                store.state = VoiceTaskState.WORKING
+                store.message = ""
+                store.attemptStartedAt = SystemClock.elapsedRealtime()
+                VoiceTaskWidgetView.push(this, VoiceTaskState.WORKING)
+                VoiceTaskWork.sendNow(this)
+            }
+            Nudge.WAIT -> Unit
         }
-        VoiceTaskWidget.refresh(this)
     }
 
     /** Einstellungen der App — dort wird das Mikrofon erlaubt bzw. der Server eingetragen. */

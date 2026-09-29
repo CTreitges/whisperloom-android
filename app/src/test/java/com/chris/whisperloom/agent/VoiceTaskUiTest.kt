@@ -1,5 +1,6 @@
 package com.chris.whisperloom.agent
 
+import com.chris.whisperloom.api.Http
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -69,8 +70,8 @@ class VoiceTaskUiTest {
     }
 
     @Test fun waehrendGearbeitetWirdStartetEinTippNichtsNeues() {
-        // Ein ungeduldiger Doppeltipp darf weder eine zweite Aufnahme noch einen zweiten
-        // Versand ausloesen — er holt nur den echten Zustand.
+        // Ein ungeduldiger Doppeltipp darf keine zweite Aufnahme ausloesen — er stoesst nur den
+        // Auftrag an ([VoiceTaskUi.nudge] entscheidet, ob wirklich gesendet wird).
         val tap = VoiceTaskUi.tap(VoiceTaskState.WORKING)
         assertEquals(TapIntent.REFRESH, tap)
         assertTrue(tap != TapIntent.START && tap != TapIntent.STOP && tap != TapIntent.RETRY)
@@ -81,6 +82,51 @@ class VoiceTaskUiTest {
         VoiceTaskState.entries.forEach {
             assertTrue("$it hat keine Tippflaeche", VoiceTaskUi.tap(it) != TapIntent.NONE)
         }
+    }
+
+    // --- Anstossen (#10) -----------------------------------------------------
+
+    @Test fun ohneAuftragWirdNurNeuGezeichnet() {
+        JobPhase.entries.forEach { phase ->
+            assertEquals("$phase ohne Auftrag", Nudge.REDRAW, VoiceTaskUi.nudge(false, phase, VoiceTaskUi.STALL_MS * 2))
+        }
+    }
+
+    @Test fun einWartenderOderFehlenderJobWirdSofortGesendet() {
+        // Genau die Sackgasse aus #10: ein Job im Backoff galt als "eingeplant", der Tipp tat nichts.
+        assertEquals(Nudge.SEND_NOW, VoiceTaskUi.nudge(true, JobPhase.NONE, 0))
+        assertEquals(Nudge.SEND_NOW, VoiceTaskUi.nudge(true, JobPhase.WAITING, 0))
+    }
+
+    @Test fun einLaufenderWorkerWirdErstNachDerStallZeitErsetzt() {
+        assertEquals(Nudge.WAIT, VoiceTaskUi.nudge(true, JobPhase.RUNNING, 0))
+        assertEquals(Nudge.WAIT, VoiceTaskUi.nudge(true, JobPhase.RUNNING, VoiceTaskUi.STALL_MS - 1))
+        assertEquals(Nudge.SEND_NOW, VoiceTaskUi.nudge(true, JobPhase.RUNNING, VoiceTaskUi.STALL_MS))
+    }
+
+    @Test fun laufzeitOhneBekanntenBeginnIstNull() {
+        assertEquals(0, VoiceTaskUi.runningFor(0, 5_000))
+        assertEquals(0, VoiceTaskUi.runningFor(-1, 5_000))
+    }
+
+    @Test fun laufzeitNachEinemNeustartIstNull() {
+        // elapsedRealtime beginnt nach einem Neustart wieder bei 0 — der Beginn laege dann in der Zukunft.
+        assertEquals(0, VoiceTaskUi.runningFor(10_000, 5_000))
+    }
+
+    @Test fun laufzeitIstDieDifferenz() {
+        assertEquals(150, VoiceTaskUi.runningFor(100, 250))
+    }
+
+    @Test fun einTippUeberholtNieEinenLaufendenVersand() {
+        // Die Bridge claimt die Kennung vor ihrer Arbeit: ersetzte ein Tipp einen Versand, der
+        // noch auf Antwort wartet, bekaeme der Ersatz "202 duplicate" und zeigte "Gesendet",
+        // obwohl der erste Versand noch scheitern kann.
+        assertTrue(VoiceTaskUi.STALL_MS > 2L * Http.CONNECT_TIMEOUT_MS + AgentBridge.READ_TIMEOUT_MS)
+    }
+
+    @Test fun derAuswegKommtVorDerDeadlineDesWorkManagers() {
+        assertTrue(VoiceTaskUi.STALL_MS < 10 * 60 * 1000L)
     }
 
     // --- Zustand nach einem Neustart ----------------------------------------

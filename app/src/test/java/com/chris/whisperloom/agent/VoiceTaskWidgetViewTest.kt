@@ -9,6 +9,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -65,6 +66,27 @@ class VoiceTaskWidgetViewTest {
 
     @Test fun derBildschirmleserNenntDenGrundDerAusgefallenenVeredelung() {
         assertTrue(cd(VoiceTaskState.SENT, message = "API-Fehler 429").contains("API-Fehler 429"))
+    }
+
+    @Test fun sendenOhneGrundBleibtSchlicht() {
+        assertEquals(ctx.getString(R.string.widget_working), status(VoiceTaskState.WORKING))
+        assertEquals(ctx.getString(R.string.cd_widget_working), cd(VoiceTaskState.WORKING))
+    }
+
+    @Test fun einGescheiterterVersuchIstBeimSendenSichtbar() {
+        // #10: frueher stand nach einem gescheiterten Versuch stumm "Wird gesendet …".
+        val zeile = status(VoiceTaskState.WORKING, message = "Zeitüberschreitung")
+        assertTrue(zeile.contains("Zeitüberschreitung"))
+        assertNotEquals(ctx.getString(R.string.widget_working), zeile)
+        val vorgelesen = cd(VoiceTaskState.WORKING, message = "Zeitüberschreitung")
+        assertTrue(vorgelesen.contains("Zeitüberschreitung"))
+        assertNotEquals(ctx.getString(R.string.cd_widget_working), vorgelesen)
+    }
+
+    @Test fun derTippAufSendenMitGrundStoesstAn() {
+        // Der Grund aendert nur den Text, nicht die Bedeutung des Tipps.
+        assertEquals(TapIntent.REFRESH, VoiceTaskUi.tap(VoiceTaskState.WORKING))
+        assertTrue(gezeichnet(VoiceTaskState.WORKING, message = "Zeitüberschreitung").hasOnClickListeners())
     }
 
     @Test fun ausgeschaltetFuehrtInDieEinstellungen() {

@@ -26,6 +26,46 @@ class VoiceTaskPipelineTest {
         send = send,
     )
 
+    // --- Abgeloester Lauf (#10) ---------------------------------------------
+
+    @Test fun einAbgeloesterLaufSendetNichts() {
+        // Die Bridge claimt die Kennung vor der Arbeit — ein Zombie-Versand verdraengte den echten Auftrag.
+        val p = VoiceTaskPipeline(
+            samples = { FloatArray(100) },
+            transcribe = { transkribiert++; "Kauf Milch" },
+            send = { gesendet += it },
+            stillCurrent = { false },
+        )
+        assertEquals(TaskOutcome.Superseded("Kauf Milch"), p.run())
+        assertTrue(gesendet.isEmpty())
+        assertEquals(1, transkribiert)
+    }
+
+    @Test fun einAbgeloesterLaufMitCacheTranskribiertUndSendetNicht() {
+        val p = VoiceTaskPipeline(
+            samples = { FloatArray(100) },
+            transcribe = { transkribiert++; "neu" },
+            send = { gesendet += it },
+            stillCurrent = { false },
+        )
+        assertEquals(TaskOutcome.Superseded("Schon erkannt"), p.run(cachedText = "Schon erkannt"))
+        assertEquals(0, transkribiert)
+        assertTrue(gesendet.isEmpty())
+    }
+
+    @Test fun zustaendigkeitWirdErstNachDerTranskriptionGefragt() {
+        // Die Transkription dauert lange (eigener Server bis 600 s) — in der Zeit wird abgeloest.
+        val reihenfolge = mutableListOf<String>()
+        val p = VoiceTaskPipeline(
+            samples = { FloatArray(100) },
+            transcribe = { reihenfolge += "transcribe"; "Kauf Milch" },
+            send = { reihenfolge += "send" },
+            stillCurrent = { reihenfolge += "stillCurrent"; true },
+        )
+        assertEquals(TaskOutcome.Sent("Kauf Milch"), p.run())
+        assertEquals(listOf("transcribe", "stillCurrent", "send"), reihenfolge)
+    }
+
     @Test fun glatterDurchlaufSendetDenErkanntenText() {
         val outcome = pipeline().run()
         assertEquals(TaskOutcome.Sent("Kauf Milch"), outcome)
