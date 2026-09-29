@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
+import androidx.work.ExistingWorkPolicy
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import org.junit.After
@@ -39,8 +40,9 @@ class VoiceTaskServiceTest {
     private lateinit var store: VoiceTaskStore
     private var eingereiht = 0
 
-    /** `manual` jeder Einreihung — der Dienst ist der automatische Weg (mit Netz-Bedingung). */
+    /** Ohne Netz-Bedingung? je Einreihung — der Dienst ist der automatische Weg (mit Netz-Bedingung). */
     private val manuell = mutableListOf<Boolean>()
+    private val policies = mutableListOf<ExistingWorkPolicy>()
     private val echterEnqueue = VoiceTaskWork.enqueueImpl
     private var controller: ServiceController<VoiceTaskService>? = null
     private lateinit var gelesen: CountDownLatch
@@ -56,9 +58,10 @@ class VoiceTaskServiceTest {
             agentToken = "geheim"
         }
         shadowOf(app).grantPermissions(Manifest.permission.RECORD_AUDIO)
-        VoiceTaskWork.enqueueImpl = { _, manual ->
+        VoiceTaskWork.enqueueImpl = { _, policy, request ->
             eingereiht++
-            manuell += manual
+            manuell += ohneNetzBedingung(request)
+            policies += policy
         }
     }
 
@@ -179,6 +182,8 @@ class VoiceTaskServiceTest {
         assertTrue("Aufnahmezeitpunkt fehlt", store.recordedAt.isNotEmpty())
         assertEquals("Genau einmal einreihen", 1, eingereiht)
         assertEquals("Automatischer Weg: mit Netz-Bedingung, nicht wie ein Tipp", listOf(false), manuell)
+        // Ein neuer Auftrag loest den alten Job ab — mit KEEP ginge er lautlos verloren.
+        assertEquals(listOf(ExistingWorkPolicy.REPLACE), policies)
     }
 
     @Test fun eineStilleAufnahmeGiltAlsFehlschlagNichtAlsAuftrag() {

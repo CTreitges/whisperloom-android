@@ -3,6 +3,7 @@ package com.chris.whisperloom.agent
 import android.annotation.SuppressLint
 import androidx.work.BackoffPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkInfo
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -35,11 +36,6 @@ class VoiceTaskWorkTest {
         assertEquals(JobPhase.WAITING, phase(WorkInfo.State.BLOCKED))
     }
 
-    @Test fun nachReplaceStehtDerAlteJobAlsAbgebrochenDaneben() {
-        assertEquals(JobPhase.WAITING, phase(WorkInfo.State.CANCELLED, WorkInfo.State.ENQUEUED))
-        assertEquals(JobPhase.RUNNING, phase(WorkInfo.State.CANCELLED, WorkInfo.State.RUNNING))
-    }
-
     @Test fun einLaufenderJobGewinnt() {
         assertEquals(JobPhase.RUNNING, phase(WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING))
     }
@@ -63,3 +59,8 @@ class VoiceTaskWorkTest {
         assertEquals(0, spec.initialDelay)
     }
 }
+
+/** Fuer die Naht-Attrappen in Dienst- und Trampolin-Test: laeuft der Request ohne Netz-Bedingung (= vom Tipp)? */
+@SuppressLint("RestrictedApi") // workSpec ist fuer Tests die einzige Sicht auf den gebauten Request.
+internal fun ohneNetzBedingung(request: OneTimeWorkRequest): Boolean =
+    request.workSpec.constraints.requiredNetworkType == NetworkType.NOT_REQUIRED

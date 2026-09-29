@@ -39,7 +39,7 @@ object VoiceTaskWork {
     const val BACKOFF_SECONDS = 10L
 
     /** Automatischer Weg nach der Aufnahme ([VoiceTaskService]): wartet auf Netz. */
-    fun enqueue(ctx: Context) = enqueueImpl(ctx, false)
+    fun enqueue(ctx: Context) = enqueueImpl(ctx, ExistingWorkPolicy.REPLACE, request(manual = false))
 
     /**
      * Tipp auf dem Widget: sofort, OHNE Netz-Bedingung. Ein frischer Request ohne Bedingung und
@@ -47,7 +47,7 @@ object VoiceTaskWork {
      * Doze-Fenster und eine haengende Netz-Bedingung (VPN, unvalidiertes WLAN) spielen dann
      * keine Rolle. Ohne Netz scheitert er ehrlich und landet nach den Wiederholungen im Fehler.
      */
-    fun sendNow(ctx: Context) = enqueueImpl(ctx, true)
+    fun sendNow(ctx: Context) = enqueueImpl(ctx, ExistingWorkPolicy.REPLACE, request(manual = true))
 
     /**
      * Was zu diesem Namen gerade passiert. Ohne diese Frage waere "arbeitet" eine Sackgasse:
@@ -60,8 +60,12 @@ object VoiceTaskWork {
     fun cancel(ctx: Context) = cancelImpl(ctx)
 
     /**
-     * Irgendein RUNNING gewinnt: nach REPLACE steht der alte Job als CANCELLED neben dem neuen.
-     * ENQUEUED/BLOCKED heisst "wartet", alles Beendete zaehlt nicht.
+     * Irgendein RUNNING gewinnt, ENQUEUED/BLOCKED heisst "wartet", alles Beendete zaehlt nicht.
+     *
+     * REPLACE loescht den alten Job samt WorkSpec (WorkManager 2.11: CancelWorkRunnable, danach
+     * WorkSpecDao.delete) — er steht NICHT als CANCELLED daneben. Ein abgeloester Worker, der
+     * noch rechnet, ist in getWorkInfos also unsichtbar; vor ihm schuetzen stillCurrent und die
+     * Eigentuemer-Wache im Worker, nicht diese Phase.
      */
     internal fun phaseOf(states: Collection<WorkInfo.State>): JobPhase = when {
         states.any { it == WorkInfo.State.RUNNING } -> JobPhase.RUNNING
@@ -87,7 +91,9 @@ object VoiceTaskWork {
     /**
      * Naht fuer Dienst- und Trampolin-Tests: WorkManager laesst sich auf dem
      * Entwicklungsrechner (linux-aarch64) nicht starten, weil Robolectric dort kein SQLite hat.
-     * Das Log ist die Geraete-Diagnose zu #10: Versuch, naechster Termin, Stopp-Grund.
+     * Den echten Weg prueft VoiceTaskWorkManagerTest ueberall sonst (CI, Windows).
+     * Das Log ist die Geraete-Diagnose zu #10: Versuch, naechster Termin, Stopp-Grund — ein per
+     * REPLACE abgeloester Job taucht darin nicht mehr auf, er ist geloescht.
      */
     @VisibleForTesting
     var phaseImpl: (Context) -> JobPhase = { ctx ->
@@ -107,12 +113,13 @@ object VoiceTaskWork {
         WorkManager.getInstance(ctx).cancelUniqueWork(UNIQUE_NAME)
     }
 
-    /** Zweiter Parameter: `manual` — vom Tipp (ohne Netz-Bedingung) statt automatisch. */
+    /**
+     * Nur das Einreichen. Policy und Request bauen [enqueue] und [sendNow] — so sehen Dienst-
+     * und Trampolin-Test beide, und ein Rueckfall auf KEEP (#10) faellt dort auf.
+     */
     @VisibleForTesting
-    var enqueueImpl: (Context, Boolean) -> Unit = { ctx, manual ->
-        WorkManager.getInstance(ctx)
-            .beginUniqueWork(UNIQUE_NAME, ExistingWorkPolicy.REPLACE, request(manual))
-            .enqueue()
+    var enqueueImpl: (Context, ExistingWorkPolicy, OneTimeWorkRequest) -> Unit = { ctx, policy, request ->
+        WorkManager.getInstance(ctx).beginUniqueWork(UNIQUE_NAME, policy, request).enqueue()
     }
 
     private const val TAG = "VoiceTaskWork"

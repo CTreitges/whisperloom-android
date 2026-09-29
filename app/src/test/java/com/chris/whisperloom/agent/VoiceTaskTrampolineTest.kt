@@ -8,6 +8,7 @@ import android.content.Intent
 import android.os.SystemClock
 import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
+import androidx.work.ExistingWorkPolicy
 import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
@@ -35,8 +36,9 @@ class VoiceTaskTrampolineTest {
     private val app: Application = ApplicationProvider.getApplicationContext()
     private lateinit var store: VoiceTaskStore
 
-    /** Jede Einreihung, mit `manual` (true = vom Tipp, ohne Netz-Bedingung). */
+    /** Jede Einreihung: true = ohne Netz-Bedingung (vom Tipp), false = wartet auf Netz. */
     private val aufrufe = mutableListOf<Boolean>()
+    private val policies = mutableListOf<ExistingWorkPolicy>()
     private var phase = JobPhase.NONE
     private val echterEnqueue = VoiceTaskWork.enqueueImpl
     private val echtePhase = VoiceTaskWork.phaseImpl
@@ -53,7 +55,10 @@ class VoiceTaskTrampolineTest {
         }
         shadowOf(app).grantPermissions(Manifest.permission.RECORD_AUDIO)
         shadowOf(app).clearNextStartedActivities()
-        VoiceTaskWork.enqueueImpl = { _, manual -> aufrufe += manual }
+        VoiceTaskWork.enqueueImpl = { _, policy, request ->
+            policies += policy
+            aufrufe += ohneNetzBedingung(request)
+        }
         VoiceTaskWork.phaseImpl = { phase }
     }
 
@@ -184,6 +189,8 @@ class VoiceTaskTrampolineTest {
         tippen(TapIntent.REFRESH)
 
         assertEquals("Sofort und ohne Netz-Bedingung einreihen", listOf(true), aufrufe)
+        // KEEP liesse den wartenden Job liegen — genau der Fehler aus #10.
+        assertEquals("Der Tipp muss den wartenden Job abloesen", listOf(ExistingWorkPolicy.REPLACE), policies)
         assertEquals(VoiceTaskState.WORKING, store.state)
         assertEquals("", store.message)
         assertEquals(app.getString(R.string.widget_working), zeile(w))
