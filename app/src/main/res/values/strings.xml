@@ -562,6 +562,7 @@
     <string name="widget_description">Aufnehmen und als Auftrag an deinen eigenen Agenten schicken.</string>
     <string name="widget_ready">Tippen und sprechen</string>
     <string name="widget_working">Wird gesendet …</string>
+    <string name="widget_working_retry">%1$s — neuer Versuch folgt, tippen = jetzt</string>
     <string name="widget_sent">Gesendet</string>
     <string name="widget_sent_raw">Gesendet — ohne Textverbesserung</string>
     <string name="widget_no_mic">Mikrofon nicht erlaubt — tippen</string>
@@ -572,7 +573,8 @@
     <string name="widget_error_retry">%1$s — tippen für erneuten Versuch</string>
     <string name="cd_widget_ready">Sprachauftrag aufnehmen</string>
     <string name="cd_widget_recording">Nimmt auf, %1$s — antippen zum Senden</string>
-    <string name="cd_widget_working">Auftrag wird gesendet</string>
+    <string name="cd_widget_working">Auftrag wird gesendet. Hängt es länger als drei Minuten: antippen, um erneut zu senden</string>
+    <string name="cd_widget_working_retry">Senden gescheitert: %1$s. Ein neuer Versuch folgt automatisch — antippen, um sofort erneut zu senden</string>
     <string name="cd_widget_sent">Auftrag gesendet</string>
     <string name="cd_widget_sent_raw">Auftrag gesendet, aber ohne Textverbesserung: %1$s</string>
     <string name="cd_widget_error">%1$s — antippen für erneuten Versuch</string>

@@ -12,6 +12,12 @@ Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](ht
 
 - **Abgeschnittene Textverbesserung wurde als fertig eingefügt.** Hörte das Sprachmodell an seiner Längengrenze auf (z. B. GPT-5-Modelle bei sehr langen Diktaten, kleines Kontextfenster bei Ollama), kam nur der Anfang an. Jetzt erkennt WhisperLoom den Abbruch und fügt den Rohtext mit Hinweis ein.
 - **Offline-Erkennung schnitt lange Aufnahmen alle 30 Sekunden mitten im Wort.** Whisper hört in Stücken von 30 Sekunden. Bisher begann das nächste Stück stur 30 Sekunden später, auch mitten in einem Wort. Das Wort an der Grenze fehlte oder kam verstümmelt an. Betroffen waren Offline-Diktate über 30 Sekunden und geteilte Sprachnachrichten. Jetzt beginnt das nächste Stück dort, wo Whisper den letzten vollständigen Satzteil erkannt hat. Diktate bis 30 Sekunden laufen unverändert und genauso schnell wie bisher.
+- **Sprachauftrag-Widget blieb auf „Wird gesendet …“ hängen, nur ein Force-Stop half** ([#10](https://github.com/CTreitges/whisperloom-android/issues/10)). Scheiterte der erste Versuch (etwa weil der Server gerade erst startete), wartete der Auftrag still auf den nächsten Termin, und ein Tipp auf das Widget tat nichts.
+  - Ein gescheiterter Versuch ist jetzt sichtbar: „‹Grund› — neuer Versuch folgt, tippen = jetzt“.
+  - Ein Tipp auf „Wird gesendet …“ sendet sofort, statt auf den nächsten geplanten Versuch zu warten, und wartet dabei auch nicht auf eine hängende Netz-Bedingung (VPN, WLAN ohne Internet). Läuft gerade ein Versuch, ersetzt der Tipp ihn erst, wenn er länger als drei Minuten hängt. Ein ungeduldiger Tipp in dieser Zeit kostet so keine zweite Transkription. Eine laufende Offline-Erkennung ersetzt der Tipp gar nicht: sie lässt sich nicht abbrechen, und der Ersatz müsste nur hinter ihr warten.
+  - Die App wartet bis zu 75 s auf die Antwort der Bridge statt 30 s. Die Bridge übergibt den Auftrag an den Agenten, bevor sie antwortet, und das dauert bis zu 60 s. Vorher hielt die App einen längst angenommenen Auftrag für gescheitert.
+  - Ein abgelöster, verworfener oder vom System gestoppter Versuch schickt nichts mehr hinterher und überschreibt keinen neuen Auftrag. Ein Doppeltipp auf „erneut senden“ startet keinen zweiten Versuch.
+  - Hängt es trotzdem: Akku für WhisperLoom auf „Nicht eingeschränkt“ stellen. Diagnose am Rechner: `adb shell dumpsys jobscheduler com.chris.whisperloom` und `adb shell am get-standby-bucket com.chris.whisperloom`.
 
 ## [3.6.0] — 2026-09-25
 

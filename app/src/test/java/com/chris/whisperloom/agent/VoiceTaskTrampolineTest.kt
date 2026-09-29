@@ -2,11 +2,16 @@ package com.chris.whisperloom.agent
 
 import android.Manifest
 import android.app.Application
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
+import android.os.SystemClock
+import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
+import androidx.work.ExistingWorkPolicy
 import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.Prefs
+import com.chris.whisperloom.R
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -20,6 +25,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowAudioRecord
+import org.robolectric.shadows.ShadowSystemClock
+import java.time.Duration
 
 /** Die unsichtbare Zwischenstation: wer den Mikrofon-Dienst startet und wann stattdessen die App aufgeht. */
 @RunWith(RobolectricTestRunner::class)
@@ -28,9 +35,13 @@ class VoiceTaskTrampolineTest {
 
     private val app: Application = ApplicationProvider.getApplicationContext()
     private lateinit var store: VoiceTaskStore
-    private var eingereiht = 0
+
+    /** Jede Einreihung: true = ohne Netz-Bedingung (vom Tipp), false = wartet auf Netz. */
+    private val aufrufe = mutableListOf<Boolean>()
+    private val policies = mutableListOf<ExistingWorkPolicy>()
+    private var phase = JobPhase.NONE
     private val echterEnqueue = VoiceTaskWork.enqueueImpl
-    private val echtesIsScheduled = VoiceTaskWork.isScheduledImpl
+    private val echtePhase = VoiceTaskWork.phaseImpl
 
     @Before fun aufbauen() {
         app.getSharedPreferences("whisperloom", Context.MODE_PRIVATE).edit().clear().commit()
@@ -44,14 +55,28 @@ class VoiceTaskTrampolineTest {
         }
         shadowOf(app).grantPermissions(Manifest.permission.RECORD_AUDIO)
         shadowOf(app).clearNextStartedActivities()
-        VoiceTaskWork.enqueueImpl = { eingereiht++ }
+        VoiceTaskWork.enqueueImpl = { _, policy, request ->
+            policies += policy
+            aufrufe += ohneNetzBedingung(request)
+        }
+        VoiceTaskWork.phaseImpl = { phase }
     }
 
     @After fun abbauen() {
         VoiceTaskWork.enqueueImpl = echterEnqueue
-        VoiceTaskWork.isScheduledImpl = echtesIsScheduled
+        VoiceTaskWork.phaseImpl = echtePhase
         ShadowAudioRecord.clearSource()
     }
+
+    private fun auftrag() = store.begin(FloatArray(800) { 0.3f }, 4000, "2026-09-21T20:00:00Z")
+
+    /** Ein echtes Widget — nur so ist pruefbar, was nach dem Tipp zu sehen ist. */
+    private fun widget(): Int =
+        shadowOf(AppWidgetManager.getInstance(app)).createWidget(VoiceTaskWidget::class.java, R.layout.widget_task)
+
+    private fun zeile(widget: Int): String =
+        shadowOf(AppWidgetManager.getInstance(app)).getViewFor(widget)
+            .findViewById<TextView>(R.id.widget_status).text.toString()
 
     private fun tippen(tap: TapIntent) {
         Robolectric.buildActivity(
@@ -92,16 +117,44 @@ class VoiceTaskTrampolineTest {
     }
 
     @Test fun erneutSendenBrauchtKeinMikrofonUndKeinenDienst() {
-        store.begin(FloatArray(800) { 0.3f }, 4000, "2026-09-21T20:00:00Z")
+        auftrag()
         tippen(TapIntent.RETRY)
-        assertEquals(1, eingereiht)
+        assertEquals(listOf(true), aufrufe)
         assertNull("Erneut senden darf keinen Foreground-Service kosten", gestarteterDienst())
+    }
+
+    @Test fun erneutSendenStelltDenStoreAufSenden() {
+        // Sonst stuende der Store waehrend des Laufs auf ERROR, und jedes onUpdate zeichnete
+        // einen Fehler ohne Grund, obwohl gerade gesendet wird.
+        auftrag()
+        store.state = VoiceTaskState.ERROR
+        store.message = "Server nicht erreichbar"
+        phase = JobPhase.NONE
+
+        tippen(TapIntent.RETRY)
+
+        assertEquals(listOf(true), aufrufe)
+        assertEquals(VoiceTaskState.WORKING, store.state)
+        assertEquals("", store.message)
+        assertNull(gestarteterDienst())
+    }
+
+    @Test fun einDoppeltippAufErneutSendenBrichtDenLaufNichtAb() {
+        // Der erste Tipp hat den Job gestartet; der zweite trifft noch die alte Flaeche.
+        auftrag()
+        store.state = VoiceTaskState.ERROR
+        store.attemptStartedAt = SystemClock.elapsedRealtime()
+        phase = JobPhase.RUNNING
+
+        tippen(TapIntent.RETRY)
+
+        assertEquals("Ein laufender Versuch wird nicht ersetzt", emptyList<Boolean>(), aufrufe)
     }
 
     @Test fun erneutSendenOhneAuftragNimmtNeuAuf() {
         // Nach "Kein Ton aufgenommen" liegt nichts herum — der Tipp ist dann ein neuer Anlauf.
         tippen(TapIntent.RETRY)
-        assertEquals(0, eingereiht)
+        assertEquals(emptyList<Boolean>(), aufrufe)
         assertEquals(VoiceTaskService.ACTION_START, gestarteterDienst()?.action)
     }
 
@@ -123,34 +176,148 @@ class VoiceTaskTrampolineTest {
         assertEquals(TapIntent.NONE, VoiceTaskTrampolineActivity.intentOf(null))
     }
 
-    @Test fun einAuftragOhneJobWirdBeimNachsehenNeuEingereiht() {
-        // Der Fall, den es in Produktion wirklich gibt: der Prozess stirbt zwischen dem Ablegen
-        // des Auftrags und dem Einreihen. Ohne diesen Weg stuende das Widget fuer immer auf
-        // "Wird gesendet …", und eine neue Aufnahme waere auch nicht moeglich.
-        store.begin(FloatArray(800) { 0.3f }, 4000, "2026-09-21T20:00:00Z")
+    // --- Tipp auf "Wird gesendet …" (#10) -----------------------------------
+
+    @Test fun einWartenderAuftragWirdSofortGesendet() {
+        // Genau #10: der Job wartete im Backoff, galt als "eingeplant", und der Tipp tat nichts.
+        val w = widget()
+        auftrag()
         store.state = VoiceTaskState.WORKING
-        VoiceTaskWork.isScheduledImpl = { false }
+        store.message = "Server nicht erreichbar"
+        phase = JobPhase.WAITING
 
         tippen(TapIntent.REFRESH)
 
-        assertEquals("Der liegengebliebene Auftrag muss wieder eingereiht werden", 1, eingereiht)
+        assertEquals("Sofort und ohne Netz-Bedingung einreihen", listOf(true), aufrufe)
+        // KEEP liesse den wartenden Job liegen — genau der Fehler aus #10.
+        assertEquals("Der Tipp muss den wartenden Job abloesen", listOf(ExistingWorkPolicy.REPLACE), policies)
+        assertEquals(VoiceTaskState.WORKING, store.state)
+        assertEquals("", store.message)
+        assertEquals(app.getString(R.string.widget_working), zeile(w))
         assertNull(gestarteterDienst())
-        assertNull("Nachsehen darf die App nicht oeffnen", shadowOf(app).nextStartedActivity)
+        assertNull("Der Tipp darf die App nicht oeffnen", shadowOf(app).nextStartedActivity)
     }
 
-    @Test fun einLaufenderAuftragWirdNichtDoppeltEingereiht() {
-        store.begin(FloatArray(800) { 0.3f }, 4000, "2026-09-21T20:00:00Z")
+    @Test fun einAuftragOhneJobWirdNeuEingereiht() {
+        // Der Prozess starb zwischen dem Ablegen des Auftrags und dem Einreihen.
+        auftrag()
         store.state = VoiceTaskState.WORKING
-        VoiceTaskWork.isScheduledImpl = { true }
+        phase = JobPhase.NONE
 
         tippen(TapIntent.REFRESH)
 
-        assertEquals("Waehrend wirklich gearbeitet wird, tut der Tipp nichts", 0, eingereiht)
+        assertEquals(listOf(true), aufrufe)
     }
 
-    @Test fun ohneOffenenAuftragWirdNichtsEingereiht() {
-        VoiceTaskWork.isScheduledImpl = { false }
+    @Test fun einFrischLaufenderWorkerWirdWederErsetztNochUebermalt() {
+        val w = widget()
+        auftrag()
+        store.state = VoiceTaskState.WORKING
+        store.attemptStartedAt = SystemClock.elapsedRealtime()
+        phase = JobPhase.RUNNING
+        // Merkzeichen: jedes Neuzeichnen wuerde diese Zeile ersetzen.
+        VoiceTaskWidgetView.push(app, VoiceTaskState.ERROR, message = "Merkzeichen")
+        val vorher = zeile(w)
+        assertTrue("Vorbedingung: das Merkzeichen ist gezeichnet", vorher.contains("Merkzeichen"))
+
         tippen(TapIntent.REFRESH)
-        assertEquals(0, eingereiht)
+
+        assertEquals("Eine zweite, bezahlte Transkription waere falsch", emptyList<Boolean>(), aufrufe)
+        assertEquals("Die Flaeche gehoert dem laufenden Worker", vorher, zeile(w))
+    }
+
+    @Test fun einHaengenderWorkerWirdNachDerStallZeitErsetzt() {
+        auftrag()
+        store.state = VoiceTaskState.WORKING
+        store.attemptStartedAt = SystemClock.elapsedRealtime()
+        phase = JobPhase.RUNNING
+        ShadowSystemClock.advanceBy(Duration.ofMillis(VoiceTaskUi.STALL_MS))
+
+        tippen(TapIntent.REFRESH)
+
+        assertEquals(listOf(true), aufrufe)
+    }
+
+    @Test fun einDoppeltippErsetztDenGeradeEingereihtenLaufNicht() {
+        // Der Stempel stammt von einem alten Versuch (Retry setzt ihn nicht zurueck). Tipp 1 reiht
+        // ein; der neue Job ist schon RUNNING, bevor sein doWork stempelt. Ohne frischen Stempel
+        // vom Tipp hielte Tipp 2 ihn fuer haengend und braeche ihn per REPLACE wieder ab.
+        auftrag()
+        store.state = VoiceTaskState.WORKING
+        store.attemptStartedAt = SystemClock.elapsedRealtime()
+        ShadowSystemClock.advanceBy(Duration.ofMillis(VoiceTaskUi.STALL_MS * 2))
+        phase = JobPhase.WAITING
+
+        tippen(TapIntent.REFRESH)
+        phase = JobPhase.RUNNING
+        tippen(TapIntent.REFRESH)
+
+        assertEquals("Nur der erste Tipp reiht ein", listOf(true), aufrufe)
+        assertEquals(SystemClock.elapsedRealtime(), store.attemptStartedAt)
+    }
+
+    @Test fun eineLaufendeOfflineErkennungWirdAuchNachDerStallZeitNichtErsetzt() {
+        // Ein Ersatz stellte sich hinter die laufende whisper-Erkennung und verdoppelte die Wartezeit.
+        auftrag()
+        store.state = VoiceTaskState.WORKING
+        store.attemptStartedAt = SystemClock.elapsedRealtime()
+        store.offlineRecognition = true
+        phase = JobPhase.RUNNING
+        ShadowSystemClock.advanceBy(Duration.ofMillis(VoiceTaskUi.STALL_MS * 2))
+
+        tippen(TapIntent.REFRESH)
+
+        assertEquals(emptyList<Boolean>(), aufrufe)
+    }
+
+    @Test fun ohneOffenenAuftragWirdNurDerEchteZustandGezeichnet() {
+        val w = widget()
+        store.state = VoiceTaskState.WORKING
+        VoiceTaskWidgetView.push(app, VoiceTaskState.WORKING)
+        assertEquals(app.getString(R.string.widget_working), zeile(w))
+        phase = JobPhase.NONE
+
+        tippen(TapIntent.REFRESH)
+
+        assertEquals(emptyList<Boolean>(), aufrufe)
+        assertEquals(app.getString(R.string.widget_ready), zeile(w))
+    }
+
+    /** Der Worker wird genau waehrend der Phasen-Abfrage des Tipps fertig — so, wie er es selbst tut. */
+    private fun workerEndetImTipp(state: VoiceTaskState, message: String = "") {
+        auftrag()
+        store.state = VoiceTaskState.WORKING
+        VoiceTaskWidgetView.push(app, VoiceTaskState.WORKING)
+        VoiceTaskWork.phaseImpl = {
+            store.clear()
+            store.state = state
+            store.message = message
+            VoiceTaskWidgetView.push(app, state, message = message)
+            JobPhase.NONE
+        }
+    }
+
+    @Test fun einWorkerDerMittenImTippFertigWirdWirdNichtUebermalt() {
+        // Nebenbefund aus #10: frueher las der Tipp den Store und zeichnete danach — endete der
+        // Worker genau dazwischen, uebermalte "Wird gesendet …" (oder "bereit") das "Gesendet".
+        val w = widget()
+        workerEndetImTipp(VoiceTaskState.SENT)
+
+        tippen(TapIntent.REFRESH)
+
+        assertEquals(emptyList<Boolean>(), aufrufe)
+        assertEquals(app.getString(R.string.widget_sent), zeile(w))
+    }
+
+    @Test fun nichtsVerstandenBleibtNachEinemTippImAbschlussStehen() {
+        // Sonst stuende "Tippen und sprechen" da, und der Nutzer hielte den Auftrag fuer angekommen.
+        val w = widget()
+        workerEndetImTipp(VoiceTaskState.ERROR, VoiceTaskPipeline.MSG_EMPTY)
+        val fehler = VoiceTaskWidgetView.status(app, VoiceTaskState.ERROR, 0, VoiceTaskPipeline.MSG_EMPTY)
+
+        tippen(TapIntent.REFRESH)
+
+        assertEquals(emptyList<Boolean>(), aufrufe)
+        assertEquals(fehler, zeile(w))
     }
 }

@@ -31,18 +31,26 @@ object VoiceTaskWidgetView {
         return v
     }
 
-    /** Alle Instanzen des Widgets neu zeichnen. Ohne Widget auf dem Startbildschirm folgenlos. */
+    /**
+     * Alle Instanzen des Widgets neu zeichnen. Ohne Widget auf dem Startbildschirm folgenlos.
+     *
+     * Ueber die Ids statt `updateAppWidget(ComponentName, …)`: fuer das Geraet dasselbe, aber nur
+     * diesen Weg bildet Robolectric ab — so pruefen die Tests, was der Nutzer wirklich sieht.
+     */
     fun push(ctx: Context, state: VoiceTaskState, elapsedMs: Long = 0, message: String = "") {
-        AppWidgetManager.getInstance(ctx).updateAppWidget(
-            ComponentName(ctx, VoiceTaskWidget::class.java),
-            build(ctx, state, elapsedMs, message),
-        )
+        val manager = AppWidgetManager.getInstance(ctx)
+        val ids = manager.getAppWidgetIds(ComponentName(ctx, VoiceTaskWidget::class.java))
+        if (ids.isEmpty()) return
+        manager.updateAppWidget(ids, build(ctx, state, elapsedMs, message))
     }
 
     fun status(ctx: Context, state: VoiceTaskState, elapsedMs: Long, message: String): String = when (state) {
         VoiceTaskState.READY -> ctx.getString(R.string.widget_ready)
         VoiceTaskState.RECORDING -> VoiceTaskUi.timerText(elapsedMs)
-        VoiceTaskState.WORKING -> ctx.getString(R.string.widget_working)
+        // Mit Grund: ein Versuch ist gescheitert, der naechste folgt — und ein Tipp sendet sofort.
+        VoiceTaskState.WORKING ->
+            if (message.isBlank()) ctx.getString(R.string.widget_working)
+            else ctx.getString(R.string.widget_working_retry, reason(ctx, message))
         VoiceTaskState.SENT ->
             if (message.isBlank()) ctx.getString(R.string.widget_sent)
             else ctx.getString(R.string.widget_sent_raw)
@@ -54,7 +62,9 @@ object VoiceTaskWidgetView {
     fun contentDescription(ctx: Context, state: VoiceTaskState, elapsedMs: Long, message: String): String = when (state) {
         VoiceTaskState.READY -> ctx.getString(R.string.cd_widget_ready)
         VoiceTaskState.RECORDING -> ctx.getString(R.string.cd_widget_recording, VoiceTaskUi.timerText(elapsedMs))
-        VoiceTaskState.WORKING -> ctx.getString(R.string.cd_widget_working)
+        VoiceTaskState.WORKING ->
+            if (message.isBlank()) ctx.getString(R.string.cd_widget_working)
+            else ctx.getString(R.string.cd_widget_working_retry, reason(ctx, message))
         VoiceTaskState.SENT ->
             if (message.isBlank()) ctx.getString(R.string.cd_widget_sent)
             else ctx.getString(R.string.cd_widget_sent_raw, message)

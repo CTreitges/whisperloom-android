@@ -37,6 +37,7 @@ class VoiceTaskPipelineFactoryTest {
     /** Antwort auf /chat/completions: null = Fehler 500 (Textverbesserung faellt aus). */
     private var veredelung: String? = """{"choices":[{"message":{"content":"Kauf bitte Milch."}}]}"""
     private val gesendet = mutableListOf<String>()
+    private val kennungen = mutableListOf<Pair<String, String>>()
 
     @Before fun aufbauen() {
         ctx.getSharedPreferences("whisperloom", Context.MODE_PRIVATE).edit().clear().commit()
@@ -56,7 +57,9 @@ class VoiceTaskPipelineFactoryTest {
             else antwort(ex, 200, body)
         }
         server.createContext("/v1/task") { ex ->
-            gesendet += org.json.JSONObject(String(ex.requestBody.readBytes())).getString("transcript")
+            val json = org.json.JSONObject(String(ex.requestBody.readBytes()))
+            gesendet += json.getString("transcript")
+            kennungen += json.getString("request_id") to json.getString("recorded_at")
             antwort(ex, 202, """{"status":"accepted"}""")
         }
         server.start()
@@ -85,10 +88,36 @@ class VoiceTaskPipelineFactoryTest {
         ex.responseBody.use { it.write(b) }
     }
 
+    private fun auftrag(recordedAt: String = "2026-09-22T00:00:00Z") =
+        store.begin(FloatArray(16_000) { i -> if (i % 2 == 0) 0.3f else -0.3f }, 4000, recordedAt)
+
     /** Die ECHTE Fabrik, unveraendert — auch der Versand geht an den Testserver. */
     private fun lauf(): TaskOutcome {
-        store.begin(FloatArray(16_000) { i -> if (i % 2 == 0) 0.3f else -0.3f }, 4000, "2026-09-22T00:00:00Z")
-        return VoiceTaskWorker.pipelineFactory(ctx, store).run(null)
+        auftrag()
+        return VoiceTaskWorker.pipelineFactory(ctx, store) { true }.run(null)
+    }
+
+    @Test fun kennungUndZeitpunktSindBeimBauEingefroren() {
+        // #10: ein abgeloester Lauf haengt in der Erkennung, derweil entsteht ein neuer Auftrag.
+        // Liest der alte Lauf die Kennung erst beim Senden, schickt er alten Text unter der
+        // NEUEN Kennung — die Bridge claimt sie, der echte Auftrag geht als Duplikat verloren.
+        veredelung = null // damit der Ausfall-Hinweis geschrieben wuerde
+        val alt = auftrag("2026-09-22T00:00:00Z")
+        val pipeline = VoiceTaskWorker.pipelineFactory(ctx, store) { true }
+        val neu = auftrag("2026-09-22T00:05:00Z")
+
+        assertTrue(pipeline.run(null) is TaskOutcome.Sent)
+
+        assertEquals(alt to "2026-09-22T00:00:00Z", kennungen.single())
+        assertEquals(neu, store.requestId)
+        assertEquals("Der Hinweis des alten Laufs gehoert nicht zum neuen Auftrag", "", store.refineSkipped)
+    }
+
+    @Test fun einNichtMehrZustaendigerLaufErreichtDieBridgeNicht() {
+        auftrag()
+        val outcome = VoiceTaskWorker.pipelineFactory(ctx, store) { false }.run(null)
+        assertTrue(outcome is TaskOutcome.Superseded)
+        assertTrue("Nichts darf an die Bridge gegangen sein", kennungen.isEmpty())
     }
 
     @Test fun mitFunktionierenderVeredelungKommtDerVerbesserteTextAn() {

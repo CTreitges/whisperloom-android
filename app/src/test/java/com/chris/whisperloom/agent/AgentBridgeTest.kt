@@ -50,6 +50,16 @@ class AgentBridgeTest {
         assertEquals("widget", json.getString("source"))
     }
 
+    @Test fun dieAppWartetLaengerAlsDieBridgeSynchronArbeitet() {
+        // #10, H2: die Bridge arbeitet bis zu 2 x HERMES_TIMEOUT_S (30 s, hermes-bridge config.py),
+        // bevor sie 202 sagt. Wartete die App kuerzer, saehe sie einen Timeout und wiederholte,
+        // waehrend der Auftrag laengst ausgefuehrt wird. Bewusst gegen den Bridge-Wert als Literal:
+        // READ_TIMEOUT_MS ist aus dem Budget abgeleitet, ein Vergleich der beiden waere immer wahr.
+        val hermesTimeoutMs = 30_000
+        assertTrue(AgentBridge.BRIDGE_SYNC_BUDGET_MS >= 2 * hermesTimeoutMs)
+        assertTrue(AgentBridge.READ_TIMEOUT_MS > 2 * hermesTimeoutMs)
+    }
+
     @Test fun ohneAdresseOderTokenWirdNichtsGesendet() {
         assertFalse(AgentBridge("", "t", poster).configured)
         assertFalse(AgentBridge("https://x", "", poster).configured)

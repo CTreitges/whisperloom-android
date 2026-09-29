@@ -65,6 +65,27 @@ class VoiceTaskStore(context: Context) {
         get() = sp.getString(KEY_RECORDED_AT, "") ?: ""
         private set(v) = sp.edit().putString(KEY_RECORDED_AT, v).apply()
 
+    /**
+     * Beginn des aktuellen Versuchs (`SystemClock.elapsedRealtime`, 0 = unbekannt). Grundlage
+     * fuer [VoiceTaskUi.STALL_MS]: ab wann ein Tipp einen laufenden Worker als haengend ersetzt.
+     * Monoton — Uhrverstellung und Zeitzonenwechsel spielen keine Rolle. Worker und Trampolin
+     * setzen es.
+     */
+    var attemptStartedAt: Long
+        get() = sp.getLong(KEY_ATTEMPT_STARTED, 0)
+        set(v) = sp.edit().putLong(KEY_ATTEMPT_STARTED, v).apply()
+
+    /**
+     * Rechnet gerade die Offline-Erkennung fuer diesen Auftrag? Dann ersetzt ein Tipp den Lauf
+     * auch nach [VoiceTaskUi.STALL_MS] nicht: whisper rechnet auf EINEM Thread und laesst sich
+     * von WorkManager nicht unterbrechen — ein Ersatz stellte sich nur hinter die laufende
+     * Erkennung und verdoppelte die Wartezeit. Der Worker setzt es zu Laufbeginn und loescht es,
+     * sobald die Erkennung vorbei ist.
+     */
+    var offlineRecognition: Boolean
+        get() = sp.getBoolean(KEY_OFFLINE_RECOGNITION, false)
+        set(v) = sp.edit().putBoolean(KEY_OFFLINE_RECOGNITION, v).apply()
+
     /** Ob ein Auftrag auf Erledigung wartet (Audio oder bereits erkannter Text). */
     val hasWork: Boolean get() = requestId.isNotEmpty() && (text.isNotEmpty() || audioFile.isFile)
 
@@ -95,6 +116,8 @@ class VoiceTaskStore(context: Context) {
             .remove(KEY_DURATION)
             .remove(KEY_RECORDED_AT)
             .remove(KEY_REFINE_SKIPPED)
+            .remove(KEY_ATTEMPT_STARTED)
+            .remove(KEY_OFFLINE_RECOGNITION)
             .apply()
     }
 
@@ -109,6 +132,8 @@ class VoiceTaskStore(context: Context) {
         private const val KEY_DURATION = "duration_ms"
         private const val KEY_RECORDED_AT = "recorded_at"
         private const val KEY_REFINE_SKIPPED = "refine_skipped"
+        private const val KEY_ATTEMPT_STARTED = "attempt_started_at"
+        private const val KEY_OFFLINE_RECOGNITION = "offline_recognition"
         private const val TAG = "VoiceTaskStore"
     }
 }

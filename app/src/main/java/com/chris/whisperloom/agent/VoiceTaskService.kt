@@ -158,7 +158,10 @@ class VoiceTaskService : Service() {
         stopSelf()
     }
 
-    /** Auftrag auf die Platte legen und dem WorkManager uebergeben; ab hier lebt der Dienst nicht mehr. */
+    /**
+     * Auftrag auf die Platte legen und dem WorkManager uebergeben; ab hier lebt der Dienst nicht
+     * mehr. Automatischer Weg: mit Netz-Bedingung, ein noch laufender alter Job wird ersetzt.
+     */
     private fun hand(samples: FloatArray, duration: Long) {
         store.begin(samples, duration, recordedAt)
         store.message = ""
