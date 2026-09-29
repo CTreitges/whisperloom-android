@@ -145,16 +145,22 @@ data class SharedTranscript(
     val backendLabel: String,
     /** In wie viele Stuecke (AudioChunks) die Datei zerlegt wurde — jede Grenze ist ein Absatz. */
     val chunkCount: Int = 1,
+    /** KI-Fassung nach [refineMode]; null = keine (Stufe aus oder Textverbesserung gescheitert). */
+    val paragraphsRefined: List<String>? = null,
+    /** Die fuer geteilte Audios eingestellte Stufe ([Prefs.shareRefineMode]). */
+    val refineMode: RefineMode = RefineMode.OFF,
+    /** Warum die KI-Fassung trotz Stufe fehlt ("API-Fehler 401 …"); null = nicht gescheitert. */
+    val refineSkipped: String? = null,
 )
 
 /**
  * Transkribiert Audiodateien, die aus einer anderen App geteilt wurden
  * (WhatsApp-Sprachnachricht, Aufnahme-App, Dateimanager …).
  *
- * Bewusst getrennt von [TranscriptionEngine]: geteiltes Audio wird WORTGETREU
- * ausgegeben — keine KI-Glaettung; die Fuellwort-freie Fassung ist ein Umschalter in
- * der Ansicht, kein Ersatz. Bei einer fremden Sprachnachricht will man wissen, was
- * gesagt wurde, nicht eine geglaettete Fassung.
+ * Getrennt von [TranscriptionEngine]: geteiltes Audio wird ab Werk WORTGETREU ausgegeben —
+ * bei einer fremden Sprachnachricht will man wissen, was gesagt wurde. Die Fuellwort-freie
+ * Fassung ist ein Umschalter in der Ansicht. Eine KI-Stufe gibt es nur, wenn sie in den
+ * Einstellungen fuer geteilte Audios eingeschaltet ist ([SharedRefine]).
  */
 object SharedAudioTranscriber {
 
@@ -218,6 +224,10 @@ object SharedAudioTranscriber {
                 .copy(keepLineBreaks = true)
             val paragraphsVerbatim = paragraphsForChunks(parts.map { TextPolisher.polish(it, verbatimOptions) })
             val paragraphsCleaned = paragraphsForChunks(parts.map { TextPolisher.polish(it, cleanedOptions) })
+
+            val refined = SharedRefine.run(prefs, parts, language, isCancelled, onStart = {
+                onProgress(chunks.size, chunks.size, app.getString(R.string.share_refining))
+            })
             return SharedTranscript(
                 source = name,
                 verbatimText = paragraphsVerbatim.joinToString("\n\n"),
@@ -227,6 +237,9 @@ object SharedAudioTranscriber {
                 durationMs = decoded.durationMs,
                 backendLabel = backend.label,
                 chunkCount = chunks.size,
+                paragraphsRefined = refined.paragraphs,
+                refineMode = refined.mode,
+                refineSkipped = refined.skipped,
             )
         } finally {
             temp.delete()

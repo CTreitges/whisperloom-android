@@ -12,6 +12,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.Prefs
+import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.SharedTranscript
 import com.chris.whisperloom.ui.theme.WhisperLoomTheme
 import org.junit.Assert.assertEquals
@@ -157,6 +158,48 @@ class ShareScreenTest {
         compose.onNodeWithText("Wortgetreu, 100 %").assertIsDisplayed()
         assertFalse(Prefs(ctx).shareHideFillers)
         assertEquals("Ähm hallo Welt.", controller.plainText())
+    }
+
+    @Test fun kiFassungErsetztDenSchalterUndNenntDieStufe() {
+        val k = done.copy(paragraphsRefined = listOf("Geglätteter Absatz."), refineMode = RefineMode.POLISH)
+        show(ShareUiState(phase = SharePhase.DONE, files = listOf(ShareFile("a.ogg", result = k))))
+        compose.onNodeWithText("Geglätteter Absatz.").assertIsDisplayed()
+        compose.onNodeWithText("Erster Absatz.").assertDoesNotExist()
+        compose.onNodeWithText("Füllwörter ausblenden").assertDoesNotExist()
+        compose.onNodeWithText("Textverbesserung: Glätten · änderbar unter Einstellungen › Text").assertIsDisplayed()
+    }
+
+    @Test fun gescheiterteKiZeigtGrundUndDenSchalter() {
+        val k = done.copy(refineMode = RefineMode.BEAUTIFY, refineSkipped = "API-Fehler 401")
+        show(ShareUiState(phase = SharePhase.DONE, files = listOf(ShareFile("a.ogg", result = k))))
+        compose.onNodeWithText("Erster Absatz.").assertIsDisplayed()
+        compose.onNodeWithText("Textverbesserung übersprungen: API-Fehler 401").assertIsDisplayed()
+        compose.onNodeWithText("Füllwörter ausblenden").assertIsDisplayed()
+    }
+
+    @Test fun ohneStufeKeinHinweis() {
+        show(ShareUiState(phase = SharePhase.DONE, files = listOf(ShareFile("a.ogg", result = done))))
+        compose.onNodeWithText("Textverbesserung", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Füllwörter ausblenden").assertIsDisplayed()
+    }
+
+    /** Review: bei gemischtem Ergebnis sah die KI-Fassung der anderen Dateien wie gescheitert aus. */
+    @Test fun teilweiseGescheiterteKiNenntDieAnzahl() {
+        val ok = done.copy(source = "a.ogg", paragraphsRefined = listOf("Geglättet A."), refineMode = RefineMode.BEAUTIFY)
+        val kaputt = transcript("b.ogg", cleaned = listOf("Roh B.")).copy(refineMode = RefineMode.BEAUTIFY, refineSkipped = "API-Fehler 429")
+        val state = ShareUiState(
+            phase = SharePhase.DONE,
+            files = listOf(ShareFile("a.ogg", result = ok), ShareFile("b.ogg", result = kaputt)),
+        )
+        assertEquals(1, state.refineFailures)
+        assertTrue(state.hasUnrefined)
+        assertEquals(RefineMode.BEAUTIFY, state.refineMode)
+        show(state)
+        compose.onNodeWithText("Geglättet A.").assertIsDisplayed()
+        compose.onNodeWithText("Roh B.").assertIsDisplayed()
+        compose.onNodeWithText("Textverbesserung: Verschönern · bei 1 von 2 Dateien übersprungen: API-Fehler 429").assertIsDisplayed()
+        // Der Schalter bleibt — er wirkt auf die Datei ohne KI-Fassung.
+        compose.onNodeWithText("Füllwörter ausblenden").assertIsDisplayed()
     }
 
     @Test fun fehlerkarteZeigtErneutNurFuerDieseDatei() {
