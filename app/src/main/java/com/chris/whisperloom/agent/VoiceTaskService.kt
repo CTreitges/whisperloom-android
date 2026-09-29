@@ -1,6 +1,7 @@
 package com.chris.whisperloom.agent
 
 import android.app.Service
+import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Handler
@@ -8,8 +9,10 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import androidx.core.app.ServiceCompat
 import com.chris.whisperloom.AudioRecorder
+import com.chris.whisperloom.BuildConfig
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import java.time.Instant
@@ -96,7 +99,7 @@ class VoiceTaskService : Service() {
             return START_NOT_STICKY
         }
         when (intent?.action) {
-            ACTION_START -> start()
+            ACTION_START -> start(intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID))
             ACTION_STOP -> stop()
             else -> stopSelf(startId)
         }
@@ -106,12 +109,14 @@ class VoiceTaskService : Service() {
     override fun onDestroy() {
         main.removeCallbacks(tick)
         main.removeCallbacks(notbremse)
+        recorder.onAmplitude = null
         if (recording) recorder.cancel()
         recording = false
         super.onDestroy()
     }
 
-    private fun start() {
+    /** [widgetId]: das startende Widget — sein Profil entscheidet, ob die Aufnahme von selbst endet. */
+    private fun start(widgetId: Int) {
         // Absicht, kein Umschalter: ein zweites START waehrend der Aufnahme ist ein Doppelklick.
         if (recording) return
         if (!VoiceTaskWidget.hasMicPermission(this)) {
@@ -119,7 +124,10 @@ class VoiceTaskService : Service() {
             stopSelf()
             return
         }
+        // VOR recorder.start(): sonst gingen die ersten Puffer am Detektor vorbei.
+        armAutoStop(WidgetProfileStore(this).forWidget(widgetId))
         if (!recorder.start()) {
+            recorder.onAmplitude = null
             fail(getString(R.string.widget_silent))
             stopSelf()
             return
@@ -144,6 +152,7 @@ class VoiceTaskService : Service() {
         recording = false
         main.removeCallbacks(tick)
         main.removeCallbacks(notbremse)
+        recorder.onAmplitude = null
         val duration = elapsedMs()
         val samples = recorder.stop()
 
@@ -156,6 +165,56 @@ class VoiceTaskService : Service() {
             Verdict.OK -> hand(samples, duration)
         }
         stopSelf()
+    }
+
+    /**
+     * Auto-Stopp scharf schalten, falls das Profil es will; sonst bleibt der Pegel-Callback leer
+     * und die Aufnahme endet wie immer per Tipp oder Notbremse (beides wirkt auch mit Auto-Stopp).
+     *
+     * Der Callback laeuft auf dem Aufnahme-Thread. Er fuettert den Detektor und reicht die erste
+     * Entscheidung genau einmal an den Main-Thread weiter. Der Merker gehoert zu dieser einen
+     * Aufnahme (nur ihr Thread liest ihn) — ein neuer Start setzt nie den einer alten zurueck.
+     */
+    private fun armAutoStop(profile: WidgetProfile) {
+        if (!profile.autoStop) {
+            recorder.onAmplitude = null
+            return
+        }
+        val detector = detectorFactory(profile)
+        val t0 = SystemClock.elapsedRealtime()
+        var posted = false
+        recorder.onAmplitude = { peak ->
+            val at = SystemClock.elapsedRealtime() - t0
+            val decision = detector.feed(peak, at)
+            if (BuildConfig.DEBUG) Log.d(TAG, "Auto-Stopp t=$at Pegel=$peak Boden=${detector.floor} -> $decision")
+            if (decision != AutoStopDetector.Decision.CONTINUE && !posted) {
+                posted = true
+                main.post { onAutoDecision(decision) }
+            }
+        }
+    }
+
+    /**
+     * Nur solange die Aufnahme noch laeuft: hat ein Tipp sie schon beendet, bleibt es bei genau
+     * einem Ende. Sprechpause wirkt wie der Tipp auf "senden". Ohne erkannte Sprache wird
+     * verworfen und nichts gesendet — der naechste Tipp (RETRY ohne Auftrag) nimmt neu auf.
+     */
+    private fun onAutoDecision(decision: AutoStopDetector.Decision) {
+        if (!recording) return
+        Log.i(TAG, "Auto-Stopp: $decision")
+        when (decision) {
+            AutoStopDetector.Decision.SPEECH_ENDED -> stop()
+            AutoStopDetector.Decision.NO_SPEECH -> {
+                recording = false
+                main.removeCallbacks(tick)
+                main.removeCallbacks(notbremse)
+                recorder.onAmplitude = null
+                recorder.cancel()
+                fail(getString(R.string.widget_no_speech))
+                stopSelf()
+            }
+            AutoStopDetector.Decision.CONTINUE -> Unit
+        }
     }
 
     /**
@@ -190,6 +249,12 @@ class VoiceTaskService : Service() {
          * Sprachnachrichten; laengere Auftraege spricht niemand am Startbildschirm.
          */
         const val MAX_DURATION_MS = 5 * 60 * 1000L
+
+        /** Detektor je Aufnahme mit der Sprechpause des Profils; Tests setzen schnellere Werte ein. */
+        @VisibleForTesting
+        var detectorFactory: (WidgetProfile) -> AutoStopDetector = { profile ->
+            AutoStopDetector(pauseMs = profile.pause.ms)
+        }
 
         private const val TAG = "VoiceTaskService"
 

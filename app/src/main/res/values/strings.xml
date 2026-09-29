@@ -564,6 +564,8 @@
     <string name="widget_fgs_failed">Aufnahme ließ sich nicht starten — App öffnen und erneut versuchen</string>
     <string name="widget_silent">Kein Ton aufgenommen — tippen für erneuten Versuch</string>
     <string name="widget_too_short">Zu kurz — länger sprechen</string>
+    <!-- Auto-Stopp: 8 s keine Sprache erkannt, Aufnahme verworfen. Angezeigt über widget_error_retry. -->
+    <string name="widget_no_speech">Nichts gehört</string>
     <string name="widget_error_retry">%1$s — tippen für erneuten Versuch</string>
     <string name="cd_widget_ready">Sprachauftrag aufnehmen</string>
     <string name="cd_widget_recording">Nimmt auf, %1$s — antippen zum Senden</string>

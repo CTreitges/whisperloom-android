@@ -2,6 +2,7 @@ package com.chris.whisperloom.agent
 
 import android.Manifest
 import android.app.Application
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import android.os.Looper
@@ -26,6 +27,7 @@ import org.robolectric.shadows.ShadowSystemClock
 import java.time.Duration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Der Zustandsautomat des Aufnahme-Dienstes. Das Mikrofon liefert Robolectrics
@@ -44,12 +46,16 @@ class VoiceTaskServiceTest {
     private val manuell = mutableListOf<Boolean>()
     private val policies = mutableListOf<ExistingWorkPolicy>()
     private val echterEnqueue = VoiceTaskWork.enqueueImpl
+    private val echteFabrik = VoiceTaskService.detectorFactory
     private var controller: ServiceController<VoiceTaskService>? = null
     private lateinit var gelesen: CountDownLatch
+    private lateinit var ausgelesen: CountDownLatch
+    private val detektoren = mutableListOf<WidgetProfile>()
 
     @Before fun aufbauen() {
         app.getSharedPreferences("whisperloom", Context.MODE_PRIVATE).edit().clear().commit()
         app.getSharedPreferences(VoiceTaskStore.FILE, Context.MODE_PRIVATE).edit().clear().commit()
+        app.getSharedPreferences(WidgetProfileStore.FILE, Context.MODE_PRIVATE).edit().clear().commit()
         store = VoiceTaskStore(app)
         store.clear()
         Prefs(app).apply {
@@ -67,6 +73,7 @@ class VoiceTaskServiceTest {
 
     @After fun abbauen() {
         VoiceTaskWork.enqueueImpl = echterEnqueue
+        VoiceTaskService.detectorFactory = echteFabrik
         ShadowAudioRecord.clearSource()
         controller?.destroy()
     }
@@ -79,9 +86,17 @@ class VoiceTaskServiceTest {
      * der Thread ein einziges Mal gelesen hat. Dann waere die Aufnahme leer — und der Test
      * pruefte nicht mehr, was er soll. (Genau so ist er einmal auf der CI umgefallen.)
      */
-    private fun quelle(amplitude: Short) {
+    private fun quelle(amplitude: Short) = quelle(MAX_LESEVORGAENGE) { amplitude }
+
+    /**
+     * Mikrofon mit Pegel je Lesevorgang. [ausgelesen] faellt beim ersten Lesen nach dem letzten
+     * Puffer — der Aufnahme-Thread liest, schreibt und meldet den Pegel der Reihe nach, also hat
+     * der Detektor dann jeden Puffer gesehen.
+     */
+    private fun quelle(lesevorgaenge: Int, pegel: (Int) -> Short) {
         gelesen = CountDownLatch(1)
-        val uebrig = java.util.concurrent.atomic.AtomicInteger(MAX_LESEVORGAENGE)
+        ausgelesen = CountDownLatch(1)
+        val gezaehlt = AtomicInteger(0)
         ShadowAudioRecord.setSource(object : ShadowAudioRecord.AudioRecordSource {
             override fun readInShortArray(data: ShortArray, offset: Int, size: Int, blocking: Boolean): Int {
                 // Das Schatten-Mikrofon liefert so schnell, wie die CPU kann — anders als ein
@@ -89,7 +104,12 @@ class VoiceTaskServiceTest {
                 // Aufnahme-Thread waehrend einer simulierten Minute hunderte Megabyte und der
                 // Test stirbt mit OutOfMemoryError. 0 heisst fuer den Aufnahme-Thread
                 // "gerade nichts da" und laesst ihn weiterlaufen.
-                if (uebrig.getAndDecrement() <= 0) return 0
+                val n = gezaehlt.getAndIncrement()
+                if (n >= lesevorgaenge) {
+                    ausgelesen.countDown()
+                    return 0
+                }
+                val amplitude = pegel(n)
                 for (i in 0 until size) data[offset + i] = if (i % 2 == 0) amplitude else (-amplitude).toShort()
                 gelesen.countDown()
                 return size
@@ -116,8 +136,10 @@ class VoiceTaskServiceTest {
         return c.get()
     }
 
-    private fun senden(service: VoiceTaskService, action: String) {
-        service.onStartCommand(Intent(app, VoiceTaskService::class.java).setAction(action), 0, 1)
+    private fun senden(service: VoiceTaskService, action: String, widgetId: Int? = null) {
+        val intent = Intent(app, VoiceTaskService::class.java).setAction(action)
+        widgetId?.let { intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, it) }
+        service.onStartCommand(intent, 0, 1)
         shadowOf(Looper.getMainLooper()).idle()
     }
 
@@ -243,5 +265,114 @@ class VoiceTaskServiceTest {
 
         assertEquals(VoiceTaskState.RECORDING, store.state)
         assertEquals(0, eingereiht)
+    }
+
+    // --- Auto-Stopp ----------------------------------------------------------
+
+    /** Widget [WIDGET] an ein eigenes Profil binden. */
+    private fun profil(autoStop: Boolean, pause: SpeechPause = SpeechPause.NORMAL): WidgetProfile {
+        val profiles = WidgetProfileStore(app)
+        val p = profiles.create("Einkauf").copy(autoStop = autoStop, pause = pause)
+        profiles.save(p)
+        profiles.bind(WIDGET, p.id)
+        return p
+    }
+
+    /**
+     * Detektor ohne Wartezeiten. Die Schattenuhr steht, solange der Test sie nicht schiebt — jeder
+     * Puffer kommt also bei "0 ms" an; so entscheidet schon der erste stille Puffer nach dem Ton.
+     */
+    private fun schnellerDetektor(noSpeechMs: Long = AutoStopDetector.NO_SPEECH_MS) {
+        VoiceTaskService.detectorFactory = { p ->
+            detektoren += p
+            AutoStopDetector(pauseMs = 0, speechConfirmMs = 0, minRecordingMs = 0, noSpeechMs = noSpeechMs)
+        }
+    }
+
+    private fun tonDannStille() = quelle(40) { n -> (if (n < 20) 8000 else 0).toShort() }
+
+    /**
+     * START OHNE den Main-Looper laufen zu lassen: die Entscheidung des Aufnahme-Threads bleibt
+     * eingereiht, bis der Test die Uhr geschoben hat — sonst liefe sie bei 0 ms und waere "zu kurz".
+     */
+    private fun starten(service: VoiceTaskService, widgetId: Int = WIDGET) {
+        val intent = Intent(app, VoiceTaskService::class.java)
+            .setAction(VoiceTaskService.ACTION_START)
+            .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
+        service.onStartCommand(intent, 0, 1)
+        assertTrue("Der Aufnahme-Thread hat nicht alles gelesen", ausgelesen.await(5, TimeUnit.SECONDS))
+    }
+
+    @Test fun autoStoppSendetNachDerSprechpauseOhneTipp() {
+        val p = profil(autoStop = true, pause = SpeechPause.SHORT)
+        schnellerDetektor()
+        tonDannStille()
+        starten(dienst())
+        ShadowSystemClock.advanceBy(Duration.ofSeconds(4))
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertEquals(VoiceTaskState.WORKING, store.state)
+        assertTrue("Das Gesprochene muss als Auftrag auf der Platte liegen", store.hasWork)
+        assertEquals("Genau einmal einreihen, ohne STOP-Tipp", 1, eingereiht)
+        assertEquals("Das Profil des startenden Widgets entscheidet", listOf(p), detektoren)
+    }
+
+    @Test fun ohneAutoStoppNimmtDasWidgetWeiterAuf() {
+        profil(autoStop = false)
+        schnellerDetektor()
+        tonDannStille()
+        starten(dienst())
+        ShadowSystemClock.advanceBy(Duration.ofSeconds(4))
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertEquals("Tippen startet, Tippen stoppt — wie ohne Profil", VoiceTaskState.RECORDING, store.state)
+        assertEquals(0, eingereiht)
+        assertTrue("Ohne Auto-Stopp gibt es keinen Detektor", detektoren.isEmpty())
+    }
+
+    @Test fun nichtsGehoertVerwirftUndSendetNichts() {
+        profil(autoStop = true)
+        schnellerDetektor(noSpeechMs = 0)
+        quelle(20) { 0.toShort() }
+        val s = dienst()
+        starten(s)
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertEquals(VoiceTaskState.ERROR, store.state)
+        assertEquals(app.getString(R.string.widget_no_speech), store.message)
+        assertFalse("Nichts Gehoertes darf nicht gesendet werden", store.hasWork)
+        assertEquals(0, eingereiht)
+
+        // Ohne Auftrag wird der naechste Tipp (RETRY) zum neuen START — und der nimmt wieder auf.
+        tonQuelle()
+        senden(s, VoiceTaskService.ACTION_START, WIDGET)
+        assertTrue(gelesen.await(5, TimeUnit.SECONDS))
+        assertEquals(VoiceTaskState.RECORDING, store.state)
+    }
+
+    @Test fun einTippImAutoModusBeendetGenauEinmal() {
+        // Die Sprechpause ist schon erkannt und eingereiht, da kommt der STOP-Tipp: es bleibt bei
+        // einem Auftrag, die spaete Entscheidung laeuft ins Leere.
+        profil(autoStop = true)
+        schnellerDetektor()
+        tonDannStille()
+        val s = dienst()
+        starten(s)
+        ShadowSystemClock.advanceBy(Duration.ofSeconds(4))
+        senden(s, VoiceTaskService.ACTION_STOP)
+
+        assertEquals(VoiceTaskState.WORKING, store.state)
+        assertEquals(1, eingereiht)
+    }
+
+    @Test fun dieSprechpauseKommtAusDemProfil() {
+        SpeechPause.entries.forEach { pause ->
+            val d = echteFabrik(WidgetProfile("x", autoStop = true, pause = pause))
+            assertEquals(pause.name, pause.ms, d.pauseMs)
+        }
+    }
+
+    private companion object {
+        const val WIDGET = 7
     }
 }
