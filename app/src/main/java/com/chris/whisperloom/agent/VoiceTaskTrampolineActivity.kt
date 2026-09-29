@@ -69,8 +69,11 @@ class VoiceTaskTrampolineActivity : Activity() {
      * wenn gar kein Job mehr bestand — ein Job im Backoff blieb liegen, und das Widget hing (#10).
      *
      * Die Job-Phase wird ZUERST gelesen, der Store danach: erledigt der Worker den Auftrag
-     * genau waehrend der Abfrage, sieht der Tipp keinen Auftrag mehr und zeichnet nur neu,
-     * statt "Gesendet" mit "Wird gesendet …" zu uebermalen.
+     * genau waehrend der Abfrage, sieht der Tipp keinen Auftrag mehr, statt "Gesendet" mit
+     * "Wird gesendet …" zu uebermalen. Ohne Auftrag wird nur ein stehengebliebenes "Wird
+     * gesendet …" richtiggestellt (dieselbe Regel wie im leeren Worker-Lauf): "Gesendet" oder
+     * "Nichts verstanden — nichts gesendet" hat der Worker gerade selbst gezeichnet, resolve()
+     * machte daraus "bereit" — und der Hinweis, dass nichts ankam, waere weg.
      *
      * SEND_NOW zeichnet VOR dem Einreihen: so ist der Push des Workers immer der letzte, und
      * ein Doppeltipp trifft auf RUNNING mit frischem Stempel. Der Store kommt dabei mit auf
@@ -82,7 +85,7 @@ class VoiceTaskTrampolineActivity : Activity() {
         val store = VoiceTaskStore(this)
         val laeuftSeit = VoiceTaskUi.runningFor(store.attemptStartedAt, SystemClock.elapsedRealtime())
         when (VoiceTaskUi.nudge(store.hasWork, phase, laeuftSeit, store.offlineRecognition)) {
-            Nudge.REDRAW -> VoiceTaskWidget.refresh(this)
+            Nudge.REDRAW -> if (store.state == VoiceTaskState.WORKING) VoiceTaskWidget.refresh(this)
             Nudge.SEND_NOW -> {
                 store.state = VoiceTaskState.WORKING
                 store.message = ""

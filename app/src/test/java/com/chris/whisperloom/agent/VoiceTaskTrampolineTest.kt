@@ -13,7 +13,6 @@ import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -259,23 +258,41 @@ class VoiceTaskTrampolineTest {
         assertEquals(app.getString(R.string.widget_ready), zeile(w))
     }
 
-    @Test fun einWorkerDerMittenImTippFertigWirdWirdNichtUebermalt() {
-        // Nebenbefund aus #10: frueher las der Tipp den Store und zeichnete danach — endete der
-        // Worker genau dazwischen, uebermalte "Wird gesendet …" das "Gesendet".
-        val w = widget()
+    /** Der Worker wird genau waehrend der Phasen-Abfrage des Tipps fertig — so, wie er es selbst tut. */
+    private fun workerEndetImTipp(state: VoiceTaskState, message: String = "") {
         auftrag()
         store.state = VoiceTaskState.WORKING
         VoiceTaskWidgetView.push(app, VoiceTaskState.WORKING)
         VoiceTaskWork.phaseImpl = {
             store.clear()
-            store.state = VoiceTaskState.SENT
-            VoiceTaskWidgetView.push(app, VoiceTaskState.SENT)
+            store.state = state
+            store.message = message
+            VoiceTaskWidgetView.push(app, state, message = message)
             JobPhase.NONE
         }
+    }
+
+    @Test fun einWorkerDerMittenImTippFertigWirdWirdNichtUebermalt() {
+        // Nebenbefund aus #10: frueher las der Tipp den Store und zeichnete danach — endete der
+        // Worker genau dazwischen, uebermalte "Wird gesendet …" (oder "bereit") das "Gesendet".
+        val w = widget()
+        workerEndetImTipp(VoiceTaskState.SENT)
 
         tippen(TapIntent.REFRESH)
 
         assertEquals(emptyList<Boolean>(), aufrufe)
-        assertNotEquals(app.getString(R.string.widget_working), zeile(w))
+        assertEquals(app.getString(R.string.widget_sent), zeile(w))
+    }
+
+    @Test fun nichtsVerstandenBleibtNachEinemTippImAbschlussStehen() {
+        // Sonst stuende "Tippen und sprechen" da, und der Nutzer hielte den Auftrag fuer angekommen.
+        val w = widget()
+        workerEndetImTipp(VoiceTaskState.ERROR, VoiceTaskPipeline.MSG_EMPTY)
+        val fehler = VoiceTaskWidgetView.status(app, VoiceTaskState.ERROR, 0, VoiceTaskPipeline.MSG_EMPTY)
+
+        tippen(TapIntent.REFRESH)
+
+        assertEquals(emptyList<Boolean>(), aufrufe)
+        assertEquals(fehler, zeile(w))
     }
 }
