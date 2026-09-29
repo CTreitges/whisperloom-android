@@ -78,4 +78,20 @@ class VoiceTaskManifestTest {
         assertTrue(extraction.substringAfter("<cloud-backup").substringBefore("</cloud-backup>").contains("""path="whisperloom_agent.xml""""))
         assertTrue(extraction.substringAfter("<device-transfer").substringBefore("</device-transfer>").contains("""path="voice_task.pcm""""))
     }
+
+    @Test fun widgetProfileUndFotosBleibenAufDemGeraet() {
+        // Wie die anderen App-Dateien: nichts davon in Cloud-Backup oder Geraete-Transfer.
+        val backup = datei("src/main/res/xml/backup_rules.xml", "app/src/main/res/xml/backup_rules.xml").readText()
+        val extraction = datei("src/main/res/xml/data_extraction_rules.xml", "app/src/main/res/xml/data_extraction_rules.xml").readText()
+        val prefs = """<exclude domain="sharedpref" path="${WidgetProfileStore.FILE}.xml" />"""
+        val fotos = """<exclude domain="file" path="${WidgetPhoto.DIR}" />"""
+        listOf(
+            backup,
+            extraction.substringAfter("<cloud-backup").substringBefore("</cloud-backup>"),
+            extraction.substringAfter("<device-transfer").substringBefore("</device-transfer>"),
+        ).forEach {
+            assertTrue("Profile nicht ausgeschlossen: $it", it.contains(prefs))
+            assertTrue("Fotos nicht ausgeschlossen: $it", it.contains(fotos))
+        }
+    }
 }

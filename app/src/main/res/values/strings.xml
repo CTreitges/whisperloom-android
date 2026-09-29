@@ -578,6 +578,30 @@
     <string name="agent_notif_recording">Nimmt auf …</string>
     <string name="agent_notif_stop">Senden</string>
 
+    <!-- ==== Widget-Profile: Symbol-Namen (TalkBack) =============================== -->
+    <string name="widget_icon_mic">Mikrofon</string>
+    <string name="widget_icon_shopping_cart">Einkauf</string>
+    <string name="widget_icon_home">Zuhause</string>
+    <string name="widget_icon_work">Arbeit</string>
+    <string name="widget_icon_lightbulb">Idee</string>
+    <string name="widget_icon_event">Termin</string>
+    <string name="widget_icon_edit_note">Notiz</string>
+    <string name="widget_icon_directions_car">Auto</string>
+    <string name="widget_icon_favorite">Herz</string>
+    <string name="widget_icon_star">Stern</string>
+    <string name="widget_icon_chat">Chat</string>
+    <string name="widget_icon_voicemail">Sprachnachricht</string>
+    <string name="widget_icon_graphic_eq">Tonwelle</string>
+    <string name="widget_icon_send">Senden</string>
+    <string name="widget_icon_checklist">Checkliste</string>
+    <string name="widget_icon_schedule">Uhr</string>
+    <string name="widget_icon_notifications">Glocke</string>
+    <string name="widget_icon_build">Werkzeug</string>
+    <string name="widget_icon_cloud">Wolke</string>
+    <string name="widget_icon_language">Weltkugel</string>
+    <string name="widget_icon_auto_fix_high">Zauberstab</string>
+    <string name="widget_icon_key">Schlüssel</string>
+
     <!-- ==== Sprachauftrag: Einstellungen und Tutorial (Paket C) ==================== -->
     <string name="settings_group_agent">Erweiterte Optionen</string>
     <string name="settings_agent_sub">Sprachauftrag an einen eigenen Agenten</string>
