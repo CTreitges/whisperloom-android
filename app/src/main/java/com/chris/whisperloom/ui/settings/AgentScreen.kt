@@ -161,7 +161,10 @@ fun AgentScreen(nav: NavState) {
                 )
                 LoomRow(
                     headline = stringResource(R.string.agent_widget_hint),
+                    supporting = stringResource(R.string.agent_widget_manage),
                     leading = { LoomIcon(R.drawable.ic_touch_app, null, Modifier.size(24.dp), MaterialTheme.colorScheme.onSurfaceVariant) },
+                    trailing = { LoomIcon(R.drawable.ic_chevron_right, null, Modifier.size(24.dp), MaterialTheme.colorScheme.onSurfaceVariant) },
+                    onClick = { nav.push(Screen.Widgets) },
                 )
             }
         }
