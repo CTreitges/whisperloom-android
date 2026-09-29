@@ -158,6 +158,37 @@ class PrefsTest {
         assertEquals(RefineMode.PROMPT, Prefs(ctx).refineMode)
     }
 
+    // --- Geteilte Sprachnachrichten ---------------------------------------------
+
+    @Test fun shareStufeIstAbWerkAusUndUnabhaengigVomDiktat() {
+        val p = Prefs(ctx)
+        assertEquals(RefineMode.OFF, p.shareRefineMode)
+        p.refineMode = RefineMode.BEAUTIFY
+        assertEquals("Diktat-Stufe faerbt nicht ab", RefineMode.OFF, Prefs(ctx).shareRefineMode)
+        p.shareRefineMode = RefineMode.SUMMARIZE
+        assertEquals(RefineMode.SUMMARIZE, Prefs(ctx).shareRefineMode)
+        assertEquals(RefineMode.BEAUTIFY, Prefs(ctx).refineMode)
+        assertEquals("summarize", sp.getString("share_refine_mode", null))
+    }
+
+    @Test fun shareStufeKenntWederPromptNochAltlastNochUnbekanntes() {
+        val p = Prefs(ctx)
+        p.promptLevelEnabled = true
+        for (key in listOf("prompt", "paragraphs", "quatsch")) {
+            sp.edit().putString("share_refine_mode", key).commit()
+            assertEquals(key, RefineMode.OFF, p.shareRefineMode)
+        }
+    }
+
+    @Test fun shareStufeSpiegeltSichInCompose() {
+        val state = PrefsState(Prefs(ctx))
+        state.shareRefineMode = RefineMode.POLISH
+        assertEquals(RefineMode.POLISH, Prefs(ctx).shareRefineMode)
+        Prefs(ctx).shareRefineMode = RefineMode.OFF
+        assertEquals(RefineMode.OFF, state.shareRefineMode)
+        state.dispose()
+    }
+
     @Test fun neuerNutzerBekommtGptTranscribe() {
         val p = Prefs(ctx)
         p.engine = Engine.ONLINE

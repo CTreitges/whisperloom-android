@@ -21,7 +21,8 @@ class TextRefiner(private val access: ApiAccess) {
      *
      * @throws ApiNotConfiguredException wenn die Base-URL leer ist (eigener Server ohne URL) —
      *   sonst ginge die Anfrage an "/chat/completions" ohne Host.
-     * @throws RefineRejectedException wenn die Stufe "Prompt" eine Antwort statt eines Prompts liefert.
+     * @throws RefineRejectedException wenn die Stufe "Prompt" eine Antwort statt eines Prompts liefert
+     *   oder das Modell an seiner Laengengrenze abgebrochen hat ([MSG_TRUNCATED]).
      */
     fun refine(
         raw: String,
@@ -54,11 +55,9 @@ class TextRefiner(private val access: ApiAccess) {
             contentType = "application/json",
             readTimeoutMs = access.readTimeoutMs,
         ) { os -> os.write(payload.toByteArray(Charsets.UTF_8)) }
-        return JSONObject(body)
-            .optJSONArray("choices")
-            ?.optJSONObject(0)
-            ?.optJSONObject("message")
-            ?.optString("content")
+        val choice = JSONObject(body).optJSONArray("choices")?.optJSONObject(0)
+        if (choice?.optString("finish_reason") == LENGTH) throw RefineRejectedException(MSG_TRUNCATED)
+        return choice?.optJSONObject("message")?.optString("content")
     }
 
     /** Ollama (lokal oder ollama.com): POST {Wurzel}/api/chat, siehe [OllamaApi]. */
@@ -70,10 +69,19 @@ class TextRefiner(private val access: ApiAccess) {
             contentType = "application/json",
             readTimeoutMs = access.readTimeoutMs,
         ) { os -> os.write(payload.toByteArray(Charsets.UTF_8)) }
+        if (JSONObject(body).optString("done_reason") == LENGTH) throw RefineRejectedException(MSG_TRUNCATED)
         return OllamaApi.parseChat(body)
     }
 
     companion object {
+        /**
+         * Das Modell hat an seiner Laengengrenze aufgehoert (`finish_reason`/`done_reason` "length",
+         * z. B. max_completion_tokens bei Reasoning-Modellen). Die Antwort ist dann nur der Anfang
+         * des Texts — sie einzufuegen hiesse, den Rest still zu verschlucken.
+         */
+        const val MSG_TRUNCATED = "Antwort des Modells abgeschnitten (Längengrenze)"
+        private const val LENGTH = "length"
+
         // Qwen3 & Co. schreiben ihr Nachdenken als <think>…</think> in den Text, wenn
         // der Server reasoning_effort ignoriert. Das gehoert nie ins Diktat.
         private val THINK_BLOCK = Regex("(?s)^\\s*<think>.*?</think>\\s*")
