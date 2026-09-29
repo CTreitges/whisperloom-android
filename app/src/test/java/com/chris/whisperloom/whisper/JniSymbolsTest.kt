@@ -73,10 +73,29 @@ class JniSymbolsTest {
         )
     }
 
+    /** Rechte Seiten aller Zuweisungen an no_timestamps; Vergleiche (==) zaehlen nicht. */
+    private fun noTimestampsZuweisungen(src: String) =
+        Regex("no_timestamps\\s*=(?!=)\\s*([^;]*);").findAll(src).map { it.groupValues[1].trim() }.toList()
+
+    /** Richtung festgenagelt: Zeitstempel an (timestamps != 0) -> no_timestamps aus. */
+    private val negiertTimestamps = Regex("timestamps\\s*==\\s*(0|JNI_FALSE|false)|!\\s*timestamps")
+
     @Test fun zeitstempelKommenAusDemJniParameter() {
-        // Fest no_timestamps=true schneidet Audio > 30 s alle 30 s mitten im Wort (WhisperContext.useTimestamps).
-        assertFalse(Regex("no_timestamps\\s*=\\s*true").containsMatchIn(cpp))
-        assertTrue(Regex("no_timestamps\\s*=\\s*timestamps\\b").containsMatchIn(cpp))
+        // Fest no_timestamps=true schneidet Audio > 30 s alle 30 s mitten im Wort (WhisperContext.useTimestamps);
+        // vertauscht (= timestamps) trifft es genau diese Faelle, und Diktate <= 30 s laufen mit Zeitstempeln.
+        val rhs = noTimestampsZuweisungen(cpp)
+        assertTrue("keine Zuweisung an no_timestamps gefunden", rhs.isNotEmpty())
+        for (expr in rhs) assertTrue("no_timestamps = $expr ist nicht die Negation von timestamps", negiertTimestamps.matches(expr))
+    }
+
+    @Test fun zeitstempelPruefungErkenntVertauschteRichtung() {
+        for (ok in listOf("timestamps == 0", "timestamps==0", "!timestamps", "! timestamps", "timestamps == JNI_FALSE"))
+            assertTrue(ok, negiertTimestamps.matches(ok))
+        for (bad in listOf("timestamps", "timestamps != 0", "timestamps == 1", "timestamps == JNI_TRUE", "!!timestamps", "true", "timestamps == 0 || true"))
+            assertFalse(bad, negiertTimestamps.matches(bad))
+        assertEquals(listOf("timestamps"), noTimestampsZuweisungen("params.no_timestamps = timestamps;"))
+        assertEquals(listOf("timestamps == 0", "true"), noTimestampsZuweisungen("p.no_timestamps = timestamps == 0;\np.no_timestamps=true;"))
+        assertEquals(emptyList<String>(), noTimestampsZuweisungen("if (params.no_timestamps == false) {}"))
     }
 
     @Test fun keinAssetLaderMehr() {
