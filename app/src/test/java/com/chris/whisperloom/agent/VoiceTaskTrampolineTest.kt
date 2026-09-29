@@ -238,6 +238,24 @@ class VoiceTaskTrampolineTest {
         assertEquals(listOf(true), aufrufe)
     }
 
+    @Test fun einDoppeltippErsetztDenGeradeEingereihtenLaufNicht() {
+        // Der Stempel stammt von einem alten Versuch (Retry setzt ihn nicht zurueck). Tipp 1 reiht
+        // ein; der neue Job ist schon RUNNING, bevor sein doWork stempelt. Ohne frischen Stempel
+        // vom Tipp hielte Tipp 2 ihn fuer haengend und braeche ihn per REPLACE wieder ab.
+        auftrag()
+        store.state = VoiceTaskState.WORKING
+        store.attemptStartedAt = SystemClock.elapsedRealtime()
+        ShadowSystemClock.advanceBy(Duration.ofMillis(VoiceTaskUi.STALL_MS * 2))
+        phase = JobPhase.WAITING
+
+        tippen(TapIntent.REFRESH)
+        phase = JobPhase.RUNNING
+        tippen(TapIntent.REFRESH)
+
+        assertEquals("Nur der erste Tipp reiht ein", listOf(true), aufrufe)
+        assertEquals(SystemClock.elapsedRealtime(), store.attemptStartedAt)
+    }
+
     @Test fun eineLaufendeOfflineErkennungWirdAuchNachDerStallZeitNichtErsetzt() {
         // Ein Ersatz stellte sich hinter die laufende whisper-Erkennung und verdoppelte die Wartezeit.
         auftrag()

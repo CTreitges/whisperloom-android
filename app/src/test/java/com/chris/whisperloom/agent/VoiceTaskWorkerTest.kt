@@ -285,6 +285,52 @@ class VoiceTaskWorkerTest {
         assertFalse(store.hasWork)
     }
 
+    // --- Eigentuemer-Wache: der Besitz wechselt WAEHREND des Versands ----------------
+    // stillCurrent fragt die Pipeline nur einmal, vor dem Senden. Der Versand dauert bis zu 75 s;
+    // was in der Zeit passiert, faengt allein die Wache im Worker ab.
+
+    @Test fun einNeuerAuftragWaehrendDesVersandsBleibtUnangetastet() {
+        auftragAnlegen()
+        var neu = ""
+        pipeline(send = { neu = auftragAnlegen(); gesendet += it })
+
+        lauf()
+
+        assertEquals("clear() des alten Laufs loeschte den neuen Auftrag", neu, store.requestId)
+        assertTrue("Das Audio des neuen Auftrags muss bleiben", store.audioFile.isFile)
+        assertEquals("Der alte Text gehoert nicht zum neuen Auftrag", "", store.text)
+        assertNotEquals(VoiceTaskState.SENT, store.state)
+    }
+
+    @SuppressLint("RestrictedApi") // stop() ist die Stelle, an der WorkManager einen Worker abbricht.
+    @Test fun einWaehrendDesVersandsGestoppterLaufZeichnetKeinenFehlversuch() {
+        val w = widget()
+        auftragAnlegen()
+        val lauf = worker()
+        pipeline(send = {
+            lauf.stop(WorkInfo.STOP_REASON_CANCELLED_BY_APP)
+            throw ApiNetworkException(SocketTimeoutException("Read timed out"))
+        })
+
+        lauf.startWork().get()
+
+        assertEquals("", store.message)
+        assertEquals("Die Flaeche gehoert dem Nachfolger", app.getString(R.string.widget_working), zeile(w))
+        assertEquals("Die Transkription ist bezahlt", "Kauf Milch", store.text)
+    }
+
+    @Test fun einWaehrendDesVersandsVerworfenerAuftragZeigtNichtGesendet() {
+        val w = widget()
+        auftragAnlegen()
+        pipeline(send = { store.clear(); gesendet += it })
+
+        lauf()
+
+        assertNotEquals(VoiceTaskState.SENT, store.state)
+        assertNotEquals(app.getString(R.string.widget_sent), zeile(w))
+        assertFalse(store.hasWork)
+    }
+
     // --- Offline-Erkennung: kein Ersatz per Tipp (sie laesst sich nicht abbrechen) ---
 
     /** Was ein Tipp in diesem Moment taete, wenn der Lauf schon doppelt so lange wie die Stall-Zeit liefe. */
