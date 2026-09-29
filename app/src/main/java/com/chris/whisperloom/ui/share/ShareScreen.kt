@@ -62,6 +62,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.chris.whisperloom.Formats
 import com.chris.whisperloom.R
+import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.ui.components.levelLabel
 import com.chris.whisperloom.ui.theme.loom
 import kotlinx.coroutines.launch
 
@@ -157,8 +159,36 @@ private fun TranscriptContent(
             ProgressBlock(state.progress ?: ShareProgress(0, state.files.size, 0, 1, ""))
         }
         TranscriptList(state, onRetryFile, Modifier.weight(1f))
-        if (state.phase == SharePhase.DONE) FillerToggleBar(state.hideFillers, onHideFillersChange)
+        if (state.phase == SharePhase.DONE) {
+            RefineNote(state)
+            // Zeigt jede Datei ihre KI-Fassung, gibt es nichts umzuschalten — die Stufe waehlt
+            // man in den Einstellungen, nicht hier.
+            if (state.hasUnrefined) FillerToggleBar(state.hideFillers, onHideFillersChange)
+        }
     }
+}
+
+/**
+ * Hinweiszeile zur KI-Stufe fuer geteilte Audios: aktiv, gescheitert (mit Grund) oder bei mehreren
+ * Dateien nur teilweise gescheitert — dann mit Anzahl, sonst saehe die KI-Fassung der anderen Dateien
+ * wie gescheitert aus. Bei "Aus" nichts.
+ */
+@Composable
+private fun RefineNote(state: ShareUiState) {
+    val mode = state.refineMode
+    if (mode == RefineMode.OFF) return
+    val skipped = state.refineSkipped
+    val failures = state.refineFailures
+    Text(
+        when {
+            skipped == null -> stringResource(R.string.share_refine_note, levelLabel(mode))
+            failures < state.results.size ->
+                stringResource(R.string.share_refine_partly, levelLabel(mode), failures, state.results.size, skipped)
+            else -> stringResource(R.string.refine_skipped, skipped)
+        },
+        style = MaterialTheme.typography.labelMedium,
+        color = if (skipped != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }
 
 /** Kopf-Karte: Icon-Kreis, Quelle, "Dauer · 1 Datei" bzw. "n Dateien · Dauer gesamt". */

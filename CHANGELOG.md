@@ -4,8 +4,14 @@ Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](ht
 
 ## [Unveröffentlicht]
 
+### Hinzugefügt
+
+- **KI-Textverbesserung für geteilte Sprachnachrichten** (ab Werk aus). Einstellungen → Text → **Geteilte Sprachnachrichten**: eigene Stufe **Glätten**, **Verschönern** oder **Zusammenfassen**, unabhängig von der Stufe fürs Diktat. Jedes 5-Minuten-Stück geht einzeln an die KI, der Transkriptions-Bildschirm zeigt dann die verbesserte Fassung mit dem Hinweis „Textverbesserung: …". Scheitert die KI, bleibt es bei der Fassung ohne KI mit Hinweis. „Füllwörter intelligent entfernen" lässt sich dafür auch ohne Diktat-Stufe einschalten.
+
 ### Behoben
 
+- **Abgeschnittene Textverbesserung wurde als fertig eingefügt.** Hörte das Sprachmodell an seiner Längengrenze auf (z. B. GPT-5-Modelle bei sehr langen Diktaten, kleines Kontextfenster bei Ollama), kam nur der Anfang an. Jetzt erkennt WhisperLoom den Abbruch und fügt den Rohtext mit Hinweis ein.
+- **Offline-Erkennung schnitt lange Aufnahmen alle 30 Sekunden mitten im Wort.** Whisper hört in Stücken von 30 Sekunden. Bisher begann das nächste Stück stur 30 Sekunden später, auch mitten in einem Wort. Das Wort an der Grenze fehlte oder kam verstümmelt an. Betroffen waren Offline-Diktate über 30 Sekunden und geteilte Sprachnachrichten. Jetzt beginnt das nächste Stück dort, wo Whisper den letzten vollständigen Satzteil erkannt hat. Diktate bis 30 Sekunden laufen unverändert und genauso schnell wie bisher.
 - **Sprachauftrag-Widget blieb auf „Wird gesendet …“ hängen, nur ein Force-Stop half** ([#10](https://github.com/CTreitges/whisperloom-android/issues/10)). Scheiterte der erste Versuch (etwa weil der Server gerade erst startete), wartete der Auftrag still auf den nächsten Termin, und ein Tipp auf das Widget tat nichts.
   - Ein gescheiterter Versuch ist jetzt sichtbar: „‹Grund› — neuer Versuch folgt, tippen = jetzt“.
   - Ein Tipp auf „Wird gesendet …“ sendet sofort, statt auf den nächsten geplanten Versuch zu warten, und wartet dabei auch nicht auf eine hängende Netz-Bedingung (VPN, WLAN ohne Internet). Läuft gerade ein Versuch, ersetzt der Tipp ihn erst, wenn er länger als drei Minuten hängt. Ein ungeduldiger Tipp in dieser Zeit kostet so keine zweite Transkription. Eine laufende Offline-Erkennung ersetzt der Tipp gar nicht: sie lässt sich nicht abbrechen, und der Ersatz müsste nur hinter ihr warten.

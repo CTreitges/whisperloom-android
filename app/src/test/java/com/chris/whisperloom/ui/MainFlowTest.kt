@@ -17,6 +17,10 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -43,6 +47,7 @@ import com.chris.whisperloom.whisper.ModelDownloads
 import com.chris.whisperloom.whisper.ModelStore
 import java.io.RandomAccessFile
 import com.chris.whisperloom.ui.settings.SettingsHubScreen
+import com.chris.whisperloom.ui.settings.SHARE_REFINE_TAG
 import com.chris.whisperloom.ui.settings.TextSettingsScreen
 import com.chris.whisperloom.ui.setup.SetupScreen
 import com.chris.whisperloom.ui.state.AppEnv
@@ -279,10 +284,40 @@ class MainFlowTest {
     @Test fun textStufeSchreibtRefineModeUndSchaltetSmartFillersFrei() {
         screen(env()) { TextSettingsScreen(it) }
         compose.onNodeWithText("Füllwörter intelligent entfernen").assertIsNotEnabled()
-        compose.onNodeWithText("Glätten").performClick()
+        // Die erste "Glätten"-Zeile gehoert zum Diktat, die zweite zu geteilten Audios.
+        compose.onAllNodesWithText("Glätten").onFirst().performClick()
         compose.waitForIdle()
         assertEquals(RefineMode.POLISH, Prefs(ctx).refineMode)
         compose.onNodeWithText("Füllwörter intelligent entfernen").assertIsEnabled()
+    }
+
+    @Test fun shareStufeIstEigeneKarteUndSchreibtNurShareRefineMode() {
+        prefs.promptLevelEnabled = true
+        screen(env()) { TextSettingsScreen(it) }
+        compose.onNodeWithText("Geteilte Sprachnachrichten").assertExists()
+        val inShareCard = hasAnyAncestor(hasTestTag(SHARE_REFINE_TAG))
+        compose.onNode(hasText("Aus") and inShareCard).assertIsSelected()
+        // "Prompt" gibt es nur fuers Diktat, nie fuer eine fremde Nachricht.
+        compose.onNode(hasText("Prompt") and inShareCard).assertDoesNotExist()
+        compose.onNode(hasText("Zusammenfassen") and inShareCard).performClick()
+        compose.waitForIdle()
+        assertEquals(RefineMode.SUMMARIZE, Prefs(ctx).shareRefineMode)
+        assertEquals(RefineMode.OFF, Prefs(ctx).refineMode)
+        compose.onNode(hasText("Zusammenfassen") and inShareCard).assertIsSelected()
+    }
+
+    /** Review: "intelligent entfernen" wirkt auch auf geteilte Audios — also auch dann bedienbar. */
+    @Test fun intelligenteFuellwoerterSindMitNurDerShareStufeBedienbar() {
+        screen(env()) { TextSettingsScreen(it) }
+        compose.onNodeWithText("Füllwörter intelligent entfernen").assertIsNotEnabled()
+        compose.onNode(hasText("Glätten") and hasAnyAncestor(hasTestTag(SHARE_REFINE_TAG))).performClick()
+        compose.waitForIdle()
+        assertEquals(RefineMode.OFF, Prefs(ctx).refineMode)
+        compose.onNodeWithText("Füllwörter intelligent entfernen").assertIsEnabled().performClick()
+        compose.waitForIdle()
+        assertEquals(true, Prefs(ctx).smartFillers)
+        // Die Absaetze bleiben Sache des Diktats: ohne Diktat-Stufe weiter gesperrt.
+        compose.onNodeWithText("Automatische Absätze").assertIsNotEnabled()
     }
 
     @Test fun fuellwoerterSheetFuegtEigenesWortHinzu() {
@@ -300,7 +335,8 @@ class MainFlowTest {
     @Test fun absatzSchalterIstAnUndWirktNurMitStufe() {
         screen(env()) { TextSettingsScreen(it) }
         compose.onNodeWithText("Automatische Absätze").assertIsNotEnabled()
-        compose.onNodeWithText("Glätten").performClick()
+        // Die erste "Glätten"-Zeile gehoert zum Diktat, die zweite zu geteilten Audios.
+        compose.onAllNodesWithText("Glätten").onFirst().performClick()
         compose.waitForIdle()
         compose.onNodeWithText("Automatische Absätze").assertIsEnabled().performClick()
         compose.waitForIdle()

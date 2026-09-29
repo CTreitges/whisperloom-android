@@ -24,7 +24,7 @@ enum class Engine(val key: String) {
 
 /**
  * Was das Sprachmodell nach der Erkennung mit dem Text tun soll.
- * [PARAGRAPHS] ist nicht in den Einstellungen waehlbar (nur fuer geteilte Audios).
+ * [PARAGRAPHS] ist nirgends waehlbar — auch geteilte Audios ([Prefs.shareRefineMode]) nutzen [SETTINGS].
  * [PROMPT] nur, wenn in den erweiterten Optionen eingeschaltet ([Prefs.promptLevelEnabled]).
  */
 enum class RefineMode(val key: String) {
@@ -209,7 +209,8 @@ class Prefs(context: Context) {
 
     /**
      * Statt fester Wortliste entscheidet das Sprachmodell selbst, welche Fuellwoerter,
-     * Versprecher und Wiederholungen weg koennen. Wirkt nur mit [refineMode] != OFF.
+     * Versprecher und Wiederholungen weg koennen. Wirkt nur mit einer KI-Stufe ([refineMode] oder
+     * [shareRefineMode] != OFF).
      */
     var smartFillers: Boolean
         get() = sp.getBoolean(KEY_SMART_FILLERS, false)
@@ -293,6 +294,16 @@ class Prefs(context: Context) {
     var shareHideFillers: Boolean
         get() = sp.getBoolean(KEY_SHARE_HIDE_FILLERS, true)
         set(v) = sp.edit().putBoolean(KEY_SHARE_HIDE_FILLERS, v).apply()
+
+    /**
+     * KI-Stufe fuer geteilte Sprachnachrichten — unabhaengig von [refineMode] und ab Werk aus
+     * (dann bleibt es wortgetreu). Nur die Stufen aus [RefineMode.SETTINGS]; "Prompt" ergibt
+     * fuer eine fremde Nachricht keinen Sinn und gilt wie alles Unbekannte als aus.
+     */
+    var shareRefineMode: RefineMode
+        get() = RefineMode.fromKey(sp.getString(KEY_SHARE_REFINE_MODE, null))
+            .takeIf { it in RefineMode.SETTINGS } ?: RefineMode.OFF
+        set(v) = sp.edit().putString(KEY_SHARE_REFINE_MODE, v.key).apply()
 
     // --- Schwebender Knopf ---------------------------------------------------
 
@@ -390,6 +401,7 @@ class Prefs(context: Context) {
         private const val KEY_OFFLINE_MODEL = "offline_model"
         private const val KEY_OFFLINE_ACCURATE = "offline_accurate"
         private const val KEY_SHARE_HIDE_FILLERS = "share_hide_fillers"
+        private const val KEY_SHARE_REFINE_MODE = "share_refine_mode"
         private const val KEY_AGENT_ENABLED = "agent_enabled"
         private const val KEY_AGENT_URL = "agent_url"
         private const val KEY_AGENT_TOKEN = "agent_token"

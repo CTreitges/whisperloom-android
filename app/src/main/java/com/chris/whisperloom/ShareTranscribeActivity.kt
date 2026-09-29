@@ -20,7 +20,8 @@ import com.chris.whisperloom.ui.theme.WhisperLoomTheme
  * sie — der Hauptfall sind WhatsApp-Sprachnachrichten. Ablauf in [ShareController],
  * Darstellung in [ShareScreen] (UX-Spec §2.9).
  *
- * Der Text wird WORTGETREU erkannt; "Fuellwoerter ausblenden" ist ein Schalter in der Ansicht.
+ * Der Text wird ab Werk WORTGETREU erkannt; "Fuellwoerter ausblenden" ist ein Schalter in der
+ * Ansicht. Eine KI-Stufe gibt es nur ueber die Einstellungen (Text › Geteilte Sprachnachrichten).
  * Die Zwischenablage wird bewusst NICHT automatisch ueberschrieben — nur auf Knopfdruck.
  */
 class ShareTranscribeActivity : ComponentActivity() {

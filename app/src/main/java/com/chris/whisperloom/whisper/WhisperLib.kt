@@ -32,6 +32,7 @@ internal object WhisperLib {
 
     /**
      * @param beamSize > 1 = Beam-Search mit dieser Breite, sonst Greedy
+     * @param timestamps Zeitstempel-Tokens zulassen (no_timestamps=false) — siehe [WhisperContext.useTimestamps]
      * @return 0 bei Erfolg, sonst whisper_full-Fehlercode (auch nach [requestAbort])
      */
     external fun fullTranscribe(
@@ -41,6 +42,7 @@ internal object WhisperLib {
         initialPrompt: String?,
         beamSize: Int,
         suppressNst: Boolean,
+        timestamps: Boolean,
         audioData: FloatArray,
     ): Int
 
