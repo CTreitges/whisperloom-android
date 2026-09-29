@@ -19,8 +19,8 @@ fun interface BridgePoster {
 /**
  * Die Gegenstelle des Sprachauftrags: ein eigener kleiner Dienst (hermes-bridge), der das
  * Transkript entgegennimmt und an den Agenten weiterreicht. Genau ein Endpunkt, ein
- * Bearer-Token, Antwort 202 — die App wartet nicht auf das Ergebnis, das kommt spaeter
- * ueber den Messenger.
+ * Bearer-Token, Antwort 202 nach der Uebergabe (bis zu [BRIDGE_SYNC_BUDGET_MS]) — die App
+ * wartet nicht auf das Ergebnis des Agenten, das kommt spaeter ueber den Messenger.
  *
  * Der Prompt-Rahmen ("Sprachauftrag von …, per WhisperLoom transkribiert") sitzt bewusst
  * auf der Server-Seite: er gehoert zum Agenten, nicht zum Telefon, und laesst sich dort
@@ -79,8 +79,21 @@ class AgentBridge(
         const val SOURCE = "widget"
         const val CONTENT_TYPE = "application/json; charset=utf-8"
 
-        /** Die Bridge antwortet sofort mit 202; sie wartet nicht auf den Agenten. */
-        const val READ_TIMEOUT_MS = 30_000
+        /**
+         * So lange arbeitet die Bridge hoechstens SYNCHRON, bevor sie mit 202 antwortet. Belegt
+         * in CTreitges/hermes-bridge: app/main.py ruft `store.claim()` VOR `resolve_chat_id`
+         * und `dokument_uebergeben` auf, beide laufen ueber `_run` mit HERMES_TIMEOUT_S = 30
+         * (config.py). Bei HermesError folgen `release()` und 503; eine Kennung bleibt
+         * IDEMPOTENCY_TTL_S = 3600 s belegt. Auf den Agenten selbst wartet sie nicht.
+         */
+        const val BRIDGE_SYNC_BUDGET_MS = 60_000
+
+        /**
+         * Budget plus 15 s Reserve. Frueher 30 s mit der Annahme "antwortet sofort" — kam der
+         * Agent in diesem Fenster hoch, nahm die Bridge den Auftrag an und fuehrte ihn aus,
+         * waehrend die App schon einen Timeout gesehen und auf "erneut versuchen" gestellt hatte (#10, H2).
+         */
+        const val READ_TIMEOUT_MS = BRIDGE_SYNC_BUDGET_MS + 15_000
 
         /**
          * Ohne Weiterleitungen: die Bridge hat genau einen Endpunkt und leitet nie um. Ob ein

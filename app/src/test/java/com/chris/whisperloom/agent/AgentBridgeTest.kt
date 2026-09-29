@@ -50,6 +50,12 @@ class AgentBridgeTest {
         assertEquals("widget", json.getString("source"))
     }
 
+    @Test fun dieAppWartetLaengerAlsDieBridgeSynchronArbeitet() {
+        // #10, H2: die Bridge arbeitet bis zu 2 x 30 s, bevor sie 202 sagt. Wartete die App kuerzer,
+        // saehe sie einen Timeout und wiederholte, waehrend der Auftrag laengst ausgefuehrt wird.
+        assertTrue(AgentBridge.READ_TIMEOUT_MS > AgentBridge.BRIDGE_SYNC_BUDGET_MS)
+    }
+
     @Test fun ohneAdresseOderTokenWirdNichtsGesendet() {
         assertFalse(AgentBridge("", "t", poster).configured)
         assertFalse(AgentBridge("https://x", "", poster).configured)
