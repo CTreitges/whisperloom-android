@@ -11,6 +11,7 @@ Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](ht
 ### Behoben
 
 - **Abgeschnittene Textverbesserung wurde als fertig eingefügt.** Hörte das Sprachmodell an seiner Längengrenze auf (z. B. GPT-5-Modelle bei sehr langen Diktaten, kleines Kontextfenster bei Ollama), kam nur der Anfang an. Jetzt erkennt WhisperLoom den Abbruch und fügt den Rohtext mit Hinweis ein.
+- **Offline-Erkennung schnitt lange Aufnahmen alle 30 Sekunden mitten im Wort.** Whisper hört in Stücken von 30 Sekunden. Bisher begann das nächste Stück stur 30 Sekunden später, auch mitten in einem Wort. Das Wort an der Grenze fehlte oder kam verstümmelt an. Betroffen waren Offline-Diktate über 30 Sekunden und geteilte Sprachnachrichten. Jetzt beginnt das nächste Stück dort, wo Whisper den letzten vollständigen Satzteil erkannt hat. Diktate bis 30 Sekunden laufen unverändert und genauso schnell wie bisher.
 
 ## [3.6.0] — 2026-09-25
 

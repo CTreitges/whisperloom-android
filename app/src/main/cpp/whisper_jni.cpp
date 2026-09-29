@@ -75,7 +75,7 @@ JNIEXPORT jint JNICALL
 Java_com_chris_whisperloom_whisper_WhisperLib_fullTranscribe(
         JNIEnv *env, jobject thiz, jlong context_ptr,
         jint num_threads, jstring language_str, jstring initial_prompt_str,
-        jint beam_size, jboolean suppress_nst, jfloatArray audio_data) {
+        jint beam_size, jboolean suppress_nst, jboolean timestamps, jfloatArray audio_data) {
     (void) thiz;
     struct whisper_context *ctx = to_ctx(context_ptr);
     jfloat *audio = env->GetFloatArrayElements(audio_data, nullptr);
@@ -94,9 +94,16 @@ Java_com_chris_whisperloom_whisper_WhisperLib_fullTranscribe(
     params.print_timestamps      = false;
     params.print_special         = false;
     params.translate             = false;
-    params.no_timestamps         = true;
+    // Kotlin (WhisperContext.useTimestamps) schaltet Zeitstempel nur bei Audio > 30 s ein: mit
+    // no_timestamps setzt whisper.cpp seek_delta fest auf 30 s (v1.9.3 src/whisper.cpp Z.7418-7420)
+    // und schneidet mitten im Wort; mit Zeitstempeln startet das naechste Fenster am letzten
+    // Zeitstempel. Der Segmenttext bleibt ohne Zeitstempel (print_special=false, Z.7652).
+    params.no_timestamps         = timestamps == 0;
     params.single_segment        = false;
-    params.no_context            = true;               // kein Text-Carry zwischen 30-s-Fenstern (Wiederholungsschleifen)
+    // no_context leert nur den Kontext eines VORHERIGEN whisper_full-Aufrufs (Z.6937-6940). Innerhalb
+    // eines Aufrufs reicht whisper.cpp den Text jedes 30-s-Fensters trotzdem als Prompt an das
+    // naechste weiter (prompt_past1, Z.7627-7638); nur bei hoechstens 5 s Rest verwirft es ihn (Z.7064-7067).
+    params.no_context            = true;
     params.suppress_blank        = true;
     params.suppress_nst          = suppress_nst != 0;  // Nicht-Sprach-Tokens (♪, [Musik]) unterdruecken
     params.n_threads             = num_threads;
