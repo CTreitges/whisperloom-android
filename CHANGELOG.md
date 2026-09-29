@@ -10,7 +10,7 @@ Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](ht
   - Ein gescheiterter Versuch ist jetzt sichtbar: „‹Grund› — neuer Versuch folgt, tippen = jetzt“.
   - Ein Tipp auf „Wird gesendet …“ sendet sofort, statt auf den nächsten geplanten Versuch zu warten, und wartet dabei auch nicht auf eine hängende Netz-Bedingung (VPN, WLAN ohne Internet). Läuft gerade ein Versuch, ersetzt der Tipp ihn erst, wenn er länger als drei Minuten hängt. Ein ungeduldiger Tipp in dieser Zeit kostet so keine zweite Transkription. Eine laufende Offline-Erkennung ersetzt der Tipp gar nicht: sie lässt sich nicht abbrechen, und der Ersatz müsste nur hinter ihr warten.
   - Die App wartet bis zu 75 s auf die Antwort der Bridge statt 30 s. Die Bridge übergibt den Auftrag an den Agenten, bevor sie antwortet, und das dauert bis zu 60 s. Vorher hielt die App einen längst angenommenen Auftrag für gescheitert.
-  - Ein abgelöster, verworfener oder vom System gestoppter Versuch schickt nichts mehr hinterher und überschreibt keinen neuen Auftrag. Ein Doppeltipp auf „erneut senden“ bricht den gerade gestarteten Versuch nicht mehr ab.
+  - Ein abgelöster, verworfener oder vom System gestoppter Versuch schickt nichts mehr hinterher und überschreibt keinen neuen Auftrag. Ein Doppeltipp auf „erneut senden“ startet keinen zweiten Versuch.
   - Hängt es trotzdem: Akku für WhisperLoom auf „Nicht eingeschränkt“ stellen. Diagnose am Rechner: `adb shell dumpsys jobscheduler com.chris.whisperloom` und `adb shell am get-standby-bucket com.chris.whisperloom`.
 
 ## [3.6.0] — 2026-09-25
