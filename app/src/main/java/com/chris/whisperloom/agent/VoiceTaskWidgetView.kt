@@ -2,7 +2,6 @@ package com.chris.whisperloom.agent
 
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -80,9 +79,9 @@ object VoiceTaskWidgetView {
      * eigenes Profil — und nur diesen Weg bildet Robolectric ab.
      */
     fun push(ctx: Context, state: VoiceTaskState, elapsedMs: Long = 0, message: String = "") {
-        val manager = AppWidgetManager.getInstance(ctx)
-        val ids = manager.getAppWidgetIds(ComponentName(ctx, VoiceTaskWidget::class.java))
+        val ids = VoiceTaskWidget.placedIds(ctx)
         if (ids.isEmpty()) return
+        val manager = AppWidgetManager.getInstance(ctx)
         pushTo(ctx, manager, ids, state, elapsedMs, message)
     }
 

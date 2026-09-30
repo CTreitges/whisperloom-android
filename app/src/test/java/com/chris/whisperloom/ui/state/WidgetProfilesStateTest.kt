@@ -2,6 +2,7 @@ package com.chris.whisperloom.ui.state
 
 import android.appwidget.AppWidgetManager
 import android.content.Context
+import android.content.ContextWrapper
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.R
 import com.chris.whisperloom.agent.SpeechPause
@@ -92,6 +93,26 @@ class WidgetProfilesStateTest {
         assertTrue(store.isBound(lebt))
         assertFalse(store.isBound(9999))
         assertEquals(1, s.boundCount(p.id))
+    }
+
+    @Test fun ohneWidgetDienstStuerztNichtsAb() {
+        // Geraete ohne android.software.app_widgets (TV, Auto, abgespeckte Images): getInstance
+        // liefert null. Der Einstellungs-Hub legt diesen Zustand bei jedem Oeffnen an.
+        val ohneWidgetDienst = object : ContextWrapper(ctx) {
+            override fun getApplicationContext(): Context = this
+            override fun getSystemService(name: String): Any? =
+                if (name == Context.APPWIDGET_SERVICE) null else super.getSystemService(name)
+        }
+        assertNull("Vorbedingung", AppWidgetManager.getInstance(ohneWidgetDienst))
+
+        val s = WidgetProfilesState(ohneWidgetDienst)
+        assertTrue(s.placed.isEmpty())
+        val p = s.create("Einkauf")
+        s.save(p.copy(autoStop = true)) // mit Neuzeichnen
+        s.reload()
+
+        assertEquals(2, s.profiles.size)
+        assertTrue(s.placed.isEmpty())
     }
 
     @Test fun neuLesenSiehtAenderungenVonAussen() {

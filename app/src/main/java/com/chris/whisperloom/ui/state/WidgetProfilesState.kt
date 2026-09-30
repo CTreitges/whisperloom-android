@@ -1,7 +1,5 @@
 package com.chris.whisperloom.ui.state
 
-import android.appwidget.AppWidgetManager
-import android.content.ComponentName
 import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -77,6 +75,5 @@ class WidgetProfilesState(context: Context) {
     private fun readPlaced(): List<PlacedWidget> =
         widgetIds().sorted().map { PlacedWidget(it, store.forWidget(it)) }
 
-    private fun widgetIds(): IntArray =
-        AppWidgetManager.getInstance(app).getAppWidgetIds(ComponentName(app, VoiceTaskWidget::class.java))
+    private fun widgetIds(): IntArray = VoiceTaskWidget.placedIds(app)
 }

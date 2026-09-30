@@ -3,6 +3,7 @@ package com.chris.whisperloom.agent
 import android.Manifest
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
+import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
@@ -69,6 +70,15 @@ class VoiceTaskWidget : AppWidgetProvider() {
             val store = VoiceTaskStore(ctx)
             return VoiceTaskUi.afterRestart(store.state, store.hasWork) to store.message
         }
+
+        /**
+         * Alle Instanzen auf dem Startbildschirm. Auf Geraeten ohne `android.software.app_widgets`
+         * (TV, Auto, abgespeckte Images) gibt es den Widget-Dienst nicht, und `getInstance`
+         * liefert null — dann eben keine.
+         */
+        fun placedIds(ctx: Context): IntArray =
+            AppWidgetManager.getInstance(ctx)?.getAppWidgetIds(ComponentName(ctx, VoiceTaskWidget::class.java))
+                ?: IntArray(0)
 
         fun hasMicPermission(ctx: Context): Boolean =
             ctx.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
