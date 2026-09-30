@@ -22,13 +22,22 @@ object ElevenLabsStt {
     const val FILE_NAME = "audio.pcm"
     const val FILE_TYPE = "application/octet-stream"
 
-    /** Grenzen laut Doku: hoechstens 1000 Begriffe, je unter 50 Zeichen und hoechstens 5 Woerter. */
-    const val MAX_KEYTERMS = 1000
+    /**
+     * Doku: hoechstens 1000 Begriffe, je unter 50 Zeichen und hoechstens 5 Woerter. Ab 101 Begriffen
+     * rechnet ElevenLabs jede Anfrage mit mindestens 20 s ab — also bei 100 kappen.
+     */
+    const val MAX_KEYTERMS = 100
     private const val MAX_KEYTERM_CHARS = 49
     private const val MAX_KEYTERM_WORDS = 5
 
     /** Zeichen, die ElevenLabs in keyterms ablehnt. */
     private val FORBIDDEN = Regex("[<>{}\\[\\]\\\\]")
+
+    /**
+     * Endet ein Stueck auf ein Satzzeichen, ist es ein Satz(teil) aus altem Freitext, kein Begriff.
+     * Das "…" setzt auch [com.chris.whisperloom.Vocabulary.prompt] ans Ende eines angeschnittenen Eintrags.
+     */
+    private val SENTENCE_END = Regex("[.!?:;…]$")
     private val WHITESPACE = Regex("\\s+")
 
     fun url(access: ApiAccess): String = Http.endpoint(access.baseUrl, PATH)
@@ -55,7 +64,9 @@ object ElevenLabsStt {
     /**
      * Vokabular als keyterms: [prompt] ist die kommagetrennte Liste aus
      * [com.chris.whisperloom.Vocabulary.prompt]. Begriffe, die ElevenLabs ablehnen wuerde
-     * (zu lang, zu viele Woerter, Sonderzeichen), fallen weg, statt das Diktat zu kippen.
+     * (zu lang, zu viele Woerter, Sonderzeichen), fallen weg, statt das Diktat zu kippen; ebenso
+     * Satzstuecke (Satzzeichen am Ende) und das bei der Kappung angeschnittene Stueck ("…").
+     * Von mehr als [MAX_KEYTERMS] bleiben die letzten — dort stehen die eigenen Begriffe.
      */
     fun keyterms(prompt: String): List<String> =
         prompt.split(',')
@@ -64,10 +75,11 @@ object ElevenLabsStt {
                 term.isNotEmpty() &&
                     term.length <= MAX_KEYTERM_CHARS &&
                     term.split(WHITESPACE).size <= MAX_KEYTERM_WORDS &&
-                    !FORBIDDEN.containsMatchIn(term)
+                    !FORBIDDEN.containsMatchIn(term) &&
+                    !SENTENCE_END.containsMatchIn(term)
             }
             .distinct()
-            .take(MAX_KEYTERMS)
+            .takeLast(MAX_KEYTERMS)
 
     /**
      * Die erkannte Sprache kommt 2- oder 3-stellig ("de" bzw. "deu"). Die App rechnet mit

@@ -2,6 +2,7 @@ package com.chris.whisperloom.api
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -70,11 +71,34 @@ class ElevenLabsSttTest {
         assertEquals(listOf("Anna", "Dr. Hans Peter Müller Jr", grenze), ElevenLabsStt.keyterms(prompt))
     }
 
-    @Test fun hoechstensTausendKeyterms() {
-        val prompt = (1..1200).joinToString(", ") { "t$it" }
+    @Test fun hoechstensHundertKeytermsUndDieLetztenGewinnen() {
+        // Ab 101 Begriffen rechnet ElevenLabs mindestens 20 s ab; die eigenen Begriffe stehen am Ende.
+        assertEquals(100, ElevenLabsStt.MAX_KEYTERMS)
+        val prompt = (1..150).joinToString(", ") { "t$it" }
         val terms = ElevenLabsStt.keyterms(prompt)
-        assertEquals(ElevenLabsStt.MAX_KEYTERMS, terms.size)
-        assertEquals("t1", terms.first())
+        assertEquals(100, terms.size)
+        assertEquals("t51", terms.first())
+        assertEquals("t150", terms.last())
+        assertEquals(100, ElevenLabsStt.keyterms((1..100).joinToString(", ") { "t$it" }).size)
+    }
+
+    @Test fun satzstueckeMitSatzzeichenAmEndeFallenWeg() {
+        val prompt = "Projekt X., Wirklich?, Achtung!, Teilnehmer:, siehe oben;, und so weiter…, Anna, Node.js, C++, Dr. Hans Peter"
+        assertEquals(listOf("Anna", "Node.js", "C++", "Dr. Hans Peter"), ElevenLabsStt.keyterms(prompt))
+    }
+
+    @Test fun kappungDesVokabularsVerwirftDasAngeschnitteneStueck() {
+        // Alter Freitext in einer Zeile, laenger als 800 Zeichen: Vocabulary schneidet ihn am Wortende.
+        val legacy = (1..200).joinToString(", ") { "Begriff Nummer $it" }
+        val prompt = com.chris.whisperloom.Vocabulary.prompt(listOf(legacy))
+        assertTrue(prompt.cut)
+        val cutPiece = prompt.text.substringAfterLast(", ")
+        assertTrue(cutPiece, cutPiece.endsWith("…"))
+        val terms = ElevenLabsStt.keyterms(prompt.text)
+        assertTrue(terms.isNotEmpty())
+        // Nur ganze Begriffe — das Stueck am Schnitt kommt weder mit noch ohne "…" an.
+        assertTrue(terms.toString(), terms.all { it.matches(Regex("Begriff Nummer \\d+")) })
+        assertFalse(terms.contains(cutPiece.removeSuffix("…")))
     }
 
     @Test fun erkannteSpracheWirdZuIso6391() {

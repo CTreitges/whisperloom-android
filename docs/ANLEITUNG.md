@@ -504,7 +504,7 @@ Ergibt fünf Begriffe: Christof Treitges, WhisperLoom, SvelteKit, FastAPI, Tails
 
 Mistral und OpenRouter nehmen kein Vokabular entgegen — dort wird es nicht mitgeschickt, und unter der Zeile steht der Hinweis „Dieser Anbieter nimmt kein Vokabular entgegen — es wirkt nur bei anderen Anbietern und offline."
 
-**ElevenLabs** bekommt das Vokabular als Schlüsselbegriffe: jeden mitgeschickten Begriff einzeln (nach der Kappung auf 800 Zeichen). Begriffe mit mehr als fünf Wörtern, ab 50 Zeichen oder mit `< > { } [ ] \` lässt WhisperLoom dort weg. Unter der Zeile steht „Geht als Schlüsselbegriffe an ElevenLabs und hilft bei Eigennamen und Fachwörtern. Vokabular kostet bei ElevenLabs etwa 20 % Aufpreis."
+**ElevenLabs** bekommt das Vokabular als Schlüsselbegriffe: jeden mitgeschickten Begriff einzeln (nach der Kappung auf 800 Zeichen), höchstens 100 — ab 101 rechnet ElevenLabs jede Anfrage mit mindestens 20 Sekunden ab; es bleiben die letzten, also die eigenen. Begriffe mit mehr als fünf Wörtern, ab 50 Zeichen, mit `< > { } [ ] \` oder mit einem Satzzeichen am Ende (Satzstücke aus altem Freitext, auch das bei der Kappung angeschnittene Stück) lässt WhisperLoom dort weg. Unter der Zeile steht „Geht als Schlüsselbegriffe an ElevenLabs und hilft bei Eigennamen und Fachwörtern. Vokabular kostet bei ElevenLabs etwa 20 % Aufpreis."
 
 ---
 
