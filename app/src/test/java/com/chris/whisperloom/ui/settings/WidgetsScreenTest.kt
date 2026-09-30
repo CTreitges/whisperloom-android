@@ -4,6 +4,7 @@ import android.app.Application
 import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.net.Uri
+import android.view.View
 import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivityResultRegistryOwner
@@ -108,6 +109,9 @@ class WidgetsScreenTest {
 
     private fun zeile(id: Int): String =
         shadowOf(AppWidgetManager.getInstance(ctx)).getViewFor(id).findViewById<TextView>(R.id.widget_status).text.toString()
+
+    private fun namensSichtbarkeit(id: Int): Int =
+        shadowOf(AppWidgetManager.getInstance(ctx)).getViewFor(id).findViewById<View>(R.id.widget_name).visibility
 
     /** Was der Photo Picker zurueckgibt — er antwortet sofort, statt eine echte Auswahl zu oeffnen. */
     private var bild: Uri? = null
@@ -495,12 +499,21 @@ class WidgetsScreenTest {
 
     @Test fun derNameUnterDemWidgetLaesstSichAbschalten() {
         val p = store.create("Einkauf")
+        val id = widget()
+        store.bind(id, p.id)
         show()
+        VoiceTaskWidget.refresh(ctx)
+        assertEquals(View.VISIBLE, namensSichtbarkeit(id))
+
         bearbeiten("Einkauf")
         compose.onNodeWithText("Name unter dem Widget anzeigen").assertIsOn()
         click("Name unter dem Widget anzeigen")
         assertFalse(store.get(p.id)!!.showName)
         compose.onNodeWithText("Name unter dem Widget anzeigen").assertIsOff()
+        assertEquals("Sofort auf dem Startbildschirm, ohne Fertig", View.GONE, namensSichtbarkeit(id))
+
+        click("Name unter dem Widget anzeigen")
+        assertEquals(View.VISIBLE, namensSichtbarkeit(id))
     }
 
     // --- Editor: Server ------------------------------------------------------------------

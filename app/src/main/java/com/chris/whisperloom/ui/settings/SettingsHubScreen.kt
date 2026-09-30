@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
@@ -48,6 +49,9 @@ import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.WidgetProfilesState
+
+/** Trenner zwischen zwei Hub-Zeilen — fuer Tests, die pruefen, dass eine Gruppe ohne Trenner endet. */
+const val HUB_DIVIDER_TAG = "hub-divider"
 
 /**
  * E — Einstellungen-Hub (UX-Spec §2.3): Grundlagen, Bedienung, Pro, Info; Supporting = aktueller Wert.
@@ -141,5 +145,10 @@ private fun HubRow(icon: Int, headline: String, value: String, divider: Boolean 
             .clickable(onClick = onClick)
             .semantics(mergeDescendants = true) { stateDescription = value },
     )
-    if (divider) HorizontalDivider(Modifier.padding(start = 76.dp), color = MaterialTheme.colorScheme.outlineVariant)
+    if (divider) {
+        HorizontalDivider(
+            Modifier.padding(start = 76.dp).testTag(HUB_DIVIDER_TAG),
+            color = MaterialTheme.colorScheme.outlineVariant,
+        )
+    }
 }

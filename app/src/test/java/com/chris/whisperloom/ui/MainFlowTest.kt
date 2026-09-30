@@ -19,6 +19,7 @@ import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -38,6 +39,7 @@ import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.RouteRequest
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SystemStatus
+import com.chris.whisperloom.ui.settings.HUB_DIVIDER_TAG
 import com.chris.whisperloom.ui.settings.HelpScreen
 import com.chris.whisperloom.ui.settings.ModelsScreen
 import com.chris.whisperloom.ui.settings.RecognitionScreen
@@ -526,6 +528,20 @@ class MainFlowTest {
         assertEquals("Von oben nach unten: $reihenfolge", oben.sorted(), oben)
         assertEquals("Keine zwei auf einer Hoehe", oben.size, oben.toSet().size)
         compose.onNodeWithText("Version ${BuildConfig.VERSION_NAME}").assertExists()
+    }
+
+    @Test fun dieLetzteZeileJederGruppeHatKeinenTrenner() {
+        prefs.engine = Engine.ONLINE
+        screen(env()) { SettingsHubScreen(it) }
+        val zeilen = listOf(
+            "Erkennung", "Offline-Modelle", "Text", "Knopf & Tastatur", "Widgets", "Erweitert",
+            "Anleitung & Hilfe", "Über WhisperLoom",
+        ).map { it to compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
+        // Jeder Trenner gehoert zur naechsthoeheren Zeile ueber ihm.
+        val mitTrenner = compose.onAllNodesWithTag(HUB_DIVIDER_TAG).fetchSemanticsNodes().map { trenner ->
+            zeilen.filter { it.second < trenner.boundsInRoot.top }.maxBy { it.second }.first
+        }
+        assertEquals(listOf("Erkennung", "Offline-Modelle", "Knopf & Tastatur", "Anleitung & Hilfe"), mitTrenner)
     }
 
     @Test fun dieGruppenSindUeberschriftenInNormalerSchreibung() {
