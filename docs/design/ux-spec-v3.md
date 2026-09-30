@@ -720,8 +720,8 @@ Regeln: bestehende Keys bleiben gültig (mit „(bestehend)" markiert; Text ggf.
 | `common_more` | Mehr |
 | `cd_back` | Zurück |
 | `cd_close` | Schließen |
-| `cd_key_show` | API-Key anzeigen |
-| `cd_key_hide` | API-Key verbergen |
+| `cd_key_show` | %1$s anzeigen (Feld-Label, sonst „API-Key") |
+| `cd_key_hide` | %1$s verbergen (Feld-Label, sonst „API-Key") |
 | `cd_paste` | Aus Zwischenablage einfügen |
 | `cd_open_link` | Link im Browser öffnen |
 | `cd_add_word` | Wort hinzufügen |

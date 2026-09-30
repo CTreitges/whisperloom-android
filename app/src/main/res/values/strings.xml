@@ -21,8 +21,8 @@
     <string name="common_more">Mehr</string>
     <string name="cd_back">Zurück</string>
     <string name="cd_close">Schließen</string>
-    <string name="cd_key_show">API-Key anzeigen</string>
-    <string name="cd_key_hide">API-Key verbergen</string>
+    <string name="cd_key_show">%1$s anzeigen</string>
+    <string name="cd_key_hide">%1$s verbergen</string>
     <string name="cd_paste">Aus Zwischenablage einfügen</string>
     <string name="cd_open_link">Link im Browser öffnen</string>
     <string name="cd_add_word">Wort hinzufügen</string>

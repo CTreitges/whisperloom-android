@@ -26,7 +26,8 @@ import kotlinx.coroutines.delay
 
 /**
  * API-Key-Feld (Spec §2.2 Schritt 2a): maskiert, Auge zum Anzeigen, Einfuegen aus der
- * Zwischenablage; der Key wird nie im Klartext vorgelesen (Passwort-Semantik).
+ * Zwischenablage; der Key wird nie im Klartext vorgelesen (Passwort-Semantik). [label] ersetzt
+ * "API-Key" im Feld und im Bildtext des Auges.
  */
 @Composable
 fun ApiKeyField(
@@ -57,9 +58,11 @@ fun ApiKeyField(
         trailingIcon = {
             Row {
                 IconButton(onClick = { visible = !visible }) {
+                    // Das Auge nennt das Feld beim Namen ("Token anzeigen"); ohne Label ist es der API-Key.
+                    val name = label ?: stringResource(R.string.rec_api_key)
                     LoomIcon(
                         if (visible) R.drawable.ic_visibility_off else R.drawable.ic_visibility,
-                        stringResource(if (visible) R.string.cd_key_hide else R.string.cd_key_show),
+                        stringResource(if (visible) R.string.cd_key_hide else R.string.cd_key_show, name),
                     )
                 }
                 IconButton(onClick = {
