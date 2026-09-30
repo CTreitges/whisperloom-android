@@ -154,6 +154,21 @@ class WidgetConfigActivityTest {
         assertFalse(activity.isFinishing)
     }
 
+    @Test fun einBestandsWidgetZeigtNachDemUpdateBeimNeuKonfigurierenDieAuswahl() {
+        // Lag schon vor den Profilen auf dem Startbildschirm: keine Bindung. Ohne Uebernahme
+        // hielte die Activity das fuer eine Erstplatzierung, baende still und schloesse sich.
+        val id = unseres()
+        assertFalse("Vorbedingung: Bestand ist ungebunden", store.isBound(id))
+
+        VoiceTaskWidget().onReceive(ctx, Intent(Intent.ACTION_MY_PACKAGE_REPLACED))
+        val activity = oeffnen(id)
+
+        compose.onNodeWithText("Welches Profil?").assertExists()
+        compose.onNodeWithText("Neues Profil").assertExists()
+        assertFalse(activity.isFinishing)
+        assertEquals(Activity.RESULT_CANCELED to id, ergebnis(activity))
+    }
+
     @Test fun neuKonfigurierenWaehltDasGebundeneProfilVor() {
         val einkauf = store.create("Einkauf")
         val id = unseres()

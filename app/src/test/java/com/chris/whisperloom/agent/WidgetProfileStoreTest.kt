@@ -171,6 +171,20 @@ class WidgetProfileStoreTest {
         assertFalse(store.isBound(20))
     }
 
+    @Test fun uebernehmenBindetNurUngebundeneAnDasStandardprofil() {
+        val a = store.create("A")
+        store.bind(10, a.id)
+        store.adopt(intArrayOf(10, 11, 12))
+        assertEquals("Eine gewaehlte Bindung bleibt", a.id, store.forWidget(10).id)
+        assertTrue(store.isBound(11))
+        assertEquals(WidgetProfile.DEFAULT_ID, store.forWidget(11).id)
+        assertEquals(WidgetProfile.DEFAULT_ID, store.forWidget(12).id)
+        assertEquals(1, store.boundCount(a.id))
+
+        store.adopt(IntArray(0))
+        assertFalse(store.isBound(13))
+    }
+
     @Test fun behaltenRaeumtVerschwundeneWidgetsWeg() {
         val a = store.create("A")
         store.bind(1, a.id)

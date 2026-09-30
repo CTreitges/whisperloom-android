@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -19,9 +20,24 @@ import com.chris.whisperloom.Prefs
  * nach einem Neustart und nach App-Updates; alles andere kommt von Dienst und Auftrag.
  *
  * Welches Profil eine Instanz zeigt, steht im [WidgetProfileStore]; hier wird die Zuordnung
- * nur mitgefuehrt, wenn Instanzen verschwinden oder nach einer Wiederherstellung neue Ids haben.
+ * nur mitgefuehrt, wenn Instanzen verschwinden, nach einer Wiederherstellung neue Ids haben oder
+ * nach einem App-Update als Bestand uebernommen werden.
  */
 class VoiceTaskWidget : AppWidgetProvider() {
+
+    /**
+     * Zusaetzlich zu den Widget-Broadcasts: `MY_PACKAGE_REPLACED` nach einem App-Update. Widgets,
+     * die schon vor den Profilen lagen, haben keine Bindung — "Neu konfigurieren" hielte sie fuer
+     * eine Erstplatzierung, baende still und schloesse sich. Der Broadcast kommt nie waehrend einer
+     * Platzierung, also ist jede ungebundene Instanz hier Bestand. Idempotent, laeuft bei jedem Update.
+     */
+    override fun onReceive(ctx: Context, intent: Intent) {
+        if (intent.action == Intent.ACTION_MY_PACKAGE_REPLACED) {
+            WidgetProfileStore(ctx).adopt(placedIds(ctx))
+            return
+        }
+        super.onReceive(ctx, intent)
+    }
 
     override fun onUpdate(ctx: Context, manager: AppWidgetManager, ids: IntArray) {
         val (state, message) = resolve(ctx)
@@ -47,10 +63,13 @@ class VoiceTaskWidget : AppWidgetProvider() {
      * Doku `OPTION_APPWIDGET_RESTORE_COMPLETED` setzen (erst ab Android 11 bekannt) und neu
      * zeichnen — Letzteres uebernimmt [onUpdate], das `AppWidgetProvider.onReceive` direkt im
      * Anschluss mit den neuen Ids aufruft. Mit `allowBackup=false` ist das Vorsorge fuer
-     * Launcher, die selbst sichern.
+     * Launcher, die selbst sichern. Ohne mitgesicherte Bindung (die Profil-Datei ist vom Backup
+     * ausgeschlossen) wird das Widget wie ein Bestands-Widget uebernommen ([WidgetProfileStore.adopt]).
      */
     override fun onRestored(ctx: Context, oldIds: IntArray, newIds: IntArray) {
-        WidgetProfileStore(ctx).remap(oldIds, newIds)
+        val store = WidgetProfileStore(ctx)
+        store.remap(oldIds, newIds)
+        store.adopt(newIds)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val manager = AppWidgetManager.getInstance(ctx)
             val done = Bundle().apply { putBoolean(AppWidgetManager.OPTION_APPWIDGET_RESTORE_COMPLETED, true) }

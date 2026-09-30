@@ -44,6 +44,8 @@ import com.chris.whisperloom.ui.theme.WhisperLoomTheme
  * - Erstplatzierung mit nur dem Standardprofil: unsichtbar binden und fertig — es gibt nichts zu
  *   waehlen. Sonst das Sheet "Welches Profil?", beim Neu-Konfigurieren immer, vorgewaehlt ist das
  *   Profil, das die Instanz gerade zeigt.
+ * - "Ungebunden" heisst Erstplatzierung: Widgets, die schon vor den Profilen lagen, bindet
+ *   [VoiceTaskWidget] nach dem App-Update an das Standardprofil ([WidgetProfileStore.adopt]).
  *
  * Context7 (developer.android.com/guide/topics/appwidgets/configuration): die Activity muss
  * RESULT_OK/RESULT_CANCELED mit EXTRA_APPWIDGET_ID liefern, und das System schickt nach der

@@ -32,8 +32,25 @@ class WidgetProfileStore(context: Context) {
         return profiles.firstOrNull { it.id == id } ?: profiles.first()
     }
 
-    /** Wurde diese Instanz schon einmal konfiguriert? Jede Konfiguration schreibt eine Bindung. */
+    /**
+     * Wurde diese Instanz schon einmal konfiguriert? Jede Konfiguration schreibt eine Bindung,
+     * und Bestands-Widgets bekommen ihre ueber [adopt].
+     */
     fun isBound(widgetId: Int): Boolean = sp.contains(bindingKey(widgetId))
+
+    /**
+     * Instanzen ohne Bindung an das Standardprofil binden. Sie zeigen danach dasselbe wie vorher,
+     * gelten aber als konfiguriert: "Neu konfigurieren" zeigt dann die Auswahl, statt sie fuer
+     * eine Erstplatzierung zu halten. Nur fuer Momente, in denen sicher nichts platziert wird
+     * (App-Update, Wiederherstellung). Vorhandene Bindungen bleiben unberuehrt.
+     */
+    fun adopt(widgetIds: IntArray) {
+        val loose = widgetIds.filterNot(::isBound)
+        if (loose.isEmpty()) return
+        val e = sp.edit()
+        loose.forEach { e.putString(bindingKey(it), WidgetProfile.DEFAULT_ID) }
+        e.apply()
+    }
 
     /** Neues Profil mit Defaults hinten anfuegen. */
     fun create(name: String): WidgetProfile {

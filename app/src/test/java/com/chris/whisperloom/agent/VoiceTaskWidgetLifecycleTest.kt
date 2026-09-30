@@ -78,6 +78,34 @@ class VoiceTaskWidgetLifecycleTest {
         assertTrue(shadowOf(manager).getViewFor(neu).contentDescription.startsWith("Einkauf"))
     }
 
+    @Test fun nachDemUpdateWerdenBestandsWidgetsUebernommen() {
+        val einkauf = store.create("Einkauf")
+        val alt = widget()
+        val gewaehlt = widget()
+        store.unbind(intArrayOf(alt, gewaehlt)) // createWidget zeichnet nur, gebunden ist nichts
+        store.bind(gewaehlt, einkauf.id)
+
+        senden(Intent(Intent.ACTION_MY_PACKAGE_REPLACED))
+
+        assertTrue("Bestand gilt danach als konfiguriert", store.isBound(alt))
+        assertEquals(WidgetProfile.DEFAULT_ID, store.forWidget(alt).id)
+        assertEquals("Eine gewaehlte Bindung bleibt", einkauf.id, store.forWidget(gewaehlt).id)
+    }
+
+    @Test fun einWiederhergestelltesWidgetOhneMitgesicherteBindungGiltAlsBestand() {
+        val neu = widget()
+        store.unbind(intArrayOf(neu))
+
+        senden(
+            Intent(AppWidgetManager.ACTION_APPWIDGET_RESTORED)
+                .putExtra(AppWidgetManager.EXTRA_APPWIDGET_OLD_IDS, intArrayOf(7))
+                .putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, intArrayOf(neu)),
+        )
+
+        assertTrue(store.isBound(neu))
+        assertEquals(WidgetProfile.DEFAULT_ID, store.forWidget(neu).id)
+    }
+
     @Test fun abAndroid12ZeichnetEineGroessenaenderungNichtNeu() {
         // Das System waehlt selbst aus der Groessen-Map; ein Neuzeichnen kostete nur Arbeit —
         // und uebermalte mit resolve() einen Zustand, den gerade Dienst oder Worker zeigen.

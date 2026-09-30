@@ -152,13 +152,18 @@
         </activity>
 
         <!-- exported="false": APPWIDGET_UPDATE ist ein geschuetzter System-Broadcast und
-             erreicht den Empfaenger trotzdem (so auch das offizielle Widget-Beispiel). -->
+             erreicht den Empfaenger trotzdem (so auch das offizielle Widget-Beispiel).
+             MY_PACKAGE_REPLACED: nach einem Update die schon liegenden Widgets als Bestand
+             uebernehmen (VoiceTaskWidget.onReceive). -->
         <receiver
             android:name=".agent.VoiceTaskWidget"
             android:exported="false"
             android:label="@string/widget_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"

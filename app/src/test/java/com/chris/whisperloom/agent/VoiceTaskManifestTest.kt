@@ -41,6 +41,12 @@ class VoiceTaskManifestTest {
         assertTrue("exported=\"false\" fehlt", receiver.contains("""android:exported="false""""))
     }
 
+    @Test fun dasWidgetHoertAufDasEigeneUpdate() {
+        // Ohne diesen Filter blieben Widgets von vor den Profilen ungebunden, und ihr erstes
+        // "Neu konfigurieren" schloesse sich unsichtbar.
+        assertTrue(block("receiver", "agent.VoiceTaskWidget").contains("android.intent.action.MY_PACKAGE_REPLACED"))
+    }
+
     @Test fun derAufnahmeDienstIstEinMikrofonDienst() {
         assertTrue(block("service", "agent.VoiceTaskService").contains("""android:foregroundServiceType="microphone""""))
     }
