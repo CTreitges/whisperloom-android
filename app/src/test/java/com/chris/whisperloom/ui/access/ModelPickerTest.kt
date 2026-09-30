@@ -20,6 +20,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.Engine
 import com.chris.whisperloom.ModelCache
 import com.chris.whisperloom.Prefs
+import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.api.ApiAccess
 import com.chris.whisperloom.api.ModelKind
@@ -37,6 +38,7 @@ import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -408,4 +410,26 @@ class ModelPickerTest {
         row("gemma3:4b").assertIsSelected()
         row("qwen3:8b").assertIsNotSelected()
     }
+
+    // --- Ollama Cloud: der Hinweis nennt den Knopf, ohne seinen Namen (der haengt an Pro) ---
+
+    /** Hinweis sichtbar, darunter das Feld "Modell", darunter der Knopf [knopf]. Ohne Key: keine Anfrage. */
+    private fun ollamaCloudHinweisPasstZumKnopf(pro: Boolean, feld: String, knopf: String) {
+        prefs.serverModelsEnabled = pro
+        prefs.llmProviderId = "ollama-cloud"
+        text()
+        val hinweis = ctx.getString(R.string.text_ollama_cloud_note)
+        compose.onNodeWithText(hinweis).assertExists()
+        assertTrue(hinweis.contains("unter dem Feld „Modell“"))
+        val modell = compose.onNodeWithTag(feld).fetchSemanticsNode().boundsInRoot
+        val unten = compose.onNodeWithText(knopf).fetchSemanticsNode().boundsInRoot
+        assertTrue("$knopf steht unter dem Feld „Modell“", unten.top >= modell.bottom)
+        assertEquals(0, hits.get())
+    }
+
+    @Test fun ollamaCloudHinweisStimmtOhnePro() =
+        ollamaCloudHinweisPasstZumKnopf(pro = false, feld = "dropdown:Modell", knopf = "Modelle vom Server laden")
+
+    @Test fun ollamaCloudHinweisStimmtMitPro() =
+        ollamaCloudHinweisPasstZumKnopf(pro = true, feld = "picker:Modell", knopf = "Modelle aktualisieren")
 }

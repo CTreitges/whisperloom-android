@@ -758,9 +758,19 @@ class MainFlowTest {
             compose.onNodeWithText(ctx.getString(it)).assertExists()
         }
         compose.onNodeWithText("Server je Widget", substring = true).assertExists()
+        // 3.8.0: die zweite Freischalt-Funktion unter "Erweitert" steht dort, wo "Erweitert" erklaert wird.
+        compose.onNodeWithText(ctx.getString(R.string.help_widgets_models)).assertExists()
+        assertTrue(ctx.getString(R.string.help_widgets_models).contains("„${ctx.getString(R.string.pro_server_models)}“"))
         compose.onNodeWithText("Anleitung Pro Widgets").performClick()
         compose.waitForIdle()
         assertEquals(Screen.Tutorial(kind = TutorialKind.PRO_WIDGETS), nav.current)
+    }
+
+    @Test fun abschnitt3NenntElevenLabsMitBerechtigungSpeechToText() {
+        screen(env()) { HelpScreen(3, it) }
+        compose.onNodeWithText("ElevenLabs (Scribe)").assertExists()
+        compose.onNodeWithText(ctx.getString(R.string.help_key_elevenlabs)).assertExists()
+        assertTrue(ctx.getString(R.string.help_key_elevenlabs).contains("„Speech to Text“"))
     }
 
     @Test fun abschnitt6FuehrtZuDenWidgets() {

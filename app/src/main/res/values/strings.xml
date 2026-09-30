@@ -335,7 +335,7 @@
     <string name="text_deepseek_warning">Server in China — Datenschutz beachten.</string>
     <string name="text_anthropic_note">OpenAI-Kompatibilitätsschicht — von Anthropic als Test-Werkzeug eingestuft.</string>
     <string name="text_ollama_local_note">Dein eigenes Ollama, z. B. auf einem Homeserver im gleichen WLAN oder per VPN. Dort OLLAMA_HOST=0.0.0.0 setzen, sonst hört Ollama nur lokal. Der Text bleibt in deinem Netz.</string>
-    <string name="text_ollama_cloud_note">Modelle laufen auf ollama.com. Den Key legst du unter ollama.com/settings/keys an. Weitere Modelle holt „Modelle vom Server laden“.</string>
+    <string name="text_ollama_cloud_note">Modelle laufen auf ollama.com. Den Key legst du unter ollama.com/settings/keys an. Weitere Modelle lädt der Knopf unter dem Feld „Modell“ vom Server.</string>
     <string name="text_ollama_url">Server-Adresse</string>
     <string name="text_ollama_url_hint">Adresse deines Ollama-Servers mit Port, meist :11434. http:// nur im eigenen Netz (LAN/VPN).</string>
     <string name="text_ollama_load_models">Modelle vom Server laden</string>
@@ -470,6 +470,7 @@
     <string name="help_widgets_create">Anlegen: Widgets → Pro Widgets → Sprach-Command-Widget. Jedes Widget braucht einen Namen; er steht unter dem Widget und lässt sich ausblenden.</string>
     <string name="help_widgets_server">Server je Widget: Adresse und Token trägst du im Widget ein, „Verbindung prüfen“ testet beides.</string>
     <string name="help_widgets_place">Platzieren: Startbildschirm lange drücken → Widgets → WhisperLoom → „Sprach-Command“, dann das Widget-Profil wählen.</string>
+    <string name="help_widgets_models">Auch unter Erweitert: „Modelle vom Server“ – das Modell wählst du dann aus der aktuellen Liste des Anbieters, nicht nur aus den Empfehlungen.</string>
     <string name="help_widgets_open">Zu den Widgets</string>
     <string name="help_s6_title">Datenschutz</string>
     <string name="help_s6_intro">WhisperLoom speichert keine Aufnahmen, und dein Key bleibt auf dem Gerät.</string>
