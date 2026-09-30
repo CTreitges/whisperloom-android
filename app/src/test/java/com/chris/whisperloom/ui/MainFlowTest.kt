@@ -30,6 +30,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.height
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.BuildConfig
@@ -259,6 +262,7 @@ class MainFlowTest {
 
     @Test fun jederEinrichtungsschrittZeigtSeineIllustration() {
         // Spec §8.2: Illustration statt Icon-Kreis; Zugang (online) = Schluessel, Tastatur = Tutorial-Bild.
+        // Spec §8.3: im Assistenten hoechstens 140 dp hoch.
         prefs.welcomeSeen = true
         prefs.engine = Engine.ONLINE
         var step by mutableIntStateOf(SetupRouter.STEP_ENGINE)
@@ -277,7 +281,9 @@ class MainFlowTest {
         ).forEach { (s, illustration) ->
             step = s
             compose.waitForIdle()
-            bild(illustration.first, illustration.second).assertIsDisplayed()
+            val hoehe = bild(illustration.first, illustration.second).assertIsDisplayed().getUnclippedBoundsInRoot().height
+            // Ohne die 140-dp-Grenze des Assistenten waere das Bild so hoch wie in der Hilfe (168 dp).
+            assertTrue("Schritt $s: Bild $hoehe hoch, erlaubt 140 dp", hoehe <= 140.dp)
         }
     }
 
@@ -566,27 +572,40 @@ class MainFlowTest {
         assertEquals("Von oben nach unten: $reihenfolge", oben.sorted(), oben)
     }
 
+    /** Eine Hilfe-Karte: Titel, Illustration mit Bildtext und der Kurztext direkt darunter. */
+    private data class HilfeKarte(val titel: String, val bild: Int, val bildtext: Int, val kurztext: Int)
+
     @Test fun jederHilfeAbschnittBeginntMitSeinerIllustration() {
         screen(env()) { HelpScreen(1, it) }
-        val bilder = listOf(
-            Triple("So funktioniert's", R.drawable.ill_tutorial_button, R.string.tutorial_img_button),
-            Triple("Einrichtung Schritt für Schritt", R.drawable.ill_help_setup, R.string.img_help_setup),
-            Triple("API-Key bekommen", R.drawable.ill_help_key, R.string.img_help_key),
-            Triple("Eigener Server", R.drawable.ill_agent_server, R.string.img_agent_server),
-            Triple("Offline-Modus", R.drawable.ill_help_offline, R.string.img_help_offline),
-            Triple("Widgets & Pro Widgets", R.drawable.ill_pro_widgets, R.string.img_pro_widgets),
-            Triple("Datenschutz", R.drawable.ill_help_privacy, R.string.img_help_privacy),
-            Triple("Wenn etwas nicht klappt", R.drawable.ill_help_trouble, R.string.img_help_trouble),
+        val karten = listOf(
+            HilfeKarte("So funktioniert's", R.drawable.ill_tutorial_button, R.string.tutorial_img_button, R.string.help_s1_intro),
+            HilfeKarte("Einrichtung Schritt für Schritt", R.drawable.ill_help_setup, R.string.img_help_setup, R.string.help_s2_intro),
+            HilfeKarte("API-Key bekommen", R.drawable.ill_help_key, R.string.img_help_key, R.string.help_s3_intro),
+            HilfeKarte("Eigener Server", R.drawable.ill_agent_server, R.string.img_agent_server, R.string.help_s4_intro),
+            HilfeKarte("Offline-Modus", R.drawable.ill_help_offline, R.string.img_help_offline, R.string.help_s5_body),
+            HilfeKarte("Widgets & Pro Widgets", R.drawable.ill_pro_widgets, R.string.img_pro_widgets, R.string.help_widgets_intro),
+            HilfeKarte("Datenschutz", R.drawable.ill_help_privacy, R.string.img_help_privacy, R.string.help_s6_intro),
+            HilfeKarte("Wenn etwas nicht klappt", R.drawable.ill_help_trouble, R.string.img_help_trouble, R.string.help_s7_intro),
         )
-        // Abschnitt 1 ist offen, alle anderen zu: nur sein Bild ist da.
-        bilder.first().let { (_, image, text) -> bild(image, text).assertExists() }
-        bilder.drop(1).forEach { (_, _, text) -> bildtext(text).assertDoesNotExist() }
-        bilder.drop(1).forEach { (titel, image, text) ->
-            compose.onNodeWithText(titel).performClick()
+        // Der Kurztext traegt Inhalt, der beim Kuerzen aus den Details dorthin gewandert ist
+        // (z. B. Datenschutz: "speichert keine Aufnahmen") — er muss unter dem Bild stehen.
+        fun beginntMitBildUndKurztext(k: HilfeKarte) {
+            val bild = bild(k.bild, k.bildtext).assertExists().fetchSemanticsNode().boundsInRoot
+            val kurz = compose.onNodeWithText(ctx.getString(k.kurztext)).assertExists().fetchSemanticsNode().boundsInRoot
+            assertTrue("${k.titel}: Kurztext steht unter dem Bild", kurz.top >= bild.bottom)
+        }
+        // Abschnitt 1 ist offen, alle anderen zu: nur sein Bild und sein Kurztext sind da.
+        beginntMitBildUndKurztext(karten.first())
+        karten.drop(1).forEach { k ->
+            bildtext(k.bildtext).assertDoesNotExist()
+            compose.onNodeWithText(ctx.getString(k.kurztext)).assertDoesNotExist()
+        }
+        karten.drop(1).forEach { k ->
+            compose.onNodeWithText(k.titel).performClick()
             compose.waitForIdle()
-            bild(image, text).assertExists()
+            beginntMitBildUndKurztext(k)
             // Wieder zu, sonst faellt der Rest aus dem Sichtbereich der LazyColumn.
-            compose.onNodeWithText(titel).performClick()
+            compose.onNodeWithText(k.titel).performClick()
             compose.waitForIdle()
         }
     }
@@ -597,6 +616,11 @@ class MainFlowTest {
         bildtext(R.string.img_help_offline).assertDoesNotExist()
         bildtext(R.string.img_help_privacy).assertDoesNotExist()
         compose.onNodeWithText("Freischalten: Einstellungen → Erweitert → Pro Widgets.").assertExists()
+        // Spec §8.3: anlegen (Name), Server je Widget, platzieren (Widget-Profil) — jede Zeile ist Pflicht.
+        listOf(R.string.help_widgets_create, R.string.help_widgets_server, R.string.help_widgets_place).forEach {
+            compose.onNodeWithText(ctx.getString(it)).assertExists()
+        }
+        compose.onNodeWithText("Server je Widget", substring = true).assertExists()
         compose.onNodeWithText("Anleitung Pro Widgets").performClick()
         compose.waitForIdle()
         assertEquals(Screen.Tutorial(kind = TutorialKind.PRO_WIDGETS), nav.current)

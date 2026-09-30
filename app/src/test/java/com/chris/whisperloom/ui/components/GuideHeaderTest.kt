@@ -5,12 +5,16 @@ import androidx.activity.ComponentActivity
 import androidx.annotation.DrawableRes
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.height
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.R
 import com.chris.whisperloom.ui.theme.WhisperLoomTheme
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -41,6 +45,16 @@ class GuideHeaderTest {
         }
         compose.onNode(hasIllustration(R.drawable.ill_pro_features, ctx.getString(R.string.img_pro_features))).assertIsDisplayed()
         compose.onNodeWithText("Kurztext").assertIsDisplayed()
+    }
+
+    @Test fun dieIllustrationIstHoechstens168DpHoch() {
+        // Spec §8.1: 320x240 auf 411 dp Breite waere gut 300 dp hoch — die Grenze haelt es bei 168 dp.
+        compose.setContent {
+            WhisperLoomTheme { GuideHeader(R.drawable.ill_pro_features, R.string.img_pro_features) }
+        }
+        val hoehe = compose.onNode(hasIllustration(R.drawable.ill_pro_features, ctx.getString(R.string.img_pro_features)))
+            .assertIsDisplayed().getUnclippedBoundsInRoot().height
+        assertTrue("Bild $hoehe hoch, erlaubt 168 dp", hoehe <= 168.dp)
     }
 
     @Test fun einAnderesDrawableFaelltAuf() {
