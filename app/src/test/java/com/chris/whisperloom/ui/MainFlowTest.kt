@@ -166,6 +166,38 @@ class MainFlowTest {
         compose.onNodeWithText("Pflicht-Berechtigung fehlt").assertExists()
     }
 
+    /** Emulator-Befund 3.8.0: ElevenLabs + "wie Erkennung" zeigte "Glätten · " mit leerem Modell. */
+    @Test fun homeTextZeileSagtKeineTextverbesserungStattLeeremModell() {
+        prefs.engine = Engine.ONLINE
+        prefs.sttProviderId = "elevenlabs"
+        prefs.apiKey = "xi"
+        prefs.refineMode = RefineMode.POLISH
+        prefs.tutorialSeen = true
+        screen(env(readyStatus)) { HomeScreen(it) }
+        compose.onNodeWithText("Glätten · ElevenLabs bietet keine Textverbesserung").assertExists()
+        compose.onNodeWithText("Glätten · ").assertDoesNotExist()
+    }
+
+    private fun homeMitTogether(model: String) {
+        prefs.engine = Engine.ONLINE
+        prefs.sttProviderId = "together"
+        prefs.apiKey = "tg"
+        prefs.llmModel = model
+        prefs.refineMode = RefineMode.POLISH
+        prefs.tutorialSeen = true
+        screen(env(readyStatus)) { HomeScreen(it) }
+    }
+
+    @Test fun homeTextZeileBeiTogetherOhneModell() {
+        homeMitTogether("")
+        compose.onNodeWithText("Glätten · kein Textmodell eingetragen").assertExists()
+    }
+
+    @Test fun homeTextZeileBeiTogetherMitEingetipptemModell() {
+        homeMitTogether("meta-llama/Llama-3.3-70B-Instruct-Turbo")
+        compose.onNodeWithText("Glätten · meta-llama/Llama-3.3-70B-Instruct-Turbo").assertExists()
+    }
+
     // --- Tutorial (T) ------------------------------------------------------------
 
     @Test fun routerZeigtTutorialEinmalWennEingerichtet() {

@@ -92,6 +92,8 @@
     <string name="home_val_offline_missing">Offline · kein Modell geladen</string>
     <string name="home_val_refine_off">Aus</string>
     <string name="home_val_refine">%1$s · %2$s</string>
+    <string name="home_val_refine_no_llm">%1$s · %2$s bietet keine Textverbesserung</string>
+    <string name="home_val_refine_no_model">%1$s · kein Textmodell eingetragen</string>
     <string name="home_val_perms_ok">Mikrofon ✓ · Über Apps ✓ · Bedienungshilfe ✓</string>
     <string name="home_val_perms_a11y_missing">Mikrofon ✓ · Über Apps ✓ · Bedienungshilfe ✗ (Zwischenablage)</string>
     <string name="home_val_perms_missing">Pflicht-Berechtigung fehlt</string>

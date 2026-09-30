@@ -48,6 +48,7 @@ import com.chris.whisperloom.BuildConfig
 import com.chris.whisperloom.Engine
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.api.RefineBlock
 import com.chris.whisperloom.overlay.BubbleAnimators
 import com.chris.whisperloom.ui.components.HeroLabelStyle
 import com.chris.whisperloom.ui.components.HeroShape
@@ -300,8 +301,16 @@ private fun StatusCard(nav: NavState, modelInstalled: Boolean) {
         }
         null -> stringResource(R.string.setup_chip_open)
     }
-    val refineText = if (prefs.refineMode == RefineMode.OFF) stringResource(R.string.home_val_refine_off)
-    else stringResource(R.string.home_val_refine, levelLabel(prefs.refineMode), modelLabel(prefs.llmAccess()))
+    val llm = prefs.llmAccess()
+    // Gleiches Kriterium wie TextRefiner: ElevenLabs "wie Erkennung" hat keinen Chat, Together/
+    // DeepInfra ohne eingetragenes Modell auch nicht — sonst stuende hier "Glaetten · " ohne Modell.
+    val refineText = when {
+        prefs.refineMode == RefineMode.OFF -> stringResource(R.string.home_val_refine_off)
+        llm.refineBlock == RefineBlock.NO_CHAT ->
+            stringResource(R.string.home_val_refine_no_llm, levelLabel(prefs.refineMode), providerShortName(llm.provider))
+        llm.refineBlock == RefineBlock.NO_MODEL -> stringResource(R.string.home_val_refine_no_model, levelLabel(prefs.refineMode))
+        else -> stringResource(R.string.home_val_refine, levelLabel(prefs.refineMode), modelLabel(llm))
+    }
     val permTone = HomeStatus.permissionsTone(status.micGranted, status.canDrawOverlays, status.a11yRunning)
     val permText = when (permTone) {
         Tone.SUCCESS -> stringResource(R.string.home_val_perms_ok)
@@ -327,7 +336,7 @@ private fun StatusCard(nav: NavState, modelInstalled: Boolean) {
         StatusRow(stringResource(R.string.home_row_recognition), recognitionText, HomeStatus.recognitionTone(prefs.engine, modelInstalled)) {
             nav.push(Screen.Recognition)
         }
-        StatusRow(stringResource(R.string.home_row_refine), refineText, Tone.NEUTRAL, R.drawable.ic_auto_fix_high) {
+        StatusRow(stringResource(R.string.home_row_refine), refineText, HomeStatus.refineTone(prefs.refineMode, llm.refineBlock), R.drawable.ic_auto_fix_high) {
             nav.push(Screen.TextSettings)
         }
         StatusRow(stringResource(R.string.home_row_permissions), permText, permTone) { nav.push(Screen.ButtonKeyboard) }
