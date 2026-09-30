@@ -2,7 +2,9 @@ package com.chris.whisperloom.agent
 
 import com.chris.whisperloom.agent.AutoStopDetector.Decision
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlin.random.Random
 
 /**
  * Der Auto-Stopp-Detektor, reine JVM. Ein Verlauf ist eine Folge von Puffern (Zeit, Peak); die
@@ -132,9 +134,45 @@ class AutoStopDetectorTest {
     @Test fun digitaleNullenFrierenDenBodenNichtEin() {
         // Viele Mikrofone liefern beim Anlaufen reine Nullen. Ohne Untergrenze bliebe der Boden
         // danach 0 (er steigt multiplikativ) — ein Dauerbrummen wuerde nie zum Hintergrund und
-        // die Aufnahme endete nur per Tipp oder Notbremse.
+        // die Aufnahme endete nur per Tipp oder Notbremse (hier: CONTINUE bis zum Schluss).
         val frames = verlauf(20_000) { t -> if (t < 500) 0f else 0.08f }
-        assertEquals(Decision.SPEECH_ENDED, ersteEntscheidung(AutoStopDetector(), frames).first)
+        assertEquals(Decision.NO_SPEECH to AutoStopDetector.NO_SPEECH_MS, ersteEntscheidung(AutoStopDetector(), frames))
+    }
+
+    // --- Regression: Dauerlaerm ist keine Sprache ------------------------------
+
+    @Test fun dauerrauschenOhneSpracheIstNichtsGehoert() {
+        // Auto, Strasse, Luefter: gleich ab dem ersten Puffer ueber der Schwelle und lange laut —
+        // der Abschnitt endet aber nur, weil der Boden ihn einholt. Gesendet werden darf das nie.
+        listOf(0.05f, 0.08f, 0.12f, 0.2f).forEach { pegel ->
+            val frames = verlauf(12_000) { pegel }
+            assertEquals("Pegel $pegel", Decision.NO_SPEECH to AutoStopDetector.NO_SPEECH_MS, ersteEntscheidung(AutoStopDetector(), frames))
+        }
+    }
+
+    @Test fun schwankendesRauschenOhneSpracheIstNichtsGehoert() {
+        val zufall = Random(42)
+        val frames = verlauf(12_000) { 0.06f + 0.04f * zufall.nextFloat() }
+        assertEquals(Decision.NO_SPEECH to AutoStopDetector.NO_SPEECH_MS, ersteEntscheidung(AutoStopDetector(), frames))
+    }
+
+    @Test fun lautesBrummenOhneSpracheIstNichtsGehoert() {
+        // 0,4 bleibt bis ~7,4 s laut, 1,0 bis ~10 s: bewertet wird erst am Ende des Abschnitts.
+        assertEquals(
+            Decision.NO_SPEECH to AutoStopDetector.NO_SPEECH_MS,
+            ersteEntscheidung(AutoStopDetector(), verlauf(12_000) { 0.4f }),
+        )
+        val (e, at) = ersteEntscheidung(AutoStopDetector(), verlauf(15_000) { 1f })
+        assertEquals(Decision.NO_SPEECH, e)
+        assertTrue("erst nach dem lauten Abschnitt: $at", at > AutoStopDetector.NO_SPEECH_MS)
+    }
+
+    @Test fun spracheNachDemDauerrauschenWirdErkannt() {
+        // Dauerrauschen 0,08 ab dem Start, gesprochen wird erst ab 4 s: drei Worte mit kurzen
+        // Luecken bis 5,4 s. Der Rauschabschnitt davor zaehlt nicht, die Worte schon.
+        val worte = listOf(4_000L until 4_400L, 4_500L until 4_900L, 5_000L until 5_400L)
+        val frames = verlauf(14_000) { t -> if (worte.any { t in it }) 0.4f else 0.08f }
+        assertEquals(Decision.SPEECH_ENDED to 7_400L, ersteEntscheidung(AutoStopDetector(), frames))
     }
 
     @Test fun derBodenFaelltSofortUndSteigtGebremst() {

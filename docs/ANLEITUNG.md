@@ -805,7 +805,7 @@ Es kam nichts am Mikrofon an — etwa weil eine andere App es belegt (Telefonat,
 Der zweite Tipp kam zu schnell. Unter einer knappen Sekunde ist es ein Fehlgriff, kein Auftrag.
 
 **„Nichts gehört — tippen für erneuten Versuch"**
-Nur mit Auto-Stopp: Das Widget hat 8 Sekunden lang keine Sprache erkannt und die Aufnahme verworfen — gesendet wurde nichts. Ein Tipp startet eine neue Aufnahme. Passiert das oft, obwohl du sprichst, sprich näher ans Telefon oder schalte Auto-Stopp für dieses Profil aus.
+Nur mit Auto-Stopp: Das Widget hat 8 Sekunden lang keine Sprache erkannt und die Aufnahme verworfen — gesendet wurde nichts. Gleichmäßiger Lärm (Auto, Lüfter, Brummen) zählt dabei nicht als Sprache. Ein Tipp startet eine neue Aufnahme. Passiert das oft, obwohl du sprichst — etwa in lauter Umgebung —, sprich näher ans Telefon oder schalte Auto-Stopp für dieses Profil aus.
 
 **Das Widget lässt sich nicht hinzufügen**
 Beim Hinzufügen erscheint „Welches Profil?", und du hast die Frage weggewischt — dann legt der Startbildschirm das Widget nicht ab. Einfach noch einmal hinziehen und ein Profil antippen.

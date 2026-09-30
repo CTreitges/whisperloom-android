@@ -15,13 +15,16 @@ import kotlin.math.pow
  *   Puffern gelernt — wer gleich losspricht, wuerde sonst selbst zum Boden und verloere das Diktat.
  * - Laut ist ein Puffer ueber `on = max(minThreshold, factor * Boden)`. Innerhalb eines lauten
  *   Abschnitts reicht `off = hysteresis * on`, damit leisere Silbenenden ihn nicht zerhacken.
- * - Sprache gilt als erkannt, sobald ein lauter Abschnitt [speechConfirmMs] durchhaelt — ein
- *   Klick oder Klopfen reicht dafuer nicht.
+ * - Sprache gilt als erkannt, wenn ein lauter Abschnitt mindestens [speechConfirmMs] dauert UND
+ *   mit einem echten Pegelabfall endet: der erste leise Puffer liegt unter [speechDrop] mal dem
+ *   lautesten Puffer des Abschnitts. Ein Klick oder Klopfen ist zu kurz. Gleichbleibender Laerm
+ *   (Auto, Luefter, Brummen) ist zwar lang laut, sein Abschnitt endet aber nur, weil der
+ *   steigende Boden ihn einholt — der Pegel faellt dabei nicht, also ist es keine Sprache.
  * - [Decision.SPEECH_ENDED]: nach erkannter Sprache [pauseMs] lang leise, fruehestens nach
  *   [minRecordingMs].
  * - [Decision.NO_SPEECH]: bis [noSpeechMs] keine Sprache erkannt. Laeuft gerade ein lauter
  *   Abschnitt, wird er erst zu Ende bewertet — wer kurz vor Ablauf losspricht, wird nicht
- *   abgeschnitten.
+ *   abgeschnitten; sehr lautes Dauerbrummen endet so erst etwas nach [noSpeechMs].
  *
  * Die erste Entscheidung ausser [Decision.CONTINUE] rastet ein. Nicht threadsicher: ein Detektor
  * gehoert genau einer Aufnahme und wird nur von ihrem Aufnahme-Thread gefuettert.
@@ -35,6 +38,7 @@ class AutoStopDetector(
     private val factor: Float = FACTOR,
     private val hysteresis: Float = HYSTERESIS,
     private val speechConfirmMs: Long = SPEECH_CONFIRM_MS,
+    private val speechDrop: Float = SPEECH_DROP,
     private val minRecordingMs: Long = MIN_RECORDING_MS,
     private val noSpeechMs: Long = NO_SPEECH_MS,
 ) {
@@ -54,6 +58,10 @@ class AutoStopDetector(
     private var loud = false
     private var loudSince = 0L
     private var quietSince = 0L
+
+    /** Lautester Puffer und "lang genug" des laufenden lauten Abschnitts. */
+    private var sectionPeak = 0f
+    private var sectionLong = false
     private var speech = false
     private var decision = Decision.CONTINUE
 
@@ -66,10 +74,21 @@ class AutoStopDetector(
 
         val on = max(minThreshold, factor * floor)
         val nowLoud = if (loud) peak >= hysteresis * on else peak > on
-        if (nowLoud && !loud) loudSince = atMs
-        if (!nowLoud && loud) quietSince = atMs
+        if (nowLoud && !loud) {
+            loudSince = atMs
+            sectionPeak = 0f
+            sectionLong = false
+        }
+        if (nowLoud) {
+            sectionPeak = max(sectionPeak, peak)
+            if (atMs - loudSince >= speechConfirmMs) sectionLong = true
+        }
+        if (!nowLoud && loud) {
+            quietSince = atMs
+            // Faellt der Pegel nicht, hat nur der steigende Boden aufgeholt: Dauerlaerm.
+            if (sectionLong && peak < speechDrop * sectionPeak) speech = true
+        }
         loud = nowLoud
-        if (loud && atMs - loudSince >= speechConfirmMs) speech = true
 
         decision = when {
             speech && !loud && atMs - quietSince >= pauseMs && atMs >= minRecordingMs -> Decision.SPEECH_ENDED
@@ -87,6 +106,9 @@ class AutoStopDetector(
         const val FACTOR = 3f
         const val HYSTERESIS = 0.7f
         const val SPEECH_CONFIRM_MS = 250L
+
+        /** Sprache endet mit einem Abfall um mindestens 6 dB unter den lautesten Puffer. */
+        const val SPEECH_DROP = 0.5f
         const val MIN_RECORDING_MS = 1_500L
         const val NO_SPEECH_MS = 8_000L
     }
