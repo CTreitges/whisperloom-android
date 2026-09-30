@@ -381,6 +381,23 @@ class VoiceTaskServiceTest {
         assertEquals(1, eingereiht)
     }
 
+    @Test fun einSpaetesNichtsGehoertUebermaltDenAuftragNicht() {
+        // "Keine Sprache" ist schon entschieden und eingereiht, da kommt der STOP-Tipp: der Auftrag
+        // ist unterwegs. Liefe die spaete Entscheidung noch, stuende das Widget auf Fehler — und
+        // der naechste Tipp schickte denselben Auftrag ein zweites Mal.
+        profil(autoStop = true)
+        VoiceTaskService.detectorFactory = { AutoStopDetector(speechConfirmMs = Long.MAX_VALUE / 2, noSpeechMs = 0) }
+        tonDannStille()
+        val s = dienst()
+        starten(s)
+        ShadowSystemClock.advanceBy(Duration.ofSeconds(4))
+        senden(s, VoiceTaskService.ACTION_STOP)
+
+        assertEquals(VoiceTaskState.WORKING, store.state)
+        assertEquals("", store.message)
+        assertEquals(1, eingereiht)
+    }
+
     @Test fun dieSprechpauseKommtAusDemProfil() {
         SpeechPause.entries.forEach { pause ->
             val d = echteFabrik(WidgetProfile("x", autoStop = true, pause = pause))
