@@ -2,6 +2,23 @@
 
 Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [3.7.1] — 2026-09-30
+
+### Hinzugefügt
+
+- **Pro Widgets.** Einstellungen → **Erweitert** schaltet jetzt die Pro-Funktionen frei: **Pro Widgets** (vorher „Sprachauftrag“) und die Stufe „Prompt“. Mit Pro Widgets bekommt das Widget-Menü einen eigenen Tab **Pro Widgets**. Dort legst du **Sprach-Command-Widgets** an. Der Tab „Widgets“ ist für normale Widgets vorgesehen, die mit einem späteren Update kommen.
+- **Server je Widget.** Server-Adresse, Token und „Verbindung prüfen“ stehen direkt im Editor des jeweiligen Widgets, ein eigenes Server-Menü gibt es nicht mehr. Jedes Widget kann an einen anderen Server senden. Jeder Auftrag merkt sich sein Widget, und ein gelöschtes Widget sendet nichts mehr. Bestehende Widgets übernehmen beim Update den bisherigen Server.
+- **Name unter dem Widget.** Jedes Widget hat einen Pflichtnamen, der wie bei App-Symbolen unter der Kachel steht, in jeder Größe. Pro Widget lässt er sich ausblenden.
+- **Zustand „Server fehlt“.** Ein Widget ohne gültigen Server sagt das selbst, und ein Tipp öffnet direkt seinen Editor. Bei ausgeschalteten Pro Widgets führt der Tipp nach „Erweitert“.
+- **Bebilderte Anleitungen.** Hilfe, Einrichtungsassistent, Tutorials, „Erweitert“ und das Widget-Menü zeigen oben eine eigene Illustration und darunter kurze Texte. Neu sind der Hilfe-Abschnitt **Widgets & Pro Widgets** und das Tutorial **Pro Widgets** mit 6 Seiten.
+
+### Geändert
+
+- **Einstellungen neu sortiert** in die Gruppen **Grundlagen** (Erkennung, Offline-Modelle, Text), **Bedienung** (Knopf & Tastatur, Widgets), **Pro** (Erweitert) und **Info** (Anleitung & Hilfe, Über).
+- **Widget heißt „Sprach-Command“** in der Widget-Auswahl, im Benachrichtigungskanal und bei TalkBack.
+- **Anleitungstexte gekürzt**, der Inhalt bleibt erhalten.
+- **Offener Auftrag** lässt sich auch bei ausgeschalteten Pro Widgets unter „Erweitert“ verwerfen.
+
 ## [3.7.0] — 2026-09-30
 
 ### Hinzugefügt

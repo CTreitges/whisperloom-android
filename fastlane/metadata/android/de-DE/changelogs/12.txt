@@ -1,0 +1,6 @@
+WhisperLoom 3.7.1
+• Pro Widgets: in „Erweitert“ freischalten, eigener Tab im Widget-Menü für Sprach-Command-Widgets
+• Server-Adresse und Token direkt im Widget – jedes Widget kann an einen eigenen Server senden
+• Name steht unter dem Widget, pro Widget ausblendbar
+• Einstellungen neu sortiert: Grundlagen, Bedienung, Pro, Info
+• Alle Anleitungen kürzer und bebildert
