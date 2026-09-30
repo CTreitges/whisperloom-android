@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.chris.whisperloom.R
 import com.chris.whisperloom.agent.VoiceTaskWidget
 import com.chris.whisperloom.agent.WidgetProfile
 import com.chris.whisperloom.agent.WidgetProfileStore
@@ -35,6 +36,18 @@ class WidgetProfilesState(context: Context) {
     fun boundCount(profileId: String): Int = store.boundCount(profileId)
 
     fun create(name: String): WidgetProfile = store.create(name).also { changed(redraw = false) }
+
+    /**
+     * "Neues Profil": heisst "Profil n" mit der kleinsten freien Nummer ab 2 (das Standardprofil
+     * ist die 1). Aus der Anzahl gebildet, entstuende nach dem Loeschen ein Doppelname — zwei
+     * gleiche Eintraege mit gleichem Symbol, auch fuer TalkBack nicht zu unterscheiden.
+     */
+    fun createNew(): WidgetProfile {
+        val name = generateSequence(2) { it + 1 }
+            .map { app.getString(R.string.widget_profile_default_name, it) }
+            .first { n -> profiles.none { it.name == n } }
+        return create(name)
+    }
 
     /**
      * Speichern. [redraw] = false fuer Tastendruecke im Namensfeld: der Name steht sofort im

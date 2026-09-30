@@ -64,7 +64,6 @@ fun WidgetsScreen(nav: NavState) {
     val widgets = remember { WidgetProfilesState(ctx) }
     var editing by rememberSaveable { mutableStateOf<String?>(null) }
     var picking by rememberSaveable { mutableStateOf<Int?>(null) }
-    val newName = stringResource(R.string.widget_profile_default_name, widgets.profiles.size + 1)
 
     // Widgets kommen auf dem Startbildschirm dazu oder verschwinden, waehrend die App im Hintergrund ist.
     LifecycleResumeEffect(widgets) {
@@ -95,7 +94,7 @@ fun WidgetsScreen(nav: NavState) {
                 LoomRow(
                     headline = stringResource(R.string.widgets_add_profile),
                     leading = { LoomIcon(R.drawable.ic_add, null, Modifier.size(24.dp), MaterialTheme.colorScheme.primary) },
-                    onClick = { editing = widgets.create(newName).id },
+                    onClick = { editing = widgets.createNew().id },
                 )
             }
 

@@ -98,6 +98,18 @@ class WidgetProfilesStateTest {
         assertEquals(1, s.boundCount(p.id))
     }
 
+    @Test fun einNeuesProfilBekommtDieKleinsteFreieNummer() {
+        val s = WidgetProfilesState(ctx)
+        val zwei = s.createNew()
+        val drei = s.createNew()
+        assertEquals(listOf("Profil 2", "Profil 3"), listOf(zwei.name, drei.name))
+
+        s.delete(zwei.id)
+        assertEquals("Die Luecke wird gefuellt", "Profil 2", s.createNew().name)
+        assertEquals("Kein Doppelname", s.profiles.size, s.profiles.map { it.name }.toSet().size)
+        assertEquals("Profil 4", s.createNew().name)
+    }
+
     @Test fun neuLesenRaeumtFotosAbgebrochenerImporteWeg() {
         val store = WidgetProfileStore(ctx)
         val ordner = File(ctx.filesDir, WidgetPhoto.DIR).apply { mkdirs() }

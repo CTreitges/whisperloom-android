@@ -99,7 +99,6 @@ private fun ProfileChoice(preselected: String, onPick: (String) -> Unit, onCance
     val widgets = remember { WidgetProfilesState(ctx) }
     var selected by rememberSaveable { mutableStateOf(preselected) }
     var editing by rememberSaveable { mutableStateOf<String?>(null) }
-    val newName = stringResource(R.string.widget_profile_default_name, widgets.profiles.size + 1)
 
     val editId = editing
     if (editId == null) {
@@ -108,7 +107,7 @@ private fun ProfileChoice(preselected: String, onPick: (String) -> Unit, onCance
             LoomRow(
                 headline = stringResource(R.string.widgets_add_profile),
                 leading = { LoomIcon(R.drawable.ic_add, null, Modifier.size(24.dp), MaterialTheme.colorScheme.primary) },
-                onClick = { editing = widgets.create(newName).id },
+                onClick = { editing = widgets.createNew().id },
             )
         }
     } else {
