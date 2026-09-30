@@ -149,4 +149,47 @@ class AccessResolverTest {
         assertEquals(600_000, l.readTimeoutMs)
         assertTrue(l.provider.isCustom)
     }
+
+    // --- Server-Modelle (Flags aus dem Cache bzw. Heuristik) ----------------------------
+
+    /** Merkt sich die Anfragen; liefert fuer jede ID ein Modell mit den gegebenen Flags. */
+    private class FakeLookup(private val model: (String) -> RemoteModel?) : ServerModelLookup {
+        val asked = mutableListOf<String>()
+        override fun find(providerId: String, kind: ModelKind, baseUrl: String, id: String): RemoteModel? {
+            asked += "$providerId|${kind.key}|$baseUrl|$id"
+            return model(id)
+        }
+    }
+
+    @Test fun gespeichertesServerModellBekommtFlagsAusDemCache() {
+        val lookup = FakeLookup { RemoteModel(it, label = "OpenAI: GPT-6.1 Sol", temperatureSupported = false) }
+        val l = AccessResolver.resolveLlm(stt, "openrouter", "", "or-key", "openai/gpt-6.1-sol", lookup)
+        assertEquals(listOf("openrouter|llm|https://openrouter.ai/api/v1|openai/gpt-6.1-sol"), lookup.asked)
+        assertFalse(l.modelOption!!.temperatureSupported)
+        assertEquals("OpenAI: GPT-6.1 Sol", l.modelOption!!.label)
+        assertNull(ChatPayload.sampling(l).temperature)
+    }
+
+    @Test fun sameFragtDenCacheMitDemErkennungsZugang() {
+        val lookup = FakeLookup { null }
+        AccessResolver.resolveLlm(stt, "same", "", "", "gpt-6-astra", lookup)
+        assertEquals(listOf("openai|llm|https://api.openai.com/v1|gpt-6-astra"), lookup.asked)
+    }
+
+    @Test fun katalogTrefferFragtDenCacheNicht() {
+        val lookup = FakeLookup { error("darf nicht gefragt werden") }
+        AccessResolver.resolveStt("openai", "", "k", "gpt-transcribe", 0, lookup)
+        AccessResolver.resolveLlm(stt, "same", "", "", "gpt-4o-mini", lookup)
+        AccessResolver.resolveStt("custom", "http://h/v1", "", "", 0, lookup)
+        assertTrue(lookup.asked.isEmpty())
+    }
+
+    @Test fun erkennungsModellVomServerMitHeuristik() {
+        val lookup = FakeLookup { RemoteModel(it) }
+        val a = AccessResolver.resolveStt("openai", "", "k", "gpt-transcribe-2026-08-01", 0, lookup)
+        assertEquals(listOf("openai|stt|https://api.openai.com/v1|gpt-transcribe-2026-08-01"), lookup.asked)
+        assertEquals("languages[]", a.modelOption!!.languageField)
+        // Ohne Cache (frei getippt) greift dieselbe Ableitung.
+        assertEquals("languages[]", AccessResolver.resolveStt("openai", "", "k", "gpt-transcribe-2026-08-01").modelOption!!.languageField)
+    }
 }

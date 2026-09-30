@@ -240,7 +240,7 @@ fun LlmAccessSection(snack: SnackController) {
     if (showCustomModel) {
         CustomModelSheet(
             placeholder = stringResource(R.string.text_llm_model_placeholder),
-            initial = if (llm.modelOption == null) llm.model else "",
+            initial = if (provider.llmModel(llm.model) == null) llm.model else "",
             onApply = { prefs.llmModel = it },
             onDismiss = { showCustomModel = false },
         )

@@ -55,7 +55,7 @@ class ModelCacheTest {
 
     private val models = listOf(
         RemoteModel("openai/gpt-6.1-sol", label = "OpenAI: GPT-6.1 Sol", note = "Auslauf 2027-01-01", temperatureSupported = false),
-        RemoteModel("mistralai/mistral-small-2603", temperatureSupported = true, reasoningEffort = "none"),
+        RemoteModel("mistralai/mistral-medium-3-5", temperatureSupported = true, reasoningEffort = "none"),
         RemoteModel("x/ohne-flags"),
     )
 
@@ -109,6 +109,35 @@ class ModelCacheTest {
         assertNull(cache.get(stt("groq"), ModelKind.STT))
         sp.edit().putString(ModelCache.key("groq", ModelKind.STT, "https://api.groq.com/openai/v1"), """{"fetchedAt":1}""").commit()
         assertNull(cache.get(stt("groq"), ModelKind.STT))
+    }
+
+    @Test fun neueListeErsetztDieAlteUndFindetModelle() {
+        val access = stt("openrouter")
+        cache.put(access, ModelKind.LLM, models)
+        assertEquals(false, cache.find("openrouter", ModelKind.LLM, "https://openrouter.ai/api/v1", "openai/gpt-6.1-sol")!!.temperatureSupported)
+        cache.put(access, ModelKind.LLM, listOf(RemoteModel("neu/modell")))
+        assertEquals(listOf("neu/modell"), cache.get(access, ModelKind.LLM)!!.models.map { it.id })
+        assertNull(cache.find("openrouter", ModelKind.LLM, "https://openrouter.ai/api/v1", "openai/gpt-6.1-sol"))
+        assertNull(cache.find("openrouter", ModelKind.STT, "https://openrouter.ai/api/v1", "neu/modell"))
+    }
+
+    /** Ein gespeichertes Server-Modell bekommt beim Senden die Flags aus dem Cache (Prefs -> AccessResolver). */
+    @Test fun einstellungenNutzenDieFlagsAusDemCache() {
+        val prefs = Prefs(ctx)
+        prefs.engine = Engine.ONLINE
+        prefs.sttProviderId = "groq"
+        prefs.llmProviderId = "openrouter"
+        prefs.llmKey = "or-key"
+        prefs.llmModel = "mistralai/mistral-medium-3-5"
+        prefs.modelCache.put(prefs.llmAccess(), ModelKind.LLM, models)
+
+        val option = Prefs(ctx).llmAccess().modelOption!!
+        assertEquals("none", option.reasoningEffort)
+        assertTrue(option.temperatureSupported)
+
+        prefs.llmModel = "openai/gpt-6.1-sol"
+        assertFalse(prefs.llmAccess().modelOption!!.temperatureSupported)
+        assertEquals("OpenAI: GPT-6.1 Sol", prefs.llmAccess().modelOption!!.label)
     }
 
     @Test fun aktualisierenLaedtUndLegtAb() {

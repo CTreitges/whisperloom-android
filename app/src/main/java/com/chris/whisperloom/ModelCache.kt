@@ -5,6 +5,7 @@ import com.chris.whisperloom.api.ApiAccess
 import com.chris.whisperloom.api.ModelKind
 import com.chris.whisperloom.api.ModelLists
 import com.chris.whisperloom.api.RemoteModel
+import com.chris.whisperloom.api.ServerModelLookup
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -19,7 +20,7 @@ import org.json.JSONObject
  *
  * @param now Uhr in ms (Tests setzen sie).
  */
-class ModelCache(context: Context, private val now: () -> Long = System::currentTimeMillis) {
+class ModelCache(context: Context, private val now: () -> Long = System::currentTimeMillis) : ServerModelLookup {
 
     /** Eine geladene Liste; [fetchedAt] in ms seit 1970. */
     data class Entry(val fetchedAt: Long, val models: List<RemoteModel>)
@@ -28,8 +29,22 @@ class ModelCache(context: Context, private val now: () -> Long = System::current
 
     fun get(access: ApiAccess, kind: ModelKind): Entry? = get(access.provider.id, kind, access.baseUrl)
 
-    fun get(providerId: String, kind: ModelKind, baseUrl: String): Entry? =
-        sp.getString(key(providerId, kind, baseUrl), null)?.let(::decode)
+    // Zuletzt gelesene Eintraege je Schluessel: sttAccess()/llmAccess() laufen bei jeder Neuzeichnung,
+    // eine OpenRouter-Liste hat Hunderte Modelle. Gleicher Text = gleicher Eintrag, ohne neu zu parsen.
+    private val decoded = HashMap<String, Pair<String, Entry?>>()
+
+    fun get(providerId: String, kind: ModelKind, baseUrl: String): Entry? {
+        val key = key(providerId, kind, baseUrl)
+        val raw = sp.getString(key, null) ?: return null
+        synchronized(decoded) {
+            decoded[key]?.let { (text, entry) -> if (text == raw) return entry }
+            return decode(raw).also { decoded[key] = raw to it }
+        }
+    }
+
+    /** Das Modell [id] aus der zuletzt geladenen Liste — fuer die Flags beim Senden ([ServerModelLookup]). */
+    override fun find(providerId: String, kind: ModelKind, baseUrl: String, id: String): RemoteModel? =
+        get(providerId, kind, baseUrl)?.models?.firstOrNull { it.id == id }
 
     /** Legt die Liste mit dem aktuellen Zeitpunkt ab (ersetzt die alte). */
     fun put(access: ApiAccess, kind: ModelKind, models: List<RemoteModel>): Entry {

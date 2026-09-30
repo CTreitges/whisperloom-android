@@ -127,7 +127,8 @@ fun SttAccessSection(snack: SnackController, showPrivacy: Boolean = true) {
     if (showCustomModel) {
         CustomModelSheet(
             placeholder = "whisper-1",
-            initial = if (access.modelOption == null) access.model else "",
+            // Nicht im Katalog = eigene ID (auch mit abgeleiteten Flags) -> zum Bearbeiten vorbelegen.
+            initial = if (provider.sttModel(access.model) == null) access.model else "",
             onApply = { prefs.apiModel = it },
             onDismiss = { showCustomModel = false },
         )

@@ -91,6 +91,7 @@ class PrefsState(val prefs: Prefs) {
         apiKey = apiKey,
         model = apiModel,
         readTimeoutSec = prefs.apiReadTimeoutSec,
+        serverModels = prefs.modelCache,
     )
 
     fun llmAccess(): ApiAccess = AccessResolver.resolveLlm(
@@ -99,6 +100,7 @@ class PrefsState(val prefs: Prefs) {
         baseUrl = llmUrl,
         apiKey = llmKey,
         model = llmModel,
+        serverModels = prefs.modelCache,
     )
 
     /** Position des schwebenden Knopfs auf den Default (E3 "Position zuruecksetzen"). */

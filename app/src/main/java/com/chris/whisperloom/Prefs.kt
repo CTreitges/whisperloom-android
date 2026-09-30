@@ -57,6 +57,9 @@ class Prefs(context: Context) {
 
     private val sp = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
 
+    /** Zuletzt geladene Modell-Listen (eigene Datei) — liefern die Flags fuer Server-Modelle. */
+    val modelCache = ModelCache(context)
+
     init {
         migrate()
     }
@@ -348,6 +351,7 @@ class Prefs(context: Context) {
         apiKey = apiKey,
         model = apiModel,
         readTimeoutSec = apiReadTimeoutSec,
+        serverModels = modelCache,
     )
 
     fun llmAccess(): ApiAccess = AccessResolver.resolveLlm(
@@ -356,6 +360,7 @@ class Prefs(context: Context) {
         baseUrl = llmUrl,
         apiKey = llmKey,
         model = llmModel,
+        serverModels = modelCache,
     )
 
     companion object {

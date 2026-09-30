@@ -431,6 +431,20 @@ class MainFlowTest {
         compose.onNodeWithTag("dropdown:Modell").assertTextContains("mein-modell")
     }
 
+    /** Eine eigene ID mit abgeleiteten Flags (Snapshot von gpt-transcribe) bleibt zum Bearbeiten vorbelegt. */
+    @Test fun eigenesModellMitAbgeleitetenFlagsBleibtVorbelegt() {
+        prefs.welcomeSeen = true
+        prefs.engine = Engine.ONLINE
+        prefs.apiModel = "gpt-transcribe-2026-08-01"
+        app(env())
+        compose.onNodeWithTag("dropdown:Modell").assertTextContains("gpt-transcribe-2026-08-01")
+        compose.onNodeWithTag("dropdown:Modell").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Eigenes Modell …").performClick()
+        compose.waitForIdle()
+        compose.onNode(hasSetTextAction() and hasText("Modell-ID")).assertTextContains("gpt-transcribe-2026-08-01")
+    }
+
     // --- E2 Text -----------------------------------------------------------------
 
     @Test fun textStufeSchreibtRefineModeUndSchaltetSmartFillersFrei() {

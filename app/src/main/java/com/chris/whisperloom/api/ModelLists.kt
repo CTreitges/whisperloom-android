@@ -46,6 +46,18 @@ data class ModelListRequest(
 }
 
 /**
+ * Findet ein zwischengespeichertes Server-Modell (siehe `ModelCache`). Als Schnittstelle, damit
+ * [AccessResolver] rein bleibt.
+ */
+fun interface ServerModelLookup {
+    fun find(providerId: String, kind: ModelKind, baseUrl: String, id: String): RemoteModel?
+
+    companion object {
+        val NONE = ServerModelLookup { _, _, _, _ -> null }
+    }
+}
+
+/**
  * "Modelle vom Server": welche Adresse mit welchen Headern, und welche Eintraege der Antwort
  * fuer die Erkennung bzw. die Textverbesserung taugen. [request] und [parse] sind rein
  * (JVM-unit-testbar); nur [load] spricht ueber [Http] mit dem Server.
@@ -106,6 +118,12 @@ object ModelLists {
     )
     private val EMBED = rx("embed")
 
+    // Heuristik fuer Flags (optionFor), angewandt auf den Namen ohne Anbieter-Praefix.
+    private val OPENAI_REASONING = rx("^(ft:)?(o\\d|gpt-5|gpt-6)")
+    private val GPT_TRANSCRIBE = rx("^gpt-.*transcribe")
+    private val QWEN3 = rx("^qwen3")
+    private val GPT_OSS = rx("^gpt-oss")
+
     /** Adresse und Header der Liste; Ollama nutzt die vorhandene native Schnittstelle. */
     fun request(access: ApiAccess, kind: ModelKind): ModelListRequest {
         val provider = access.provider
@@ -161,6 +179,46 @@ object ModelLists {
         }
         val unique = models.distinctBy { it.id }
         return if (provider.id == ANTHROPIC) unique else unique.sortedBy { it.id.lowercase() }
+    }
+
+    /**
+     * Flags fuer eine Modell-ID ohne exakten Katalog-Treffer (vom Server geladen oder frei getippt).
+     * Mit den Defaults scheitert sonst z. B. ein gpt-5-Snapshot an `temperature: 0` (HTTP 400) oder
+     * eine gpt-transcribe-Variante an `language` statt `languages[]`.
+     *
+     * Je Flag gilt das Erste, was etwas weiss: Server-Metadaten ([server], nur OpenRouter) →
+     * Katalog-Modell, dessen Snapshot die ID ist (`gpt-5-mini-2025-08-07` erbt von `gpt-5-mini`) →
+     * Heuristik je Familie. Weiss niemand etwas, bleibt es bei null = Defaults wie bisher.
+     */
+    fun optionFor(provider: Provider, kind: ModelKind, id: String, server: RemoteModel?): ModelOption? {
+        val catalog = if (kind == ModelKind.STT) provider.sttModels else provider.llmModels
+        catalog.firstOrNull { it.id == id }?.let { return it }
+        if (id.isBlank()) return null
+        val base = catalog.filter { id.startsWith(it.id + "-") }.maxByOrNull { it.id.length }
+        val name = id.substringAfterLast('/')
+        val chat = kind == ModelKind.LLM
+        val temperature = server?.temperatureSupported ?: base?.temperatureSupported
+            ?: if (chat && OPENAI_REASONING.containsMatchIn(name)) false else null
+        val effort = server?.reasoningEffort ?: base?.reasoningEffort ?: if (chat) groqEffort(provider, name) else null
+        val languageField = base?.languageField
+            ?: if (!chat && provider.id == OPENAI && GPT_TRANSCRIBE.containsMatchIn(name)) "languages[]" else null
+        if (server == null && base == null && temperature == null && effort == null && languageField == null) return null
+        return ModelOption(
+            id = id,
+            label = server?.label ?: id,
+            note = server?.note.orEmpty(),
+            temperatureSupported = temperature ?: true,
+            reasoningEffort = effort,
+            languageField = languageField ?: "language",
+        )
+    }
+
+    /** Groq: Qwen3 schreibt sonst <think>-Tags in den Text; gpt-oss kennt nur Stufen, "low" haelt es schnell. */
+    private fun groqEffort(provider: Provider, name: String): String? = when {
+        provider.id != GROQ -> null
+        QWEN3.containsMatchIn(name) -> "none"
+        GPT_OSS.containsMatchIn(name) -> "low"
+        else -> null
     }
 
     private fun Provider.offers(kind: ModelKind): Boolean = if (kind == ModelKind.STT) hasStt else hasLlm

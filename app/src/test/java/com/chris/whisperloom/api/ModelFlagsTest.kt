@@ -1,0 +1,100 @@
+package com.chris.whisperloom.api
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+/**
+ * Flags fuer Modell-IDs ohne exakten Katalog-Treffer ([ModelLists.optionFor]): Server-Metadaten,
+ * Katalog-Snapshot, Heuristik je Familie. Rein (JVM).
+ */
+class ModelFlagsTest {
+
+    private fun p(id: String) = ProviderCatalog.byId(id)
+
+    private fun llm(provider: String, id: String, server: RemoteModel? = null) =
+        ModelLists.optionFor(p(provider), ModelKind.LLM, id, server)
+
+    private fun stt(provider: String, id: String, server: RemoteModel? = null) =
+        ModelLists.optionFor(p(provider), ModelKind.STT, id, server)
+
+    @Test fun katalogTrefferBleibtDerKatalogEintrag() {
+        assertSame(p("openai").llmModel("gpt-5.6-luna"), llm("openai", "gpt-5.6-luna"))
+        assertSame(p("openai").sttModel("gpt-transcribe"), stt("openai", "gpt-transcribe"))
+    }
+
+    @Test fun ohneHinweisBleibtEsBeiDenDefaults() {
+        assertNull(llm("openai", ""))
+        assertNull(llm("openai", "mein-eigenes"))
+        assertNull(llm("openai", "gpt-4.1"))
+        assertNull(llm("groq", "moonshotai/kimi-k3"))
+        assertNull(stt("groq", "whisper-large-v4"))
+        assertNull(llm("custom", "llama3.2"))
+    }
+
+    @Test fun openAiReasoningNamenOhneTemperature() {
+        for (id in listOf("gpt-6-astra", "gpt-6.1-sol", "gpt-5.5", "o4-mini", "o3", "ft:gpt-5-mini:firma::abc")) {
+            val o = llm("openai", id)!!
+            assertFalse(id, o.temperatureSupported)
+            assertEquals(id, o.label)
+        }
+        // Gleiche Familie ueber OpenRouter ohne Metadaten (frei getippt): Name ohne Anbieter-Praefix.
+        assertFalse(llm("openrouter", "openai/gpt-6-luna")!!.temperatureSupported)
+    }
+
+    @Test fun snapshotErbtVomKatalogModell() {
+        val mini = llm("openai", "gpt-5-mini-2025-08-07")!!
+        assertFalse(mini.temperatureSupported)
+        assertEquals("minimal", mini.reasoningEffort)
+        assertTrue(llm("openai", "gpt-4o-mini-2024-07-18")!!.temperatureSupported)
+        // Snapshot von gpt-4o-mini-transcribe: language, obwohl der Name nach gpt-*transcribe* aussieht.
+        assertEquals("language", stt("openai", "gpt-4o-mini-transcribe-2025-12-15")!!.languageField)
+        assertEquals("languages[]", stt("openai", "gpt-transcribe-2026-08-01")!!.languageField)
+    }
+
+    @Test fun neueGptTranscribeVarianteBekommtLanguagesArray() {
+        val neu = stt("openai", "gpt-5-transcribe")!!
+        assertEquals("languages[]", neu.languageField)
+        assertTrue("temperature ist kein Erkennungs-Flag", neu.temperatureSupported)
+        // OpenRouter nimmt language (ISO-639-1), auch fuer OpenAI-Modelle.
+        assertNull(stt("openrouter", "openai/gpt-5-transcribe"))
+    }
+
+    @Test fun groqQwen3OhneNachdenkenUndGptOssLow() {
+        assertEquals("none", llm("groq", "qwen/qwen3.8-27b")!!.reasoningEffort)
+        assertEquals("low", llm("groq", "openai/gpt-oss-safeguard-20b")!!.reasoningEffort)
+        assertTrue(llm("groq", "qwen/qwen3.8-27b")!!.temperatureSupported)
+        // Nur bei Groq; OpenRouter hat eigene Metadaten.
+        assertNull(llm("openrouter", "qwen/qwen3.8-27b"))
+    }
+
+    @Test fun serverMetadatenGewinnen() {
+        val sol = llm(
+            "openrouter", "openai/gpt-6.1-sol",
+            RemoteModel("openai/gpt-6.1-sol", label = "OpenAI: GPT-6.1 Sol", note = "Auslauf 2027-01-01", temperatureSupported = false),
+        )!!
+        assertFalse(sol.temperatureSupported)
+        assertNull(sol.reasoningEffort)
+        assertEquals("OpenAI: GPT-6.1 Sol", sol.label)
+        assertEquals("Auslauf 2027-01-01", sol.note)
+        // Metadaten schlagen die Namens-Heuristik.
+        assertTrue(llm("openrouter", "openai/gpt-5.4-mini", RemoteModel("openai/gpt-5.4-mini", temperatureSupported = true))!!.temperatureSupported)
+        assertEquals("none", llm("openrouter", "mistralai/x", RemoteModel("mistralai/x", reasoningEffort = "none"))!!.reasoningEffort)
+        // Ohne Flags: Anzeigename vom Server, sonst Defaults.
+        val plain = llm("anthropic", "claude-opus-5-5", RemoteModel("claude-opus-5-5", label = "Claude Opus 5.5"))!!
+        assertEquals("Claude Opus 5.5", plain.label)
+        assertTrue(plain.temperatureSupported)
+        assertNull(plain.reasoningEffort)
+        assertEquals("language", plain.languageField)
+    }
+
+    @Test fun reasoningOhneTemperatureSendetMaxCompletionTokens() {
+        val stt = AccessResolver.resolveStt("openai", "", "sk", "")
+        val s = ChatPayload.sampling(AccessResolver.resolveLlm(stt, "same", "", "", "gpt-6-astra"))
+        assertNull(s.temperature)
+        assertEquals(ChatPayload.MAX_COMPLETION_TOKENS, s.maxCompletionTokens)
+    }
+}
