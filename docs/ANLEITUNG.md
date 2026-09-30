@@ -783,7 +783,7 @@ Unter **Deine Pro Widgets** stehen alle Widgets mit Namen, darunter Server und M
 
 Jedes Widget hat seinen eigenen Server. Im Editor unter **Server**:
 
-1. **Server-Adresse** — die Basis-Adresse deiner Bridge ohne Pfad, zum Beispiel `https://bridge.example.de`. Unverschlüsseltes `http://` nimmt WhisperLoom nur für Adressen im Heimnetz oder VPN an; ins offene Internet gibt es eine Warnung.
+1. **Server-Adresse** — die Basis-Adresse deiner Bridge ohne `/v1/task`, zum Beispiel `https://bridge.example.de` (ein Unterpfad hinter einem Reverse-Proxy ist erlaubt). Unverschlüsseltes `http://` nimmt WhisperLoom nur für Adressen im Heimnetz oder VPN an; ins offene Internet gibt es eine Warnung.
 2. **Token** — das Auge zeigt es kurz im Klartext, das Klemmbrett-Symbol fügt es aus der Zwischenablage ein.
 3. **Verbindung prüfen** — antippbar, sobald Adresse und Token vollständig sind. Der Chip darunter sagt dir sofort, ob beides stimmt. Die Prüfung löst **keinen** Auftrag aus — es geht nichts an deinen Agenten.
 

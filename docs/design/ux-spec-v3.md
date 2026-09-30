@@ -1463,7 +1463,7 @@ Widgets; fehlt das Widget, wird er verworfen, nie umgeleitet.
 | `widget_profile_name_sub` / `widget_profile_name_missing` / `widget_profile_show_name` / `widget_profile_server` | Steht unter dem Widget auf dem Startbildschirm. / Jedes Widget braucht einen Namen. / Name unter dem Widget anzeigen / Server |
 | `widget_profile_delete` / `widget_profile_delete_unused` | Widget löschen / Es liegt gerade nicht auf dem Startbildschirm. |
 | `agent_mic_missing` / `agent_privacy` / `agent_widget_hint` / `agent_tutorial_sub` | Für Pro Widgets fehlt die Mikrofon-Berechtigung. / Der Auftrag geht nur an den Server dieses Widgets. Erkennung und Textverbesserung laufen wie beim Diktat über die eingestellten Anbieter. / Widget platzieren: … → „Sprach-Command“. / Widget anlegen, Server eintragen, Auftrag sprechen |
-| `agent_url_hint` | Adresse deiner Bridge, ohne Pfad (Platzhalter im Feld: `https://bridge.example.de`) |
+| `agent_url_hint` | Adresse deiner Bridge, ohne /v1/task (Platzhalter im Feld: `https://bridge.example.de`) |
 | `help_widgets_title` / `_intro` / `_unlock` / `_create` / `_server` / `_place` / `_open` | Hilfe-Abschnitt 6 „Widgets & Pro Widgets“ |
 | `help_s1_intro` … `help_s4_intro`, `help_s6_intro`, `help_s7_intro` | Kurztexte unter den Hilfe-Bildern |
 | `tutorial_pro_p1..p6_title` / `_body` | Die sechs Seiten von T2 (ersetzt `tutorial_agent_p1..p4`) |
