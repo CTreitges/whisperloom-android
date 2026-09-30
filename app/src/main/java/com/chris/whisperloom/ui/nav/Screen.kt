@@ -32,7 +32,7 @@ sealed class Screen(val key: String) {
 
     /**
      * Widget-Menue. [tab] = Starttab (null: der Screen waehlt), [edit] = Profil-Id, deren Editor
-     * sich beim ersten Anzeigen oeffnet (Widget-Tipp ohne Server). Die Id enthaelt kein ":".
+     * sich einmalig oeffnet (Widget-Tipp ohne Server). Die Id enthaelt kein ":".
      */
     data class Widgets(val tab: WidgetTab? = null, val edit: String? = null) : Screen("widgets")
 

@@ -9,6 +9,9 @@ import androidx.activity.result.ActivityResultRegistry
 import androidx.activity.result.ActivityResultRegistryOwner
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
@@ -25,6 +28,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextReplacement
 import androidx.core.app.ActivityOptionsCompat
 import androidx.test.core.app.ApplicationProvider
+import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import com.chris.whisperloom.agent.ProfileIcon
@@ -33,7 +37,9 @@ import com.chris.whisperloom.agent.VoiceTaskWidget
 import com.chris.whisperloom.agent.WidgetProfile
 import com.chris.whisperloom.agent.WidgetProfileStore
 import com.chris.whisperloom.agent.serverEinrichten
+import com.chris.whisperloom.ui.WhisperLoomApp
 import com.chris.whisperloom.ui.nav.NavState
+import com.chris.whisperloom.ui.nav.RouteRequest
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SystemStatus
 import com.chris.whisperloom.ui.nav.WidgetTab
@@ -169,6 +175,54 @@ class WidgetsScreenTest {
 
         compose.onNodeWithText("Einkauf").assertExists()
         compose.onNodeWithText("Profil bearbeiten").assertDoesNotExist()
+    }
+
+    @Test fun einErneuterWidgetTippOeffnetDenEditorAuchBeiOffenemMenue() {
+        // MainActivity ist singleTask: der zweite Tipp kommt per onNewIntent, waehrend das Menue
+        // noch oben liegt — gleicher Screen-Key, also dieselbe Composition.
+        val p = store.create("Einkauf")
+        val env = AppEnv(PrefsState(Prefs(ctx)), SystemStatus(micGranted = true)) { SystemStatus(micGranted = true) }
+        var route by mutableStateOf<RouteRequest?>(RouteRequest(AppNav.ROUTE_WIDGETS, profileId = p.id))
+        compose.setContent {
+            WhisperLoomTheme {
+                CompositionLocalProvider(LocalActivityResultRegistryOwner provides bildWahl) {
+                    WhisperLoomApp(env, route) { route = null }
+                }
+            }
+        }
+        compose.waitForIdle()
+        compose.onNodeWithText("Profil bearbeiten").assertExists()
+        click("Fertig")
+        compose.onNodeWithText("Profil bearbeiten").assertDoesNotExist()
+
+        compose.runOnIdle { route = RouteRequest(AppNav.ROUTE_WIDGETS, profileId = p.id) }
+        compose.waitForIdle()
+        compose.onNodeWithText("Profil bearbeiten").assertExists()
+        click("Fertig")
+
+        // Auch dieser Wunsch ist verbraucht: Weg und Zurueck oeffnet den Editor nicht noch einmal.
+        click("Erweiterte Optionen")
+        compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
+        compose.waitForIdle()
+        compose.onNodeWithText("Neues Profil").assertExists()
+        compose.onNodeWithText("Profil bearbeiten").assertDoesNotExist()
+    }
+
+    @Test fun einDeepLinkWechseltVomOffenenEditorZumAnderenProfil() {
+        val a = store.create("Einkauf")
+        val b = store.create("Notiz")
+        show(Screen.Widgets(WidgetTab.PRO, a.id))
+        click("Profil löschen")
+        compose.onNodeWithText("„Einkauf“ löschen?").assertExists()
+
+        compose.runOnIdle { nav.replaceAll(Screen.SettingsHub, Screen.Widgets(WidgetTab.PRO, b.id)) }
+        compose.waitForIdle()
+
+        compose.onNode(hasSetTextAction() and hasText("Notiz")).assertExists()
+        // Frischer Editor: die Rueckfrage von vorhin wuerde jetzt "Notiz" loeschen.
+        compose.onNodeWithText("„Notiz“ löschen?").assertDoesNotExist()
+        assertEquals("Der Wunsch ist verbraucht", Screen.Widgets(WidgetTab.PRO), nav.current)
+        assertTrue(store.get(a.id) != null && store.get(b.id) != null)
     }
 
     @Test fun einGeloeschtesProfilAusDemDeepLinkOeffnetNichts() {

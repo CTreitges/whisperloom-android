@@ -15,6 +15,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -59,7 +60,7 @@ import kotlinx.coroutines.withContext
  * aus, steht oben ein Hinweis mit dem Weg dorthin.
  *
  * [tab] = gewuenschter Starttab (die Tabs selbst folgen). [edit] = Profil-Id, deren Editor sich
- * beim ersten Anzeigen oeffnet (Widget-Tipp ohne Server).
+ * einmalig oeffnet (Widget-Tipp ohne Server) — auch wenn das Menue schon angezeigt wird.
  */
 @Composable
 fun WidgetsScreen(nav: NavState, tab: WidgetTab? = null, edit: String? = null) {
@@ -70,10 +71,14 @@ fun WidgetsScreen(nav: NavState, tab: WidgetTab? = null, edit: String? = null) {
     var editing by rememberSaveable { mutableStateOf(edit) }
     var picking by rememberSaveable { mutableStateOf<Int?>(null) }
 
-    // Der Editor-Wunsch gilt einmal: aus dem Back-Stack nehmen, sonst oeffnete jedes Zurueck
-    // von einem anderen Screen (und jede Wiederherstellung) den Editor erneut.
-    LaunchedEffect(Unit) {
-        if (edit != null && nav.current is Screen.Widgets) nav.replaceTop(Screen.Widgets(tab))
+    // Der Editor-Wunsch gilt einmal: oeffnen und aus dem Back-Stack nehmen, sonst oeffnete jedes
+    // Zurueck von einem anderen Screen (und jede Wiederherstellung) den Editor erneut. Auf [edit]
+    // reagieren, nicht nur beim ersten Anzeigen: ein Widget-Tipp, waehrend das Menue schon oben
+    // liegt (singleTask, onNewIntent), landet in derselben Composition (gleicher Screen-Key).
+    LaunchedEffect(edit) {
+        if (edit == null) return@LaunchedEffect
+        editing = edit
+        if (nav.current is Screen.Widgets) nav.replaceTop(Screen.Widgets(tab))
     }
 
     // Widgets kommen auf dem Startbildschirm dazu oder verschwinden, waehrend die App im Hintergrund ist.
@@ -134,7 +139,9 @@ fun WidgetsScreen(nav: NavState, tab: WidgetTab? = null, edit: String? = null) {
         }
     }
 
-    editing?.let { id -> WidgetProfileSheet(widgets, id) { editing = null } }
+    // Je Profil ein frischer Editor: wechselt ein Deep-Link das Profil, darf keine offene
+    // Loesch-Rueckfrage des vorigen stehen bleiben.
+    editing?.let { id -> key(id) { WidgetProfileSheet(widgets, id) { editing = null } } }
 
     // Verschwindet das Widget waehrenddessen vom Startbildschirm, schliesst sich die Auswahl.
     widgets.placed.firstOrNull { it.widgetId == picking }?.let { w ->
