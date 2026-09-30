@@ -100,8 +100,10 @@ fun WidgetsScreen(nav: NavState, tab: WidgetTab? = null, edit: String? = null) {
     // Zurueck von einem anderen Screen (und jede Wiederherstellung) den Editor erneut. Auf [edit]
     // reagieren, nicht nur beim ersten Anzeigen: ein Widget-Tipp, waehrend das Menue schon oben
     // liegt (singleTask, onNewIntent), landet in derselben Composition (gleicher Screen-Key).
+    // Eine offene Profilwahl weicht dem Editor — sonst laegen zwei Sheets uebereinander.
     LaunchedEffect(edit) {
         if (edit == null) return@LaunchedEffect
+        picking = null
         editing = edit
         if (nav.current is Screen.Widgets) nav.replaceTop(Screen.Widgets(tab))
     }

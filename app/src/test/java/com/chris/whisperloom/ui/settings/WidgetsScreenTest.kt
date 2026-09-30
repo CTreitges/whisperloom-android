@@ -480,6 +480,24 @@ class WidgetsScreenTest {
         assertEquals(Screen.Widgets(WidgetTab.PRO), nav.current)
     }
 
+    @Test fun einDeepLinkSchliesstDieOffeneProfilwahl() {
+        // Profilwahl offen, Home, Tipp auf ein Widget ohne Server: sonst laegen zwei Sheets
+        // uebereinander, und nach "Fertig" stuende die alte Profilwahl noch da.
+        val p = store.create("Einkauf")
+        widget()
+        show()
+        click("Widget 1 · Sprach-Command")
+        compose.onNodeWithText("Welches Widget-Profil?").assertExists()
+
+        compose.runOnIdle { nav.replaceTop(Screen.Widgets(WidgetTab.PRO, p.id)) }
+        compose.waitForIdle()
+
+        compose.onNodeWithText("Widget bearbeiten").assertExists()
+        compose.onNodeWithText("Welches Widget-Profil?").assertDoesNotExist()
+        click("Fertig")
+        compose.onNodeWithText("Welches Widget-Profil?").assertDoesNotExist()
+    }
+
     @Test fun einGeloeschtesProfilAusDemDeepLinkOeffnetNichts() {
         show(Screen.Widgets(WidgetTab.PRO, "weg"))
         compose.onNodeWithText("Widget bearbeiten").assertDoesNotExist()
