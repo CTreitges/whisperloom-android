@@ -574,7 +574,7 @@
     <string name="cd_mic_sending">Wird übertragen</string>
     <string name="cd_mic_error">Fehler — antippen für erneuten Versuch</string>
 
-    <!-- ==== Sprachauftrag: Widget (Paket B) ======================================= -->
+    <!-- ==== Sprach-Command-Widget (Paket B) ======================================= -->
     <string name="widget_label">Sprach-Command</string>
     <string name="widget_description">Pro Widget: sprechen und als Auftrag an deinen eigenen Server schicken.</string>
     <string name="widget_ready">Tippen und sprechen</string>
@@ -592,7 +592,7 @@
     <!-- Auto-Stopp: 8 s keine Sprache erkannt, Aufnahme verworfen. Angezeigt über widget_error_retry. -->
     <string name="widget_no_speech">Nichts gehört</string>
     <string name="widget_error_retry">%1$s — tippen für erneuten Versuch</string>
-    <string name="cd_widget_ready">Sprachauftrag aufnehmen</string>
+    <string name="cd_widget_ready">Auftrag aufnehmen</string>
     <string name="cd_widget_recording">Nimmt auf, %1$s — antippen zum Senden</string>
     <string name="cd_widget_working">Auftrag wird gesendet. Hängt es länger als drei Minuten: antippen, um erneut zu senden</string>
     <string name="cd_widget_working_retry">Senden gescheitert: %1$s. Ein neuer Versuch folgt automatisch — antippen, um sofort erneut zu senden</string>
@@ -603,8 +603,8 @@
     <string name="cd_widget_no_server">Server fehlt. Tippen, um ihn einzutragen.</string>
     <!-- Widget mit eigenem Profilnamen: %1$s = Name, %2$s = Zustandstext wie oben -->
     <string name="cd_widget_named">%1$s: %2$s</string>
-    <string name="agent_channel">Sprachauftrag</string>
-    <string name="agent_notif_title">Sprachauftrag</string>
+    <string name="agent_channel">Pro Widgets</string>
+    <string name="agent_notif_title">Sprach-Command</string>
     <string name="agent_notif_recording">Nimmt auf …</string>
     <string name="agent_notif_stop">Senden</string>
 
@@ -658,7 +658,7 @@
     <string name="widgets_placed_row">Widget %1$d · %2$s</string>
     <string name="widgets_placed_sub">Tippen, um das Profil zu wechseln</string>
     <string name="widgets_card_help">Hilfe</string>
-    <string name="widgets_help_size">Größe ändern: Widget lange drücken und an den Rändern ziehen. Ganz klein zeigt es nur das Symbol, breit Symbol und Text, ab 2 × 2 steht beides untereinander.</string>
+    <string name="widgets_help_size">Größe ändern: Widget lange drücken und an den Rändern ziehen. Ganz klein zeigt es das Symbol, breit Symbol und Text, ab 2 × 2 beides untereinander. Ist der Name eingeschaltet, steht er darunter.</string>
     <string name="widgets_help_shared">Alle Widgets zeigen dieselbe Aufnahme. Auto-Stopp richtet sich nach dem Widget, mit dem du gestartet hast.</string>
     <string name="widget_config_title">Welches Widget-Profil?</string>
     <string name="widget_config_pro_off">Pro Widgets sind aus. In der App unter Einstellungen → Erweitert einschalten.</string>
@@ -705,7 +705,7 @@
     <string name="advanced_tutorial">Anleitung Pro Widgets</string>
     <string name="agent_card_mic">Mikrofon</string>
     <string name="agent_url">Server-Adresse</string>
-    <string name="agent_url_hint">Adresse deiner Bridge, z. B. https://hermes-bridge.example.de</string>
+    <string name="agent_url_hint">Adresse deiner Bridge, ohne Pfad</string>
     <string name="agent_token">Token</string>
     <string name="agent_check">Verbindung prüfen</string>
     <string name="agent_card_pending">Offener Auftrag</string>
@@ -714,7 +714,7 @@
     <string name="agent_discard_done">Auftrag verworfen</string>
     <string name="agent_tutorial">Anleitung ansehen</string>
     <string name="agent_tutorial_sub">Widget anlegen, Server eintragen, Auftrag sprechen</string>
-    <string name="agent_privacy">Transkript und Auftrag gehen nur an den Server dieses Widgets. Aufgenommen wird wie beim Diktat über die eingestellte Erkennung.</string>
+    <string name="agent_privacy">Der Auftrag geht nur an den Server dieses Widgets. Erkennung und Textverbesserung laufen wie beim Diktat über die eingestellten Anbieter.</string>
     <string name="agent_mic_missing">Für Pro Widgets fehlt die Mikrofon-Berechtigung.</string>
     <string name="agent_mic_allow">Mikrofon erlauben</string>
     <string name="agent_widget_hint">Widget platzieren: Startbildschirm lange drücken → Widgets → WhisperLoom → „Sprach-Command“.</string>

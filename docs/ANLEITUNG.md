@@ -676,7 +676,7 @@ WhisperLoom hat keinen eigenen Server, kein Konto, keine Telemetrie. Was mit dei
 
 **Eigener Server:** Audio und Text gehen nur an deinen Server.
 
-**Pro Widgets:** Der erkannte Text eines Sprach-Command-Widgets geht nur an den Server, der in genau diesem Widget eingetragen ist ([13.9](#139-was-dabei-gesendet-wird)).
+**Pro Widgets:** Der Auftrag eines Sprach-Command-Widgets geht nur an den Server, der in genau diesem Widget eingetragen ist. Erkennung und, falls eingeschaltet, Textverbesserung laufen wie beim Diktat über die eingestellten Anbieter (siehe oben, [13.9](#139-was-dabei-gesendet-wird)).
 
 **Ollama:** Beim Anbieter **Ollama (lokal / Homeserver)** geht der Text für die Textverbesserung nur an dein eigenes Ollama — er verlässt dein Netz nicht. Bei **Ollama Cloud** geht er an ollama.com.
 
@@ -872,7 +872,7 @@ Willst du den Auftrag loswerden: Einstellungen → Widgets → Tab „Pro Widget
 
 ### 13.9 Was dabei gesendet wird
 
-An den Server des Widgets gehen: der erkannte Text, eine Auftragskennung, Zeitpunkt und Dauer der Aufnahme. **Nur an die Adresse, die in diesem Widget eingetragen ist** — nicht an den Hersteller der App, nicht an den Server eines anderen Widgets und an niemanden sonst. Die Aufnahme selbst bleibt auf dem Telefon; fürs Mitschreiben geht sie an den Erkennungsweg, den du ohnehin eingestellt hast (Kapitel 11 beschreibt das im Detail). Ein Auftrag, der noch nicht durchging, liegt so lange auf dem Telefon, bis er abgeschickt, verworfen oder ersetzt wird; er wird nicht in ein Cloud-Backup übernommen. Die Widgets mit Server-Adressen und Tokens sowie ihre Galerie-Bilder verlassen das Telefon nie — auch sie kommen in kein Backup.
+An den Server des Widgets gehen: der erkannte Text, eine Auftragskennung, Zeitpunkt und Dauer der Aufnahme. **Den Auftrag bekommt nur die Adresse, die in diesem Widget eingetragen ist** — nicht der Hersteller der App und nicht der Server eines anderen Widgets. Erkannt und verbessert wird wie beim Diktat: Fürs Mitschreiben geht die Aufnahme an den Erkennungsweg, den du eingestellt hast, und ist die Textverbesserung an, geht der erkannte Text vorher an deren Anbieter (Kapitel 11 beschreibt das im Detail). Ein Auftrag, der noch nicht durchging, liegt so lange auf dem Telefon, bis er abgeschickt, verworfen oder ersetzt wird; er wird nicht in ein Cloud-Backup übernommen. Die Widgets mit Server-Adressen und Tokens sowie ihre Galerie-Bilder werden nur auf dem Gerät gespeichert und nicht gesichert.
 
 ---
 

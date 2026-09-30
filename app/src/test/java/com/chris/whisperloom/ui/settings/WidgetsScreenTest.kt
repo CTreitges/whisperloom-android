@@ -612,10 +612,11 @@ class WidgetsScreenTest {
     }
 
     @Test fun derDatenschutzHinweisStehtDa() {
+        // Nur der Auftrag geht exklusiv an den Server des Widgets — erkannt und verbessert wird wie beim Diktat.
         show()
         bearbeiten("Sprach-Command")
         compose.onNodeWithText(
-            "Transkript und Auftrag gehen nur an den Server dieses Widgets. Aufgenommen wird wie beim Diktat über die eingestellte Erkennung.",
+            "Der Auftrag geht nur an den Server dieses Widgets. Erkennung und Textverbesserung laufen wie beim Diktat über die eingestellten Anbieter.",
         ).assertExists()
     }
 

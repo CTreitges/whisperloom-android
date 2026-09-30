@@ -1448,6 +1448,8 @@ Widgets; fehlt das Widget, wird er verworfen, nie umgeleitet.
 | `kind_voice_command` / `kind_voice_command_sub` | Sprach-Command-Widget / Sprechen und an deinen Server schicken |
 | `widget_label` / `widget_description` | Sprach-Command / Pro Widget: sprechen und als Auftrag an deinen eigenen Server schicken. |
 | `widget_off` / `widget_no_server` / `cd_widget_no_server` | Pro Widgets aus — tippen / Server fehlt — tippen / Server fehlt. Tippen, um ihn einzutragen. |
+| `cd_widget_ready` | Auftrag aufnehmen (TalkBack stellt den Widget-Namen voran: „Einkauf: Auftrag aufnehmen“) |
+| `agent_channel` / `agent_notif_title` | Pro Widgets / Sprach-Command (Kanal-ID `whisperloom_agent` bleibt) |
 | `widget_task_profile_gone` / `widget_task_pro_off` / `widget_task_no_server` | Widget gelöscht — Auftrag verworfen / Pro Widgets sind aus / Server fehlt im Widget „%1$s“ (über `widget_error_retry`) |
 | `widgets_sub_profiles` / `widgets_sub_normal_soon` | %d Pro Widget(s) / Normale Widgets folgen bald |
 | `widgets_tab_normal` / `widgets_tab_pro` | Widgets / Pro Widgets |
@@ -1457,7 +1459,8 @@ Widgets; fehlt das Widget, wird er verworfen, nie umgeleitet.
 | `widget_profile_title` / `widget_profile_default_name` | Widget bearbeiten / Sprach-Command %d |
 | `widget_profile_name_sub` / `widget_profile_name_missing` / `widget_profile_show_name` / `widget_profile_server` | Steht unter dem Widget auf dem Startbildschirm. / Jedes Widget braucht einen Namen. / Name unter dem Widget anzeigen / Server |
 | `widget_profile_delete` / `widget_profile_delete_unused` | Widget löschen / Es liegt gerade nicht auf dem Startbildschirm. |
-| `agent_mic_missing` / `agent_privacy` / `agent_widget_hint` / `agent_tutorial_sub` | Für Pro Widgets fehlt die Mikrofon-Berechtigung. / Transkript und Auftrag gehen nur an den Server dieses Widgets. … / Widget platzieren: … → „Sprach-Command“. / Widget anlegen, Server eintragen, Auftrag sprechen |
+| `agent_mic_missing` / `agent_privacy` / `agent_widget_hint` / `agent_tutorial_sub` | Für Pro Widgets fehlt die Mikrofon-Berechtigung. / Der Auftrag geht nur an den Server dieses Widgets. Erkennung und Textverbesserung laufen wie beim Diktat über die eingestellten Anbieter. / Widget platzieren: … → „Sprach-Command“. / Widget anlegen, Server eintragen, Auftrag sprechen |
+| `agent_url_hint` | Adresse deiner Bridge, ohne Pfad (Platzhalter im Feld: `https://bridge.example.de`) |
 | `help_widgets_title` / `_intro` / `_unlock` / `_create` / `_server` / `_place` / `_open` | Hilfe-Abschnitt 6 „Widgets & Pro Widgets“ |
 | `help_s1_intro` … `help_s4_intro`, `help_s6_intro`, `help_s7_intro` | Kurztexte unter den Hilfe-Bildern |
 | `tutorial_pro_p1..p6_title` / `_body` | Die sechs Seiten von T2 (ersetzt `tutorial_agent_p1..p4`) |
@@ -1465,8 +1468,7 @@ Widgets; fehlt das Widget, wird er verworfen, nie umgeleitet.
 
 Entfallen: `settings_group_agent`, `settings_agent_sub`, `agent_card_task` / `_connection` / `_help`,
 `agent_enable` / `_sub`, `widgets_agent_off`, `widgets_card_profiles`, `agent_widget_manage`, `prompt_card`,
-`tutorial_agent_*`. Noch mit altem Wortlaut „Sprachauftrag“: `cd_widget_ready`, `agent_channel`,
-`agent_notif_title`.
+`tutorial_agent_*`. Kein UI-Text trägt mehr den alten Namen „Sprachauftrag“.
 
 ---
 

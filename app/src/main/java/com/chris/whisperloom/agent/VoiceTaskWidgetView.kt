@@ -183,7 +183,7 @@ object VoiceTaskWidgetView {
     }
 
     /**
-     * Mit eigenem Profilnamen nennt TalkBack ihn zuerst ("Einkauf: Sprachauftrag aufnehmen") —
+     * Mit eigenem Profilnamen nennt TalkBack ihn zuerst ("Einkauf: Auftrag aufnehmen") —
      * sonst klingen zwei Widgets gleich. Ohne Namen bleibt es beim Text ohne Profile.
      */
     fun contentDescription(

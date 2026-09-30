@@ -123,6 +123,12 @@ class VoiceTaskWidgetViewTest {
         assertTrue(cd(VoiceTaskState.RECORDING, 7_000).contains("0:07"))
     }
 
+    @Test fun bereitNenntDenWidgetNamenUndDieAktionOhneAltenNamen() {
+        // Frueher "Einkauf: Sprachauftrag aufnehmen" — den Namen gibt es in App und Anleitung nicht mehr.
+        val einkauf = WidgetProfile("e", name = "Einkauf")
+        assertEquals("Einkauf: Auftrag aufnehmen", VoiceTaskWidgetView.contentDescription(ctx, einkauf, VoiceTaskState.READY, 0, ""))
+    }
+
     /** Baut die RemoteViews und haengt sie an eine echte View — nur so ist der Klick pruefbar. */
     private fun gezeichnet(state: VoiceTaskState, elapsed: Long = 0, message: String = ""): View {
         val parent = FrameLayout(ctx)

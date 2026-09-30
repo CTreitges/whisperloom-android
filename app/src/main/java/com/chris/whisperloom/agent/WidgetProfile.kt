@@ -28,7 +28,7 @@ data class WidgetProfile(
     val kind: WidgetKind = WidgetKind.VOICE_COMMAND,
     /** Name unter der Kachel auf dem Startbildschirm anzeigen. */
     val showName: Boolean = true,
-    /** Base-URL der Bridge ohne Pfad, z. B. https://hermes-bridge.example.de. */
+    /** Base-URL der Bridge ohne Pfad, z. B. https://bridge.example.de (wie der Platzhalter im Editor). */
     val serverUrl: String = "",
     /** Bearer-Token der Bridge. */
     val serverToken: String = "",
