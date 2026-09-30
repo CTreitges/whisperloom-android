@@ -42,7 +42,10 @@ object VoiceTaskWidgetView {
      * Setzt JEDE veraenderliche Eigenschaft, auch die scheinbar unveraenderten: der Launcher
      * recycelt die View bei gleichem Layout und spielt nur die neuen Aktionen darauf ab
      * (`AppWidgetHostView` → `reapply`). Was hier fehlt, bliebe vom vorigen Bild stehen — etwa
-     * ein Foto, obwohl gerade aufgenommen wird.
+     * ein Foto, obwohl gerade aufgenommen wird, oder ein Name, den das Profil nicht mehr zeigt.
+     *
+     * Den Zustand zeigt die Kachel (`widget_tile`); der Name steht darunter auf dem
+     * Hintergrundbild und hat deshalb eine feste Farbe aus dem Layout.
      */
     fun build(
         ctx: Context,
@@ -55,17 +58,15 @@ object VoiceTaskWidgetView {
         click: PendingIntent?,
     ): RemoteViews {
         val v = RemoteViews(ctx.packageName, layout.layoutRes)
-        v.setInt(R.id.widget_root, "setBackgroundResource", background(state))
+        v.setInt(R.id.widget_tile, "setBackgroundResource", background(state))
         val showPhoto = photo != null && WidgetLayouts.showsProfileIcon(state)
         v.setViewVisibility(R.id.widget_icon, if (showPhoto) View.GONE else View.VISIBLE)
         v.setViewVisibility(R.id.widget_photo, if (showPhoto) View.VISIBLE else View.GONE)
         if (showPhoto) v.setImageViewBitmap(R.id.widget_photo, photo)
         v.setImageViewResource(R.id.widget_icon, icon(state, profile))
         v.setInt(R.id.widget_icon, "setColorFilter", ctx.getColor(iconColor(state)))
-        if (layout != WidgetLayout.ICON) {
-            v.setTextViewText(R.id.widget_name, profile.displayName(ctx))
-            v.setTextColor(R.id.widget_name, ctx.getColor(textColor(state)))
-        }
+        v.setTextViewText(R.id.widget_name, profile.displayName(ctx))
+        v.setViewVisibility(R.id.widget_name, if (profile.showName) View.VISIBLE else View.GONE)
         v.setTextColor(R.id.widget_status, ctx.getColor(textColor(state)))
         v.setTextViewText(R.id.widget_status, status(ctx, state, elapsedMs, message))
         v.setContentDescription(R.id.widget_root, contentDescription(ctx, profile, state, elapsedMs, message))

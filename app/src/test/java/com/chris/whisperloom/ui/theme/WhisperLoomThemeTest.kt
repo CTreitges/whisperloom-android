@@ -120,6 +120,7 @@ class WhisperLoomThemeTest {
             "loom_onWarning" to LoomPalette.onWarning,
             "loom_warningContainer" to LoomPalette.warningContainer,
             "loom_onWarningContainer" to LoomPalette.onWarningContainer,
+            "loom_labelShadow" to LoomPalette.labelShadow,
         )
         val actual = mutableMapOf<String, Color>()
         compose.setContent {

@@ -11,7 +11,6 @@ import com.chris.whisperloom.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -121,15 +120,15 @@ class VoiceTaskWidgetLifecycleTest {
     @Test @Config(sdk = [30])
     fun unterAndroid12ZeichnetEineGroessenaenderungNeu() {
         val id = widget()
-        // Ohne gemeldete Groesse: der gewohnte Stapel mit Namen.
-        assertNotNull(shadowOf(manager).getViewFor(id).findViewById<View>(R.id.widget_name))
+        // Den Namen tragen alle Varianten; STACK und ICON unterscheidet die Statuszeile.
+        fun sichtbar(viewId: Int) = shadowOf(manager).getViewFor(id).findViewById<View>(viewId).visibility
+        // Ohne gemeldete Groesse: der gewohnte Stapel mit Statuszeile.
+        assertEquals(View.VISIBLE, sichtbar(R.id.widget_status))
 
         manager.updateAppWidgetOptions(id, einsZuEins())
 
-        assertNull(
-            "1x1 hochkant zeigt nur das Symbol",
-            shadowOf(manager).getViewFor(id).findViewById<View>(R.id.widget_name),
-        )
+        assertEquals("1x1 hochkant zeigt nur Symbol und Namen", View.GONE, sichtbar(R.id.widget_status))
+        assertEquals(View.VISIBLE, sichtbar(R.id.widget_name))
     }
 
     @Test @Config(sdk = [30])

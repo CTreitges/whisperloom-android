@@ -77,6 +77,26 @@ class WidgetLayoutsTest {
         }
     }
 
+    @Test fun mitDemNamenIstDasSymbolHoeherAlsDieZeileGewinntAberNieNachAbstand() {
+        // Der Name unter der Kachel macht ICON hoeher als ROW — "in beiden Achsen am kleinsten"
+        // gilt nicht mehr. Am schmalsten und mit der kleinsten Flaeche bleibt ICON trotzdem: ohne
+        // gemeldete Groesse nimmt das System weiter ICON.
+        assertTrue(ICON.h > ROW.h)
+        assertTrue(ICON.w < ROW.w && ROW.w == STACK.w)
+        assertEquals(ICON, WidgetLayout.entries.minBy { it.w * it.h })
+        // Nach Abstand laege ICON erst bei h > 8w - 587 vor einer passenden ROW (w > 119), dort
+        // passt laengst STACK. Auch weit ueber die Ziehgrenzen hinaus entscheiden beide Regeln gleich.
+        var w = 40f
+        while (w <= 1200f) {
+            var h = 40f
+            while (h <= 1200f) {
+                assertEquals("bei ${w}x$h", flaechenregel(w, h), WidgetLayouts.pick(w, h))
+                h += 4f
+            }
+            w += 4f
+        }
+    }
+
     /** Die Regel aus dem Javadoc: das passende Layout mit der groessten Flaeche, sonst das kleinste. */
     private fun flaechenregel(w: Float, h: Float): WidgetLayout {
         val passend = WidgetLayout.entries.filter { kotlin.math.ceil(w) + 1 > it.w && kotlin.math.ceil(h) + 1 > it.h }

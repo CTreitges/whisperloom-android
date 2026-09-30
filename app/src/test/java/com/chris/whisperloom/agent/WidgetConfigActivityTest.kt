@@ -131,7 +131,7 @@ class WidgetConfigActivityTest {
 
         compose.onNodeWithText("Welches Profil?").assertExists()
         assertEquals("Solange nichts gewaehlt ist: Abbruch", Activity.RESULT_CANCELED to id, ergebnis(activity))
-        compose.onNode(hasText("Sprachauftrag") and isSelectable()).assertIsSelected()
+        compose.onNode(hasText("Sprach-Command") and isSelectable()).assertIsSelected()
 
         compose.onNode(hasText("Einkauf") and isSelectable()).performClick()
         compose.waitForIdle()
@@ -173,7 +173,7 @@ class WidgetConfigActivityTest {
         val activity = oeffnen(id)
 
         compose.onNodeWithText("Welches Profil?").assertExists()
-        compose.onNode(hasText("Sprachauftrag") and isSelectable()).assertIsSelected()
+        compose.onNode(hasText("Sprach-Command") and isSelectable()).assertIsSelected()
         assertFalse(activity.isFinishing)
     }
 
@@ -199,9 +199,9 @@ class WidgetConfigActivityTest {
         val activity = oeffnen(id)
 
         compose.onNode(hasText("Einkauf") and isSelectable()).assertIsSelected()
-        compose.onNode(hasText("Sprachauftrag") and isSelectable()).assertIsNotSelected()
+        compose.onNode(hasText("Sprach-Command") and isSelectable()).assertIsNotSelected()
 
-        compose.onNode(hasText("Sprachauftrag") and isSelectable()).performClick()
+        compose.onNode(hasText("Sprach-Command") and isSelectable()).performClick()
         compose.waitForIdle()
 
         assertEquals(Activity.RESULT_OK to id, ergebnis(activity))

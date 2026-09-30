@@ -151,8 +151,8 @@ class WidgetProfileTest {
         assertEquals("", WidgetProfile.clip(""))
     }
 
-    @Test fun einLeererNameZeigtSprachauftrag() {
-        assertEquals("Sprachauftrag", WidgetProfile("x").displayName(ctx))
+    @Test fun einLeererNameZeigtSprachCommand() {
+        assertEquals("Sprach-Command", WidgetProfile("x").displayName(ctx))
         assertEquals("Einkauf", WidgetProfile("x", name = "Einkauf").displayName(ctx))
     }
 

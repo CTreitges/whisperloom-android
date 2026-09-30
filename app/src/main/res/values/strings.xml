@@ -558,8 +558,8 @@
     <string name="cd_mic_error">Fehler — antippen für erneuten Versuch</string>
 
     <!-- ==== Sprachauftrag: Widget (Paket B) ======================================= -->
-    <string name="widget_label">Sprachauftrag</string>
-    <string name="widget_description">Aufnehmen und als Auftrag an deinen eigenen Agenten schicken.</string>
+    <string name="widget_label">Sprach-Command</string>
+    <string name="widget_description">Pro Widget: sprechen und als Auftrag an deinen eigenen Server schicken.</string>
     <string name="widget_ready">Tippen und sprechen</string>
     <string name="widget_working">Wird gesendet …</string>
     <string name="widget_working_retry">%1$s — neuer Versuch folgt, tippen = jetzt</string>

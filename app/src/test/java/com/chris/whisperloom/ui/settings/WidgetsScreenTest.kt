@@ -235,7 +235,7 @@ class WidgetsScreenTest {
 
     @Test fun dasStandardprofilStehtMitSeinemModusDa() {
         show()
-        compose.onNodeWithText("Sprachauftrag").assertExists()
+        compose.onNodeWithText("Sprach-Command").assertExists()
         compose.onNodeWithText("Tippen startet und stoppt").assertExists()
         compose.onNodeWithText("Auf dem Startbildschirm").assertDoesNotExist()
     }
@@ -324,7 +324,7 @@ class WidgetsScreenTest {
 
     @Test fun dasStandardprofilLaesstSichNichtLoeschen() {
         show()
-        bearbeiten("Sprachauftrag")
+        bearbeiten("Sprach-Command")
         compose.onNodeWithText("Profil bearbeiten").assertExists()
         compose.onNodeWithText("Profil löschen").assertDoesNotExist()
     }
@@ -337,7 +337,7 @@ class WidgetsScreenTest {
         bearbeiten("Einkauf")
         click("Profil löschen")
         compose.onNodeWithText("„Einkauf“ löschen?").assertExists()
-        compose.onNodeWithText("1 Widget zeigt danach „Sprachauftrag“.").assertExists()
+        compose.onNodeWithText("1 Widget zeigt danach „Sprach-Command“.").assertExists()
         assertTrue("Erst die Rueckfrage, dann das Loeschen", store.get(p.id) != null)
 
         click("Löschen")
@@ -364,11 +364,11 @@ class WidgetsScreenTest {
         val id = widget()
         show()
         compose.onNodeWithText("Auf dem Startbildschirm").assertExists()
-        click("Widget 1 · Sprachauftrag")
+        click("Widget 1 · Sprach-Command")
         compose.onNodeWithText("Welches Profil?").assertExists()
 
         // "Einkauf" steht auch in der Profilkarte dahinter; auswaehlbar ist nur die Zeile im Sheet.
-        compose.onNode(hasText("Sprachauftrag") and isSelectable()).assertIsSelected()
+        compose.onNode(hasText("Sprach-Command") and isSelectable()).assertIsSelected()
         compose.onNode(hasText("Einkauf") and isSelectable()).performClick()
         compose.waitForIdle()
 

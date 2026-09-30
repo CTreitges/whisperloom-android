@@ -54,6 +54,9 @@ object LoomPalette {
     val warningContainer = Color(0xFF4A3600)
     val onWarningContainer = Color(0xFFFFE3A8)
 
+    // Abgeleitet: Schatten des Widget-Namens (nur im Widget-Layout genutzt)
+    val labelShadow = Color(0xCC000000)
+
     /** Zusatz-Tokens als LoomColors — Default von LocalLoomColors ausserhalb von WhisperLoomTheme. */
     val loomColors = LoomColors(
         recording = recording,

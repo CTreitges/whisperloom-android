@@ -76,8 +76,11 @@ class VoiceTaskWidgetVariantsTest {
 
     private fun sichtbarkeit(wurzel: View, id: Int): Int = wurzel.findViewById<View>(id).visibility
 
-    /** Aus welcher Ressource der Hintergrund stammt (RemoteViews ruft setBackgroundResource). */
-    private fun hintergrund(wurzel: View): Int = shadowOf(wurzel.background).createdFromResId
+    /** Aus welcher Ressource der Hintergrund der Kachel stammt (RemoteViews ruft setBackgroundResource). */
+    private fun hintergrund(wurzel: View): Int =
+        shadowOf(wurzel.findViewById<View>(R.id.widget_tile).background).createdFromResId
+
+    private fun name(wurzel: View): TextView = wurzel.findViewById(R.id.widget_name)
 
     /** So faerbt ImageView.setColorFilter(int) — der Weg, den RemoteViews fuer das Symbol nimmt. */
     private fun faerbung(farbe: Int): ColorFilter = PorterDuffColorFilter(ctx.getColor(farbe), PorterDuff.Mode.SRC_ATOP)
@@ -93,18 +96,75 @@ class VoiceTaskWidgetVariantsTest {
                 assertEquals(VoiceTaskWidgetView.contentDescription(ctx, einkauf, state, 0, ""), wurzel.contentDescription)
                 assertEquals(View.VISIBLE, sichtbarkeit(wurzel, R.id.widget_icon))
                 assertEquals(View.GONE, sichtbarkeit(wurzel, R.id.widget_photo))
-                val name = wurzel.findViewById<TextView>(R.id.widget_name)
-                if (layout == WidgetLayout.ICON) assertNull("1x1 zeigt keinen Namen", name)
-                else assertEquals("$layout/$state", "Einkauf", name.text.toString())
+                assertEquals(
+                    "$layout/$state",
+                    VoiceTaskWidgetView.status(ctx, state, 0, ""),
+                    wurzel.findViewById<TextView>(R.id.widget_status).text.toString(),
+                )
+                // Auch 1x1 traegt den Namen — unter der Kachel, sichtbar.
+                assertEquals("$layout/$state", "Einkauf", name(wurzel).text.toString())
+                assertEquals("$layout/$state", View.VISIBLE, name(wurzel).visibility)
+                // Der Name liegt auf dem Hintergrundbild, nicht auf der Kachel: eine Farbe in jedem Zustand.
+                assertEquals("$layout/$state", ctx.getColor(R.color.loom_onSurface), name(wurzel).currentTextColor)
             }
         }
     }
 
-    @Test fun ohneEigenenNamenStehtSprachauftragDa() {
+    @Test fun derNameStehtUnterDerKachelUndNurDieKachelHatDenHintergrund() {
+        WidgetLayout.entries.forEach { layout ->
+            val wurzel = angewendet(variante(layout, einkauf)) as ViewGroup
+            val kachel = wurzel.findViewById<ViewGroup>(R.id.widget_tile)
+            assertNull("$layout: die Wurzel ist durchsichtig", wurzel.background)
+            assertEquals(
+                "$layout: Kachel oben, Name darunter",
+                listOf(kachel, name(wurzel)),
+                (0 until wurzel.childCount).map { wurzel.getChildAt(it) },
+            )
+            listOf(R.id.widget_icon, R.id.widget_photo, R.id.widget_status).forEach { id ->
+                assertNotNull("$layout: gehoert in die Kachel", kachel.findViewById<View>(id))
+            }
+            assertEquals("$layout", R.drawable.widget_bg_ready, hintergrund(wurzel))
+            // Den Zustand zeigt die Kachel; die Wurzel bleibt auch waehrend der Aufnahme durchsichtig.
+            val aufnahme = angewendet(variante(layout, einkauf, state = VoiceTaskState.RECORDING))
+            assertEquals("$layout", R.drawable.widget_bg_recording, hintergrund(aufnahme))
+            assertNull("$layout", aufnahme.background)
+            // Lesbar auf hellem wie dunklem Hintergrundbild: Schatten aus dem Layout (nicht fernsteuerbar).
+            assertEquals("$layout", ctx.getColor(R.color.loom_labelShadow), name(wurzel).shadowColor)
+            assertTrue("$layout", name(wurzel).shadowRadius > 0f)
+            assertEquals("$layout", 1, name(wurzel).maxLines)
+        }
+    }
+
+    @Test fun ohneEigenenNamenStehtSprachCommandDa() {
         val wurzel = angewendet(variante(WidgetLayout.ROW))
-        assertEquals(ctx.getString(R.string.widget_label), wurzel.findViewById<TextView>(R.id.widget_name).text.toString())
+        assertEquals("Sprach-Command", name(wurzel).text.toString())
+        assertEquals(ctx.getString(R.string.widget_label), name(wurzel).text.toString())
         // Ohne eigenen Namen klingt TalkBack wie vor den Profilen.
         assertEquals(cd(VoiceTaskState.READY), wurzel.contentDescription)
+    }
+
+    @Test fun einAusgeblendeterNameFehltInJederVariante() {
+        val ohneName = einkauf.copy(showName = false)
+        WidgetLayout.entries.forEach { layout ->
+            val wurzel = angewendet(variante(layout, ohneName))
+            assertEquals("$layout", View.GONE, name(wurzel).visibility)
+            // TalkBack nennt ihn trotzdem — sonst klingen zwei Widgets gleich.
+            assertTrue("$layout", wurzel.contentDescription.startsWith("Einkauf"))
+        }
+    }
+
+    @Test fun derNameKommtUndGehtAuchBeimWiederverwenden() {
+        // Der Launcher recycelt die View (reapply): die Sichtbarkeit muss bei jedem Zeichnen neu
+        // gesetzt werden, sonst bliebe ein ausgeblendeter Name weg oder ein alter stehen.
+        WidgetLayout.entries.forEach { layout ->
+            val wurzel = angewendet(variante(layout, einkauf))
+            variante(layout, einkauf.copy(showName = false)).reapply(ctx, wurzel)
+            assertEquals("$layout", View.GONE, name(wurzel).visibility)
+
+            variante(layout, einkauf.copy(name = "Garten")).reapply(ctx, wurzel)
+            assertEquals("$layout", View.VISIBLE, name(wurzel).visibility)
+            assertEquals("$layout", "Garten", name(wurzel).text.toString())
+        }
     }
 
     @Test fun derBildschirmleserNenntDenProfilnamen() {
@@ -130,14 +190,21 @@ class VoiceTaskWidgetVariantsTest {
     }
 
     @Test fun jedeVariantePasstInIhreIdealgroesse() {
-        WidgetLayout.entries.forEach { layout ->
-            val wurzel = angewendet(variante(layout, einkauf, state = VoiceTaskState.ERROR, message = "Server nicht erreichbar"))
-            echteTexthoehen(wurzel)
-            wurzel.measure(
-                View.MeasureSpec.makeMeasureSpec(dp(layout.w), View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
-            )
-            assertTrue("$layout braucht ${wurzel.measuredHeight}px, hat ${dp(layout.h)}px", wurzel.measuredHeight <= dp(layout.h))
+        // Mit Namen unter der Kachel und ohne: die Idealgroesse muss beides tragen.
+        listOf(true, false).forEach { mitNamen ->
+            val profil = einkauf.copy(showName = mitNamen)
+            WidgetLayout.entries.forEach { layout ->
+                val wurzel = angewendet(variante(layout, profil, state = VoiceTaskState.ERROR, message = "Server nicht erreichbar"))
+                echteTexthoehen(wurzel)
+                wurzel.measure(
+                    View.MeasureSpec.makeMeasureSpec(dp(layout.w), View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+                )
+                assertTrue(
+                    "$layout (Name: $mitNamen) braucht ${wurzel.measuredHeight}px, hat ${dp(layout.h)}px",
+                    wurzel.measuredHeight <= dp(layout.h),
+                )
+            }
         }
     }
 
@@ -241,6 +308,20 @@ class VoiceTaskWidgetVariantsTest {
         assertEquals(R.drawable.ic_mic, ressource(b))
     }
 
+    @Test fun jedesWidgetZeigtOderVerbirgtDenNamenSeinesProfils() {
+        bereitMachen()
+        val store = WidgetProfileStore(ctx)
+        store.save(einkauf.copy(showName = false))
+        val eins = widget()
+        val zwei = widget()
+        store.bind(eins, einkauf.id)
+
+        VoiceTaskWidgetView.push(ctx, VoiceTaskState.READY)
+
+        assertEquals(View.GONE, sichtbarkeit(shadowOf(manager).getViewFor(eins), R.id.widget_name))
+        assertEquals(View.VISIBLE, sichtbarkeit(shadowOf(manager).getViewFor(zwei), R.id.widget_name))
+    }
+
     @Test fun einGespeichertesFotoErscheintEinFehlendesFaelltAufsMikrofonZurueck() {
         bereitMachen()
         val store = WidgetProfileStore(ctx)
@@ -307,7 +388,7 @@ class VoiceTaskWidgetVariantsTest {
 
         VoiceTaskWidgetView.push(ctx, VoiceTaskState.READY)
 
-        // Ohne gemeldete Groesse: STACK, also mit Namen.
+        // Ohne gemeldete Groesse: STACK, der Name steht unter der Kachel.
         fun name(id: Int) = shadowOf(manager).getViewFor(id).findViewById<TextView>(R.id.widget_name).text.toString()
         assertEquals("Einkauf", name(eins))
         assertEquals(ctx.getString(R.string.widget_label), name(zwei))
