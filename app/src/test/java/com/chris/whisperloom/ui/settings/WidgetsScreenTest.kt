@@ -32,6 +32,7 @@ import com.chris.whisperloom.agent.SpeechPause
 import com.chris.whisperloom.agent.VoiceTaskWidget
 import com.chris.whisperloom.agent.WidgetProfile
 import com.chris.whisperloom.agent.WidgetProfileStore
+import com.chris.whisperloom.agent.serverEinrichten
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SystemStatus
@@ -70,12 +71,6 @@ class WidgetsScreenTest {
 
     private fun widget(): Int =
         shadowOf(AppWidgetManager.getInstance(ctx)).createWidget(VoiceTaskWidget::class.java, R.layout.widget_task)
-
-    private fun agentEinrichten() = Prefs(ctx).apply {
-        agentEnabled = true
-        agentUrl = "https://bridge.example.de"
-        agentToken = "geheim"
-    }
 
     /** Was der Photo Picker zurueckgibt — er antwortet sofort, statt eine echte Auswahl zu oeffnen. */
     private var bild: Uri? = null
@@ -133,9 +128,9 @@ class WidgetsScreenTest {
         compose.onNodeWithText("2 Profile · 1 auf dem Startbildschirm").assertExists()
     }
 
-    // --- Hinweis ohne Sprachauftrag ----------------------------------------------------
+    // --- Hinweis ohne Pro Widgets -------------------------------------------------------
 
-    @Test fun ohneSprachauftragFuehrtEinHinweisZuDenErweitertenOptionen() {
+    @Test fun ohneProWidgetsFuehrtEinHinweisZuDenErweitertenOptionen() {
         show()
         compose.onNodeWithText("Der Sprachauftrag ist aus. Die Widgets nehmen erst auf, wenn er unter „Erweiterte Optionen“ eingerichtet ist.")
             .assertIsDisplayed()
@@ -143,8 +138,8 @@ class WidgetsScreenTest {
         assertEquals(Screen.Agent, nav.current)
     }
 
-    @Test fun mitEingerichtetemSprachauftragKeinHinweis() {
-        agentEinrichten()
+    @Test fun mitProWidgetsKeinHinweis() {
+        serverEinrichten(ctx)
         show()
         compose.onNodeWithText("Erweiterte Optionen").assertDoesNotExist()
     }
@@ -161,7 +156,7 @@ class WidgetsScreenTest {
     @Test fun neuesProfilWirdSofortAngelegtUndGeoeffnet() {
         show()
         click("Neues Profil")
-        assertEquals(listOf("", "Profil 2"), store.all().map { it.name })
+        assertEquals(listOf("", "Sprach-Command 2"), store.all().map { it.name })
         compose.onNodeWithText("Profil bearbeiten").assertExists()
     }
 

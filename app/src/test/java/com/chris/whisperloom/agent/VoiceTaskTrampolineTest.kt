@@ -47,13 +47,10 @@ class VoiceTaskTrampolineTest {
     @Before fun aufbauen() {
         app.getSharedPreferences("whisperloom", Context.MODE_PRIVATE).edit().clear().commit()
         app.getSharedPreferences(VoiceTaskStore.FILE, Context.MODE_PRIVATE).edit().clear().commit()
+        app.getSharedPreferences(WidgetProfileStore.FILE, Context.MODE_PRIVATE).edit().clear().commit()
         store = VoiceTaskStore(app)
         store.clear()
-        Prefs(app).apply {
-            agentEnabled = true
-            agentUrl = "https://bridge.example.de"
-            agentToken = "geheim"
-        }
+        serverEinrichten(app)
         shadowOf(app).grantPermissions(Manifest.permission.RECORD_AUDIO)
         shadowOf(app).clearNextStartedActivities()
         VoiceTaskWork.enqueueImpl = { _, policy, request ->
@@ -69,7 +66,7 @@ class VoiceTaskTrampolineTest {
         ShadowAudioRecord.clearSource()
     }
 
-    private fun auftrag() = store.begin(FloatArray(800) { 0.3f }, 4000, "2026-09-21T20:00:00Z")
+    private fun auftrag() = store.begin(FloatArray(800) { 0.3f }, 4000, "2026-09-21T20:00:00Z", WidgetProfile.DEFAULT_ID)
 
     /** Ein echtes Widget — nur so ist pruefbar, was nach dem Tipp zu sehen ist. */
     private fun widget(): Int =
@@ -111,9 +108,16 @@ class VoiceTaskTrampolineTest {
     }
 
     @Test fun ohneEingerichtetenServerFuehrtDerTippInDieApp() {
-        Prefs(app).agentToken = ""
+        serverEinrichten(app, token = "")
         tippen(TapIntent.START)
         assertNull(gestarteterDienst())
+        assertEquals(AppNav.ROUTE_AGENT, shadowOf(app).nextStartedActivity?.getStringExtra(AppNav.EXTRA_ROUTE))
+    }
+
+    @Test fun ohneProWidgetsFuehrtDerTippInDieApp() {
+        Prefs(app).proWidgetsEnabled = false
+        tippen(TapIntent.START)
+        assertNull("Aus heisst aus — auch mit eingerichtetem Server", gestarteterDienst())
         assertEquals(AppNav.ROUTE_AGENT, shadowOf(app).nextStartedActivity?.getStringExtra(AppNav.EXTRA_ROUTE))
     }
 
@@ -190,6 +194,22 @@ class VoiceTaskTrampolineTest {
         val dienst = gestarteterDienst()
         assertEquals(VoiceTaskService.ACTION_START, dienst?.action)
         assertEquals(42, widgetIdIm(dienst))
+    }
+
+    @Test fun esZaehltDerServerDesGetipptenWidgets() {
+        // Seit 3.7.1 hat jedes Widget seinen eigenen Server: ein anderes eingerichtetes Widget hilft nicht.
+        val profiles = WidgetProfileStore(app)
+        val ohne = profiles.create("Ohne Server")
+        profiles.bind(42, ohne.id)
+        tippen(TapIntent.START, 42)
+        assertNull(gestarteterDienst())
+        assertEquals(AppNav.ROUTE_AGENT, shadowOf(app).nextStartedActivity?.getStringExtra(AppNav.EXTRA_ROUTE))
+
+        serverEinrichten(app, token = "")
+        val mit = serverEinrichten(app, profiles.create("Mit Server").id)
+        profiles.bind(43, mit.id)
+        tippen(TapIntent.START, 43)
+        assertEquals("Auch wenn das Standardprofil keinen Server hat", 43, widgetIdIm(gestarteterDienst()))
     }
 
     @Test fun ohneWidgetStartetDerDienstWieBisher() {

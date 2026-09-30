@@ -2,10 +2,7 @@ package com.chris.whisperloom.ui.settings
 
 import android.Manifest
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -15,21 +12,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.fillMaxWidth
 import com.chris.whisperloom.R
-import com.chris.whisperloom.agent.AgentBridge
-import com.chris.whisperloom.agent.AgentUrlCheck
 import com.chris.whisperloom.agent.VoiceTaskStore
 import com.chris.whisperloom.agent.VoiceTaskWidget
 import com.chris.whisperloom.agent.VoiceTaskWork
-import com.chris.whisperloom.api.ServerUrlCheck
-import com.chris.whisperloom.ui.access.AccessTest
-import com.chris.whisperloom.ui.access.PrivacyLine
-import com.chris.whisperloom.ui.access.TestAccessRow
-import com.chris.whisperloom.ui.access.urlProblemText
-import com.chris.whisperloom.ui.components.ApiKeyField
 import com.chris.whisperloom.ui.components.DetailScaffold
 import com.chris.whisperloom.ui.components.DisclosureKind
 import com.chris.whisperloom.ui.components.LoomIcon
@@ -69,12 +56,9 @@ fun AgentScreen(nav: NavState) {
     var offenerAuftrag by remember { mutableStateOf(VoiceTaskStore(ctx).hasWork) }
     val verworfen = stringResource(R.string.agent_discard_done)
 
-    val urlProblem = if (prefs.agentUrl.isBlank()) null else AgentUrlCheck.check(prefs.agentUrl)
-    val complete = prefs.agentUrl.isNotBlank() && prefs.agentToken.isNotBlank() &&
-        urlProblem?.severity != ServerUrlCheck.Severity.ERROR
-
-    // Das Widget zeigt "aus", solange etwas fehlt — nach jeder Aenderung hier neu zeichnen.
-    LaunchedEffect(prefs.agentEnabled, prefs.agentUrl, prefs.agentToken, hasMic) {
+    // Das Widget zeigt "aus", solange Pro Widgets aus sind — nach jeder Aenderung hier neu zeichnen.
+    // Server und Token stehen seit 3.7.1 je Widget im Profil-Editor.
+    LaunchedEffect(prefs.proWidgetsEnabled, hasMic) {
         VoiceTaskWidget.refresh(ctx)
     }
 
@@ -94,37 +78,12 @@ fun AgentScreen(nav: NavState) {
                 SwitchRow(
                     headline = stringResource(R.string.agent_enable),
                     supporting = stringResource(R.string.agent_enable_sub),
-                    checked = prefs.agentEnabled,
-                    onCheckedChange = { prefs.agentEnabled = it },
+                    checked = prefs.proWidgetsEnabled,
+                    onCheckedChange = { prefs.proWidgetsEnabled = it },
                 )
             }
 
-            SectionCard(title = stringResource(R.string.agent_card_connection)) {
-                OutlinedTextField(
-                    value = prefs.agentUrl,
-                    onValueChange = { prefs.agentUrl = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text(stringResource(R.string.agent_url)) },
-                    placeholder = { Text("https://bridge.example.de") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                    isError = urlProblem?.severity == ServerUrlCheck.Severity.ERROR,
-                    supportingText = {
-                        Text(if (urlProblem != null) urlProblemText(urlProblem) else stringResource(R.string.agent_url_hint))
-                    },
-                )
-                ApiKeyField(
-                    value = prefs.agentToken,
-                    onValueChange = { prefs.agentToken = it },
-                    label = stringResource(R.string.agent_token),
-                )
-                TestAccessRow(label = stringResource(R.string.agent_check), enabled = complete) {
-                    AccessTest.bridge(AgentBridge(prefs.agentUrl, prefs.agentToken))
-                }
-                PrivacyLine(stringResource(R.string.agent_privacy))
-            }
-
-            if (prefs.agentEnabled && !hasMic) {
+            if (prefs.proWidgetsEnabled && !hasMic) {
                 SectionCard(title = stringResource(R.string.agent_card_mic), gap = 4.dp) {
                     LoomRow(
                         headline = stringResource(R.string.agent_mic_missing),

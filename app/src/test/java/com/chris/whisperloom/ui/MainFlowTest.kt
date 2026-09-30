@@ -529,11 +529,10 @@ class MainFlowTest {
         compose.onNodeWithText("Aus").assertExists()
     }
 
-    @Test fun derEingerichteteSprachauftragZeigtSeinenZweck() {
+    @Test fun eingeschalteteProWidgetsZeigenIhrenZweck() {
+        // Der Server steht seit 3.7.1 je Widget im Profil — im Hub zaehlt nur der Schalter.
         prefs.engine = Engine.ONLINE
-        prefs.agentEnabled = true
-        prefs.agentUrl = "https://bridge.example.de"
-        prefs.agentToken = "geheim"
+        prefs.proWidgetsEnabled = true
         screen(env()) { SettingsHubScreen(it) }
         compose.onNodeWithText("Sprachauftrag an einen eigenen Agenten").assertExists()
     }

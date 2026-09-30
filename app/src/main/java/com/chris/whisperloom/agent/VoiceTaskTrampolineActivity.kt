@@ -36,8 +36,10 @@ class VoiceTaskTrampolineActivity : Activity() {
     }
 
     private fun start() {
-        val prefs = Prefs(this)
-        if (!prefs.agentReady) {
+        // Welches Widget gestartet hat — dessen Profil bestimmt Server und wie die Aufnahme endet.
+        val widgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
+        // Erst aufnehmen, wenn das Widget auch senden kann — sonst waere die Transkription umsonst bezahlt.
+        if (!Prefs(this).proWidgetsEnabled || !WidgetProfileStore(this).forWidget(widgetId).serverReady) {
             openApp()
             return
         }
@@ -47,8 +49,6 @@ class VoiceTaskTrampolineActivity : Activity() {
             return
         }
         val service = Intent(this, VoiceTaskService::class.java).setAction(VoiceTaskService.ACTION_START)
-        // Welches Widget gestartet hat — dessen Profil bestimmt, wie die Aufnahme endet.
-        val widgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
         if (widgetId != AppWidgetManager.INVALID_APPWIDGET_ID) service.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
         startForegroundService(service)
     }

@@ -10,22 +10,44 @@ import org.json.JSONObject
  * welches Widget welches Profil zeigt, haelt [WidgetProfileStore] fest.
  *
  * Gespeichert als JSON, tolerant gelesen: fehlt ein Feld, gilt der Default; unbekannte Felder
- * werden ignoriert. So nehmen spaetere Felder (Ziel-Bridge, Textstufe ...) keinen Migrationsschritt.
+ * werden ignoriert. So nehmen spaetere Felder (Textstufe ...) keinen Migrationsschritt.
+ *
+ * Das Server-Token steht im Klartext in `whisperloom_widgets.xml` (wie frueher `agent_token` in den
+ * Einstellungen; die Datei ist aus jedem Backup ausgeschlossen). [toString] zeigt es nie.
  */
 data class WidgetProfile(
     /** [DEFAULT_ID] oder eine UUID. */
     val id: String,
-    /** Leer = [displayName] zeigt "Sprachauftrag". Getrimmt, hoechstens [NAME_MAX] Zeichen. */
+    /** Leer = [displayName] zeigt [R.string.widget_label]. Getrimmt, hoechstens [NAME_MAX] Zeichen. */
     val name: String = "",
     val icon: ProfileIcon = ProfileIcon.DEFAULT,
     /** false = Tippen startet, Tippen stoppt (Verhalten ohne Profil). */
     val autoStop: Boolean = false,
     /** Stille nach erkannter Sprache, die die Aufnahme beendet; zaehlt nur mit [autoStop]. */
     val pause: SpeechPause = SpeechPause.NORMAL,
+    val kind: WidgetKind = WidgetKind.VOICE_COMMAND,
+    /** Name unter der Kachel auf dem Startbildschirm anzeigen. */
+    val showName: Boolean = true,
+    /** Base-URL der Bridge ohne Pfad, z. B. https://hermes-bridge.example.de. */
+    val serverUrl: String = "",
+    /** Bearer-Token der Bridge. */
+    val serverToken: String = "",
 ) {
     val isDefault: Boolean get() = id == DEFAULT_ID
 
+    /**
+     * Brauchbarer Server — erst dann kann dieses Widget ueberhaupt etwas senden. Die Adresse wird
+     * geprueft, nicht nur auf "nicht leer": eine Adresse ohne Schema haette das Widget sonst auf
+     * "bereit" gestellt, und der Fehler waere erst nach Aufnahme UND bezahlter Transkription aufgefallen.
+     */
+    val serverReady: Boolean get() = serverToken.isNotBlank() && AgentUrlCheck.isValid(serverUrl)
+
     fun displayName(ctx: Context): String = name.ifEmpty { ctx.getString(R.string.widget_label) }
+
+    /** Ohne Token im Klartext: ein `Log.d("$profile")` oder ein Absturzbericht darf es nie zeigen. */
+    override fun toString(): String =
+        "WidgetProfile(id=$id, name=$name, icon=$icon, autoStop=$autoStop, pause=$pause, kind=$kind, " +
+            "showName=$showName, serverUrl=$serverUrl, serverToken=${if (serverToken.isEmpty()) "" else "***"})"
 
     fun toJson(): JSONObject = JSONObject()
         .put(K_ID, id)
@@ -33,6 +55,10 @@ data class WidgetProfile(
         .put(K_ICON, ProfileIcon.encode(icon))
         .put(K_AUTO_STOP, autoStop)
         .put(K_PAUSE, pause.key)
+        .put(K_KIND, kind.key)
+        .put(K_SHOW_NAME, showName)
+        .put(K_SERVER_URL, serverUrl)
+        .put(K_SERVER_TOKEN, serverToken)
 
     companion object {
         /** Das Standardprofil: nicht loeschbar, faengt jede unbekannte Profil-Id auf. */
@@ -64,6 +90,10 @@ data class WidgetProfile(
                 icon = ProfileIcon.decode(text(o, K_ICON)),
                 autoStop = o.optBoolean(K_AUTO_STOP, false),
                 pause = SpeechPause.fromKey(text(o, K_PAUSE)),
+                kind = WidgetKind.fromKey(text(o, K_KIND)),
+                showName = o.optBoolean(K_SHOW_NAME, true),
+                serverUrl = text(o, K_SERVER_URL).trim(),
+                serverToken = text(o, K_SERVER_TOKEN),
             )
         }
 
@@ -93,6 +123,10 @@ data class WidgetProfile(
         private const val K_ICON = "icon"
         private const val K_AUTO_STOP = "autoStop"
         private const val K_PAUSE = "pause"
+        private const val K_KIND = "kind"
+        private const val K_SHOW_NAME = "showName"
+        private const val K_SERVER_URL = "serverUrl"
+        private const val K_SERVER_TOKEN = "serverToken"
     }
 }
 

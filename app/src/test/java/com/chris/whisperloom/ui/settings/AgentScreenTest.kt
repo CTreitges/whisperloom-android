@@ -5,17 +5,15 @@ import android.content.Context
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsEnabled
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.agent.VoiceTaskState
 import com.chris.whisperloom.agent.VoiceTaskStore
 import com.chris.whisperloom.agent.VoiceTaskWork
+import com.chris.whisperloom.agent.WidgetProfile
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SystemStatus
@@ -35,7 +33,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
-/** E7 — Erweiterte Optionen: Schalter, Adresse, Token, Pruefung, Anleitung. */
+/**
+ * E7 — Erweiterte Optionen: Schalter, Mikrofon, offener Auftrag, Anleitung. Adresse, Token und
+ * "Verbindung pruefen" stehen seit 3.7.1 je Widget im Profil-Editor.
+ */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w411dp-h2400dp-xxhdpi")
 class AgentScreenTest {
@@ -70,48 +71,21 @@ class AgentScreenTest {
     @Test fun derSchalterIstZuerstAus() {
         show()
         compose.onNodeWithText("Sprachauftrag aktivieren").assertIsDisplayed()
-        assertFalse(Prefs(ctx).agentEnabled)
+        assertFalse(Prefs(ctx).proWidgetsEnabled)
     }
 
     @Test fun derSchalterSchreibtSofortDurch() {
         show()
         compose.onNodeWithText("Sprachauftrag aktivieren").performClick()
         compose.waitForIdle()
-        assertTrue("Kein Speichern-Knopf — die Zuweisung schreibt direkt", Prefs(ctx).agentEnabled)
+        assertTrue("Kein Speichern-Knopf — die Zuweisung schreibt direkt", Prefs(ctx).proWidgetsEnabled)
     }
 
-    @Test fun dieAdresseWirdSofortGespeichert() {
+    @Test fun serverUndTokenStehenNichtMehrHier() {
+        // Jedes Widget hat seinen eigenen Server — ein globales Feld waere eine zweite, falsche Wahrheit.
+        Prefs(ctx).proWidgetsEnabled = true
         show()
-        compose.onNodeWithText("Server-Adresse").performTextInput("https://bridge.example.de")
-        compose.waitForIdle()
-        assertEquals("https://bridge.example.de", Prefs(ctx).agentUrl)
-    }
-
-    @Test fun einTippfehlerInDerAdresseWirdBenannt() {
-        show()
-        compose.onNodeWithText("Server-Adresse").performTextInput("bridge.example.de")
-        compose.waitForIdle()
-        compose.onNodeWithText("URL muss mit http:// oder https:// beginnen").assertIsDisplayed()
-    }
-
-    @Test fun pruefenBleibtGesperrtSolangeEtwasFehlt() {
-        show()
-        compose.onNodeWithText("Verbindung prüfen").assertIsNotEnabled()
-    }
-
-    @Test fun pruefenWirdMitAdresseUndTokenMoeglich() {
-        Prefs(ctx).apply {
-            agentUrl = "https://bridge.example.de"
-            agentToken = "geheim"
-        }
-        show()
-        compose.onNodeWithText("Verbindung prüfen").assertIsEnabled()
-    }
-
-    @Test fun derDatenschutzHinweisStehtDa() {
-        show()
-        compose.onNodeWithText("Transkript und Auftrag gehen an genau den Server, den du hier einträgst — sonst nirgendwohin. Das Aufnehmen selbst läuft wie beim Diktat über die eingestellte Erkennung.")
-            .assertIsDisplayed()
+        listOf("Server-Adresse", "Token", "Verbindung prüfen").forEach { compose.onNodeWithText(it).assertDoesNotExist() }
     }
 
     @Test fun dieAnleitungFuehrtInsZweiteTutorial() {
@@ -129,7 +103,7 @@ class AgentScreenTest {
     }
 
     @Test fun ohneMikrofonErscheintDerHinweisNurWennEingeschaltet() {
-        Prefs(ctx).agentEnabled = true
+        Prefs(ctx).proWidgetsEnabled = true
         show(micGranted = false)
         compose.onNodeWithText("Für den Sprachauftrag fehlt die Mikrofon-Berechtigung.").assertIsDisplayed()
     }
@@ -137,7 +111,7 @@ class AgentScreenTest {
     @Test fun derHinweisVerschwindetSobaldDasMikrofonErlaubtIst() {
         // Der Screen muss den Status lesen, nicht selbst checkSelfPermission rufen: sonst
         // bliebe die Warnung stehen, nachdem der Nutzer die Berechtigung gerade erteilt hat.
-        Prefs(ctx).agentEnabled = true
+        Prefs(ctx).proWidgetsEnabled = true
         show(micGranted = false)
         compose.onNodeWithText("Für den Sprachauftrag fehlt die Mikrofon-Berechtigung.").assertIsDisplayed()
 
@@ -155,7 +129,7 @@ class AgentScreenTest {
 
     @Test fun einHaengenderAuftragLaesstSichVerwerfen() {
         val store = VoiceTaskStore(ctx)
-        store.begin(FloatArray(800) { 0.3f }, 4000, "2026-09-21T20:00:00Z")
+        store.begin(FloatArray(800) { 0.3f }, 4000, "2026-09-21T20:00:00Z", WidgetProfile.DEFAULT_ID)
         store.state = VoiceTaskState.WORKING
         var abgebrochen = 0
         val echtesCancel = VoiceTaskWork.cancelImpl

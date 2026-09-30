@@ -80,11 +80,12 @@ class VoiceTaskWidget : AppWidgetProvider() {
     companion object {
 
         /**
-         * Der wahre Zustand, aus drei unabhaengigen Quellen: ist das Feature ueberhaupt
-         * eingerichtet, darf die App das Mikrofon, und liegt ein Auftrag herum.
+         * Der wahre Zustand, aus drei unabhaengigen Quellen: sind Pro Widgets ueberhaupt an, darf
+         * die App das Mikrofon, und liegt ein Auftrag herum. Ob das Widget einen Server hat, prueft
+         * der Tipp ([VoiceTaskTrampolineActivity]).
          */
         fun resolve(ctx: Context): Pair<VoiceTaskState, String> {
-            if (!Prefs(ctx).agentReady) return VoiceTaskState.OFF to ""
+            if (!Prefs(ctx).proWidgetsEnabled) return VoiceTaskState.OFF to ""
             if (!hasMicPermission(ctx)) return VoiceTaskState.NO_MIC to ""
             val store = VoiceTaskStore(ctx)
             return VoiceTaskUi.afterRestart(store.state, store.hasWork) to store.message

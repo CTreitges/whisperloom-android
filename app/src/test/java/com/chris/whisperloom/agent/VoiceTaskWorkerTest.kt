@@ -49,6 +49,7 @@ class VoiceTaskWorkerTest {
     @Before fun aufbauen() {
         app.getSharedPreferences("whisperloom", Context.MODE_PRIVATE).edit().clear().commit()
         app.getSharedPreferences(VoiceTaskStore.FILE, Context.MODE_PRIVATE).edit().clear().commit()
+        app.getSharedPreferences(WidgetProfileStore.FILE, Context.MODE_PRIVATE).edit().clear().commit()
         store = VoiceTaskStore(app)
         store.clear()
         pipeline()
@@ -84,7 +85,7 @@ class VoiceTaskWorkerTest {
         }
     }
 
-    private fun auftragAnlegen() = store.begin(FloatArray(800) { 0.3f }, 4000, "2026-09-21T20:00:00Z")
+    private fun auftragAnlegen() = store.begin(FloatArray(800) { 0.3f }, 4000, "2026-09-21T20:00:00Z", WidgetProfile.DEFAULT_ID)
 
     private fun worker(attempt: Int = 0): VoiceTaskWorker =
         TestListenableWorkerBuilder<VoiceTaskWorker>(app).setRunAttemptCount(attempt).build()
@@ -93,11 +94,7 @@ class VoiceTaskWorkerTest {
 
     /** Ein echtes Widget auf dem Startbildschirm — nur so ist pruefbar, was der Nutzer SIEHT. */
     private fun widget(): Int {
-        Prefs(app).apply {
-            agentEnabled = true
-            agentUrl = "https://bridge.example.de"
-            agentToken = "geheim"
-        }
+        serverEinrichten(app)
         shadowOf(app).grantPermissions(Manifest.permission.RECORD_AUDIO)
         return shadowOf(AppWidgetManager.getInstance(app)).createWidget(VoiceTaskWidget::class.java, R.layout.widget_task)
     }
@@ -167,6 +164,30 @@ class VoiceTaskWorkerTest {
         assertFalse(store.hasWork)
         assertEquals(VoiceTaskPipeline.MSG_EMPTY, store.message)
         assertTrue(gesendet.isEmpty())
+    }
+
+    @Test fun einGeloeschtesWidgetVerwirftSeinenAuftrag() {
+        // Der Auftrag kann nie mehr gesendet werden — "erneut senden" liefe ewig ins Leere.
+        val grund = app.getString(R.string.widget_task_profile_gone)
+        auftragAnlegen()
+        pipeline(send = { throw ProfileGoneException(grund) })
+        assertTrue(lauf() is ListenableWorker.Result.Failure)
+        assertFalse(store.hasWork)
+        assertEquals(VoiceTaskState.ERROR, store.state)
+        assertEquals(grund, store.message)
+        assertTrue(gesendet.isEmpty())
+    }
+
+    @Test fun ohneServerOderMitProWidgetsAusBleibtDerAuftragLiegen() {
+        // Nach dem Korrigieren soll ein Tipp reichen — neu sprechen muss niemand.
+        listOf(app.getString(R.string.widget_task_pro_off), app.getString(R.string.widget_task_no_server, "Einkauf")).forEach { grund ->
+            auftragAnlegen()
+            pipeline(send = { throw IllegalStateException(grund) })
+            assertTrue(grund, lauf() is ListenableWorker.Result.Failure)
+            assertTrue(grund, store.hasWork)
+            assertEquals("Der bezahlte Text bleibt fuer den naechsten Tipp", "Kauf Milch", store.text)
+            assertEquals(grund, store.message)
+        }
     }
 
     @Test fun derBereitsErkannteTextWirdNichtNochmalTranskribiert() {

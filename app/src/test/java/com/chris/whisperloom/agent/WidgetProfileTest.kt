@@ -28,6 +28,9 @@ class WidgetProfileTest {
             icon = ProfileIcon.Photo("3f2a-1759140000.png"),
             autoStop = true,
             pause = SpeechPause.LONG,
+            showName = false,
+            serverUrl = "https://bridge.example.de",
+            serverToken = "geheim",
         )
         assertEquals(p, WidgetProfile.fromJson(p.toJson()))
         val liste = listOf(WidgetProfile.DEFAULT, p, WidgetProfile("b", icon = ProfileIcon.BuiltIn("star")))
@@ -40,6 +43,12 @@ class WidgetProfileTest {
         assertEquals(ProfileIcon.BuiltIn("mic"), p!!.icon)
         assertFalse(p.autoStop)
         assertEquals(SpeechPause.NORMAL, p.pause)
+        // Profile von vor 3.7.1: Sprach-Command-Widget, Name sichtbar, noch ohne eigenen Server.
+        assertEquals(WidgetKind.VOICE_COMMAND, p.kind)
+        assertTrue(p.showName)
+        assertEquals("", p.serverUrl)
+        assertEquals("", p.serverToken)
+        assertFalse(p.serverReady)
     }
 
     @Test fun unbekannteFelderStoerenNicht() {
@@ -49,7 +58,7 @@ class WidgetProfileTest {
 
     @Test fun jsonNullIstLeerUndNichtDerText_null() {
         // optString macht aus JSON-null sonst "null" — das Widget hiesse dann "null".
-        val p = lies("""{"id":"x","name":null,"icon":null,"pause":null}""")
+        val p = lies("""{"id":"x","name":null,"icon":null,"pause":null,"kind":null,"showName":null,"serverUrl":null,"serverToken":null}""")
         assertEquals(WidgetProfile("x"), p)
     }
 
@@ -172,11 +181,61 @@ class WidgetProfileTest {
     }
 
     @Test fun dasGespeicherteFormatBleibtStabil() {
-        val json = WidgetProfile("x", name = "N", icon = ProfileIcon.BuiltIn("home"), autoStop = true, pause = SpeechPause.SHORT).toJson()
+        val json = WidgetProfile(
+            "x", name = "N", icon = ProfileIcon.BuiltIn("home"), autoStop = true, pause = SpeechPause.SHORT,
+            showName = false, serverUrl = "https://b.example.de", serverToken = "t",
+        ).toJson()
         assertEquals("x", json.getString("id"))
         assertEquals("N", json.getString("name"))
         assertEquals("b:home", json.getString("icon"))
         assertTrue(json.getBoolean("autoStop"))
         assertEquals("short", json.getString("pause"))
+        assertEquals("voice_command", json.getString("kind"))
+        assertFalse(json.getBoolean("showName"))
+        assertEquals("https://b.example.de", json.getString("serverUrl"))
+        assertEquals("t", json.getString("serverToken"))
+    }
+
+    // --- Server je Widget (3.7.1) -------------------------------------------------
+
+    @Test fun derServerIstErstMitAdresseUndTokenBereit() {
+        assertFalse("Ohne Adresse kann nichts gesendet werden", WidgetProfile("x", serverToken = "geheim").serverReady)
+        assertFalse("Ohne Token kann nichts gesendet werden", WidgetProfile("x", serverUrl = "https://b.example.de").serverReady)
+        assertFalse("Nur Leerzeichen", WidgetProfile("x", serverUrl = "https://b.example.de", serverToken = "  ").serverReady)
+        assertTrue(WidgetProfile("x", serverUrl = "https://b.example.de", serverToken = "geheim").serverReady)
+    }
+
+    @Test fun eineUnbrauchbareAdresseZaehltNichtAlsEingerichtet() {
+        // Sonst stuende das Widget auf "bereit", der Nutzer spraeche, die Transkription waere
+        // bezahlt — und erst danach kaeme der Fehler.
+        assertFalse("Adresse ohne Schema", WidgetProfile("x", serverUrl = "bridge.example.de", serverToken = "geheim").serverReady)
+        assertFalse("Nur Leerzeichen", WidgetProfile("x", serverUrl = "   ", serverToken = "geheim").serverReady)
+        assertTrue("http im LAN ist erlaubt", WidgetProfile("x", serverUrl = "http://192.168.1.5:8080", serverToken = "geheim").serverReady)
+    }
+
+    @Test fun dieAdresseWirdGetrimmtGelesen() {
+        assertEquals("https://b.example.de", lies("""{"id":"x","serverUrl":"  https://b.example.de "}""")!!.serverUrl)
+    }
+
+    @Test fun einUnbekannterTypWirdZumSprachCommand() {
+        assertEquals(WidgetKind.VOICE_COMMAND, lies("""{"id":"x","kind":"uhr"}""")!!.kind)
+        assertEquals(WidgetKind.VOICE_COMMAND, lies("""{"id":"x","kind":3}""")!!.kind)
+    }
+
+    @Test fun dasTokenStehtNieImText() {
+        // Ein Log.d("$profile") oder ein Absturzbericht darf das Token nicht zeigen.
+        val mit = WidgetProfile("x", name = "Einkauf", serverUrl = "https://b.example.de", serverToken = "streng-geheim-42")
+        assertFalse(mit.toString().contains("streng-geheim-42"))
+        assertTrue(mit.toString().contains("serverToken=***"))
+        assertTrue("Der Rest bleibt lesbar", mit.toString().contains("name=Einkauf"))
+        assertTrue(WidgetProfile("x").toString().contains("serverToken=)"))
+    }
+
+    @Test fun dieWidgetTypenSindNachStufeGetrennt() {
+        assertEquals(listOf(WidgetKind.VOICE_COMMAND), WidgetKind.of(Tier.PRO))
+        assertTrue("Normale Widgets folgen spaeter", WidgetKind.of(Tier.NORMAL).isEmpty())
+        // Gespeicherte Schluessel sind festgeschrieben — ein Umbenennen setzte jedes Profil zurueck.
+        assertEquals(listOf("voice_command"), WidgetKind.entries.map { it.key })
+        assertEquals(WidgetKind.VOICE_COMMAND, WidgetKind.fromKey(null))
     }
 }

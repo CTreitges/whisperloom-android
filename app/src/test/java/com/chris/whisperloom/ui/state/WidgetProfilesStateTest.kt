@@ -7,7 +7,11 @@ import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.R
 import com.chris.whisperloom.agent.ProfileIcon
 import com.chris.whisperloom.agent.SpeechPause
+import com.chris.whisperloom.agent.Tier
+import com.chris.whisperloom.agent.VoiceTaskStore
 import com.chris.whisperloom.agent.VoiceTaskWidget
+import com.chris.whisperloom.agent.VoiceTaskWork
+import com.chris.whisperloom.agent.WidgetKind
 import com.chris.whisperloom.agent.WidgetPhoto
 import com.chris.whisperloom.agent.WidgetProfile
 import com.chris.whisperloom.agent.WidgetProfileStore
@@ -15,6 +19,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -33,6 +38,8 @@ class WidgetProfilesStateTest {
 
     @Before fun leeren() {
         ctx.getSharedPreferences(WidgetProfileStore.FILE, Context.MODE_PRIVATE).edit().clear().commit()
+        ctx.getSharedPreferences(VoiceTaskStore.FILE, Context.MODE_PRIVATE).edit().clear().commit()
+        VoiceTaskStore(ctx).clear()
     }
 
     private fun widget(): Int = shadowOf(manager).createWidget(VoiceTaskWidget::class.java, R.layout.widget_task)
@@ -102,12 +109,80 @@ class WidgetProfilesStateTest {
         val s = WidgetProfilesState(ctx)
         val zwei = s.createNew()
         val drei = s.createNew()
-        assertEquals(listOf("Profil 2", "Profil 3"), listOf(zwei.name, drei.name))
+        assertEquals(listOf("Sprach-Command 2", "Sprach-Command 3"), listOf(zwei.name, drei.name))
 
         s.delete(zwei.id)
-        assertEquals("Die Luecke wird gefuellt", "Profil 2", s.createNew().name)
+        assertEquals("Die Luecke wird gefuellt", "Sprach-Command 2", s.createNew().name)
         assertEquals("Kein Doppelname", s.profiles.size, s.profiles.map { it.name }.toSet().size)
-        assertEquals("Profil 4", s.createNew().name)
+        assertEquals("Sprach-Command 4", s.createNew().name)
+    }
+
+    @Test fun einNeuesWidgetUebernimmtDenErstenBrauchbarenServer() {
+        val store = WidgetProfileStore(ctx)
+        store.save(WidgetProfile("kaputt", name = "Kaputt", serverUrl = "ohne-schema.de", serverToken = "x"))
+        store.save(WidgetProfile("gut", name = "Gut", serverUrl = "https://bridge.example.de", serverToken = "geheim"))
+        val s = WidgetProfilesState(ctx)
+
+        val neu = s.createNew()
+
+        assertEquals(WidgetKind.VOICE_COMMAND, neu.kind)
+        assertEquals("https://bridge.example.de", neu.serverUrl)
+        assertEquals("geheim", neu.serverToken)
+        assertEquals("Sofort gespeichert", neu, store.get(neu.id))
+        assertEquals(neu, s.profile(neu.id))
+    }
+
+    @Test fun ohneEingerichtetenServerStartetEinNeuesWidgetLeer() {
+        val neu = WidgetProfilesState(ctx).createNew()
+        assertEquals("", neu.serverUrl)
+        assertEquals("", neu.serverToken)
+        assertFalse(neu.serverReady)
+    }
+
+    @Test fun dieProfileLassenSichNachStufeFiltern() {
+        val s = WidgetProfilesState(ctx)
+        s.createNew()
+        assertEquals("Alle bisherigen Profile sind Pro Widgets", s.profiles, s.profiles(Tier.PRO))
+        assertTrue(s.profiles(Tier.NORMAL).isEmpty())
+    }
+
+    // --- Loeschen verwirft den offenen Auftrag des Profils ------------------------
+
+    private val echtesCancel = VoiceTaskWork.cancelImpl
+
+    @After fun zuruecksetzen() {
+        VoiceTaskWork.cancelImpl = echtesCancel
+    }
+
+    /** Offener Auftrag des Profils [profileId]; zaehlt, wie oft der Job abgebrochen wird. */
+    private fun offenerAuftrag(profileId: String): () -> Int {
+        VoiceTaskStore(ctx).begin(FloatArray(800) { 0.3f }, 4000, "2026-09-21T20:00:00Z", profileId)
+        var abgebrochen = 0
+        VoiceTaskWork.cancelImpl = { abgebrochen++ }
+        return { abgebrochen }
+    }
+
+    @Test fun einGeloeschtesProfilNimmtSeinenOffenenAuftragMit() {
+        val s = WidgetProfilesState(ctx)
+        val p = s.create("Einkauf")
+        val abgebrochen = offenerAuftrag(p.id)
+
+        s.delete(p.id)
+
+        assertFalse("Sein Server ist weg — an einen anderen darf der Auftrag nicht", VoiceTaskStore(ctx).hasWork)
+        assertEquals(1, abgebrochen())
+    }
+
+    @Test fun derAuftragEinesAnderenProfilsBleibt() {
+        val s = WidgetProfilesState(ctx)
+        val p = s.create("Einkauf")
+        val abgebrochen = offenerAuftrag(WidgetProfile.DEFAULT_ID)
+
+        s.delete(p.id)
+        s.delete(WidgetProfile.DEFAULT_ID) // nicht loeschbar — also bleibt auch sein Auftrag
+
+        assertTrue(VoiceTaskStore(ctx).hasWork)
+        assertEquals(0, abgebrochen())
     }
 
     @Test fun neuLesenRaeumtFotosAbgebrochenerImporteWeg() {

@@ -124,7 +124,7 @@ class VoiceTaskWorkManagerTest {
 
     @Test fun einTippLoestEinenLaufendenJobAbUndDerAlteSendetNichts() {
         mitWorkerThread()
-        VoiceTaskStore(app).begin(FloatArray(800) { 0.3f }, 4000, "2026-09-21T20:00:00Z")
+        VoiceTaskStore(app).begin(FloatArray(800) { 0.3f }, 4000, "2026-09-21T20:00:00Z", WidgetProfile.DEFAULT_ID)
         val erkennt = CountDownLatch(1)
         val weiter = CountDownLatch(1)
         val zustaendig = CopyOnWriteArrayList<() -> Boolean>()

@@ -73,7 +73,7 @@ fun WidgetsScreen(nav: NavState) {
 
     DetailScaffold(title = stringResource(R.string.settings_group_widgets), onBack = { nav.pop() }, snack = snack) { padding ->
         ScrollColumn(padding) {
-            if (!prefs.agentReady) {
+            if (!prefs.proWidgetsEnabled) {
                 InfoCard(
                     text = stringResource(R.string.widgets_agent_off),
                     action = {

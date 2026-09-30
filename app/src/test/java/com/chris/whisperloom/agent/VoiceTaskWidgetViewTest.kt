@@ -28,6 +28,7 @@ class VoiceTaskWidgetViewTest {
     @Before fun leeren() {
         ctx.getSharedPreferences("whisperloom", Context.MODE_PRIVATE).edit().clear().commit()
         ctx.getSharedPreferences(VoiceTaskStore.FILE, Context.MODE_PRIVATE).edit().clear().commit()
+        ctx.getSharedPreferences(WidgetProfileStore.FILE, Context.MODE_PRIVATE).edit().clear().commit()
     }
 
     private fun status(state: VoiceTaskState, elapsed: Long = 0, message: String = "") =
@@ -155,21 +156,21 @@ class VoiceTaskWidgetViewTest {
     }
 
     @Test fun einNeuesWidgetIstBereitSobaldAllesStimmt() {
-        Prefs(ctx).apply {
-            agentEnabled = true
-            agentUrl = "https://bridge.example.de"
-            agentToken = "geheim"
-        }
+        serverEinrichten(ctx)
         shadowOf(ctx as android.app.Application).grantPermissions(android.Manifest.permission.RECORD_AUDIO)
         assertEquals(ctx.getString(R.string.widget_ready), zeileEinesEchtenWidgets())
     }
 
+    @Test fun einWidgetMitProWidgetsAusSagtDassNochNichtsEingerichtetIst() {
+        // Aus heisst aus — auch wenn das Widget einen Server hat.
+        serverEinrichten(ctx)
+        Prefs(ctx).proWidgetsEnabled = false
+        shadowOf(ctx as android.app.Application).grantPermissions(android.Manifest.permission.RECORD_AUDIO)
+        assertEquals(ctx.getString(R.string.widget_off), zeileEinesEchtenWidgets())
+    }
+
     @Test fun ohneMikrofonSagtDasWidgetGenauDas() {
-        Prefs(ctx).apply {
-            agentEnabled = true
-            agentUrl = "https://bridge.example.de"
-            agentToken = "geheim"
-        }
+        serverEinrichten(ctx)
         shadowOf(ctx as android.app.Application).denyPermissions(android.Manifest.permission.RECORD_AUDIO)
         assertEquals(ctx.getString(R.string.widget_no_mic), zeileEinesEchtenWidgets())
     }

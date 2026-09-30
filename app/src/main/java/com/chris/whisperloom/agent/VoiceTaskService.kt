@@ -39,6 +39,9 @@ class VoiceTaskService : Service() {
     private var startedAt = 0L
     private var recordedAt = ""
 
+    /** Profil des startenden Widgets — der Auftrag geht an dessen Server. */
+    private var profileId = WidgetProfile.DEFAULT_ID
+
     /**
      * stopSelf() in onCreate haelt ein bereits eingereihtes onStartCommand NICHT auf — ohne
      * dieses Merkmal liefe danach noch start() durch und liesse ein eingefrorenes "nimmt auf"
@@ -115,7 +118,11 @@ class VoiceTaskService : Service() {
         super.onDestroy()
     }
 
-    /** [widgetId]: das startende Widget — sein Profil entscheidet, ob die Aufnahme von selbst endet. */
+    /**
+     * [widgetId]: das startende Widget — sein Profil entscheidet, ob die Aufnahme von selbst endet
+     * und an welchen Server der Auftrag geht. Einmal aufgeloest: ein Umbinden waehrend der
+     * Aufnahme aendert beides nicht mehr.
+     */
     private fun start(widgetId: Int) {
         // Absicht, kein Umschalter: ein zweites START waehrend der Aufnahme ist ein Doppelklick.
         if (recording) return
@@ -124,8 +131,10 @@ class VoiceTaskService : Service() {
             stopSelf()
             return
         }
+        val profile = WidgetProfileStore(this).forWidget(widgetId)
+        profileId = profile.id
         // VOR recorder.start(): sonst gingen die ersten Puffer am Detektor vorbei.
-        armAutoStop(WidgetProfileStore(this).forWidget(widgetId))
+        armAutoStop(profile)
         if (!recorder.start()) {
             recorder.onAmplitude = null
             fail(getString(R.string.widget_silent))
@@ -225,7 +234,7 @@ class VoiceTaskService : Service() {
      * mehr. Automatischer Weg: mit Netz-Bedingung, ein noch laufender alter Job wird ersetzt.
      */
     private fun hand(samples: FloatArray, duration: Long) {
-        store.begin(samples, duration, recordedAt)
+        store.begin(samples, duration, recordedAt, profileId)
         store.message = ""
         store.state = VoiceTaskState.WORKING
         VoiceTaskWidgetView.push(this, VoiceTaskState.WORKING)

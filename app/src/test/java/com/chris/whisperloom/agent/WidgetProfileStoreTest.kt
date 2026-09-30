@@ -1,7 +1,10 @@
 package com.chris.whisperloom.agent
 
 import android.content.Context
+import android.content.SharedPreferences
+import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
+import com.chris.whisperloom.Prefs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -11,6 +14,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.io.File
 
@@ -21,10 +25,14 @@ class WidgetProfileStoreTest {
 
     private val ctx: Context = ApplicationProvider.getApplicationContext()
     private val sp get() = ctx.getSharedPreferences(WidgetProfileStore.FILE, Context.MODE_PRIVATE)
+
+    /** Die Einstellungen, in denen bis 3.7.0 der eine Server fuer alle Widgets stand. */
+    private val alt get() = ctx.getSharedPreferences(Prefs.FILE, Context.MODE_PRIVATE)
     private lateinit var store: WidgetProfileStore
 
     @Before fun leeren() {
         sp.edit().clear().commit()
+        alt.edit().clear().commit()
         File(ctx.filesDir, WidgetPhoto.DIR).deleteRecursively()
         store = WidgetProfileStore(ctx)
     }
@@ -223,5 +231,104 @@ class WidgetProfileStoreTest {
         assertEquals(WidgetProfile.DEFAULT, store.forWidget(1))
         val p = store.create("Neu")
         assertEquals(listOf(WidgetProfile.DEFAULT_ID, p.id), store.all().map { it.id })
+    }
+
+    // --- Server je Widget: Token und Backup ---------------------------------------
+
+    private fun xml(name: String): String =
+        listOf("src/main/res/xml/$name", "app/src/main/res/xml/$name").map(::File).first { it.exists() }.readText()
+
+    @Test fun dasServerTokenLiegtNurInDerBackupFreienProfilDatei() {
+        store.save(WidgetProfile("a", serverUrl = "https://b.example.de", serverToken = "streng-geheim-42"))
+        assertTrue(sp.getString("profiles", "")!!.contains("streng-geheim-42"))
+        assertFalse(alt.all.values.any { it.toString().contains("streng-geheim-42") })
+
+        val ausschluss = """<exclude domain="sharedpref" path="${WidgetProfileStore.FILE}.xml" />"""
+        val extraction = xml("data_extraction_rules.xml")
+        listOf(
+            xml("backup_rules.xml"),
+            extraction.substringAfter("<cloud-backup").substringBefore("</cloud-backup>"),
+            extraction.substringAfter("<device-transfer").substringBefore("</device-transfer>"),
+        ).forEach { assertTrue("Profil-Datei nicht ausgeschlossen: $it", it.contains(ausschluss)) }
+    }
+
+    // --- Migration: bis 3.7.0 ein Server fuer alle Widgets ------------------------
+
+    private fun alterServer(url: String = "https://alt.example.de", token: String = "alt-token") {
+        alt.edit().putString("agent_url", url).putString("agent_token", token).commit()
+    }
+
+    private fun migrieren() = store.migrateLegacyServer(alt, "Sprachauftrag")
+
+    @Test fun dieMigrationGibtJedemProfilDenAltenServer() {
+        alterServer()
+        val a = store.create("A")
+
+        migrieren()
+
+        val alle = store.all()
+        assertEquals(listOf(WidgetProfile.DEFAULT_ID, a.id), alle.map { it.id })
+        alle.forEach {
+            assertEquals(it.id, "https://alt.example.de", it.serverUrl)
+            assertEquals(it.id, "alt-token", it.serverToken)
+            assertTrue(it.serverReady)
+        }
+        assertTrue("Das virtuelle Standardprofil ist jetzt gespeichert", sp.getString("profiles", "")!!.contains("\"default\""))
+        assertEquals("Und hat einen Namen", "Sprachauftrag", store.get(WidgetProfile.DEFAULT_ID)!!.name)
+        assertEquals("A", store.get(a.id)!!.name)
+    }
+
+    @Test fun einProfilMitEigenemServerBleibtUnberuehrt() {
+        alterServer()
+        val eigen = WidgetProfile("e", name = "Eigen", serverUrl = "https://neu.example.de", serverToken = "neu")
+        store.save(eigen)
+        val ohneName = store.create("")
+
+        migrieren()
+
+        assertEquals(eigen, store.get("e"))
+        assertEquals("Leere Namen anderer Profile schreibt die Migration nicht um", "", store.get(ohneName.id)!!.name)
+        assertEquals("https://alt.example.de", store.get(ohneName.id)!!.serverUrl)
+    }
+
+    @Test fun dieAltenSchluesselVerschwindenErstNachDemSchreiben() {
+        alterServer()
+        var imProfilBeimEntfernen: String? = null
+        val horcher = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == "agent_url") imProfilBeimEntfernen = WidgetProfileStore(ctx).get(WidgetProfile.DEFAULT_ID)!!.serverUrl
+        }
+        alt.registerOnSharedPreferenceChangeListener(horcher)
+        try {
+            migrieren()
+            shadowOf(Looper.getMainLooper()).idle()
+        } finally {
+            alt.unregisterOnSharedPreferenceChangeListener(horcher)
+        }
+
+        assertEquals("Beim Entfernen stand der Server schon im Profil", "https://alt.example.de", imProfilBeimEntfernen)
+        assertFalse(alt.contains("agent_url"))
+        assertFalse(alt.contains("agent_token"))
+    }
+
+    @Test fun einZweiterLaufAendertNichts() {
+        alterServer()
+        migrieren()
+        val nachDemErsten = sp.all.toMap()
+        migrieren()
+        assertEquals(nachDemErsten, sp.all.toMap())
+
+        // Leert der Nutzer danach den Server eines Widgets, fuellt ihn kein spaeterer Start wieder auf.
+        store.save(store.get(WidgetProfile.DEFAULT_ID)!!.copy(serverUrl = "", serverToken = ""))
+        migrieren()
+        assertEquals("", store.get(WidgetProfile.DEFAULT_ID)!!.serverUrl)
+    }
+
+    @Test fun ohneAltenServerBleibtDerSpeicherLeer() {
+        migrieren()
+        assertTrue("Lesen darf nichts schreiben: ${sp.all}", sp.all.isEmpty())
+
+        alterServer(url = "   ", token = "")
+        migrieren()
+        assertTrue("Nur Leerzeichen zaehlt als leer: ${sp.all}", sp.all.isEmpty())
     }
 }

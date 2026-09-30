@@ -639,7 +639,7 @@
     <!-- %1$s = Sprechpause (widget_pause_*) -->
     <string name="widget_mode_autostop">Stoppt nach Sprechpause · %1$s</string>
     <!-- Name für ein neues Profil; %d = laufende Nummer -->
-    <string name="widget_profile_default_name">Profil %d</string>
+    <string name="widget_profile_default_name">Sprach-Command %d</string>
     <string name="widget_profile_title">Profil bearbeiten</string>
     <string name="widget_profile_name">Name</string>
     <!-- %1$s = Name des leeren Profils (widget_label) -->
@@ -708,4 +708,16 @@
     <string name="tutorial_agent_img_server">Einstellungs-Bildschirm mit Feldern für Adresse und Token und einem grünen Haken</string>
     <string name="tutorial_agent_img_record">Widget im Aufnahme-Zustand mit laufender Zeitanzeige und Schallwellen</string>
     <string name="tutorial_agent_img_answer">Chat-Fenster mit einem Dokument und der Antwort des Agenten</string>
+
+    <!-- ==== Pro Widgets (3.7.1) ==================================================== -->
+    <string name="pro_widgets">Pro Widgets</string>
+    <string name="pro_widgets_sub">Blendet im Widget-Menü den Tab „Pro Widgets“ ein: Sprach-Command-Widgets mit eigenem Server.</string>
+    <string name="pro_widgets_hub">Pro Widgets</string>
+    <string name="kind_voice_command">Sprach-Command-Widget</string>
+    <string name="kind_voice_command_sub">Sprechen und an deinen Server schicken</string>
+    <!-- Gründe, warum ein Auftrag nicht gesendet wird; angezeigt über widget_error_retry. -->
+    <string name="widget_task_profile_gone">Widget gelöscht — Auftrag verworfen</string>
+    <string name="widget_task_pro_off">Pro Widgets sind aus</string>
+    <!-- %1$s = Name des Widgets -->
+    <string name="widget_task_no_server">Server fehlt im Widget „%1$s“</string>
 </resources>

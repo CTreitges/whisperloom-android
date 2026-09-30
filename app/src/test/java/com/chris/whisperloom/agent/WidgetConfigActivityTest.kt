@@ -193,16 +193,16 @@ class WidgetConfigActivityTest {
         click("Neues Profil")
         compose.onNodeWithText("Profil bearbeiten").assertExists()
         val neu = store.all().single { !it.isDefault }
-        assertEquals("Profil 2", neu.name)
+        assertEquals("Sprach-Command 2", neu.name)
 
         click("Fertig")
 
         compose.onNodeWithText("Welches Profil?").assertExists()
-        compose.onNode(hasText("Profil 2") and isSelectable()).assertIsSelected()
+        compose.onNode(hasText("Sprach-Command 2") and isSelectable()).assertIsSelected()
         assertEquals("Erst der Tipp bestaetigt", WidgetProfile.DEFAULT_ID, store.forWidget(id).id)
         assertEquals(Activity.RESULT_CANCELED to id, ergebnis(activity))
 
-        compose.onNode(hasText("Profil 2") and isSelectable()).performClick()
+        compose.onNode(hasText("Sprach-Command 2") and isSelectable()).performClick()
         compose.waitForIdle()
 
         assertEquals(Activity.RESULT_OK to id, ergebnis(activity))

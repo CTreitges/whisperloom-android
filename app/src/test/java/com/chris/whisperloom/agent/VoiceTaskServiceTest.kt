@@ -8,7 +8,6 @@ import android.content.Intent
 import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.ExistingWorkPolicy
-import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -58,11 +57,8 @@ class VoiceTaskServiceTest {
         app.getSharedPreferences(WidgetProfileStore.FILE, Context.MODE_PRIVATE).edit().clear().commit()
         store = VoiceTaskStore(app)
         store.clear()
-        Prefs(app).apply {
-            agentEnabled = true
-            agentUrl = "https://bridge.example.de"
-            agentToken = "geheim"
-        }
+        // Wie nach dem Trampolin: gestartet wird nur ein Widget mit Server.
+        serverEinrichten(app)
         shadowOf(app).grantPermissions(Manifest.permission.RECORD_AUDIO)
         VoiceTaskWork.enqueueImpl = { _, policy, request ->
             eingereiht++
@@ -206,6 +202,31 @@ class VoiceTaskServiceTest {
         assertEquals("Automatischer Weg: mit Netz-Bedingung, nicht wie ein Tipp", listOf(false), manuell)
         // Ein neuer Auftrag loest den alten Job ab — mit KEEP ginge er lautlos verloren.
         assertEquals(listOf(ExistingWorkPolicy.REPLACE), policies)
+    }
+
+    @Test fun derAuftragMerktSichDasProfilDesStartendenWidgets() {
+        // Sein Server bekommt den Auftrag — nicht der des Widgets, das gerade zufaellig gebunden ist.
+        val p = profil(autoStop = false)
+        tonQuelle()
+        val s = dienst()
+        senden(s, VoiceTaskService.ACTION_START, WIDGET)
+        assertTrue("Der Aufnahme-Thread hat nichts gelesen", gelesen.await(5, TimeUnit.SECONDS))
+        WidgetProfileStore(app).bind(WIDGET, WidgetProfile.DEFAULT_ID) // Umbinden waehrend der Aufnahme
+        ShadowSystemClock.advanceBy(Duration.ofSeconds(4))
+        senden(s, VoiceTaskService.ACTION_STOP)
+
+        assertTrue(store.hasWork)
+        assertEquals(p.id, store.profileId)
+    }
+
+    @Test fun ohneWidgetGehtDerAuftragAnsStandardprofil() {
+        tonQuelle()
+        val s = dienst()
+        aufnehmen(s)
+        ShadowSystemClock.advanceBy(Duration.ofSeconds(4))
+        senden(s, VoiceTaskService.ACTION_STOP)
+
+        assertEquals(WidgetProfile.DEFAULT_ID, store.profileId)
     }
 
     @Test fun eineStilleAufnahmeGiltAlsFehlschlagNichtAlsAuftrag() {

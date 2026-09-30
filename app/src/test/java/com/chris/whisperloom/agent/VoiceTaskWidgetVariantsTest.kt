@@ -183,11 +183,7 @@ class VoiceTaskWidgetVariantsTest {
     // --- Echte Widgets mit Profilen -----------------------------------------
 
     private fun bereitMachen() {
-        Prefs(ctx).apply {
-            agentEnabled = true
-            agentUrl = "https://bridge.example.de"
-            agentToken = "geheim"
-        }
+        Prefs(ctx).proWidgetsEnabled = true
         shadowOf(ctx as android.app.Application).grantPermissions(android.Manifest.permission.RECORD_AUDIO)
     }
 

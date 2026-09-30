@@ -73,7 +73,7 @@ fun SettingsHubScreen(nav: NavState) {
         " · " + stringResource(if (status.imeEnabled) R.string.settings_val_kb_on else R.string.settings_val_kb_off)
     // Kein Schalter auf Hub-Ebene (Spec §2.3) — nur der aktuelle Wert als Unterzeile.
     val advanced = buildList {
-        if (prefs.agentReady) add(stringResource(R.string.settings_agent_sub))
+        if (prefs.proWidgetsEnabled) add(stringResource(R.string.settings_agent_sub))
         if (prefs.promptLevelEnabled) add(stringResource(R.string.settings_prompt_sub))
     }
     val agent = if (advanced.isEmpty()) stringResource(R.string.settings_agent_off) else advanced.joinToString(" · ")
