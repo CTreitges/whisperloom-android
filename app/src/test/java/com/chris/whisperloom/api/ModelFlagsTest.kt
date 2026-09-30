@@ -39,10 +39,18 @@ class ModelFlagsTest {
         for (id in listOf("gpt-6-astra", "gpt-6.1-sol", "gpt-5.5", "o4-mini", "o3", "ft:gpt-5-mini:firma::abc")) {
             val o = llm("openai", id)!!
             assertFalse(id, o.temperatureSupported)
+            // Ohne Angabe denken sie auf "medium" — "low" nimmt jede dieser Familien an.
+            assertEquals(id, "low", o.reasoningEffort)
             assertEquals(id, o.label)
         }
         // Gleiche Familie ueber OpenRouter ohne Metadaten (frei getippt): Name ohne Anbieter-Praefix.
-        assertFalse(llm("openrouter", "openai/gpt-6-luna")!!.temperatureSupported)
+        val viaRouter = llm("openrouter", "openai/gpt-6-luna")!!
+        assertFalse(viaRouter.temperatureSupported)
+        assertNull("effort-Heuristik nur bei OpenAI selbst", viaRouter.reasoningEffort)
+        // Snapshot eines Katalog-Modells behaelt dessen Stufe (gpt-5-mini: minimal) statt "low".
+        assertEquals("minimal", llm("openai", "gpt-5-mini-2025-08-07")!!.reasoningEffort)
+        // Klassische Modelle bekommen keine Stufe.
+        assertNull(llm("openai", "gpt-4.1"))
     }
 
     @Test fun snapshotErbtVomKatalogModell() {
@@ -96,6 +104,7 @@ class ModelFlagsTest {
         val stt = AccessResolver.resolveStt("openai", "", "sk", "")
         val s = ChatPayload.sampling(AccessResolver.resolveLlm(stt, "same", "", "", "gpt-6-astra"))
         assertNull(s.temperature)
+        assertEquals("low", s.reasoningEffort)
         assertEquals(ChatPayload.MAX_COMPLETION_TOKENS, s.maxCompletionTokens)
     }
 

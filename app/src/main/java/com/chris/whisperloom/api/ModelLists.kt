@@ -200,7 +200,7 @@ object ModelLists {
         val chat = kind == ModelKind.LLM
         val temperature = server?.temperatureSupported ?: base?.temperatureSupported
             ?: if (chat && noTemperature(provider, name)) false else null
-        val effort = server?.reasoningEffort ?: base?.reasoningEffort ?: if (chat) groqEffort(provider, name) else null
+        val effort = server?.reasoningEffort ?: base?.reasoningEffort ?: if (chat) heuristicEffort(provider, name) else null
         val languageField = base?.languageField
             ?: if (!chat && provider.id == OPENAI && GPT_TRANSCRIBE.containsMatchIn(name)) "languages[]" else null
         if (server == null && base == null && temperature == null && effort == null && languageField == null) return null
@@ -218,11 +218,15 @@ object ModelLists {
     private fun noTemperature(provider: Provider, name: String): Boolean =
         OPENAI_REASONING.containsMatchIn(name) || (provider.id == GEMINI && GEMINI_3.containsMatchIn(name))
 
-    /** Groq: Qwen3 schreibt sonst <think>-Tags in den Text; gpt-oss kennt nur Stufen, "low" haelt es schnell. */
-    private fun groqEffort(provider: Provider, name: String): String? = when {
-        provider.id != GROQ -> null
-        QWEN3.containsMatchIn(name) -> "none"
-        GPT_OSS.containsMatchIn(name) -> "low"
+    /**
+     * Groq: Qwen3 schreibt sonst <think>-Tags in den Text; gpt-oss kennt nur Stufen, "low" haelt es schnell.
+     * OpenAI: o-Serie und gpt-5/6 denken ohne Angabe auf "medium" (langsam) — "low" nehmen alle diese
+     * Familien an, "none" bzw. "minimal" nicht jede.
+     */
+    private fun heuristicEffort(provider: Provider, name: String): String? = when {
+        provider.id == GROQ && QWEN3.containsMatchIn(name) -> "none"
+        provider.id == GROQ && GPT_OSS.containsMatchIn(name) -> "low"
+        provider.id == OPENAI && OPENAI_REASONING.containsMatchIn(name) -> "low"
         else -> null
     }
 

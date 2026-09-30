@@ -390,7 +390,7 @@ Dieselben Schritte zeigt WhisperLoom unter **Wo bekomme ich einen Key?** (im Ass
 
 ### 7.5 Eigenes Modell und Zugang prüfen
 
-- **Eigenes Modell …** (letzter Eintrag im Modell-Dropdown, mit „Modelle vom Server" unten in der Auswahl): Für Modell-IDs, die nicht in der Liste stehen — etwa ein neues Modell des Anbieters oder ein Modell auf dem eigenen Server. Die ID genau so eintragen, wie der Anbieter sie nennt. Für unbekannte IDs setzt WhisperLoom die Parameter selbst: OpenAI-Reasoning-Modelle (z. B. `gpt-5.6-terra`, `o4-mini`) bekommen kein `temperature`, Groqs Qwen 3 und GPT-OSS die passende Denk-Stufe, ein Snapshot wie `gpt-5-mini-2025-08-07` erbt vom Listen-Modell. Lehnt ein Server `temperature` trotzdem ab, versucht WhisperLoom es genau einmal ohne.
+- **Eigenes Modell …** (letzter Eintrag im Modell-Dropdown, mit „Modelle vom Server" unten in der Auswahl): Für Modell-IDs, die nicht in der Liste stehen — etwa ein neues Modell des Anbieters oder ein Modell auf dem eigenen Server. Die ID genau so eintragen, wie der Anbieter sie nennt. Für unbekannte IDs setzt WhisperLoom die Parameter selbst: OpenAI-Reasoning-Modelle (z. B. `gpt-5.6-terra`, `o4-mini`) bekommen kein `temperature` und die Denk-Stufe „low", Gemini-3-Modelle kein `temperature` (so rät es Google), Groqs Qwen 3 und GPT-OSS die passende Denk-Stufe, ein Snapshot wie `gpt-5-mini-2025-08-07` erbt vom Listen-Modell. Lehnt ein Server `temperature` trotzdem ab, versucht WhisperLoom es genau einmal ohne.
 - **Zugang prüfen** (unter Erkennung bzw. Text): Schickt eine kurze Testanfrage an den eingetragenen Zugang und meldet „Verbunden · x s" oder den Fehlergrund. Praktisch nach jedem Key- oder Anbieterwechsel.
 
 ### 7.6 Modelle vom Server (Pro-Funktion)
