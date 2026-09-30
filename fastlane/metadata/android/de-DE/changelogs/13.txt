@@ -1,0 +1,5 @@
+WhisperLoom 3.8.0
+• Neu: ElevenLabs (Scribe v2) als Spracherkennung
+• Pro: Modelle vom Server – jeder Anbieter lädt seine aktuelle Modell-Liste, mit Suche und „Modelle aktualisieren“
+• Empfehlungen aktualisiert (DeepSeek, Gemini 3.x, Groq, OpenRouter)
+• Textverbesserung versucht es bei neuen Modellen ohne temperature erneut

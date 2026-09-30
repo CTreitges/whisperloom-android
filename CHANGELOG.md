@@ -2,6 +2,22 @@
 
 Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [3.8.0] — 2026-09-30
+
+### Hinzugefügt
+
+- **ElevenLabs (Scribe) als Spracherkennung.** Einstellungen → Erkennung → Anbieter **ElevenLabs (Scribe)** mit den Modellen Scribe v2 und Scribe v2 Medical. Den Key legst du unter elevenlabs.io → API Keys an, mit der Berechtigung „Speech to Text“ (für die Modell-Liste zusätzlich „Models: Lesen“). Dein Vokabular geht als Fachbegriffe mit; das kostet bei ElevenLabs etwa 20 % Aufpreis. Eine Textverbesserung bietet ElevenLabs nicht, dafür trägst du unter „Text“ einen eigenen Zugang ein.
+- **Modelle vom Server (Pro).** Unter Einstellungen → **Erweitert** schaltest du **Modelle vom Server** ein. Dann lädt jeder Anbieter seine aktuelle Modell-Liste, für die Erkennung und für die Textverbesserung. Die Auswahl zeigt oben die Empfehlungen und darunter alle Modelle vom Server mit Stand-Datum. Sie hat ein Suchfeld und den Knopf **Modelle aktualisieren**. Ist die Liste älter als 24 Stunden, lädt die App sie beim Öffnen neu. Passende Einstellungen wie temperature oder Reasoning-Stufe setzt die App für neue Modelle selbst.
+
+### Geändert
+
+- **Empfehlungen auf dem Stand vom 30.09.2026:** DeepSeek `deepseek-flash`, Gemini 3.5 Flash-Lite bzw. 3.8 Flash, bei OpenRouter keine auslaufenden Gemini-2.5-Modelle mehr, Groq Qwen 3.8. Wer Gemini ohne eigene Modellwahl nutzt, behält sein bisheriges Modell.
+- **Textverbesserung „wie Erkennung“** wird bei einem Anbieter, der nur erkennt (ElevenLabs), klar als nicht möglich angezeigt: in den Einstellungen, auf dem Startbildschirm und in der Tastatur.
+
+### Behoben
+
+- **Textverbesserung mit neuen Modellen:** Lehnt ein Modell `temperature` ab, versucht die App es einmal ohne statt aufzugeben.
+
 ## [3.7.1] — 2026-09-30
 
 ### Hinzugefügt

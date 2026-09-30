@@ -118,7 +118,7 @@ Ein persistenter PKCS12-Keystore liegt als GitHub-Secrets `WHISPERLOOM_KEYSTORE_
 
 ## Tests
 
-Alle Tests laufen ohne Gerät und ohne Emulator (`./gradlew testDebugUnitTest`): reine JVM-Tests für die Logik, Robolectric (SDK 35) für alles, was Android-Ressourcen, `org.json`, SharedPreferences oder Layout-Inflation braucht. HTTP-Pfade werden gegen einen lokalen JDK-`HttpServer` getestet. Stand 3.7.1: 103 Testklassen in 100 Dateien, 1118 `@Test`-Methoden.
+Alle Tests laufen ohne Gerät und ohne Emulator (`./gradlew testDebugUnitTest`): reine JVM-Tests für die Logik, Robolectric (SDK 35) für alles, was Android-Ressourcen, `org.json`, SharedPreferences oder Layout-Inflation braucht. HTTP-Pfade werden gegen einen lokalen JDK-`HttpServer` getestet. Stand 3.8.0: 110 Testklassen in 107 Dateien, 1263 `@Test`-Methoden.
 
 | Testklasse | Deckt ab |
 |---|---|
@@ -172,7 +172,7 @@ Nicht durch Tests abgedeckt und nur auf dem Gerät prüfbar: Overlay-/IME-Darste
 
 ## Versionen
 
-Aktuell **3.7.1** (2026-09-30). Alle Änderungen seit 1.0 im [CHANGELOG.md](CHANGELOG.md). Der letzte Stand der ersten Offline-Generation (Modell im APK) liegt als Tag `offline-v1` im Repo.
+Aktuell **3.8.0** (2026-09-30). Alle Änderungen seit 1.0 im [CHANGELOG.md](CHANGELOG.md). Der letzte Stand der ersten Offline-Generation (Modell im APK) liegt als Tag `offline-v1` im Repo.
 
 ## Lizenz / Credits
 
