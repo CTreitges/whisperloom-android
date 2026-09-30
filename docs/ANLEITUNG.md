@@ -400,7 +400,7 @@ Die Modelle in WhisperLoom sind **Empfehlungen** mit Stand 09/2026 — die Anbie
 Eingeschaltet wird das Feld **Modell** unter Erkennung und unter Text (auch bei „wie Erkennung") zu einer Auswahl, bei jedem Anbieter einschließlich Eigener Server — nur bei Together AI und DeepInfra bleibt das Textmodell ein Freitext:
 
 - Antippen öffnet **Modell wählen**: oben das Suchfeld **Modell suchen**, darunter **Empfohlen** (die eingebauten Modelle mit ihren Notizen) und **Vom Server · Stand …** mit der geladenen Liste — alphabetisch, bei Anthropic neueste zuerst. Unten **Eigenes Modell …** und **Schließen**.
-- Eine Empfehlung, die der Anbieter nicht mehr listet, trägt den Zusatz **nicht mehr gelistet**. Dein gewähltes Modell bleibt trotzdem gültig; steht es in keiner Liste, erscheint es markiert ganz oben.
+- Eine Empfehlung, die der Anbieter nicht mehr listet, trägt den Zusatz **nicht mehr gelistet**; ein datierter Snapshot (z. B. `claude-haiku-4-5-20251001`) zählt als gelistet. Dein gewähltes Modell bleibt trotzdem gültig; steht es in keiner Liste, erscheint es markiert ganz oben.
 - Der Knopf **Modelle aktualisieren** unter dem Feld lädt die Liste neu und meldet „n Modelle gefunden", „Keine passenden Modelle gefunden." oder „Modelle nicht geladen: …" mit dem Grund. Bei einem Fehler bleibt die bisherige Liste.
 - Beim Öffnen von Erkennung bzw. Text lädt WhisperLoom die Liste still nach, wenn sie fehlt oder älter als einen Tag ist und der Key (falls nötig) eingetragen ist. Ein Fehler dabei bleibt stumm; nach einem Fehlschlag versucht es WhisperLoom still erst am nächsten Tag wieder — sofort, wenn du den Key änderst oder den Knopf drückst.
 

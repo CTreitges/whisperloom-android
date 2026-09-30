@@ -121,4 +121,22 @@ class ModelFlagsTest {
         assertNull(llm("gemini", "gemini-2.5-pro"))
         assertNull(llm("custom", "gemini-3.6-flash"))
     }
+
+    @Test fun gelistetGiltAuchFuerDatierteSnapshots() {
+        // Anthropic listet datierte IDs: die Empfehlung "claude-haiku-4-5" ist damit gelistet.
+        val anthropic = p("anthropic").llmModels
+        assertEquals(
+            setOf("claude-haiku-4-5"),
+            ModelLists.listedIds(anthropic, listOf("claude-haiku-4-5-20251001", "claude-opus-5-5")),
+        )
+        assertEquals(setOf("claude-sonnet-5"), ModelLists.listedIds(anthropic, listOf("claude-sonnet-5")))
+        // Gleiche Regel wie beim Erben der Flags: das laengste Katalog-Modell gewinnt. Turbo gehoert
+        // zu Turbo, nicht auch zu "whisper-large-v3".
+        val groq = p("groq").sttModels
+        assertEquals(setOf("whisper-large-v3-turbo"), ModelLists.listedIds(groq, listOf("whisper-large-v3-turbo")))
+        assertEquals(setOf("whisper-large-v3-turbo"), ModelLists.listedIds(groq, listOf("whisper-large-v3-turbo-2026-01-01")))
+        assertEquals(emptySet<String>(), ModelLists.listedIds(groq, listOf("whisper-large-v2", "distil-whisper")))
+        // Kein Snapshot ohne Bindestrich-Grenze.
+        assertEquals(emptySet<String>(), ModelLists.listedIds(anthropic, listOf("claude-haiku-4-50")))
+    }
 }

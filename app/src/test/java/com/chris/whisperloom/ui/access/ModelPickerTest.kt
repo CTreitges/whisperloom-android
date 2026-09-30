@@ -229,6 +229,17 @@ class ModelPickerTest {
         assertEquals("", Prefs(ctx).apiModel)
     }
 
+    @Test fun einDatierterSnapshotZaehltAlsGelistet() {
+        // Anthropic listet claude-haiku-4-5-20251001 statt claude-haiku-4-5 — kein falsches "nicht mehr gelistet".
+        prefs.serverModelsEnabled = true
+        prefs.llmProviderId = "anthropic"
+        cache(prefs.llmAccess(), ModelKind.LLM, "claude-haiku-4-5-20251001", "claude-opus-5-5")
+        text()
+        openPicker()
+        row("Claude Haiku 4.5").assertIsSelected().assert(!hasText("nicht mehr gelistet", substring = true))
+        row("Claude Sonnet 5").assertTextContains("nicht mehr gelistet", substring = true)
+    }
+
     @Test fun einGewaehltesModellOhneListenplatzBleibtGueltig() {
         groq()
         prefs.apiModel = "whisper-large-v2"

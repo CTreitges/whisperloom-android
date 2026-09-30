@@ -205,9 +205,9 @@ object ModelLists {
      */
     fun optionFor(provider: Provider, kind: ModelKind, id: String, server: RemoteModel?): ModelOption? {
         val catalog = if (kind == ModelKind.STT) provider.sttModels else provider.llmModels
-        catalog.firstOrNull { it.id == id }?.let { return it }
+        val base = catalogBase(catalog, id)
+        if (base != null && base.id == id) return base
         if (id.isBlank()) return null
-        val base = catalog.filter { id.startsWith(it.id + "-") }.maxByOrNull { it.id.length }
         val name = id.substringAfterLast('/')
         val chat = kind == ModelKind.LLM
         val temperature = server?.temperatureSupported ?: base?.temperatureSupported
@@ -225,6 +225,20 @@ object ModelLists {
             languageField = languageField ?: "language",
         )
     }
+
+    /**
+     * Das Katalog-Modell zu [id]: dieselbe ID, sonst das laengste, dessen datierter Snapshot [id] ist
+     * (`gpt-5-mini-2025-08-07` -> `gpt-5-mini`, `claude-haiku-4-5-20251001` -> `claude-haiku-4-5`).
+     */
+    fun catalogBase(catalog: List<ModelOption>, id: String): ModelOption? =
+        catalog.firstOrNull { it.id == id } ?: catalog.filter { id.startsWith(it.id + "-") }.maxByOrNull { it.id.length }
+
+    /**
+     * Die Empfehlungen aus [catalog], die der Server fuehrt — selbst oder als Snapshot, nach derselben
+     * Regel wie beim Erben der Flags ([catalogBase]). Anthropic listet z. B. nur datierte IDs.
+     */
+    fun listedIds(catalog: List<ModelOption>, serverIds: Collection<String>): Set<String> =
+        serverIds.mapNotNullTo(HashSet()) { catalogBase(catalog, it)?.id }
 
     /** OpenAI-Reasoning-Modelle lehnen temperature ab (400); Google raet bei Gemini 3 von temperature < 1 ab. */
     private fun noTemperature(provider: Provider, name: String): Boolean =

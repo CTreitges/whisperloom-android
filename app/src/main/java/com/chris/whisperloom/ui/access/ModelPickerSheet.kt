@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.chris.whisperloom.ModelCache
 import com.chris.whisperloom.R
+import com.chris.whisperloom.api.ModelLists
 import com.chris.whisperloom.api.ModelOption
 import com.chris.whisperloom.ui.components.LoomRow
 import com.chris.whisperloom.ui.components.LoomSheet
@@ -40,8 +41,9 @@ import java.util.Date
  * Modelle liefert.
  *
  * Das gewaehlte Modell bleibt gueltig, auch wenn der Server es nicht (mehr) listet — es steht dann
- * markiert ganz oben. Eine Empfehlung, die der Server nicht mehr fuehrt, heisst "nicht mehr
- * gelistet"; eine leere oder noch nicht geladene Liste sagt darueber nichts.
+ * markiert ganz oben. Eine Empfehlung, die der Server nicht mehr fuehrt (weder selbst noch als
+ * Snapshot, [ModelLists.listedIds]), heisst "nicht mehr gelistet"; eine leere oder noch nicht
+ * geladene Liste sagt darueber nichts.
  *
  * @param checkListed aus bei ElevenLabs: /v1/models listet Scribe wohl gar nicht.
  */
@@ -60,6 +62,8 @@ fun ModelPickerSheet(
     fun hit(vararg texts: String?) = q.isEmpty() || texts.any { it != null && it.contains(q, ignoreCase = true) }
 
     val serverIds = remember(server) { server?.models.orEmpty().mapTo(HashSet()) { it.id } }
+    // Auch ein datierter Snapshot zaehlt als gelistet (Anthropic: claude-haiku-4-5-20251001).
+    val listed = remember(serverIds, recommended) { ModelLists.listedIds(recommended, serverIds) }
     val canMark = checkListed && serverIds.isNotEmpty()
     val recs = remember(recommended, q) { recommended.filter { hit(it.id, it.label, it.note) } }
     val remote = remember(server, q) { server?.models.orEmpty().filter { hit(it.id, it.label, it.note) } }
@@ -88,7 +92,7 @@ fun ModelPickerSheet(
             if (recs.isNotEmpty()) {
                 item(key = "h:recommended") { PickerHeader(stringResource(R.string.models_recommended)) }
                 items(recs, key = { "r:${it.id}" }) { m ->
-                    val gone = canMark && m.id !in serverIds
+                    val gone = canMark && m.id !in listed
                     val note = listOfNotNull(stale.takeIf { gone }, m.note.ifBlank { null }).joinToString(" · ")
                     ModelRow(m.label, note.ifEmpty { null }, m.id == selected, warn = gone) { pick(m.id) }
                 }
