@@ -129,6 +129,19 @@ class WidgetProfileTest {
         assertEquals("a".repeat(22), WidgetProfile.cleanName("a".repeat(22) + "  zu lang"))
     }
 
+    @Test fun eineAlleinStehendeEmojiHaelfteFaelltWeg() {
+        // So kam sie aus dem Namensfeld (take(24)): genau 24 Einheiten, also "nicht zu lang".
+        val emoji = String(Character.toChars(0x1F6D2))
+        val halb = "a".repeat(23) + emoji[0]
+        assertEquals(24, halb.length)
+        assertEquals("a".repeat(23), WidgetProfile.cleanName(halb))
+
+        assertEquals("a".repeat(23), WidgetProfile.clip("a".repeat(23) + emoji))
+        assertEquals("a".repeat(22) + emoji, WidgetProfile.clip("a".repeat(22) + emoji))
+        assertEquals("Waehrend des Tippens wird nicht getrimmt", "Einkauf ", WidgetProfile.clip("Einkauf "))
+        assertEquals("", WidgetProfile.clip(""))
+    }
+
     @Test fun einLeererNameZeigtSprachauftrag() {
         assertEquals("Sprachauftrag", WidgetProfile("x").displayName(ctx))
         assertEquals("Einkauf", WidgetProfile("x", name = "Einkauf").displayName(ctx))

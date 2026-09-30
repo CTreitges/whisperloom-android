@@ -43,11 +43,15 @@ data class WidgetProfile(
         val DEFAULT = WidgetProfile(DEFAULT_ID)
 
         /** Trimmen und auf [NAME_MAX] kuerzen, ohne ein Emoji (Surrogat-Paar) zu zerschneiden. */
-        fun cleanName(raw: String): String {
-            val t = raw.trim()
-            if (t.length <= NAME_MAX) return t
-            val cut = t.take(NAME_MAX)
-            return (if (cut.last().isHighSurrogate()) cut.dropLast(1) else cut).trimEnd()
+        fun cleanName(raw: String): String = clip(raw.trim()).trimEnd()
+
+        /**
+         * Auf [NAME_MAX] kuerzen, ohne zu trimmen — fuer das Namensfeld waehrend des Tippens. Eine
+         * allein stehende Emoji-Haelfte am Ende faellt weg, auch wenn der Text nicht zu lang ist.
+         */
+        fun clip(raw: String): String {
+            val cut = raw.take(NAME_MAX)
+            return if (cut.lastOrNull()?.isHighSurrogate() == true) cut.dropLast(1) else cut
         }
 
         /** Ein Eintrag; ohne Id unbrauchbar (null). */

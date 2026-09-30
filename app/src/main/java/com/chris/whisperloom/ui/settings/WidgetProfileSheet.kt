@@ -121,7 +121,7 @@ fun WidgetProfileSheet(widgets: WidgetProfilesState, profileId: String, onDismis
         OutlinedTextField(
             value = name,
             onValueChange = {
-                name = it.take(WidgetProfile.NAME_MAX)
+                name = WidgetProfile.clip(it)
                 nameEdited = true
                 widgets.profile(profileId)?.let { p -> widgets.save(p.copy(name = name), redraw = false) }
             },

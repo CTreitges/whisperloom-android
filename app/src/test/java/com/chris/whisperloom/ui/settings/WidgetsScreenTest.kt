@@ -9,6 +9,7 @@ import androidx.activity.result.ActivityResultRegistry
 import androidx.activity.result.ActivityResultRegistryOwner
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
@@ -171,6 +172,20 @@ class WidgetsScreenTest {
         compose.onNode(hasSetTextAction() and hasText("Name")).performTextReplacement("  Einkauf  ")
         compose.waitForIdle()
         assertEquals("Getrimmt gespeichert, ohne Fertig-Knopf", "Einkauf", store.get(p.id)!!.name)
+    }
+
+    @Test fun dasNamensfeldZerschneidetKeinEmoji() {
+        // 23 Zeichen + Emoji = 25 UTF-16-Einheiten: an Stelle 24 laege sonst eine Emoji-Haelfte,
+        // im Feld, im Speicher und auf dem Widget.
+        val p = store.create("Alt")
+        show()
+        bearbeiten("Alt")
+        val feld = hasSetTextAction() and hasText("Name")
+        compose.onNode(feld).performTextReplacement("a".repeat(23) + String(Character.toChars(0x1F6D2)))
+        compose.waitForIdle()
+
+        assertEquals("a".repeat(23), store.get(p.id)!!.name)
+        assertEquals("a".repeat(23), compose.onNode(feld).fetchSemanticsNode().config[SemanticsProperties.EditableText].text)
     }
 
     @Test fun symbolWahlWirdSofortGespeichert() {
