@@ -98,10 +98,10 @@ class AccessResolverTest {
     }
 
     @Test fun andererAnbieterMitEigenenFeldern() {
-        val l = AccessResolver.resolveLlm(stt, "groq", " https://proxy/v1 ", " gsk ", " qwen/qwen3.6-27b ")
+        val l = AccessResolver.resolveLlm(stt, "groq", " https://proxy/v1 ", " gsk ", " qwen/qwen3.8-27b ")
         assertEquals("https://proxy/v1", l.baseUrl)
         assertEquals("gsk", l.apiKey)
-        assertEquals("qwen/qwen3.6-27b", l.model)
+        assertEquals("qwen/qwen3.8-27b", l.model)
         assertEquals("none", l.modelOption!!.reasoningEffort)
     }
 

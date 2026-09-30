@@ -66,6 +66,14 @@ class ProviderCatalogTest {
         assertEquals("openai/gpt-oss-20b", groq.defaultLlmModel)
     }
 
+    @Test fun groqQwenIstDer38erNachfolger() {
+        // qwen/qwen3.6-27b ist seit 2026-09-14 abgeschaltet; der Nachfolger denkt ohne effort=none ebenso laut.
+        val groq = ProviderCatalog.byId("groq")
+        assertNull(groq.llmModel("qwen/qwen3.6-27b"))
+        assertEquals("none", groq.llmModel("qwen/qwen3.8-27b")!!.reasoningEffort)
+        assertEquals("Qwen 3.8 27B (Preview)", groq.llmModel("qwen/qwen3.8-27b")!!.label)
+    }
+
     @Test fun gptTranscribeSendetLanguagesArray() {
         assertEquals("languages[]", ProviderCatalog.openai.sttModel("gpt-transcribe")!!.languageField)
         assertEquals("language", ProviderCatalog.openai.sttModel("gpt-4o-transcribe")!!.languageField)

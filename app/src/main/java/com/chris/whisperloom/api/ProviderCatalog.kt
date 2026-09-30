@@ -172,7 +172,7 @@ object ProviderCatalog {
                     reasoningEffort = "low",
                 ),
                 ModelOption(
-                    "qwen/qwen3.6-27b", "Qwen 3.6 27B (Preview)",
+                    "qwen/qwen3.8-27b", "Qwen 3.8 27B (Preview)",
                     "Preview. reasoning_effort=none senden, sonst <think>-Tags im Text.",
                     reasoningEffort = "none",
                 ),

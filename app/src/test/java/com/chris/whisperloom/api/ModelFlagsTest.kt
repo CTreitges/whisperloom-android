@@ -64,11 +64,12 @@ class ModelFlagsTest {
     }
 
     @Test fun groqQwen3OhneNachdenkenUndGptOssLow() {
-        assertEquals("none", llm("groq", "qwen/qwen3.8-27b")!!.reasoningEffort)
+        // qwen3.8 steht im Katalog — die Heuristik greift fuer die naechste Qwen3-Variante.
+        assertEquals("none", llm("groq", "qwen/qwen3.9-32b")!!.reasoningEffort)
         assertEquals("low", llm("groq", "openai/gpt-oss-safeguard-20b")!!.reasoningEffort)
-        assertTrue(llm("groq", "qwen/qwen3.8-27b")!!.temperatureSupported)
+        assertTrue(llm("groq", "qwen/qwen3.9-32b")!!.temperatureSupported)
         // Nur bei Groq; OpenRouter hat eigene Metadaten.
-        assertNull(llm("openrouter", "qwen/qwen3.8-27b"))
+        assertNull(llm("openrouter", "qwen/qwen3.9-32b"))
     }
 
     @Test fun serverMetadatenGewinnen() {
