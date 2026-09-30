@@ -45,8 +45,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -59,7 +61,6 @@ import com.chris.whisperloom.agent.WidgetPhoto
 import com.chris.whisperloom.agent.WidgetProfile
 import com.chris.whisperloom.ui.components.LoomIcon
 import com.chris.whisperloom.ui.components.LoomSheet
-import com.chris.whisperloom.ui.components.SnackController
 import com.chris.whisperloom.ui.components.SwitchRow
 import com.chris.whisperloom.ui.state.WidgetProfilesState
 import kotlinx.coroutines.Dispatchers
@@ -74,7 +75,7 @@ import kotlinx.coroutines.withContext
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun WidgetProfileSheet(widgets: WidgetProfilesState, profileId: String, snack: SnackController, onDismiss: () -> Unit) {
+fun WidgetProfileSheet(widgets: WidgetProfilesState, profileId: String, onDismiss: () -> Unit) {
     val ctx = LocalContext.current
     val profile = widgets.profile(profileId)
     if (profile == null) {
@@ -83,11 +84,13 @@ fun WidgetProfileSheet(widgets: WidgetProfilesState, profileId: String, snack: S
         return
     }
     val scope = rememberCoroutineScope()
-    val photoFailed = stringResource(R.string.widget_photo_failed)
     var name by rememberSaveable(profileId) { mutableStateOf(profile.name) }
     var nameEdited by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     var deleteOnClose by remember { mutableStateOf(false) }
+
+    // Im Sheet selbst, nicht als Snackbar: die laege im Activity-Fenster UNTER dem Sheet.
+    var photoFailed by remember { mutableStateOf(false) }
 
     // Der Name steht sofort im Speicher; neu gezeichnet wird erst, wenn das Tippen kurz ruht.
     LaunchedEffect(name) {
@@ -101,12 +104,10 @@ fun WidgetProfileSheet(widgets: WidgetProfilesState, profileId: String, snack: S
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
             val file = withContext(Dispatchers.IO) { WidgetPhoto.import(ctx, uri, profileId) }
+            photoFailed = file == null
+            if (file == null) return@launch
             val now = widgets.profile(profileId)
-            when {
-                file == null -> snack.show(photoFailed)
-                now == null -> WidgetPhoto.delete(ctx, file)
-                else -> widgets.save(now.copy(icon = ProfileIcon.Photo(file)))
-            }
+            if (now == null) WidgetPhoto.delete(ctx, file) else widgets.save(now.copy(icon = ProfileIcon.Photo(file)))
         }
     }
 
@@ -149,6 +150,14 @@ fun WidgetProfileSheet(widgets: WidgetProfilesState, profileId: String, snack: S
                 if (photo != null) Image(photo, null, Modifier.size(48.dp), contentScale = ContentScale.Crop)
                 else LoomIcon(R.drawable.ic_add_photo_alternate, null, Modifier.size(24.dp))
             }
+        }
+        if (photoFailed) {
+            Text(
+                stringResource(R.string.widget_photo_failed),
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
         }
         if (profile.icon is ProfileIcon.Photo) {
             TextButton(onClick = { widgets.save(profile.copy(icon = ProfileIcon.DEFAULT)) }) {

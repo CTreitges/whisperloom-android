@@ -124,7 +124,7 @@ fun WidgetsScreen(nav: NavState) {
         }
     }
 
-    editing?.let { id -> WidgetProfileSheet(widgets, id, snack) { editing = null } }
+    editing?.let { id -> WidgetProfileSheet(widgets, id) { editing = null } }
 
     // Verschwindet das Widget waehrenddessen vom Startbildschirm, schliesst sich die Auswahl.
     widgets.placed.firstOrNull { it.widgetId == picking }?.let { w ->

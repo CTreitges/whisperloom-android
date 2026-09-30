@@ -2,11 +2,18 @@ package com.chris.whisperloom.ui.settings
 
 import android.appwidget.AppWidgetManager
 import android.content.Context
+import android.net.Uri
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivityResultRegistryOwner
+import androidx.activity.result.ActivityResultRegistry
+import androidx.activity.result.ActivityResultRegistryOwner
+import androidx.activity.result.contract.ActivityResultContract
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelectable
@@ -15,6 +22,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextReplacement
+import androidx.core.app.ActivityOptionsCompat
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
@@ -68,12 +76,27 @@ class WidgetsScreenTest {
         agentToken = "geheim"
     }
 
+    /** Was der Photo Picker zurueckgibt — er antwortet sofort, statt eine echte Auswahl zu oeffnen. */
+    private var bild: Uri? = null
+    private val bildWahl = object : ActivityResultRegistryOwner {
+        override val activityResultRegistry = object : ActivityResultRegistry() {
+            override fun <I, O> onLaunch(
+                requestCode: Int,
+                contract: ActivityResultContract<I, O>,
+                input: I,
+                options: ActivityOptionsCompat?,
+            ) {
+                dispatchResult(requestCode, bild)
+            }
+        }
+    }
+
     private fun show(screen: Screen = Screen.Widgets) {
         nav = NavState(listOf(Screen.SettingsHub, screen).distinct())
         val env = AppEnv(PrefsState(Prefs(ctx)), SystemStatus(micGranted = true)) { SystemStatus(micGranted = true) }
         compose.setContent {
             WhisperLoomTheme {
-                CompositionLocalProvider(LocalAppEnv provides env) {
+                CompositionLocalProvider(LocalAppEnv provides env, LocalActivityResultRegistryOwner provides bildWahl) {
                     when (nav.current) {
                         Screen.SettingsHub -> SettingsHubScreen(nav)
                         else -> WidgetsScreen(nav)
@@ -162,6 +185,22 @@ class WidgetsScreenTest {
         compose.onNodeWithContentDescription("Mikrofon").assertIsNotSelected()
         compose.onNodeWithContentDescription("Aus Galerie").assertExists()
         compose.onNodeWithText("Bild entfernen").assertDoesNotExist()
+    }
+
+    @Test fun einUnlesbaresBildMeldetSichImSheet() {
+        // Die Meldung muss IM Sheet stehen: eine Snackbar laege im Activity-Fenster darunter,
+        // verdeckt vom Sheet, das nach dem Fehlschlag offen bleibt.
+        val p = store.create("Einkauf")
+        bild = Uri.parse("content://com.example.gibtsnicht/bild/1")
+        show()
+        bearbeiten("Einkauf")
+        compose.onNodeWithContentDescription("Aus Galerie").performClick()
+
+        val imSheet = hasText(ctx.getString(R.string.widget_photo_failed)) and
+            hasAnyAncestor(hasAnyDescendant(hasText("Profil bearbeiten")))
+        compose.waitUntil(5_000) { compose.onAllNodes(imSheet).fetchSemanticsNodes().isNotEmpty() }
+        compose.onNode(imSheet).assertIsDisplayed()
+        assertEquals(ProfileIcon.DEFAULT, store.get(p.id)!!.icon)
     }
 
     @Test fun autoStoppUndSprechpauseWerdenSofortGespeichert() {
