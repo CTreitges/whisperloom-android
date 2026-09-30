@@ -54,7 +54,7 @@ class RouteRequestTest {
     @Test fun screenEncodingIstStabil() {
         val screens = listOf(
             Screen.Home, Screen.Setup(3), Screen.SettingsHub, Screen.Recognition, Screen.TextSettings,
-            Screen.ButtonKeyboard, Screen.Models, Screen.Agent, Screen.Help(4), Screen.Tutorial(2),
+            Screen.ButtonKeyboard, Screen.Models, Screen.Agent, Screen.Widgets, Screen.Help(4), Screen.Tutorial(2),
             Screen.Tutorial(1, startBubbleAfter = true), Screen.Tutorial(0, kind = TutorialKind.AGENT),
         )
         screens.forEach { assertEquals(it, Screen.decode(it.encode())) }

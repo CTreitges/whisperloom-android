@@ -28,6 +28,7 @@ import com.chris.whisperloom.ui.settings.ModelsScreen
 import com.chris.whisperloom.ui.settings.RecognitionScreen
 import com.chris.whisperloom.ui.settings.SettingsHubScreen
 import com.chris.whisperloom.ui.settings.TextSettingsScreen
+import com.chris.whisperloom.ui.settings.WidgetsScreen
 import com.chris.whisperloom.ui.setup.SetupScreen
 import com.chris.whisperloom.ui.state.AppEnv
 import com.chris.whisperloom.ui.state.LocalAppEnv
@@ -73,6 +74,7 @@ fun WhisperLoomApp(env: AppEnv, route: RouteRequest? = null, onRouteConsumed: ()
                 Screen.ButtonKeyboard -> ButtonKeyboardScreen(nav)
                 Screen.Models -> ModelsScreen(nav)
                 Screen.Agent -> AgentScreen(nav)
+                Screen.Widgets -> WidgetsScreen(nav)
                 is Screen.Help -> HelpScreen(section = (nav.current as? Screen.Help)?.section ?: screen.section, nav = nav)
                 is Screen.Tutorial -> TutorialScreen(
                     startPage = screen.startPage,

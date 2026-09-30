@@ -121,6 +121,13 @@ class AgentScreenTest {
         assertEquals(Screen.Tutorial(kind = TutorialKind.AGENT), nav.current)
     }
 
+    @Test fun derWidgetHinweisFuehrtInsUntermenueWidgets() {
+        show()
+        compose.onNodeWithText("Profile, Symbole und Auto-Stopp einstellen").performClick()
+        compose.waitForIdle()
+        assertEquals(Screen.Widgets, nav.current)
+    }
+
     @Test fun ohneMikrofonErscheintDerHinweisNurWennEingeschaltet() {
         Prefs(ctx).agentEnabled = true
         show(micGranted = false)

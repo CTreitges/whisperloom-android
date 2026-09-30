@@ -568,8 +568,11 @@
     <string name="widget_no_mic">Mikrofon nicht erlaubt — tippen</string>
     <string name="widget_off">Sprachauftrag ist aus — tippen</string>
     <string name="widget_fgs_failed">Aufnahme ließ sich nicht starten — App öffnen und erneut versuchen</string>
-    <string name="widget_silent">Kein Ton aufgenommen — tippen für erneuten Versuch</string>
+    <!-- Nur der Grund: angezeigt über widget_error_retry, das den Tipp-Hinweis selbst anhängt. -->
+    <string name="widget_silent">Kein Ton aufgenommen</string>
     <string name="widget_too_short">Zu kurz — länger sprechen</string>
+    <!-- Auto-Stopp: 8 s keine Sprache erkannt, Aufnahme verworfen. Angezeigt über widget_error_retry. -->
+    <string name="widget_no_speech">Nichts gehört</string>
     <string name="widget_error_retry">%1$s — tippen für erneuten Versuch</string>
     <string name="cd_widget_ready">Sprachauftrag aufnehmen</string>
     <string name="cd_widget_recording">Nimmt auf, %1$s — antippen zum Senden</string>
@@ -579,10 +582,91 @@
     <string name="cd_widget_sent_raw">Auftrag gesendet, aber ohne Textverbesserung: %1$s</string>
     <string name="cd_widget_error">%1$s — antippen für erneuten Versuch</string>
     <string name="cd_widget_no_mic">Mikrofon nicht erlaubt — antippen, um es zu erlauben</string>
+    <!-- Widget mit eigenem Profilnamen: %1$s = Name, %2$s = Zustandstext wie oben -->
+    <string name="cd_widget_named">%1$s: %2$s</string>
     <string name="agent_channel">Sprachauftrag</string>
     <string name="agent_notif_title">Sprachauftrag</string>
     <string name="agent_notif_recording">Nimmt auf …</string>
     <string name="agent_notif_stop">Senden</string>
+
+    <!-- ==== Widget-Profile: Symbol-Namen (TalkBack) =============================== -->
+    <string name="widget_icon_mic">Mikrofon</string>
+    <string name="widget_icon_shopping_cart">Einkauf</string>
+    <string name="widget_icon_home">Zuhause</string>
+    <string name="widget_icon_work">Arbeit</string>
+    <string name="widget_icon_lightbulb">Idee</string>
+    <string name="widget_icon_event">Termin</string>
+    <string name="widget_icon_edit_note">Notiz</string>
+    <string name="widget_icon_directions_car">Auto</string>
+    <string name="widget_icon_favorite">Herz</string>
+    <string name="widget_icon_star">Stern</string>
+    <string name="widget_icon_chat">Chat</string>
+    <string name="widget_icon_voicemail">Sprachnachricht</string>
+    <string name="widget_icon_graphic_eq">Tonwelle</string>
+    <string name="widget_icon_send">Senden</string>
+    <string name="widget_icon_checklist">Checkliste</string>
+    <string name="widget_icon_schedule">Uhr</string>
+    <string name="widget_icon_notifications">Glocke</string>
+    <string name="widget_icon_build">Werkzeug</string>
+    <string name="widget_icon_cloud">Wolke</string>
+    <string name="widget_icon_language">Weltkugel</string>
+    <string name="widget_icon_auto_fix_high">Zauberstab</string>
+    <string name="widget_icon_key">Schlüssel</string>
+
+    <!-- ==== Widget-Profile: Untermenü „Widgets“ und Profil-Editor ================== -->
+    <string name="settings_group_widgets">Widgets</string>
+    <plurals name="widgets_sub_profiles">
+        <item quantity="one">%d Profil</item>
+        <item quantity="other">%d Profile</item>
+    </plurals>
+    <plurals name="widgets_sub_placed">
+        <item quantity="one">%d auf dem Startbildschirm</item>
+        <item quantity="other">%d auf dem Startbildschirm</item>
+    </plurals>
+    <string name="widgets_sub_none_placed">noch keins auf dem Startbildschirm</string>
+    <string name="widgets_agent_off">Der Sprachauftrag ist aus. Die Widgets nehmen erst auf, wenn er unter „Erweiterte Optionen“ eingerichtet ist.</string>
+    <string name="widgets_card_profiles">Profile</string>
+    <string name="widgets_add_profile">Neues Profil</string>
+    <string name="widgets_card_placed">Auf dem Startbildschirm</string>
+    <!-- %1$d = laufende Nummer, %2$s = Profilname -->
+    <string name="widgets_placed_row">Widget %1$d · %2$s</string>
+    <string name="widgets_placed_sub">Tippen, um das Profil zu wechseln</string>
+    <string name="widgets_card_help">So geht’s</string>
+    <string name="widgets_help_size">Größe ändern: Widget lange drücken und an den Rändern ziehen. Ganz klein zeigt es nur das Symbol, breit Symbol und Text, ab 2 × 2 steht beides untereinander.</string>
+    <string name="widgets_help_shared">Alle Widgets zeigen dieselbe Aufnahme. Auto-Stopp richtet sich nach dem Widget, mit dem du gestartet hast.</string>
+    <string name="widget_config_title">Welches Profil?</string>
+    <string name="widget_mode_toggle">Tippen startet und stoppt</string>
+    <!-- %1$s = Sprechpause (widget_pause_*) -->
+    <string name="widget_mode_autostop">Stoppt nach Sprechpause · %1$s</string>
+    <!-- Name für ein neues Profil; %d = laufende Nummer -->
+    <string name="widget_profile_default_name">Profil %d</string>
+    <string name="widget_profile_title">Profil bearbeiten</string>
+    <string name="widget_profile_name">Name</string>
+    <!-- %1$s = Name des leeren Profils (widget_label) -->
+    <string name="widget_profile_name_sub">Steht auf dem Widget. Leer = „%1$s“.</string>
+    <string name="widget_profile_icon">Symbol</string>
+    <string name="widget_profile_gallery">Aus Galerie</string>
+    <string name="widget_profile_remove_photo">Bild entfernen</string>
+    <string name="widget_photo_failed">Bild konnte nicht geladen werden.</string>
+    <string name="widget_profile_autostop">Automatisch senden nach Sprechpause</string>
+    <string name="widget_profile_autostop_sub">Nach einer Sprechpause endet die Aufnahme und wird gesendet. Ein Tipp beendet jederzeit. Hört das Widget 8 Sekunden lang nichts, wird nichts gesendet.</string>
+    <string name="widget_profile_pause">Sprechpause</string>
+    <string name="widget_pause_short">Kurz</string>
+    <string name="widget_pause_normal">Normal</string>
+    <string name="widget_pause_long">Lang</string>
+    <string name="widget_pause_short_sub">Nach dem letzten Wort 1,2 Sekunden warten, dann senden.</string>
+    <string name="widget_pause_normal_sub">Nach dem letzten Wort 2 Sekunden warten, dann senden.</string>
+    <string name="widget_pause_long_sub">Nach dem letzten Wort 3,5 Sekunden warten, dann senden — für Denkpausen.</string>
+    <string name="widget_profile_delete">Profil löschen</string>
+    <!-- %1$s = Profilname -->
+    <string name="widget_profile_delete_title">„%1$s“ löschen?</string>
+    <!-- %1$d = Anzahl Widgets, %2$s = Name des Standardprofils -->
+    <plurals name="widget_profile_delete_confirm">
+        <item quantity="one">%1$d Widget zeigt danach „%2$s“.</item>
+        <item quantity="other">%1$d Widgets zeigen danach „%2$s“.</item>
+    </plurals>
+    <string name="widget_profile_delete_unused">Kein Widget nutzt dieses Profil gerade.</string>
+    <string name="agent_widget_manage">Profile, Symbole und Auto-Stopp einstellen</string>
 
     <!-- ==== Sprachauftrag: Einstellungen und Tutorial (Paket C) ==================== -->
     <string name="settings_group_agent">Erweiterte Optionen</string>

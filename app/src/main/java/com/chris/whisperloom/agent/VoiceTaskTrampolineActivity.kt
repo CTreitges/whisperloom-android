@@ -1,8 +1,10 @@
 package com.chris.whisperloom.agent
 
 import android.app.Activity
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.os.SystemClock
 import com.chris.whisperloom.AppNav
@@ -44,7 +46,11 @@ class VoiceTaskTrampolineActivity : Activity() {
             openApp()
             return
         }
-        startForegroundService(Intent(this, VoiceTaskService::class.java).setAction(VoiceTaskService.ACTION_START))
+        val service = Intent(this, VoiceTaskService::class.java).setAction(VoiceTaskService.ACTION_START)
+        // Welches Widget gestartet hat — dessen Profil bestimmt, wie die Aufnahme endet.
+        val widgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
+        if (widgetId != AppWidgetManager.INVALID_APPWIDGET_ID) service.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
+        startForegroundService(service)
     }
 
     /**
@@ -105,11 +111,22 @@ class VoiceTaskTrampolineActivity : Activity() {
     companion object {
         const val EXTRA_INTENT = "voice_task_intent"
 
-        fun intent(ctx: Context, tap: TapIntent): Intent =
+        /**
+         * Mit gueltiger [appWidgetId] steht die Instanz in `data` und als
+         * [AppWidgetManager.EXTRA_APPWIDGET_ID]: `data` macht die PendingIntents zweier Widgets
+         * verschieden (Extras zaehlen beim Vergleich nicht), das Extra liest [start].
+         */
+        fun intent(ctx: Context, tap: TapIntent, appWidgetId: Int = AppWidgetManager.INVALID_APPWIDGET_ID): Intent =
             Intent(ctx, VoiceTaskTrampolineActivity::class.java)
                 .setAction(ACTION_PREFIX + tap.name)
                 .putExtra(EXTRA_INTENT, tap.name)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .apply {
+                    if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+                        data = Uri.parse("$WIDGET_URI$appWidgetId")
+                        putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                    }
+                }
 
         fun intentOf(intent: Intent?): TapIntent =
             runCatching { TapIntent.valueOf(intent?.getStringExtra(EXTRA_INTENT).orEmpty()) }
@@ -121,5 +138,8 @@ class VoiceTaskTrampolineActivity : Activity() {
          * neue Aufnahme starten.
          */
         private const val ACTION_PREFIX = "com.chris.whisperloom.agent.TAP_"
+
+        /** Nur Unterscheidungsmerkmal je Instanz; nichts im System loest diese Adresse auf. */
+        private const val WIDGET_URI = "whisperloom://widget/"
     }
 }

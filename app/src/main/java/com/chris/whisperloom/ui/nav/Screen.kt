@@ -30,6 +30,9 @@ sealed class Screen(val key: String) {
     /** Erweiterte Optionen: Sprachauftrag an einen eigenen Agenten. */
     data object Agent : Screen("agent")
 
+    /** Widget-Profile und die Widgets auf dem Startbildschirm. */
+    data object Widgets : Screen("widgets")
+
     /** [section] 1..7 = initial geoeffneter Hilfe-Abschnitt. */
     data class Help(val section: Int = 1) : Screen("help")
 
@@ -67,6 +70,7 @@ sealed class Screen(val key: String) {
                 "button" -> ButtonKeyboard
                 "models" -> Models
                 "agent" -> Agent
+                "widgets" -> Widgets
                 "help" -> Help(arg ?: 1)
                 "tutorial" -> Tutorial(
                     arg ?: 0,

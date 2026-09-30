@@ -512,11 +512,11 @@ class MainFlowTest {
         ).forEach { compose.onNodeWithText(it).assertExists() }
     }
 
-    @Test fun hubZeigtSiebenZeilen() {
+    @Test fun hubZeigtAchtZeilen() {
         prefs.engine = Engine.ONLINE
         screen(env()) { SettingsHubScreen(it) }
         listOf(
-            "Erkennung", "Text", "Knopf & Tastatur", "Offline-Modelle", "Anleitung & Hilfe",
+            "Erkennung", "Text", "Knopf & Tastatur", "Widgets", "Offline-Modelle", "Anleitung & Hilfe",
             "Erweiterte Optionen", "Über WhisperLoom",
         ).forEach { compose.onNodeWithText(it).assertExists() }
         compose.onNodeWithText("Version ${BuildConfig.VERSION_NAME}").assertExists()

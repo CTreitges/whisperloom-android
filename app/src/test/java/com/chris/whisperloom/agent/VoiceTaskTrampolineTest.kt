@@ -14,6 +14,7 @@ import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -169,6 +170,69 @@ class VoiceTaskTrampolineTest {
         // wuerde eine neue Aufnahme starten.
         val actions = TapIntent.entries.map { VoiceTaskTrampolineActivity.intent(app, it).action }
         assertEquals(TapIntent.entries.size, actions.toSet().size)
+    }
+
+    // --- Tipp einer bestimmten Widget-Instanz ---------------------------------
+
+    private fun tippen(tap: TapIntent, widget: Int) {
+        Robolectric.buildActivity(
+            VoiceTaskTrampolineActivity::class.java,
+            VoiceTaskTrampolineActivity.intent(app, tap, widget),
+        ).create().get()
+    }
+
+    private fun widgetIdIm(intent: Intent?): Int? =
+        intent?.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
+
+    @Test fun derStartNenntDemDienstDasWidget() {
+        // Dessen Profil bestimmt, wie die Aufnahme endet.
+        tippen(TapIntent.START, 42)
+        val dienst = gestarteterDienst()
+        assertEquals(VoiceTaskService.ACTION_START, dienst?.action)
+        assertEquals(42, widgetIdIm(dienst))
+    }
+
+    @Test fun ohneWidgetStartetDerDienstWieBisher() {
+        tippen(TapIntent.START)
+        val dienst = gestarteterDienst()
+        assertEquals(VoiceTaskService.ACTION_START, dienst?.action)
+        assertFalse(dienst!!.hasExtra(AppWidgetManager.EXTRA_APPWIDGET_ID))
+    }
+
+    @Test fun einNeuerAnlaufUeberErneutSendenNenntDasWidgetEbenfalls() {
+        // Ohne Auftrag ist "erneut senden" eine neue Aufnahme — mit dem Profil des getippten Widgets.
+        tippen(TapIntent.RETRY, 42)
+        assertEquals(42, widgetIdIm(gestarteterDienst()))
+    }
+
+    @Test fun erneutSendenMitWidgetBleibtBeimAuftrag() {
+        // #10: die Instanz aendert nichts an der Bedeutung des Tipps.
+        auftrag()
+        tippen(TapIntent.RETRY, 42)
+        assertEquals(listOf(true), aufrufe)
+        assertNull(gestarteterDienst())
+    }
+
+    @Test fun anstossenMitWidgetBleibtBeimAlten() {
+        auftrag()
+        store.state = VoiceTaskState.WORKING
+        phase = JobPhase.WAITING
+
+        tippen(TapIntent.REFRESH, 42)
+
+        assertEquals(listOf(true), aufrufe)
+        assertEquals(listOf(ExistingWorkPolicy.REPLACE), policies)
+        assertNull(gestarteterDienst())
+    }
+
+    @Test fun zweiWidgetsHabenVerschiedeneTippIntents() {
+        // Extras zaehlen beim Vergleich von PendingIntents nicht — die Instanz steht deshalb in data.
+        val eins = VoiceTaskTrampolineActivity.intent(app, TapIntent.START, 1)
+        val zwei = VoiceTaskTrampolineActivity.intent(app, TapIntent.START, 2)
+        assertFalse(eins.filterEquals(zwei))
+        assertEquals(TapIntent.START, VoiceTaskTrampolineActivity.intentOf(eins))
+        assertEquals(1, widgetIdIm(eins))
+        assertNull("Ohne Instanz wie bisher", VoiceTaskTrampolineActivity.intent(app, TapIntent.START).data)
     }
 
     @Test fun eineIntentOhneAbsichtIstHarmlos() {

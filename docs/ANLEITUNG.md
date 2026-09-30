@@ -738,7 +738,7 @@ Einstellungen aus 2.x werden übernommen (Key, URL, Modell, Sprache, Regeln). Of
 
 Das ist die einzige Funktion in WhisperLoom, die einen Server voraussetzt, den du selbst betreibst. Wenn du keinen hast, überspring dieses Kapitel — du wirst von der Funktion sonst nirgendwo etwas merken, sie ist ab Werk aus.
 
-**Die Idee:** Auf deinem Startbildschirm liegt ein Widget. Du tippst darauf, sprichst deinen Auftrag, tippst noch einmal — WhisperLoom schreibt mit und schickt den Text an deinen eigenen Agenten. Der arbeitet den Auftrag ab und antwortet dort, wo du ihm sonst schreibst. Die App wartet nicht auf die Antwort; sie ist nach ein paar Sekunden fertig.
+**Die Idee:** Auf deinem Startbildschirm liegt ein Widget. Du tippst darauf, sprichst deinen Auftrag, tippst noch einmal (oder hörst einfach auf zu sprechen, wenn du Auto-Stopp eingeschaltet hast) — WhisperLoom schreibt mit und schickt den Text an deinen eigenen Agenten. Der arbeitet den Auftrag ab und antwortet dort, wo du ihm sonst schreibst. Die App wartet nicht auf die Antwort; sie ist nach ein paar Sekunden fertig.
 
 ### 13.1 Was du brauchst
 
@@ -757,16 +757,33 @@ Einstellungen → **Erweiterte Optionen**.
 
 ### 13.3 Das Widget auf den Startbildschirm legen
 
-Drücke lange auf eine freie Stelle deines Startbildschirms → **Widgets** → **WhisperLoom** → **Sprachauftrag** dorthin ziehen, wo du es haben willst. Es lässt sich in der Größe ändern; zwei mal zwei Felder sind die Voreinstellung.
+Drücke lange auf eine freie Stelle deines Startbildschirms → **Widgets** → **WhisperLoom** → **Sprachauftrag** dorthin ziehen, wo du es haben willst. Hast du schon mehr als ein Profil angelegt (Abschnitt 13.4), fragt WhisperLoom jetzt **„Welches Profil?"** — tipp eins an, und das Widget ist da. Dort kannst du auch gleich ein **Neues Profil** anlegen; nach dem Bearbeiten ist es vorgewählt, ein Tipp darauf übernimmt es. Wischst du die Frage weg, wird das Widget nicht hinzugefügt. Gibt es nur das Standardprofil, fragt WhisperLoom nichts.
+
+**Größe:** Zwei mal zwei Felder sind die Voreinstellung. Drück lange auf das Widget und zieh an den Rändern — alles von einem Feld bis vier mal zwei geht. Ganz klein zeigt es nur das Symbol, breit Symbol und Text nebeneinander, ab zwei mal zwei steht beides untereinander. Du kannst auch mehrere Widgets hinlegen, etwa eins pro Profil.
 
 Unter Erweiterte Optionen → **Anleitung ansehen** liegt dieselbe Erklärung noch einmal als bebildertes Tutorial.
 
-### 13.4 Benutzen — die vier Zustände
+### 13.4 Mehrere Widgets und Profile
+
+Einstellungen → **Widgets** (oder Erweiterte Optionen → **Profile, Symbole und Auto-Stopp einstellen**). Ein **Profil** legt fest, wie ein Widget aussieht und wann die Aufnahme endet. Das Profil „Sprachauftrag" gibt es immer; du kannst es ändern, aber nicht löschen. Jede Änderung gilt sofort, einen Speichern-Knopf gibt es nicht. Ist der Sprachauftrag noch nicht eingerichtet, steht oben ein Hinweis mit dem Weg zu den Erweiterten Optionen.
+
+- **Neues Profil** antippen oder ein vorhandenes Profil antippen, um es zu bearbeiten:
+  - **Name** — steht auf dem Widget, höchstens 24 Zeichen. Leer heißt „Sprachauftrag".
+  - **Symbol** — eins von 22 eingebauten (Einkauf, Zuhause, Arbeit, Idee, Termin, Notiz …) oder **Aus Galerie**: ein eigenes Foto, rund zugeschnitten. **Bild entfernen** nimmt wieder das Mikrofon. Das Symbol siehst du, solange das Widget bereit ist oder einen Fehler zeigt; beim Aufnehmen und Senden zeigt es wie gewohnt den Zustand.
+  - **Automatisch senden nach Sprechpause** — siehe unten.
+  - **Profil löschen** — Widgets, die es nutzen, zeigen danach „Sprachauftrag". Vorher fragt die App nach.
+- **Auf dem Startbildschirm** listet deine platzierten Widgets („Widget 1 · Einkauf"). Ein Tipp darauf wechselt das Profil. Ab Android 12 geht das auch direkt am Widget: lange drücken → **Neu konfigurieren**.
+
+**Auto-Stopp.** Ab Werk startet ein Tipp die Aufnahme und ein zweiter Tipp sendet. Schaltest du im Profil **Automatisch senden nach Sprechpause** ein, endet die Aufnahme von selbst, sobald du nach dem Sprechen eine Pause machst, und wird gesendet. Wie lange die Pause sein muss, stellst du darunter ein: **Kurz** (1,2 Sekunden), **Normal** (2 Sekunden) oder **Lang** (3,5 Sekunden, für Denkpausen). Ein Tipp beendet trotzdem jederzeit. Hört das Widget nach dem Start 8 Sekunden lang keine Sprache, verwirft es die Aufnahme und sendet nichts. In sehr lauter Umgebung kann Auto-Stopp zu früh oder zu spät auslösen — dann einfach per Tipp beenden oder das Profil auf „Lang" stellen.
+
+Alle Widgets zeigen dieselbe Aufnahme: startest du mit einem, zeigen alle „nimmt auf". Ob Auto-Stopp greift, richtet sich nach dem Widget, mit dem du gestartet hast.
+
+### 13.5 Benutzen — die vier Zustände
 
 | Widget zeigt | Bedeutung | Ein Tipp … |
 |---|---|---|
-| Mikrofon, „Tippen und sprechen" | bereit | startet die Aufnahme |
-| rot, laufende Zeit | nimmt auf | beendet die Aufnahme und schickt den Auftrag los |
+| Symbol des Profils (ab Werk das Mikrofon), „Tippen und sprechen" | bereit | startet die Aufnahme |
+| rot, laufende Zeit | nimmt auf | beendet die Aufnahme und schickt den Auftrag los (mit Auto-Stopp passiert das auch von selbst nach der Sprechpause) |
 | blau, „Wird gesendet …" | schreibt mit und überträgt | sendet sofort, wenn der Auftrag nur wartet. Läuft gerade ein Versuch, passiert erst nach drei Minuten etwas (bei der Offline-Erkennung erst, wenn sie fertig gerechnet hat) — ein ungeduldiger zweiter Tipp soll nichts doppelt bezahlen |
 | rot mit Fehlergrund | etwas hat nicht geklappt | schickt **denselben** Auftrag noch einmal, ohne neu aufzunehmen |
 
@@ -776,7 +793,7 @@ Nach dem Absenden darf der Bildschirm ausgehen: Mitschreiben und Übertragen lau
 
 Vergisst du das Beenden, macht das Widget nach fünf Minuten von allein Schluss und schickt das Gesprochene ab. Eine Aufnahme läuft also nie unbemerkt weiter.
 
-### 13.5 Wenn etwas nicht klappt
+### 13.6 Wenn etwas nicht klappt
 
 **„Mikrofon nicht erlaubt — tippen"**
 Der Tipp führt dich in die Erweiterten Optionen; dort erlaubst du das Mikrofon.
@@ -790,6 +807,12 @@ Es kam nichts am Mikrofon an — etwa weil eine andere App es belegt (Telefonat,
 **„Zu kurz — länger sprechen"**
 Der zweite Tipp kam zu schnell. Unter einer knappen Sekunde ist es ein Fehlgriff, kein Auftrag.
 
+**„Nichts gehört — tippen für erneuten Versuch"**
+Nur mit Auto-Stopp: Das Widget hat 8 Sekunden lang keine Sprache erkannt und die Aufnahme verworfen — gesendet wurde nichts. Gleichmäßiger Lärm (Auto, Lüfter, Brummen) zählt dabei nicht als Sprache. Ein Tipp startet eine neue Aufnahme. Passiert das oft, obwohl du sprichst — etwa in lauter Umgebung —, sprich näher ans Telefon oder schalte Auto-Stopp für dieses Profil aus.
+
+**Das Widget lässt sich nicht hinzufügen**
+Beim Hinzufügen erscheint „Welches Profil?", und du hast die Frage weggewischt — dann legt der Startbildschirm das Widget nicht ab. Einfach noch einmal hinziehen und ein Profil antippen.
+
 **Das Widget bleibt auf „Wird gesendet …" stehen oder zeigt „… — neuer Versuch folgt"**
 Ein Versuch ist gescheitert, meist am Netz oder an einem Server, der gerade erst startet. WhisperLoom versucht es von allein erneut, mit wachsendem Abstand. Ein Tipp auf die Fläche sendet sofort, ohne auf den nächsten Termin oder auf Netz zu warten. Läuft gerade ein Versuch, lässt der Tipp ihn in Ruhe; hängt er länger als drei Minuten, ersetzt ihn der Tipp. Das gilt nicht, solange die Offline-Erkennung noch rechnet: sie lässt sich nicht abbrechen, ein zweiter Versuch müsste hinter ihr warten und würde alles nur verlängern. Der Tipp tut dann nichts — bei einer langen Aufnahme mit „Genau" kann das einige Minuten dauern. Doppelt ankommen kann dabei praktisch nichts: die Bridge führt denselben Auftrag innerhalb einer Stunde nur einmal aus. Geht er erst später erneut hinaus (etwa ein roter Auftrag, den du am nächsten Tag noch einmal sendest) oder wurde die Bridge dazwischen neu gestartet, kann er in seltenen Fällen ein zweites Mal ausgeführt werden — dann nämlich, wenn der erste Versuch schon angekommen war und nur die Antwort verloren ging. Ohne Netz scheitert der sofortige Versuch ehrlich, und nach einigen Versuchen wird das Widget rot.
 
@@ -800,9 +823,9 @@ Willst du den Auftrag loswerden: Einstellungen → Erweiterte Optionen → **Off
 **Ein Fehler mit Zahl (z. B. 401 oder 503)**
 401 heißt: Token stimmt nicht — korrigier es in den Erweiterten Optionen und tippe dann auf das Widget, der Auftrag ist noch da. 503 heißt: die Bridge erreicht deinen Agenten gerade nicht; WhisperLoom versucht es von allein mehrmals erneut (das Widget nennt dabei den Grund), erst danach wird das Widget rot.
 
-### 13.6 Was dabei gesendet wird
+### 13.7 Was dabei gesendet wird
 
-An deinen Server gehen: der erkannte Text, eine Auftragskennung, Zeitpunkt und Dauer der Aufnahme. **Nur an die Adresse, die du einträgst** — nicht an den Hersteller der App und an niemanden sonst. Die Aufnahme selbst bleibt auf dem Telefon; fürs Mitschreiben geht sie an den Erkennungsweg, den du ohnehin eingestellt hast (Kapitel 11 beschreibt das im Detail). Ein Auftrag, der noch nicht durchging, liegt so lange auf dem Telefon, bis er abgeschickt oder ersetzt wird; er wird nicht in ein Cloud-Backup übernommen.
+An deinen Server gehen: der erkannte Text, eine Auftragskennung, Zeitpunkt und Dauer der Aufnahme. **Nur an die Adresse, die du einträgst** — nicht an den Hersteller der App und an niemanden sonst. Die Aufnahme selbst bleibt auf dem Telefon; fürs Mitschreiben geht sie an den Erkennungsweg, den du ohnehin eingestellt hast (Kapitel 11 beschreibt das im Detail). Ein Auftrag, der noch nicht durchging, liegt so lange auf dem Telefon, bis er abgeschickt oder ersetzt wird; er wird nicht in ein Cloud-Backup übernommen. Profile und Galerie-Bilder der Widgets verlassen das Telefon nie — auch sie kommen in kein Backup.
 
 ---
 
