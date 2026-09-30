@@ -323,6 +323,37 @@ class WidgetProfileStoreTest {
         assertEquals("", store.get(WidgetProfile.DEFAULT_ID)!!.serverUrl)
     }
 
+    @Test fun nurEineAlteAdresseWirdUebernommenDasTokenBleibtLeer() {
+        // In 3.7.0 speicherte jedes Feld einzeln — ein halb eingerichteter Server ist moeglich.
+        alterServer(token = "")
+        val a = store.create("A")
+
+        migrieren()
+
+        listOf(WidgetProfile.DEFAULT_ID, a.id).map { store.get(it)!! }.forEach {
+            assertEquals(it.id, "https://alt.example.de", it.serverUrl)
+            assertEquals(it.id, "", it.serverToken)
+            assertFalse("Ohne Token nicht bereit", it.serverReady)
+        }
+        assertFalse(alt.contains("agent_url"))
+        assertFalse(alt.contains("agent_token"))
+    }
+
+    @Test fun nurEinAltesTokenWirdUebernommenDieAdresseBleibtLeer() {
+        alterServer(url = "")
+        val a = store.create("A")
+
+        migrieren()
+
+        listOf(WidgetProfile.DEFAULT_ID, a.id).map { store.get(it)!! }.forEach {
+            assertEquals(it.id, "", it.serverUrl)
+            assertEquals(it.id, "alt-token", it.serverToken)
+            assertFalse("Ohne Adresse nicht bereit", it.serverReady)
+        }
+        assertFalse(alt.contains("agent_url"))
+        assertFalse(alt.contains("agent_token"))
+    }
+
     @Test fun ohneAltenServerBleibtDerSpeicherLeer() {
         migrieren()
         assertTrue("Lesen darf nichts schreiben: ${sp.all}", sp.all.isEmpty())

@@ -654,6 +654,27 @@ class WidgetsScreenTest {
         assertEquals("Ohne Fertig — nach der Tipp-Pause", ctx.getString(R.string.widget_ready), zeile(id))
     }
 
+    @Test fun beimTippenWirdNichtJedenTastendruckNeuGezeichnet() {
+        // Gespeichert wird sofort, neu gezeichnet erst nach 400 ms Ruhe — nicht alle Widgets je Taste.
+        shadowOf(ctx as Application).grantPermissions(android.Manifest.permission.RECORD_AUDIO)
+        val id = widget()
+        show()
+        VoiceTaskWidget.refresh(ctx)
+        bearbeiten("Sprach-Command")
+        compose.mainClock.autoAdvance = false
+
+        compose.onNode(adressFeld).performTextInput("https://bridge.example.de")
+        compose.onNode(tokenFeld).performTextInput("geheim")
+        compose.mainClock.advanceTimeByFrame()
+
+        assertTrue("Schon gespeichert", store.get(WidgetProfile.DEFAULT_ID)!!.serverReady)
+        assertEquals("Direkt nach dem Tippen noch nicht neu gezeichnet", ctx.getString(R.string.widget_no_server), zeile(id))
+
+        compose.mainClock.advanceTimeBy(400)
+
+        assertEquals(ctx.getString(R.string.widget_ready), zeile(id))
+    }
+
     // --- Editor: Symbol, Auto-Stopp, Loeschen --------------------------------------------
 
     @Test fun symbolWahlWirdSofortGespeichert() {
