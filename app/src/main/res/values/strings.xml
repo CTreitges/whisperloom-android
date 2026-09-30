@@ -705,7 +705,7 @@
     <string name="advanced_tutorial">Anleitung Pro Widgets</string>
     <string name="agent_card_mic">Mikrofon</string>
     <string name="agent_url">Server-Adresse</string>
-    <string name="agent_url_hint">Adresse deiner Bridge, ohne Pfad</string>
+    <string name="agent_url_hint">Adresse deiner Bridge, ohne /v1/task</string>
     <string name="agent_token">Token</string>
     <string name="agent_check">Verbindung prüfen</string>
     <string name="agent_card_pending">Offener Auftrag</string>
