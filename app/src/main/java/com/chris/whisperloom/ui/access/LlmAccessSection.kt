@@ -29,6 +29,7 @@ import com.chris.whisperloom.api.AccessResolver
 import com.chris.whisperloom.api.ModelKind
 import com.chris.whisperloom.api.Provider
 import com.chris.whisperloom.api.ProviderCatalog
+import com.chris.whisperloom.api.RefineBlock
 import com.chris.whisperloom.api.ServerUrlCheck
 import com.chris.whisperloom.ui.components.ApiKeyField
 import com.chris.whisperloom.ui.components.InfoCard
@@ -56,10 +57,10 @@ fun LlmAccessSection(snack: SnackController) {
     val provider = llm.provider
     val useOwn = prefs.llmUseOwn
     val offlineWithoutOwn = prefs.engine == Engine.OFFLINE && !useOwn
-    // Reine Erkennungs-Anbieter (Together, DeepInfra, ElevenLabs) haben keine Textmodelle —
-    // "wie Erkennung" hiesse dort: keine Textverbesserung.
-    val sttOnlyWithoutOwn = !useOwn && !stt.provider.hasLlm
-    val noLlmWithoutOwn = offlineWithoutOwn || sttOnlyWithoutOwn
+    // ElevenLabs hat keinen Chat — "wie Erkennung" hiesse dort: keine Textverbesserung. Together
+    // und DeepInfra koennen Chat, nur ohne Katalog-Modell: dort bleibt das freie Modellfeld.
+    val noChatWithoutOwn = !useOwn && llm.refineBlock == RefineBlock.NO_CHAT
+    val noLlmWithoutOwn = offlineWithoutOwn || noChatWithoutOwn
     val providers = ProviderCatalog.llmProviders
     val labels = providers.associate { it.id to providerLabel(it) }
     var showKeySheet by rememberSaveable { mutableStateOf(false) }
@@ -68,7 +69,10 @@ fun LlmAccessSection(snack: SnackController) {
     val pro = prefs.serverModelsEnabled
     // Modelle vom Server (Cache je Anbieter und Adresse); Anbieter- oder Adresswechsel = andere Liste.
     val server = rememberServerModels(llm, ModelKind.LLM)
-    val loadable = !noLlmWithoutOwn && (pro || provider.isOllama)
+    // Together/DeepInfra "wie Erkennung": ihre Liste taugt nur fuer die Erkennung (ModelLists) —
+    // also kein Picker, sondern das freie Feld wie ohne Pro.
+    val pickable = pro && provider.hasLlm
+    val loadable = !noLlmWithoutOwn && (pickable || provider.isOllama)
 
     // Lokal gibt es kein Default-Modell: das erste gefundene uebernehmen.
     val takeFirst: (ModelCache.Entry) -> Unit = { e ->
@@ -168,7 +172,7 @@ fun LlmAccessSection(snack: SnackController) {
                     FilledTonalButton(onClick = { switchToOwn() }) { Text(stringResource(R.string.text_add_access)) }
                 },
             )
-            pro -> LoomPickerField(
+            pickable -> LoomPickerField(
                 label = stringResource(R.string.text_llm_model),
                 value = modelLabel(llm),
                 onClick = { showPicker = true },
@@ -218,7 +222,8 @@ fun LlmAccessSection(snack: SnackController) {
             ) { prefs.llmAccess() }
         }
 
-        TestAccessRow(label = stringResource(R.string.text_test), enabled = !noLlmWithoutOwn) {
+        // Ohne Modell (Together/DeepInfra "wie Erkennung") ginge die Pruefung ins Leere.
+        TestAccessRow(label = stringResource(R.string.text_test), enabled = !noLlmWithoutOwn && llm.refineBlock == null) {
             AccessTest.llm(prefs.llmAccess(), prefs.language)
         }
     }

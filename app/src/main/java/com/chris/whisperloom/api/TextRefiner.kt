@@ -20,8 +20,8 @@ class TextRefiner(private val access: ApiAccess) {
      * auf den Rohtext zurueck: die Veredelung darf ein Diktat niemals verschlucken.
      *
      * @throws ApiNotConfiguredException wenn die Base-URL leer ist (eigener Server ohne URL) —
-     *   sonst ginge die Anfrage an "/chat/completions" ohne Host — oder der Anbieter keine
-     *   Textmodelle hat ([MSG_NO_LLM]).
+     *   sonst ginge die Anfrage an "/chat/completions" ohne Host — oder der Zugang keinen Text
+     *   verbessern kann ([ApiAccess.refineBlock]: [MSG_NO_LLM], [MSG_NO_MODEL]).
      * @throws RefineRejectedException wenn die Stufe "Prompt" eine Antwort statt eines Prompts liefert
      *   oder das Modell an seiner Laengengrenze abgebrochen hat ([MSG_TRUNCATED]).
      */
@@ -33,9 +33,13 @@ class TextRefiner(private val access: ApiAccess) {
         paragraphs: Boolean = true,
     ): String {
         if (raw.isBlank() || mode == RefineMode.OFF) return raw
-        // "Wie Erkennung" bei einem reinen Erkennungs-Anbieter (Together, DeepInfra, ElevenLabs):
-        // dort gibt es keinen Chat-Endpunkt — klarer Hinweis statt 404 und ohne Anfrage.
-        if (!access.provider.hasLlm) throw ApiNotConfiguredException(MSG_NO_LLM)
+        // "Wie Erkennung" ohne Chat (ElevenLabs) bzw. ohne Modell (Together, DeepInfra): klarer
+        // Hinweis statt 404/400 und ohne Anfrage. Mit eingetipptem Modell geht es wie bisher raus.
+        when (access.refineBlock) {
+            RefineBlock.NO_CHAT -> throw ApiNotConfiguredException(MSG_NO_LLM)
+            RefineBlock.NO_MODEL -> throw ApiNotConfiguredException(MSG_NO_MODEL)
+            null -> Unit
+        }
         if (access.baseUrl.isBlank()) throw ApiNotConfiguredException()
 
         val german = language == "de"
@@ -101,8 +105,11 @@ class TextRefiner(private val access: ApiAccess) {
          */
         const val MSG_TRUNCATED = "Antwort des Modells abgeschnitten (Längengrenze)"
 
-        /** Der Erkennungs-Anbieter hat keine Textmodelle, und es ist kein eigener Zugang eingetragen. */
+        /** Der Erkennungs-Anbieter hat keinen Chat (ElevenLabs), und es ist kein eigener Zugang eingetragen. */
         const val MSG_NO_LLM = "Der Erkennungs-Anbieter kann keinen Text verbessern — unter „Text“ einen eigenen Zugang eintragen"
+
+        /** "Wie Erkennung" bei Together/DeepInfra: der Katalog kennt dort kein Textmodell, eingetragen ist keins. */
+        const val MSG_NO_MODEL = "Kein Textmodell eingetragen — unter „Text“ ein Modell eintragen"
         private const val LENGTH = "length"
 
         /** OpenAI: "Unsupported parameter: 'temperature' is not supported with this model." */

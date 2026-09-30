@@ -192,4 +192,30 @@ class AccessResolverTest {
         // Ohne Cache (frei getippt) greift dieselbe Ableitung.
         assertEquals("languages[]", AccessResolver.resolveStt("openai", "", "k", "gpt-transcribe-2026-08-01").modelOption!!.languageField)
     }
+
+    // --- "wie Erkennung" bei reinen Erkennungs-Anbietern (Review 3.8.0) ---------------------
+
+    @Test fun elevenLabsWieErkennungKannKeinenTextVerbessernAuchMitAltemModell() {
+        val stt = AccessResolver.resolveStt("elevenlabs", "", "xi", "", 0)
+        assertEquals(RefineBlock.NO_CHAT, AccessResolver.resolveLlm(stt, "same", "", "", "").refineBlock)
+        // Ein von frueher gespeichertes llm_model aendert daran nichts: ElevenLabs hat keinen Chat.
+        assertEquals(RefineBlock.NO_CHAT, AccessResolver.resolveLlm(stt, "same", "", "", "gpt-4o-mini").refineBlock)
+    }
+
+    @Test fun togetherUndDeepInfraWieErkennungBrauchenNurEinModell() {
+        for (id in listOf("together", "deepinfra")) {
+            val stt = AccessResolver.resolveStt(id, "", "k", "", 0)
+            assertEquals(id, RefineBlock.NO_MODEL, AccessResolver.resolveLlm(stt, "same", "", "", " ").refineBlock)
+            val typed = AccessResolver.resolveLlm(stt, "same", "", "", "meta-llama/Llama-3.3-70B-Instruct-Turbo")
+            assertNull(id, typed.refineBlock)
+        }
+    }
+
+    @Test fun anbieterMitTextmodellenSindNieGesperrt() {
+        val stt = AccessResolver.resolveStt("groq", "", "gsk", "", 0)
+        assertNull(AccessResolver.resolveLlm(stt, "same", "", "", "").refineBlock)
+        // Eigener Server / Ollama ohne Modell: kein Sperrgrund hier (das Modellfeld zeigt den Fehler).
+        assertNull(AccessResolver.resolveLlm(stt, "custom", "http://h:1/v1", "", "").refineBlock)
+        assertNull(AccessResolver.resolveLlm(stt, "ollama", "http://h:11434", "", "").refineBlock)
+    }
 }

@@ -584,6 +584,34 @@ class MainFlowTest {
         assertEquals("", p.llmAccess().apiKey) // der ElevenLabs-Key geht nie an OpenAI
     }
 
+    /** Together/DeepInfra "wie Erkennung": Chat geht mit eingetipptem Modell — freies Feld wie auf main. */
+    @Test fun textZugangBeiTogetherWieErkennungZeigtFreiesModellfeld() {
+        prefs.engine = Engine.ONLINE
+        prefs.sttProviderId = "together"
+        prefs.apiKey = "tg"
+        prefs.refineMode = RefineMode.POLISH
+        screen(env()) { TextSettingsScreen(it) }
+        compose.onNodeWithText("bietet keine Textverbesserung", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Zugang prüfen").assertIsNotEnabled() // ohne Modell ginge die Pruefung ins Leere
+        compose.onNode(hasSetTextAction() and hasText("Modell")).performTextInput("meta-llama/Llama-3.3-70B-Instruct-Turbo")
+        compose.waitForIdle()
+        assertEquals("meta-llama/Llama-3.3-70B-Instruct-Turbo", Prefs(ctx).llmModel)
+        assertEquals("same", Prefs(ctx).llmProviderId)
+        compose.onNodeWithText("Zugang prüfen").assertIsEnabled()
+    }
+
+    @Test fun textZugangBeiTogetherWieErkennungMitProOhnePicker() {
+        // Die Together-Liste taugt nur fuer die Erkennung: kein Picker, kein Nachladen, freies Feld.
+        prefs.engine = Engine.ONLINE
+        prefs.sttProviderId = "together"
+        prefs.serverModelsEnabled = true
+        prefs.refineMode = RefineMode.POLISH
+        screen(env()) { TextSettingsScreen(it) }
+        compose.onNodeWithTag("picker:Modell").assertDoesNotExist()
+        compose.onNodeWithText("Modelle aktualisieren").assertDoesNotExist()
+        compose.onNode(hasSetTextAction() and hasText("Modell")).assertExists()
+    }
+
     // --- Vokabular -------------------------------------------------------------------
 
     @Test fun vokabularAlsListeImSheet() {

@@ -1,5 +1,7 @@
 package com.chris.whisperloom
 
+import com.chris.whisperloom.api.ApiAccess
+
 /**
  * Vollstaendigkeit des Transkriptions-Zugangs — rein (ohne Android). Ob die App insgesamt
  * "eingerichtet" ist (Engine, URL gueltig, Modell, Mikrofon, Overlay), entscheidet allein
@@ -19,4 +21,12 @@ object SetupState {
      */
     fun llmComplete(baseUrl: String, apiKey: String, needsKey: Boolean, model: String): Boolean =
         sttComplete(baseUrl, apiKey, needsKey) && model.isNotBlank()
+
+    /**
+     * Kann eine KI-Stufe mit diesem Zugang etwas ausrichten? Wie [llmComplete], dazu muss der
+     * Anbieter Chat koennen: ElevenLabs "wie Erkennung" hat keinen, auch wenn von frueher noch ein
+     * Modell eingetragen ist.
+     */
+    fun llmReady(access: ApiAccess): Boolean =
+        access.refineBlock == null && llmComplete(access.baseUrl, access.apiKey, access.provider.needsKey, access.model)
 }

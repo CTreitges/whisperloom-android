@@ -12,7 +12,28 @@ data class ApiAccess(
     val readTimeoutMs: Int,
     val provider: Provider,
     val modelOption: ModelOption?,
-)
+) {
+    /**
+     * Warum dieser Zugang keinen Text verbessern kann; null = er kann es (soweit bekannt). Betrifft
+     * "wie Erkennung": ElevenLabs hat gar keinen Chat-Endpunkt. Together und DeepInfra sprechen
+     * /chat/completions, nur kennt der Katalog dort kein Textmodell — mit eingetipptem geht es.
+     */
+    val refineBlock: RefineBlock?
+        get() = when {
+            provider.api == ApiStyle.ELEVENLABS -> RefineBlock.NO_CHAT
+            !provider.hasLlm && model.isBlank() -> RefineBlock.NO_MODEL
+            else -> null
+        }
+}
+
+/** Siehe [ApiAccess.refineBlock]. */
+enum class RefineBlock {
+    /** Der Anbieter hat keinen Chat-Endpunkt (ElevenLabs). */
+    NO_CHAT,
+
+    /** Reiner Erkennungs-Anbieter ohne eingetragenes Textmodell (Together, DeepInfra). */
+    NO_MODEL,
+}
 
 /**
  * Leitet aus den rohen Einstellungswerten den Zugang ab. Rein (ohne Android), damit

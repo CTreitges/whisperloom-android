@@ -496,6 +496,17 @@ class TranscriptionEngineTest {
         assertNull(chatBody) // keine Anfrage an einen Chat-Endpunkt, den es bei ElevenLabs nicht gibt
     }
 
+    @Test fun elevenLabsMitAltemTextModellSchicktTrotzdemKeinenChat() {
+        // Von frueher gespeichertes llm_model: "wie Erkennung" bleibt bei ElevenLabs ohne Chat.
+        useElevenLabs()
+        prefs.refineMode = RefineMode.POLISH
+        prefs.llmModel = "gpt-4o-mini"
+        var hint: String? = null
+        assertEquals("Also hallo welt", TranscriptionEngine.transcribe(ctx, speech) { hint = it })
+        assertEquals(com.chris.whisperloom.api.TextRefiner.MSG_NO_LLM, hint)
+        assertNull(chatBody)
+    }
+
     @Test fun elevenLabsMitEigenemTextZugangVerbessertAufDeutsch() {
         useElevenLabs()
         prefs.refineMode = RefineMode.POLISH
@@ -558,5 +569,32 @@ class TranscriptionEngineTest {
         assertEquals("en", TranscriptionEngine.effectiveLanguage("auto", "en"))
         assertEquals("auto", TranscriptionEngine.effectiveLanguage("auto", null))
         assertEquals("auto", TranscriptionEngine.effectiveLanguage("auto", " "))
+    }
+
+    // --- "wie Erkennung" bei Together/DeepInfra (Review 3.8.0) -----------------------------
+
+    private fun useTogether() {
+        prefs.engine = Engine.ONLINE
+        prefs.sttProviderId = "together"
+        prefs.apiBaseUrl = "http://127.0.0.1:${server.address.port}/v1"
+        prefs.apiKey = "tg-geheim"
+        prefs.language = "de"
+        prefs.refineMode = RefineMode.POLISH
+    }
+
+    @Test fun togetherWieErkennungMitEingetipptemModellSchicktDenChatRequest() {
+        // Wie auf main: Together kann /chat/completions, der Katalog kennt dort nur kein Modell.
+        useTogether()
+        prefs.llmModel = "meta-llama/Llama-3.3-70B-Instruct-Turbo"
+        assertEquals("Hallo Welt.", TranscriptionEngine.transcribe(ctx, speech))
+        assertEquals("meta-llama/Llama-3.3-70B-Instruct-Turbo", JSONObject(chatBody!!).getString("model"))
+    }
+
+    @Test fun togetherWieErkennungOhneModellUeberspringtMitHinweis() {
+        useTogether()
+        var hint: String? = null
+        assertEquals("Also hallo welt", TranscriptionEngine.transcribe(ctx, speech) { hint = it })
+        assertEquals(com.chris.whisperloom.api.TextRefiner.MSG_NO_MODEL, hint)
+        assertNull(chatBody) // kein Request mit "model":""
     }
 }
