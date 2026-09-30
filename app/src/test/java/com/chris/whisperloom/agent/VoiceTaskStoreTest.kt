@@ -35,7 +35,7 @@ class VoiceTaskStoreTest {
     }
 
     @Test fun einNeuerAuftragLegtAudioUndKennungAn() {
-        val id = store.begin(ton(), 4200, "2026-09-21T20:00:00Z")
+        val id = store.begin(ton(), 4200, "2026-09-21T20:00:00Z", WidgetProfile.DEFAULT_ID)
         assertTrue(store.hasWork)
         assertEquals(id, store.requestId)
         assertEquals(4200, store.durationMs)
@@ -44,7 +44,7 @@ class VoiceTaskStoreTest {
     }
 
     @Test fun dieAufnahmeKommtUnveraendertZurueck() {
-        store.begin(ton(200), 1000, "")
+        store.begin(ton(200), 1000, "", WidgetProfile.DEFAULT_ID)
         val zurueck = store.loadSamples()
         assertEquals(200, zurueck.size)
         assertEquals(0.4f, zurueck[0], 1e-4f)
@@ -52,33 +52,33 @@ class VoiceTaskStoreTest {
     }
 
     @Test fun dasAudioLiegtInFilesDirNichtImCache() {
-        store.begin(ton(), 1000, "")
+        store.begin(ton(), 1000, "", WidgetProfile.DEFAULT_ID)
         // cacheDir raeumt das System bei Platzmangel weg — mitten im Wiederholungsversuch.
         assertEquals(ctx.filesDir, store.audioFile.parentFile)
     }
 
     @Test fun jederAuftragBekommtEineEigeneKennung() {
-        val a = store.begin(ton(), 1000, "")
-        val b = store.begin(ton(), 1000, "")
+        val a = store.begin(ton(), 1000, "", WidgetProfile.DEFAULT_ID)
+        val b = store.begin(ton(), 1000, "", WidgetProfile.DEFAULT_ID)
         assertNotEquals(a, b)
     }
 
     @Test fun einNeuerAuftragVerwirftDenAltenText() {
-        store.begin(ton(), 1000, "")
+        store.begin(ton(), 1000, "", WidgetProfile.DEFAULT_ID)
         store.text = "alter Text"
-        store.begin(ton(), 1000, "")
+        store.begin(ton(), 1000, "", WidgetProfile.DEFAULT_ID)
         assertEquals("", store.text)
     }
 
     @Test fun erkannterTextAlleinIstAuchArbeit() {
-        store.begin(ton(), 1000, "")
+        store.begin(ton(), 1000, "", WidgetProfile.DEFAULT_ID)
         store.text = "Kauf Milch"
         store.audioFile.delete()
         assertTrue("Der Text reicht zum erneuten Senden — das Audio wird dann nicht mehr gebraucht", store.hasWork)
     }
 
     @Test fun aufraeumenLoeschtAudioUndKennung() {
-        store.begin(ton(), 1000, "")
+        store.begin(ton(), 1000, "", WidgetProfile.DEFAULT_ID)
         store.text = "Kauf Milch"
         store.clear()
         assertFalse(store.hasWork)
@@ -106,7 +106,7 @@ class VoiceTaskStoreTest {
     }
 
     @Test fun derHinweisZurTextverbesserungGehoertZumAuftrag() {
-        store.begin(ton(), 1000, "")
+        store.begin(ton(), 1000, "", WidgetProfile.DEFAULT_ID)
         store.refineSkipped = "API-Fehler 429"
         assertEquals("API-Fehler 429", VoiceTaskStore(ctx).refineSkipped)
         store.clear()
@@ -115,7 +115,7 @@ class VoiceTaskStoreTest {
 
     @Test fun derVersuchsbeginnUeberlebtEineNeueInstanzUndGehtMitDemAuftrag() {
         assertEquals("Unbekannt ist 0", 0, store.attemptStartedAt)
-        store.begin(ton(), 1000, "")
+        store.begin(ton(), 1000, "", WidgetProfile.DEFAULT_ID)
         store.attemptStartedAt = 12_345
         assertEquals(12_345, VoiceTaskStore(ctx).attemptStartedAt)
         store.clear()
@@ -124,17 +124,27 @@ class VoiceTaskStoreTest {
 
     @Test fun derOfflineMerkerGehtMitDemAuftrag() {
         // Sonst hielte ein Merker aus einem verworfenen Auftrag den naechsten fest.
-        store.begin(ton(), 1000, "")
+        store.begin(ton(), 1000, "", WidgetProfile.DEFAULT_ID)
         store.offlineRecognition = true
         assertTrue(VoiceTaskStore(ctx).offlineRecognition)
-        store.begin(ton(), 1000, "")
+        store.begin(ton(), 1000, "", WidgetProfile.DEFAULT_ID)
         assertFalse(store.offlineRecognition)
     }
 
+    @Test fun derAuftragKenntSeinWidgetProfil() {
+        assertEquals("Frisch: kein Profil", "", store.profileId)
+        store.begin(ton(), 1000, "", "einkauf")
+        assertEquals("einkauf", VoiceTaskStore(ctx).profileId)
+        store.begin(ton(), 1000, "", "arbeit")
+        assertEquals("Ein neuer Auftrag bringt sein eigenes Profil mit", "arbeit", store.profileId)
+        store.clear()
+        assertEquals("Mit dem Auftrag ist auch sein Profil erledigt", "", store.profileId)
+    }
+
     @Test fun einNeuerAuftragStartetOhneAltenHinweis() {
-        store.begin(ton(), 1000, "")
+        store.begin(ton(), 1000, "", WidgetProfile.DEFAULT_ID)
         store.refineSkipped = "alt"
-        store.begin(ton(), 1000, "")
+        store.begin(ton(), 1000, "", WidgetProfile.DEFAULT_ID)
         assertEquals("", store.refineSkipped)
     }
 }

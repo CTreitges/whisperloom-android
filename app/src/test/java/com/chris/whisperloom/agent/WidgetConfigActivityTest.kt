@@ -15,6 +15,7 @@ import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
+import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -129,9 +130,9 @@ class WidgetConfigActivityTest {
         val id = unseres()
         val activity = oeffnen(id)
 
-        compose.onNodeWithText("Welches Profil?").assertExists()
+        compose.onNodeWithText("Welches Widget-Profil?").assertExists()
         assertEquals("Solange nichts gewaehlt ist: Abbruch", Activity.RESULT_CANCELED to id, ergebnis(activity))
-        compose.onNode(hasText("Sprachauftrag") and isSelectable()).assertIsSelected()
+        compose.onNode(hasText("Sprach-Command") and isSelectable()).assertIsSelected()
 
         compose.onNode(hasText("Einkauf") and isSelectable()).performClick()
         compose.waitForIdle()
@@ -142,6 +143,50 @@ class WidgetConfigActivityTest {
         assertTrue(shadowOf(manager).getViewFor(id).contentDescription.startsWith("Einkauf"))
     }
 
+    @Test fun dieWahlZeichnetDasWidgetMitDemServerSeinesProfils() {
+        serverEinrichten(ctx)
+        shadowOf(ctx as android.app.Application).grantPermissions(android.Manifest.permission.RECORD_AUDIO)
+        store.create("Einkauf")
+        val id = unseres()
+        oeffnen(id)
+
+        compose.onNode(hasText("Einkauf") and isSelectable()).performClick()
+        compose.waitForIdle()
+
+        assertEquals("Nur das Standardprofil hat einen Server", ctx.getString(R.string.widget_no_server), zeile(id))
+    }
+
+    @Test fun stillGebundenIstEinWidgetMitServerBereit() {
+        serverEinrichten(ctx)
+        shadowOf(ctx as android.app.Application).grantPermissions(android.Manifest.permission.RECORD_AUDIO)
+        val id = unseres()
+
+        erzeugen(id)
+
+        assertEquals(ctx.getString(R.string.widget_ready), zeile(id))
+    }
+
+    // --- Pro Widgets aus ---------------------------------------------------------------------
+
+    @Test fun ohneProWidgetsSagtDasSheetWoSieSichEinschaltenLassen() {
+        // Platzieren geht trotzdem — das Widget zeigt dann "aus"; der Hinweis erklaert, warum.
+        store.create("Einkauf")
+        val id = unseres()
+        oeffnen(id)
+
+        compose.onNodeWithText("Pro Widgets sind aus. In der App unter Einstellungen → Erweitert einschalten.").assertExists()
+        compose.onNode(hasText("Einkauf") and isSelectable()).assertExists()
+    }
+
+    @Test fun mitProWidgetsKeinHinweis() {
+        Prefs(ctx).proWidgetsEnabled = true
+        store.create("Einkauf")
+        oeffnen(unseres())
+
+        compose.onNodeWithText("Welches Widget-Profil?").assertExists()
+        compose.onNodeWithText("Pro Widgets sind aus. In der App unter Einstellungen → Erweitert einschalten.").assertDoesNotExist()
+    }
+
     // --- Neu konfigurieren ------------------------------------------------------------------
 
     @Test fun neuKonfigurierenFragtAuchBeiNurEinemProfil() {
@@ -149,8 +194,8 @@ class WidgetConfigActivityTest {
         store.bind(id, WidgetProfile.DEFAULT_ID)
         val activity = oeffnen(id)
 
-        compose.onNodeWithText("Welches Profil?").assertExists()
-        compose.onNode(hasText("Sprachauftrag") and isSelectable()).assertIsSelected()
+        compose.onNodeWithText("Welches Widget-Profil?").assertExists()
+        compose.onNode(hasText("Sprach-Command") and isSelectable()).assertIsSelected()
         assertFalse(activity.isFinishing)
     }
 
@@ -163,8 +208,8 @@ class WidgetConfigActivityTest {
         VoiceTaskWidget().onReceive(ctx, Intent(Intent.ACTION_MY_PACKAGE_REPLACED))
         val activity = oeffnen(id)
 
-        compose.onNodeWithText("Welches Profil?").assertExists()
-        compose.onNodeWithText("Neues Profil").assertExists()
+        compose.onNodeWithText("Welches Widget-Profil?").assertExists()
+        compose.onNodeWithText("Neues Widget-Profil").assertExists()
         assertFalse(activity.isFinishing)
         assertEquals(Activity.RESULT_CANCELED to id, ergebnis(activity))
     }
@@ -176,9 +221,9 @@ class WidgetConfigActivityTest {
         val activity = oeffnen(id)
 
         compose.onNode(hasText("Einkauf") and isSelectable()).assertIsSelected()
-        compose.onNode(hasText("Sprachauftrag") and isSelectable()).assertIsNotSelected()
+        compose.onNode(hasText("Sprach-Command") and isSelectable()).assertIsNotSelected()
 
-        compose.onNode(hasText("Sprachauftrag") and isSelectable()).performClick()
+        compose.onNode(hasText("Sprach-Command") and isSelectable()).performClick()
         compose.waitForIdle()
 
         assertEquals(Activity.RESULT_OK to id, ergebnis(activity))
@@ -190,19 +235,20 @@ class WidgetConfigActivityTest {
         store.bind(id, WidgetProfile.DEFAULT_ID)
         val activity = oeffnen(id)
 
-        click("Neues Profil")
-        compose.onNodeWithText("Profil bearbeiten").assertExists()
+        click("Neues Widget-Profil")
+        compose.onNodeWithText("Widget bearbeiten").assertExists()
         val neu = store.all().single { !it.isDefault }
-        assertEquals("Profil 2", neu.name)
+        assertEquals("Sprach-Command 2", neu.name)
+        assertEquals(WidgetKind.VOICE_COMMAND, neu.kind)
 
         click("Fertig")
 
-        compose.onNodeWithText("Welches Profil?").assertExists()
-        compose.onNode(hasText("Profil 2") and isSelectable()).assertIsSelected()
+        compose.onNodeWithText("Welches Widget-Profil?").assertExists()
+        compose.onNode(hasText("Sprach-Command 2") and isSelectable()).assertIsSelected()
         assertEquals("Erst der Tipp bestaetigt", WidgetProfile.DEFAULT_ID, store.forWidget(id).id)
         assertEquals(Activity.RESULT_CANCELED to id, ergebnis(activity))
 
-        compose.onNode(hasText("Profil 2") and isSelectable()).performClick()
+        compose.onNode(hasText("Sprach-Command 2") and isSelectable()).performClick()
         compose.waitForIdle()
 
         assertEquals(Activity.RESULT_OK to id, ergebnis(activity))

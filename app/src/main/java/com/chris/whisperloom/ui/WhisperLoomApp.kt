@@ -20,8 +20,9 @@ import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SetupFacts
 import com.chris.whisperloom.ui.nav.SetupRouter
 import com.chris.whisperloom.ui.nav.Start
+import com.chris.whisperloom.ui.nav.WidgetTab
 import com.chris.whisperloom.ui.nav.rememberNavState
-import com.chris.whisperloom.ui.settings.AgentScreen
+import com.chris.whisperloom.ui.settings.AdvancedScreen
 import com.chris.whisperloom.ui.settings.ButtonKeyboardScreen
 import com.chris.whisperloom.ui.settings.HelpScreen
 import com.chris.whisperloom.ui.settings.ModelsScreen
@@ -32,6 +33,7 @@ import com.chris.whisperloom.ui.settings.WidgetsScreen
 import com.chris.whisperloom.ui.setup.SetupScreen
 import com.chris.whisperloom.ui.state.AppEnv
 import com.chris.whisperloom.ui.state.LocalAppEnv
+import com.chris.whisperloom.ui.tutorial.TutorialKind
 import com.chris.whisperloom.ui.tutorial.TutorialScreen
 
 /**
@@ -73,8 +75,8 @@ fun WhisperLoomApp(env: AppEnv, route: RouteRequest? = null, onRouteConsumed: ()
                 Screen.TextSettings -> TextSettingsScreen(nav)
                 Screen.ButtonKeyboard -> ButtonKeyboardScreen(nav)
                 Screen.Models -> ModelsScreen(nav)
-                Screen.Agent -> AgentScreen(nav)
-                Screen.Widgets -> WidgetsScreen(nav)
+                Screen.Advanced -> AdvancedScreen(nav)
+                is Screen.Widgets -> WidgetsScreen(nav, tab = screen.tab, edit = screen.edit)
                 is Screen.Help -> HelpScreen(section = (nav.current as? Screen.Help)?.section ?: screen.section, nav = nav)
                 is Screen.Tutorial -> TutorialScreen(
                     startPage = screen.startPage,
@@ -82,7 +84,7 @@ fun WhisperLoomApp(env: AppEnv, route: RouteRequest? = null, onRouteConsumed: ()
                     onFinish = {
                         // W9 "Knopf starten & los": der Knopf startet erst jetzt, nicht ueber dem Tutorial.
                         if (screen.startBubbleAfter) FloatingMicService.start(ctx)
-                        nav.replaceAll(Screen.Home)
+                        finishTutorial(nav, screen.kind)
                     },
                 )
             }
@@ -106,13 +108,29 @@ fun startStack(facts: SetupFacts, tutorialSeen: Boolean): List<Screen> {
     return if (start == Screen.Home && !tutorialSeen) listOf(Screen.Home, Screen.Tutorial()) else listOf(start)
 }
 
-/** Deep-Link anwenden: `home` (Notification), `settings` (IME-Zahnrad), `setup[+step]` (IME/Overlay/Share). */
+/**
+ * Tutorial beendet ("Los geht's", "Ueberspringen", Zurueck auf Seite 1): das Einsteiger-Heft fuehrt
+ * nach Home (Auto-Start, W9). Pro Widgets fuehrt dorthin zurueck, wo es geoeffnet wurde
+ * (Widgets-Tab, Hilfe, Erweitert) — nur ohne vorigen Screen nach Home.
+ */
+fun finishTutorial(nav: NavState, kind: TutorialKind) {
+    if (kind == TutorialKind.PRO_WIDGETS && nav.canPop) nav.pop() else nav.replaceAll(Screen.Home)
+}
+
+/**
+ * Deep-Link anwenden: `home` (Notification), `settings` (IME-Zahnrad), `setup[+step]` (IME/Overlay/Share),
+ * `advanced` und `widgets[+profile]` (Widget-Tipp, der nicht aufnehmen kann; Aufnahme-Notification).
+ */
 fun applyRoute(nav: NavState, route: RouteRequest, facts: SetupFacts) {
     when (route.route) {
         AppNav.ROUTE_HOME -> nav.replaceAll(Screen.Home)
         AppNav.ROUTE_SETTINGS -> nav.replaceAll(startScreen(facts), Screen.SettingsHub)
-        // Widget-Tipp, solange nichts eingerichtet oder das Mikrofon nicht erlaubt ist.
-        AppNav.ROUTE_AGENT -> nav.replaceAll(startScreen(facts), Screen.SettingsHub, Screen.Agent)
+        // Pro Widgets aus. "agent" kommt noch aus Intents von 3.7.0.
+        AppNav.ROUTE_ADVANCED, AppNav.ROUTE_AGENT -> nav.replaceAll(startScreen(facts), Screen.SettingsHub, Screen.Advanced)
+        // Kein Mikrofon oder Aufnahme-Notification; mit Profil: dessen Server fehlt, der Editor oeffnet sich.
+        AppNav.ROUTE_WIDGETS -> nav.replaceAll(
+            startScreen(facts), Screen.SettingsHub, Screen.Widgets(WidgetTab.PRO, route.profileId),
+        )
         AppNav.ROUTE_SETUP -> {
             val setup = Screen.Setup(route.step ?: SetupRouter.firstOpenStep(facts))
             // Aus Home geoeffnet: Zurueck fuehrt nach Home; sonst ist der Assistent der einzige Screen.

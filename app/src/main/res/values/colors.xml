@@ -55,4 +55,9 @@
          Abbrechen-Ziel (§5.2 "#00000000 -> #66000000") und Schattenfarbe des Knopfs
          (§5.1 "Schwarz 40 %"). Hier statt als Hex-Literal in den Drawables (V1.5). -->
     <color name="loom_scrim">#66000000</color>
+
+    <!-- Abgeleitet (kein Spec-Token): Schatten des Widget-Namens unter der Kachel, Schwarz 80 %.
+         Der Name liegt auf dem Hintergrundbild des Startbildschirms und bleibt so auch auf
+         hellen Bildern lesbar (wie die Namen unter den App-Symbolen). -->
+    <color name="loom_labelShadow">#CC000000</color>
 </resources>

@@ -31,6 +31,20 @@ class RouteRequestTest {
         assertEquals(RouteRequest("settings"), RouteRequest.from(AppNav.settings(ctx)))
         assertEquals(RouteRequest("setup", 3), RouteRequest.from(AppNav.setup(ctx, 3)))
         assertEquals(RouteRequest("setup"), RouteRequest.from(AppNav.setup(ctx)))
+        assertEquals(RouteRequest("advanced"), RouteRequest.from(AppNav.advanced(ctx)))
+        assertEquals(RouteRequest("widgets"), RouteRequest.from(AppNav.proWidgets(ctx)))
+        assertEquals(RouteRequest("widgets", profileId = "p1"), RouteRequest.from(AppNav.widgetProfile(ctx, "p1")))
+    }
+
+    @Test fun einProfilGiltNurFuerDieWidgetRoute() {
+        val fremd = AppNav.settings(ctx).putExtra(AppNav.EXTRA_PROFILE, "p1")
+        assertEquals(RouteRequest("settings"), RouteRequest.from(fremd))
+    }
+
+    @Test fun einProfilDasDenBackStackBraecheWirdIgnoriert() {
+        // Die MainActivity ist exportiert; ":" trennt im gespeicherten Back-Stack die Argumente.
+        assertEquals(RouteRequest("widgets"), RouteRequest.from(AppNav.widgetProfile(ctx, "a:b")))
+        assertEquals(RouteRequest("widgets"), RouteRequest.from(AppNav.widgetProfile(ctx, " ")))
     }
 
     @Test fun deepLinkNurBeimErststartNichtNachRecreate() {
@@ -54,10 +68,23 @@ class RouteRequestTest {
     @Test fun screenEncodingIstStabil() {
         val screens = listOf(
             Screen.Home, Screen.Setup(3), Screen.SettingsHub, Screen.Recognition, Screen.TextSettings,
-            Screen.ButtonKeyboard, Screen.Models, Screen.Agent, Screen.Widgets, Screen.Help(4), Screen.Tutorial(2),
-            Screen.Tutorial(1, startBubbleAfter = true), Screen.Tutorial(0, kind = TutorialKind.AGENT),
+            Screen.ButtonKeyboard, Screen.Models, Screen.Advanced, Screen.Widgets(), Screen.Widgets(WidgetTab.NORMAL),
+            Screen.Widgets(WidgetTab.PRO), Screen.Widgets(WidgetTab.PRO, "p1"), Screen.Widgets(edit = "default"),
+            Screen.Help(4), Screen.Tutorial(2),
+            Screen.Tutorial(1, startBubbleAfter = true), Screen.Tutorial(0, kind = TutorialKind.PRO_WIDGETS),
         )
         screens.forEach { assertEquals(it, Screen.decode(it.encode())) }
         assertEquals(Screen.Home, Screen.decode("unbekannt"))
+        assertEquals("widgets:pro:p1", Screen.Widgets(WidgetTab.PRO, "p1").encode())
+        assertEquals("advanced", Screen.Advanced.encode())
+        // Das Pro-Widgets-Heft behaelt den Schluessel aus 3.7.0 (Sprachauftrag).
+        assertEquals("tutorial:0:0:agent", Screen.Tutorial(kind = TutorialKind.PRO_WIDGETS).encode())
+    }
+
+    @Test fun alteBackStacksBleibenLesbar() {
+        // Gespeichert von 3.7.0: "agent" hiess der Screen "Erweitert", "widgets" hatte keine Argumente.
+        assertEquals(Screen.Advanced, Screen.decode("agent"))
+        assertEquals(Screen.Widgets(), Screen.decode("widgets"))
+        assertEquals("Unbekannter Tab: der Screen waehlt", Screen.Widgets(), Screen.decode("widgets:quer:"))
     }
 }

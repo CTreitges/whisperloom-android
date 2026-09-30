@@ -13,8 +13,8 @@ import com.chris.whisperloom.Prefs
 
 /**
  * Das Widget selbst. Es rechnet nichts aus und merkt sich nichts: bei jedem Anlass wird der
- * aktuelle Zustand aus Einstellungen, Berechtigung und gespeichertem Auftrag neu bestimmt
- * ([resolve]) und die Flaeche neu gezeichnet.
+ * aktuelle Zustand aus Einstellungen, Berechtigung, gespeichertem Auftrag und dem Server des
+ * Profils neu bestimmt ([resolve], [idle]) und die Flaeche neu gezeichnet.
  *
  * `updatePeriodMillis=0` — es gibt also keinen Takt. [onUpdate] laeuft beim Hinzufuegen,
  * nach einem Neustart und nach App-Updates; alles andere kommt von Dienst und Auftrag.
@@ -50,7 +50,7 @@ class VoiceTaskWidget : AppWidgetProvider() {
      */
     override fun onAppWidgetOptionsChanged(ctx: Context, manager: AppWidgetManager, id: Int, newOptions: Bundle?) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) return
-        val (state, message) = resolve(ctx)
+        val (state, message) = resolve(ctx, WidgetProfileStore(ctx).forWidget(id))
         VoiceTaskWidgetView.pushTo(ctx, manager, intArrayOf(id), state, message = message)
     }
 
@@ -80,14 +80,36 @@ class VoiceTaskWidget : AppWidgetProvider() {
     companion object {
 
         /**
-         * Der wahre Zustand, aus drei unabhaengigen Quellen: ist das Feature ueberhaupt
-         * eingerichtet, darf die App das Mikrofon, und liegt ein Auftrag herum.
+         * Der Zustand, der fuer alle Widgets gleich ist, aus drei unabhaengigen Quellen: sind Pro
+         * Widgets ueberhaupt an, darf die App das Mikrofon, und liegt ein Auftrag herum. Liefert
+         * es "bereit", entscheidet je Instanz noch das Profil ([idle]) — das setzt
+         * [VoiceTaskWidgetView.pushTo] ein.
          */
         fun resolve(ctx: Context): Pair<VoiceTaskState, String> {
-            if (!Prefs(ctx).agentReady) return VoiceTaskState.OFF to ""
+            if (!Prefs(ctx).proWidgetsEnabled) return VoiceTaskState.OFF to ""
             if (!hasMicPermission(ctx)) return VoiceTaskState.NO_MIC to ""
             val store = VoiceTaskStore(ctx)
             return VoiceTaskUi.afterRestart(store.state, store.hasWork) to store.message
+        }
+
+        /**
+         * Der wahre Zustand eines Widgets mit [profile], in dieser Reihenfolge: Pro Widgets aus,
+         * kein Mikrofon, laufender Auftrag (zeigen alle), Profil ohne Server, bereit.
+         */
+        fun resolve(ctx: Context, profile: WidgetProfile): Pair<VoiceTaskState, String> {
+            val (state, message) = resolve(ctx)
+            return idle(state, profile) to message
+        }
+
+        /**
+         * Ruhezustand je Widget: "bereit" heisst nur mit gueltigem Server im eigenen Profil
+         * bereit, sonst [VoiceTaskState.NO_SERVER]. Alle anderen Zustaende gelten fuer alle
+         * Widgets gleich und bleiben — auch "aus", denn der Schalter ist global.
+         */
+        fun idle(state: VoiceTaskState, profile: WidgetProfile): VoiceTaskState = when (state) {
+            VoiceTaskState.READY, VoiceTaskState.NO_SERVER ->
+                if (profile.serverReady) VoiceTaskState.READY else VoiceTaskState.NO_SERVER
+            else -> state
         }
 
         /**

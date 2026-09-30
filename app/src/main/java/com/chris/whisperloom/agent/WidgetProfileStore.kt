@@ -1,6 +1,8 @@
 package com.chris.whisperloom.agent
 
 import android.content.Context
+import android.content.SharedPreferences
+import com.chris.whisperloom.Prefs
 import java.util.UUID
 
 /**
@@ -124,6 +126,27 @@ class WidgetProfileStore(context: Context) {
     /** Fotos loeschen, die kein Profil nutzt und die kein laufender Import mehr braucht ([WidgetPhoto.sweep]). */
     fun sweepPhotos() {
         WidgetPhoto.sweep(app, all().mapNotNull { (it.icon as? ProfileIcon.Photo)?.fileName }.toSet())
+    }
+
+    /**
+     * Einmalig nach dem Update auf 3.7.1: bis 3.7.0 teilten sich alle Widgets EINEN Server aus den
+     * Einstellungen ([prefs] = `whisperloom.xml`). Jedes Profil ohne eigenen Server bekommt ihn, das
+     * virtuelle Standardprofil wird dabei gespeichert (mit [defaultName], falls es keinen Namen hat).
+     * Die alten Schluessel verschwinden erst, NACHDEM die Profile geschrieben sind — scheitert das
+     * Schreiben, versucht es der naechste Start erneut.
+     *
+     * Idempotent: ohne alte Werte passiert nichts, der Speicher bleibt unberuehrt ("Lesen schreibt nie").
+     */
+    fun migrateLegacyServer(prefs: SharedPreferences, defaultName: String) {
+        val url = prefs.getString(Prefs.LEGACY_KEY_AGENT_URL, "").orEmpty().trim()
+        val token = prefs.getString(Prefs.LEGACY_KEY_AGENT_TOKEN, "").orEmpty()
+        if (url.isEmpty() && token.isEmpty()) return
+        val migrated = all().map { p ->
+            val named = if (p.isDefault && p.name.isEmpty()) p.copy(name = WidgetProfile.cleanName(defaultName)) else p
+            if (p.serverUrl.isEmpty() && p.serverToken.isEmpty()) named.copy(serverUrl = url, serverToken = token) else named
+        }
+        if (!sp.edit().putString(KEY_PROFILES, WidgetProfile.encodeAll(migrated)).commit()) return
+        prefs.edit().remove(Prefs.LEGACY_KEY_AGENT_URL).remove(Prefs.LEGACY_KEY_AGENT_TOKEN).commit()
     }
 
     /** Wie viele Widgets ausdruecklich an dieses Profil gebunden sind (ungebundene zaehlen nicht). */

@@ -18,9 +18,10 @@ import com.chris.whisperloom.R
  * ein paar Zahlen eine komplette [RemoteViews] gebaut und ueber den AppWidgetManager an ALLE
  * Instanzen geschickt.
  *
- * Der Zustand ist global (ein Auftrag zur Zeit, alle Widgets zeigen ihn), das Aussehen gilt je
- * Instanz: jedes Widget zeigt Namen und Symbol seines Profils ([WidgetProfileStore.forWidget])
- * in der Variante, die zu seiner Groesse passt ([WidgetLayouts]).
+ * Ein laufender Auftrag ist global (ein Auftrag zur Zeit, alle Widgets zeigen ihn), der
+ * Ruhezustand und das Aussehen gelten je Instanz: jedes Widget ist nur mit dem Server seines
+ * Profils bereit ([VoiceTaskWidget.idle]) und zeigt Namen und Symbol seines Profils
+ * ([WidgetProfileStore.forWidget]) in der Variante, die zu seiner Groesse passt ([WidgetLayouts]).
  *
  * Die Entscheidung, was ein Tipp bedeutet, faellt in [VoiceTaskUi.tap]; hier wird sie nur in
  * den passenden PendingIntent uebersetzt.
@@ -41,7 +42,10 @@ object VoiceTaskWidgetView {
      * Setzt JEDE veraenderliche Eigenschaft, auch die scheinbar unveraenderten: der Launcher
      * recycelt die View bei gleichem Layout und spielt nur die neuen Aktionen darauf ab
      * (`AppWidgetHostView` → `reapply`). Was hier fehlt, bliebe vom vorigen Bild stehen — etwa
-     * ein Foto, obwohl gerade aufgenommen wird.
+     * ein Foto, obwohl gerade aufgenommen wird, oder ein Name, den das Profil nicht mehr zeigt.
+     *
+     * Den Zustand zeigt die Kachel (`widget_tile`); der Name steht darunter auf dem
+     * Hintergrundbild und hat deshalb eine feste Farbe aus dem Layout.
      */
     fun build(
         ctx: Context,
@@ -54,17 +58,15 @@ object VoiceTaskWidgetView {
         click: PendingIntent?,
     ): RemoteViews {
         val v = RemoteViews(ctx.packageName, layout.layoutRes)
-        v.setInt(R.id.widget_root, "setBackgroundResource", background(state))
+        v.setInt(R.id.widget_tile, "setBackgroundResource", background(state))
         val showPhoto = photo != null && WidgetLayouts.showsProfileIcon(state)
         v.setViewVisibility(R.id.widget_icon, if (showPhoto) View.GONE else View.VISIBLE)
         v.setViewVisibility(R.id.widget_photo, if (showPhoto) View.VISIBLE else View.GONE)
         if (showPhoto) v.setImageViewBitmap(R.id.widget_photo, photo)
         v.setImageViewResource(R.id.widget_icon, icon(state, profile))
         v.setInt(R.id.widget_icon, "setColorFilter", ctx.getColor(iconColor(state)))
-        if (layout != WidgetLayout.ICON) {
-            v.setTextViewText(R.id.widget_name, profile.displayName(ctx))
-            v.setTextColor(R.id.widget_name, ctx.getColor(textColor(state)))
-        }
+        v.setTextViewText(R.id.widget_name, profile.displayName(ctx))
+        v.setViewVisibility(R.id.widget_name, if (profile.showName) View.VISIBLE else View.GONE)
         v.setTextColor(R.id.widget_status, ctx.getColor(textColor(state)))
         v.setTextViewText(R.id.widget_status, status(ctx, state, elapsedMs, message))
         v.setContentDescription(R.id.widget_root, contentDescription(ctx, profile, state, elapsedMs, message))
@@ -86,8 +88,10 @@ object VoiceTaskWidgetView {
     }
 
     /**
-     * Bestimmte Instanzen zeichnen, jede mit ihrem Profil. Ein Foto wird nur geladen, wenn es
-     * gerade zu sehen ist, und je Aufruf nur einmal — auch wenn mehrere Widgets es teilen.
+     * Bestimmte Instanzen zeichnen, jede mit ihrem Profil. Wer "bereit" zeichnet, bekommt je
+     * Instanz den Ruhezustand ihres Profils ([VoiceTaskWidget.idle]) — ein Widget ohne Server
+     * zeigt dann "Server fehlt". Ein Foto wird nur geladen, wenn es gerade zu sehen ist, und je
+     * Aufruf nur einmal — auch wenn mehrere Widgets es teilen.
      */
     fun pushTo(
         ctx: Context,
@@ -101,13 +105,14 @@ object VoiceTaskWidgetView {
         val photos = HashMap<String, Bitmap?>()
         for (id in ids) {
             val profile = store.forWidget(id)
+            val shown = VoiceTaskWidget.idle(state, profile)
             val photoName = (profile.icon as? ProfileIcon.Photo)?.fileName
-                ?.takeIf { WidgetLayouts.showsProfileIcon(state) }
+                ?.takeIf { WidgetLayouts.showsProfileIcon(shown) }
             val photo = photoName?.let { name ->
                 if (name !in photos) photos[name] = WidgetPhoto.load(ctx, name)
                 photos[name]
             }
-            manager.updateAppWidget(id, views(ctx, manager, id, profile, photo, state, elapsedMs, message))
+            manager.updateAppWidget(id, views(ctx, manager, id, profile, photo, shown, elapsedMs, message))
         }
     }
 
@@ -158,6 +163,7 @@ object VoiceTaskWidgetView {
             else ctx.getString(R.string.widget_sent_raw)
         VoiceTaskState.NO_MIC -> ctx.getString(R.string.widget_no_mic)
         VoiceTaskState.OFF -> ctx.getString(R.string.widget_off)
+        VoiceTaskState.NO_SERVER -> ctx.getString(R.string.widget_no_server)
         VoiceTaskState.ERROR -> ctx.getString(R.string.widget_error_retry, reason(ctx, message))
     }
 
@@ -172,11 +178,12 @@ object VoiceTaskWidgetView {
             else ctx.getString(R.string.cd_widget_sent_raw, message)
         VoiceTaskState.NO_MIC -> ctx.getString(R.string.cd_widget_no_mic)
         VoiceTaskState.OFF -> ctx.getString(R.string.widget_off)
+        VoiceTaskState.NO_SERVER -> ctx.getString(R.string.cd_widget_no_server)
         VoiceTaskState.ERROR -> ctx.getString(R.string.cd_widget_error, reason(ctx, message))
     }
 
     /**
-     * Mit eigenem Profilnamen nennt TalkBack ihn zuerst ("Einkauf: Sprachauftrag aufnehmen") —
+     * Mit eigenem Profilnamen nennt TalkBack ihn zuerst ("Einkauf: Auftrag aufnehmen") —
      * sonst klingen zwei Widgets gleich. Ohne Namen bleibt es beim Text ohne Profile.
      */
     fun contentDescription(
@@ -199,7 +206,7 @@ object VoiceTaskWidgetView {
         VoiceTaskState.WORKING -> R.drawable.widget_bg_working
         VoiceTaskState.SENT -> R.drawable.widget_bg_sent
         VoiceTaskState.ERROR, VoiceTaskState.NO_MIC -> R.drawable.widget_bg_error
-        VoiceTaskState.READY, VoiceTaskState.OFF -> R.drawable.widget_bg_ready
+        VoiceTaskState.READY, VoiceTaskState.OFF, VoiceTaskState.NO_SERVER -> R.drawable.widget_bg_ready
     }
 
     /** In bereit/Fehler das Symbol des Profils; hat es ein Foto, steht hier (unsichtbar) das Mikrofon. */
@@ -207,6 +214,7 @@ object VoiceTaskWidgetView {
         VoiceTaskState.RECORDING -> R.drawable.ic_stop
         VoiceTaskState.WORKING, VoiceTaskState.SENT -> R.drawable.ic_send
         VoiceTaskState.NO_MIC, VoiceTaskState.OFF -> R.drawable.ic_mic_off
+        VoiceTaskState.NO_SERVER -> R.drawable.ic_dns
         VoiceTaskState.READY, VoiceTaskState.ERROR ->
             WidgetIcons.of((profile.icon as? ProfileIcon.BuiltIn)?.key ?: WidgetIcons.DEFAULT_KEY).drawable
     }
@@ -216,7 +224,7 @@ object VoiceTaskWidgetView {
         VoiceTaskState.WORKING -> R.color.loom_secondary
         VoiceTaskState.SENT -> R.color.loom_success
         VoiceTaskState.ERROR, VoiceTaskState.NO_MIC -> R.color.loom_error
-        VoiceTaskState.OFF -> R.color.loom_outline
+        VoiceTaskState.OFF, VoiceTaskState.NO_SERVER -> R.color.loom_outline
         VoiceTaskState.READY -> R.color.loom_primary
     }
 
@@ -225,7 +233,7 @@ object VoiceTaskWidgetView {
         VoiceTaskState.WORKING -> R.color.loom_onSecondaryContainer
         VoiceTaskState.SENT -> R.color.loom_onSuccessContainer
         VoiceTaskState.ERROR, VoiceTaskState.NO_MIC -> R.color.loom_onErrorContainer
-        VoiceTaskState.READY, VoiceTaskState.OFF -> R.color.loom_onSurfaceVariant
+        VoiceTaskState.READY, VoiceTaskState.OFF, VoiceTaskState.NO_SERVER -> R.color.loom_onSurfaceVariant
     }
 
     /**

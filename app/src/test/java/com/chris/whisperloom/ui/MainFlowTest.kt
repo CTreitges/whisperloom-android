@@ -2,9 +2,15 @@ package com.chris.whisperloom.ui
 
 import android.app.Application
 import android.content.Context
+import androidx.activity.OnBackPressedDispatcher
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
@@ -19,6 +25,7 @@ import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -26,18 +33,26 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.height
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.BuildConfig
 import com.chris.whisperloom.Engine
 import com.chris.whisperloom.Prefs
+import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.overlay.FloatingMicService
+import com.chris.whisperloom.ui.components.hasIllustration
 import com.chris.whisperloom.ui.home.HomeScreen
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.RouteRequest
 import com.chris.whisperloom.ui.nav.Screen
+import com.chris.whisperloom.ui.nav.SetupRouter
 import com.chris.whisperloom.ui.nav.SystemStatus
+import com.chris.whisperloom.ui.settings.ButtonKeyboardScreen
+import com.chris.whisperloom.ui.settings.HUB_DIVIDER_TAG
 import com.chris.whisperloom.ui.settings.HelpScreen
 import com.chris.whisperloom.ui.settings.ModelsScreen
 import com.chris.whisperloom.ui.settings.RecognitionScreen
@@ -54,6 +69,7 @@ import com.chris.whisperloom.ui.state.AppEnv
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.PrefsState
 import com.chris.whisperloom.ui.theme.WhisperLoomTheme
+import com.chris.whisperloom.ui.tutorial.TutorialKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -67,7 +83,7 @@ import org.robolectric.annotation.Config
 
 /**
  * Compose-Semantik-Tests der Hauptscreens (Robolectric, kein Bitmap-Rendering): Router,
- * Assistent-Schritte 1/2a, E2, E4, B3, E5, Hub. Hohes Fenster, damit scrollende Spalten und
+ * Assistent-Schritte 1/2a und ihre Illustrationen, E2, E3, E4, B3, E5, Hub. Hohes Fenster, damit scrollende Spalten und
  * LazyColumns alles komponieren.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -98,13 +114,21 @@ class MainFlowTest {
         compose.waitForIdle()
     }
 
-    private fun screen(env: AppEnv, content: @Composable (NavState) -> Unit) {
+    private fun screen(env: AppEnv, content: @Composable (NavState) -> Unit): NavState {
         val nav = NavState(listOf(Screen.Home, Screen.SettingsHub))
         compose.setContent {
             WhisperLoomTheme { CompositionLocalProvider(LocalAppEnv provides env) { content(nav) } }
         }
         compose.waitForIdle()
+        return nav
     }
+
+    /** Bildtext (TalkBack) einer Illustration. */
+    /** Illustration an Drawable UND Bildtext — nur der Text liesse ein vertauschtes Bild durch. */
+    private fun bild(image: Int, text: Int) = compose.onNode(hasIllustration(image, ctx.getString(text)))
+
+    /** Fuer "nicht da" genuegt der Bildtext. */
+    private fun bildtext(text: Int) = compose.onNodeWithContentDescription(ctx.getString(text))
 
     // --- Router ----------------------------------------------------------------
 
@@ -119,6 +143,7 @@ class MainFlowTest {
         app(env())
         compose.onNodeWithText("Wie soll WhisperLoom Sprache erkennen?").assertIsDisplayed()
         compose.onNodeWithText("Weiter").assertIsNotEnabled()
+        bild(R.drawable.ill_setup_engine, R.string.img_setup_engine).assertIsDisplayed()
     }
 
     @Test fun routerZeigtHomeMitHeroWennEingerichtet() {
@@ -236,7 +261,119 @@ class MainFlowTest {
         compose.onNodeWithContentDescription("Seite 3 von 4").assertIsDisplayed()
     }
 
+    /** Ein Tab der Widget-Leiste — "Widgets" steht auch als Titel da. */
+    private fun widgetTab(name: String) = hasText(name) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab)
+
+    /**
+     * Echte App-Wurzel im Pro-Tab (Deep-Link widgets: Home -> Hub -> Widgets(PRO)); liefert den
+     * Back-Dispatcher fuer "Zurueck".
+     */
+    private fun appImProTab(): OnBackPressedDispatcher {
+        prefs.engine = Engine.ONLINE
+        prefs.apiKey = "sk-test"
+        prefs.tutorialSeen = true
+        prefs.proWidgetsEnabled = true
+        lateinit var back: OnBackPressedDispatcher
+        compose.setContent {
+            back = LocalOnBackPressedDispatcherOwner.current!!.onBackPressedDispatcher
+            WhisperLoomTheme { WhisperLoomApp(env(readyStatus), route = RouteRequest(AppNav.ROUTE_WIDGETS)) }
+        }
+        compose.waitForIdle()
+        compose.onNode(widgetTab("Pro Widgets")).assertIsSelected()
+        return back
+    }
+
+    private fun proAnleitungOeffnen() {
+        compose.onNodeWithText("Anleitung ansehen").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Pro Widgets freischalten").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Seite 1 von 6").assertIsDisplayed()
+    }
+
+    /** Wieder im Pro-Tab, nicht in Home. */
+    private fun wiederImProTab() {
+        compose.onNode(widgetTab("Pro Widgets")).assertIsSelected()
+        compose.onNodeWithText("Neues Pro Widget").assertExists()
+        compose.onNodeWithText("Mikro-Knopf starten").assertDoesNotExist()
+    }
+
+    @Test fun proWidgetsTutorialAusDemProTabFuehrtNachUeberspringenUndLosGehtsDorthinZurueck() {
+        appImProTab()
+        proAnleitungOeffnen()
+        compose.onNodeWithText("Überspringen").performClick()
+        compose.waitForIdle()
+        wiederImProTab()
+        assertTrue(Prefs(ctx).agentTutorialSeen)
+
+        proAnleitungOeffnen()
+        repeat(5) {
+            compose.onNodeWithText("Weiter").performClick()
+            compose.waitForIdle()
+        }
+        compose.onNodeWithText("Los geht's").performClick()
+        compose.waitForIdle()
+        wiederImProTab()
+    }
+
+    @Test fun proWidgetsTutorialZurueckAufSeite1FuehrtZumProTab() {
+        val back = appImProTab()
+        proAnleitungOeffnen()
+        compose.runOnIdle { back.onBackPressed() }
+        compose.waitForIdle()
+        wiederImProTab()
+        // Zurueck auf Seite 1 = ueberspringen: das Heft gilt als gesehen.
+        assertTrue(Prefs(ctx).agentTutorialSeen)
+    }
+
+    @Test fun proWidgetsTutorialOhneVorigenScreenFuehrtNachHome() {
+        val nav = NavState(listOf(Screen.Tutorial(kind = TutorialKind.PRO_WIDGETS)))
+        finishTutorial(nav, TutorialKind.PRO_WIDGETS)
+        assertEquals(listOf(Screen.Home), nav.snapshot())
+    }
+
+    @Test fun einsteigerTutorialFuehrtWeiterNachHomeAuchAusDerHilfe() {
+        val nav = NavState(listOf(Screen.Home, Screen.SettingsHub, Screen.Help(), Screen.Tutorial()))
+        finishTutorial(nav, TutorialKind.BASICS)
+        assertEquals(listOf(Screen.Home), nav.snapshot())
+    }
+
     // --- Assistent ---------------------------------------------------------------
+
+    @Test fun jederEinrichtungsschrittZeigtSeineIllustration() {
+        // Spec §8.2: Illustration statt Icon-Kreis; Zugang (online) = Schluessel, Tastatur = Tutorial-Bild.
+        // Spec §8.3: im Assistenten hoechstens 140 dp hoch.
+        prefs.welcomeSeen = true
+        prefs.engine = Engine.ONLINE
+        var step by mutableIntStateOf(SetupRouter.STEP_ENGINE)
+        val nav = NavState(listOf(Screen.Setup(step)))
+        compose.setContent {
+            WhisperLoomTheme { CompositionLocalProvider(LocalAppEnv provides env()) { SetupScreen(step, nav) } }
+        }
+        mapOf(
+            SetupRouter.STEP_ENGINE to (R.drawable.ill_setup_engine to R.string.img_setup_engine),
+            SetupRouter.STEP_ACCESS to (R.drawable.ill_help_key to R.string.img_help_key),
+            SetupRouter.STEP_MIC to (R.drawable.ill_setup_mic to R.string.img_setup_mic),
+            SetupRouter.STEP_OVERLAY to (R.drawable.ill_setup_overlay to R.string.img_setup_overlay),
+            SetupRouter.STEP_A11Y to (R.drawable.ill_setup_a11y to R.string.img_setup_a11y),
+            SetupRouter.STEP_NOTIF to (R.drawable.ill_setup_notif to R.string.img_setup_notif),
+            SetupRouter.STEP_KEYBOARD to (R.drawable.ill_tutorial_keyboard to R.string.tutorial_img_keyboard),
+        ).forEach { (s, illustration) ->
+            step = s
+            compose.waitForIdle()
+            val hoehe = bild(illustration.first, illustration.second).assertIsDisplayed().getUnclippedBoundsInRoot().height
+            // Ohne die 140-dp-Grenze des Assistenten waere das Bild so hoch wie in der Hilfe (168 dp).
+            assertTrue("Schritt $s: Bild $hoehe hoch, erlaubt 140 dp", hoehe <= 140.dp)
+        }
+    }
+
+    @Test fun offlineZeigtBeimModellSchrittDieOfflineIllustration() {
+        prefs.welcomeSeen = true
+        prefs.engine = Engine.OFFLINE
+        screen(env()) { SetupScreen(SetupRouter.STEP_ACCESS, it) }
+        compose.onNodeWithText("Offline-Modell laden").assertIsDisplayed()
+        bild(R.drawable.ill_help_offline, R.string.img_help_offline).assertIsDisplayed()
+        bildtext(R.string.img_help_key).assertDoesNotExist()
+    }
 
     @Test fun schritt1AuswahlSchreibtEngine() {
         prefs.welcomeSeen = true
@@ -504,37 +641,163 @@ class MainFlowTest {
 
     // --- E5 Hilfe, Hub -------------------------------------------------------------
 
-    @Test fun hilfeHatSiebenAbschnitte() {
+    @Test fun hilfeHatAchtAbschnitteInDieserReihenfolge() {
         screen(env()) { HelpScreen(1, it) }
-        listOf(
+        val reihenfolge = listOf(
             "So funktioniert's", "Einrichtung Schritt für Schritt", "API-Key bekommen", "Eigener Server",
-            "Offline-Modus", "Datenschutz", "Wenn etwas nicht klappt",
-        ).forEach { compose.onNodeWithText(it).assertExists() }
+            "Offline-Modus", "Widgets & Pro Widgets", "Datenschutz", "Wenn etwas nicht klappt",
+        )
+        val oben = reihenfolge.map { compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
+        assertEquals("Von oben nach unten: $reihenfolge", oben.sorted(), oben)
     }
 
-    @Test fun hubZeigtAchtZeilen() {
+    /** Eine Hilfe-Karte: Titel, Illustration mit Bildtext und der Kurztext direkt darunter. */
+    private data class HilfeKarte(val titel: String, val bild: Int, val bildtext: Int, val kurztext: Int)
+
+    @Test fun jederHilfeAbschnittBeginntMitSeinerIllustration() {
+        screen(env()) { HelpScreen(1, it) }
+        val karten = listOf(
+            HilfeKarte("So funktioniert's", R.drawable.ill_tutorial_button, R.string.tutorial_img_button, R.string.help_s1_intro),
+            HilfeKarte("Einrichtung Schritt für Schritt", R.drawable.ill_help_setup, R.string.img_help_setup, R.string.help_s2_intro),
+            HilfeKarte("API-Key bekommen", R.drawable.ill_help_key, R.string.img_help_key, R.string.help_s3_intro),
+            // Eigenes Bild fuer den Erkennungs-Server — nicht der Editor eines Pro Widgets (ill_agent_server).
+            HilfeKarte("Eigener Server", R.drawable.ill_help_server, R.string.img_help_server, R.string.help_s4_intro),
+            HilfeKarte("Offline-Modus", R.drawable.ill_help_offline, R.string.img_help_offline, R.string.help_s5_body),
+            HilfeKarte("Widgets & Pro Widgets", R.drawable.ill_pro_widgets, R.string.img_pro_widgets, R.string.help_widgets_intro),
+            HilfeKarte("Datenschutz", R.drawable.ill_help_privacy, R.string.img_help_privacy, R.string.help_s6_intro),
+            HilfeKarte("Wenn etwas nicht klappt", R.drawable.ill_help_trouble, R.string.img_help_trouble, R.string.help_s7_intro),
+        )
+        // Der Kurztext traegt Inhalt, der beim Kuerzen aus den Details dorthin gewandert ist
+        // (z. B. Datenschutz: "speichert keine Aufnahmen") — er muss unter dem Bild stehen.
+        fun beginntMitBildUndKurztext(k: HilfeKarte) {
+            val bild = bild(k.bild, k.bildtext).assertExists().fetchSemanticsNode().boundsInRoot
+            val kurz = compose.onNodeWithText(ctx.getString(k.kurztext)).assertExists().fetchSemanticsNode().boundsInRoot
+            assertTrue("${k.titel}: Kurztext steht unter dem Bild", kurz.top >= bild.bottom)
+        }
+        // Abschnitt 1 ist offen, alle anderen zu: nur sein Bild und sein Kurztext sind da.
+        beginntMitBildUndKurztext(karten.first())
+        karten.drop(1).forEach { k ->
+            bildtext(k.bildtext).assertDoesNotExist()
+            compose.onNodeWithText(ctx.getString(k.kurztext)).assertDoesNotExist()
+        }
+        karten.drop(1).forEach { k ->
+            compose.onNodeWithText(k.titel).performClick()
+            compose.waitForIdle()
+            beginntMitBildUndKurztext(k)
+            // Wieder zu, sonst faellt der Rest aus dem Sichtbereich der LazyColumn.
+            compose.onNodeWithText(k.titel).performClick()
+            compose.waitForIdle()
+        }
+    }
+
+    @Test fun abschnitt6SindDieWidgetsMitWegZurAnleitung() {
+        val nav = screen(env()) { HelpScreen(6, it) }
+        bild(R.drawable.ill_pro_widgets, R.string.img_pro_widgets).assertExists()
+        bildtext(R.string.img_help_offline).assertDoesNotExist()
+        bildtext(R.string.img_help_privacy).assertDoesNotExist()
+        compose.onNodeWithText("Freischalten: Einstellungen → Erweitert → Pro Widgets.").assertExists()
+        // Spec §8.3: anlegen (Name), Server je Widget, platzieren (Widget-Profil) — jede Zeile ist Pflicht.
+        listOf(R.string.help_widgets_create, R.string.help_widgets_server, R.string.help_widgets_place).forEach {
+            compose.onNodeWithText(ctx.getString(it)).assertExists()
+        }
+        compose.onNodeWithText("Server je Widget", substring = true).assertExists()
+        compose.onNodeWithText("Anleitung Pro Widgets").performClick()
+        compose.waitForIdle()
+        assertEquals(Screen.Tutorial(kind = TutorialKind.PRO_WIDGETS), nav.current)
+    }
+
+    @Test fun abschnitt6FuehrtZuDenWidgets() {
+        val nav = screen(env()) { HelpScreen(6, it) }
+        compose.onNodeWithText("Zu den Widgets").performClick()
+        compose.waitForIdle()
+        assertEquals(Screen.Widgets(), nav.current)
+    }
+
+    @Test fun abschnitt7IstDerDatenschutz() {
+        screen(env()) { HelpScreen(7, it) }
+        bild(R.drawable.ill_help_privacy, R.string.img_help_privacy).assertExists()
+        bildtext(R.string.img_pro_widgets).assertDoesNotExist()
+    }
+
+    @Test fun einZuHoherAbschnittOeffnetDenLetzten() {
+        // Bis 3.7.0 war 7 der letzte Abschnitt; jetzt ist es 8 "Wenn etwas nicht klappt".
+        screen(env()) { HelpScreen(99, it) }
+        bild(R.drawable.ill_help_trouble, R.string.img_help_trouble).assertExists()
+        compose.onNodeWithText("Knopf erscheint nicht").assertExists()
+        bildtext(R.string.img_help_privacy).assertDoesNotExist()
+    }
+
+    @Test fun knopfUndTastaturBeginntMitDerKurzanleitung() {
+        screen(env()) { ButtonKeyboardScreen(it) }
+        bild(R.drawable.ill_tutorial_button, R.string.tutorial_img_button).assertExists()
+        val kurzanleitung = compose.onNodeWithText("Kurzanleitung").fetchSemanticsNode().boundsInRoot.top
+        val knopf = compose.onNodeWithText("Schwebender Knopf").fetchSemanticsNode().boundsInRoot.top
+        assertTrue("Kurzanleitung steht oben", kurzanleitung < knopf)
+        compose.onNodeWithText("Knopf antippen = Aufnahme").assertExists()
+    }
+
+    @Test fun hubZeigtAchtZeilenInVierGruppen() {
+        // User-Entscheidung U3: Grundlagen, Bedienung, Pro, Info — in genau dieser Reihenfolge.
         prefs.engine = Engine.ONLINE
         screen(env()) { SettingsHubScreen(it) }
-        listOf(
-            "Erkennung", "Text", "Knopf & Tastatur", "Widgets", "Offline-Modelle", "Anleitung & Hilfe",
-            "Erweiterte Optionen", "Über WhisperLoom",
-        ).forEach { compose.onNodeWithText(it).assertExists() }
+        val reihenfolge = listOf(
+            "GRUNDLAGEN", "Erkennung", "Offline-Modelle", "Text",
+            "BEDIENUNG", "Knopf & Tastatur", "Widgets",
+            "PRO", "Erweitert",
+            "INFO", "Anleitung & Hilfe", "Über WhisperLoom",
+        )
+        val oben = reihenfolge.map { compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
+        assertEquals("Von oben nach unten: $reihenfolge", oben.sorted(), oben)
+        assertEquals("Keine zwei auf einer Hoehe", oben.size, oben.toSet().size)
         compose.onNodeWithText("Version ${BuildConfig.VERSION_NAME}").assertExists()
     }
 
-    @Test fun derSprachauftragStehtImHubAufAusSolangeErNichtEingerichtetIst() {
+    @Test fun dieLetzteZeileJederGruppeHatKeinenTrenner() {
+        prefs.engine = Engine.ONLINE
+        screen(env()) { SettingsHubScreen(it) }
+        val zeilen = listOf(
+            "Erkennung", "Offline-Modelle", "Text", "Knopf & Tastatur", "Widgets", "Erweitert",
+            "Anleitung & Hilfe", "Über WhisperLoom",
+        ).map { it to compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
+        // Jeder Trenner gehoert zur naechsthoeheren Zeile ueber ihm.
+        val mitTrenner = compose.onAllNodesWithTag(HUB_DIVIDER_TAG).fetchSemanticsNodes().map { trenner ->
+            zeilen.filter { it.second < trenner.boundsInRoot.top }.maxBy { it.second }.first
+        }
+        assertEquals(listOf("Erkennung", "Offline-Modelle", "Knopf & Tastatur", "Anleitung & Hilfe"), mitTrenner)
+    }
+
+    @Test fun dieGruppenSindUeberschriftenInNormalerSchreibung() {
+        // Grossbuchstaben nur fuer das Auge; TalkBack liest "Grundlagen" und springt per Ueberschrift.
+        prefs.engine = Engine.ONLINE
+        screen(env()) { SettingsHubScreen(it) }
+        mapOf("GRUNDLAGEN" to "Grundlagen", "BEDIENUNG" to "Bedienung", "PRO" to "Pro", "INFO" to "Info").forEach { (sichtbar, gelesen) ->
+            compose.onNodeWithText(sichtbar)
+                .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
+                .assert(SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf(gelesen)))
+        }
+    }
+
+    @Test fun ohneProFunktionenStehtErweitertAufAus() {
         prefs.engine = Engine.ONLINE
         screen(env()) { SettingsHubScreen(it) }
         // Kein Schalter auf Hub-Ebene (Spec §2.3) — nur der Wert.
         compose.onNodeWithText("Aus").assertExists()
     }
 
-    @Test fun derEingerichteteSprachauftragZeigtSeinenZweck() {
+    @Test fun eingeschalteteProWidgetsStehenUnterErweitert() {
+        // Der Server steht seit 3.7.1 je Widget im Profil — im Hub zaehlt nur der Schalter.
         prefs.engine = Engine.ONLINE
-        prefs.agentEnabled = true
-        prefs.agentUrl = "https://bridge.example.de"
-        prefs.agentToken = "geheim"
+        prefs.proWidgetsEnabled = true
         screen(env()) { SettingsHubScreen(it) }
-        compose.onNodeWithText("Sprachauftrag an einen eigenen Agenten").assertExists()
+        compose.onNodeWithText("Pro Widgets").assertExists()
+        compose.onNodeWithText("Aus").assertDoesNotExist()
+    }
+
+    @Test fun beideProFunktionenStehenUnterErweitert() {
+        prefs.engine = Engine.ONLINE
+        prefs.proWidgetsEnabled = true
+        prefs.promptLevelEnabled = true
+        screen(env()) { SettingsHubScreen(it) }
+        compose.onNodeWithText("Pro Widgets · Stufe „Prompt“").assertExists()
     }
 }

@@ -27,17 +27,21 @@ sealed class Screen(val key: String) {
     data object ButtonKeyboard : Screen("button")
     data object Models : Screen("models")
 
-    /** Erweiterte Optionen: Sprachauftrag an einen eigenen Agenten. */
-    data object Agent : Screen("agent")
+    /** "Erweitert": Pro-/Entwickler-Funktionen freischalten (bis 3.7.0 "agent", siehe [decode]). */
+    data object Advanced : Screen("advanced")
 
-    /** Widget-Profile und die Widgets auf dem Startbildschirm. */
-    data object Widgets : Screen("widgets")
+    /**
+     * Widget-Menue. [tab] = gewaehlter Tab (null: der Screen waehlt; ein Tab-Wechsel ersetzt den
+     * Eintrag), [edit] = Profil-Id, deren Editor sich einmalig oeffnet (Widget-Tipp ohne Server).
+     * Die Id enthaelt kein ":".
+     */
+    data class Widgets(val tab: WidgetTab? = null, val edit: String? = null) : Screen("widgets")
 
-    /** [section] 1..7 = initial geoeffneter Hilfe-Abschnitt. */
+    /** [section] 1..8 = initial geoeffneter Hilfe-Abschnitt (6 = Widgets & Pro Widgets). */
     data class Help(val section: Int = 1) : Screen("help")
 
     /**
-     * Tutorial (T); [startPage] 0..3 = zuerst gezeigte Seite, [PAGE_SHARE] = Sprachnachrichten abtippen.
+     * Tutorial (T); [startPage] = zuerst gezeigte Seite des Heftes [kind], [PAGE_SHARE] = Sprachnachrichten abtippen.
      * [startBubbleAfter]: W9 "Knopf starten & los" — der schwebende Knopf startet erst beim Beenden des
      * Tutorials (sonst schwebt er darueber).
      */
@@ -54,6 +58,7 @@ sealed class Screen(val key: String) {
     fun encode(): String = when (this) {
         is Setup -> "$key:$step"
         is Help -> "$key:$section"
+        is Widgets -> "$key:${tab?.key.orEmpty()}:${edit.orEmpty()}"
         is Tutorial -> "$key:$startPage:${if (startBubbleAfter) 1 else 0}:${kind.key}"
         else -> key
     }
@@ -69,8 +74,9 @@ sealed class Screen(val key: String) {
                 "text" -> TextSettings
                 "button" -> ButtonKeyboard
                 "models" -> Models
-                "agent" -> Agent
-                "widgets" -> Widgets
+                // "agent" = Name bis 3.7.0, steht noch in gespeicherten Back-Stacks.
+                "advanced", "agent" -> Advanced
+                "widgets" -> Widgets(WidgetTab.fromKey(parts.getOrNull(1)), parts.getOrNull(2)?.ifEmpty { null })
                 "help" -> Help(arg ?: 1)
                 "tutorial" -> Tutorial(
                     arg ?: 0,
@@ -80,6 +86,17 @@ sealed class Screen(val key: String) {
                 else -> Home
             }
         }
+    }
+}
+
+/** Tabs im Widget-Menue. Gespeichert wird [key], nie der Enum-Name. */
+enum class WidgetTab(val key: String) {
+    NORMAL("normal"),
+    PRO("pro"),
+    ;
+
+    companion object {
+        fun fromKey(key: String?): WidgetTab? = entries.firstOrNull { it.key == key }
     }
 }
 
@@ -122,8 +139,11 @@ class NavState(initial: List<Screen>) {
 fun rememberNavState(initial: () -> List<Screen>): NavState =
     rememberSaveable(saver = NavState.Saver) { NavState(initial()) }
 
-/** Deep-Link-Wunsch aus dem Start-Intent (AppNav) — `route` home|settings|setup, optional `step` 1..7. */
-data class RouteRequest(val route: String, val step: Int? = null) {
+/**
+ * Deep-Link-Wunsch aus dem Start-Intent (AppNav) — `route` home|settings|setup|advanced|widgets,
+ * optional `step` 1..7 (setup) bzw. [profileId] (widgets: dessen Editor oeffnen).
+ */
+data class RouteRequest(val route: String, val step: Int? = null, val profileId: String? = null) {
     companion object {
         /** Alias in der Manifest-Datei: Ziel von method.xml (settingsActivity) und alten Intents. */
         const val SETTINGS_ALIAS = "com.chris.whisperloom.SettingsActivity"
@@ -143,7 +163,10 @@ data class RouteRequest(val route: String, val step: Int? = null) {
                 ?: return null
             val step = intent.getIntExtra(AppNav.EXTRA_STEP, -1)
                 .takeIf { it in SetupRouter.STEP_ENGINE..SetupRouter.STEP_KEYBOARD }
-            return RouteRequest(route, step)
+            // Die Activity ist exportiert: nur eine Id, die das Back-Stack-Format nicht bricht.
+            val profileId = intent.getStringExtra(AppNav.EXTRA_PROFILE)
+                ?.takeIf { route == AppNav.ROUTE_WIDGETS && it.isNotBlank() && ':' !in it }
+            return RouteRequest(route, step, profileId)
         }
     }
 }

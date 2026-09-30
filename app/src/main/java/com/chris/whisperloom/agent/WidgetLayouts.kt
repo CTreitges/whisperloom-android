@@ -5,21 +5,25 @@ import com.chris.whisperloom.R
 import kotlin.math.ceil
 
 /**
- * Die drei Layout-Varianten des Widgets mit ihrer Idealgroesse in dp.
+ * Die drei Layout-Varianten des Widgets mit ihrer Idealgroesse in dp. Jede Variante ist eine
+ * Kachel mit dem Namen darunter; die Idealgroesse schliesst den Namen ein (ausgeblendet ist die
+ * Variante nur kleiner, die Kachel fuellt dann die Flaeche).
  *
  * Die Idealgroessen sind so gewaehlt, dass die Abstandsregel des AOSP-Codes und die
  * Flaechenregel aus dem Javadoc ueberall dasselbe Layout waehlen: ROW und STACK sind gleich
- * breit, ICON ist in beiden Achsen am kleinsten. Welche der beiden Regeln ein kuenftiges
- * Android umsetzt, spielt damit keine Rolle.
+ * breit, ICON ist am schmalsten und hat die kleinste Flaeche. Mit dem Namen ist ICON zwar hoeher
+ * als ROW (58 zu 48 dp) — nach Abstand laege ICON aber erst bei h > 8w - 587 vor einer passenden
+ * ROW, und die passt erst ab w > 119, also bei ueber 365 dp Hoehe, wo laengst STACK passt und
+ * gewinnt. Welche der beiden Regeln ein kuenftiges Android umsetzt, spielt damit keine Rolle.
  */
 enum class WidgetLayout(@LayoutRes val layoutRes: Int, val w: Float, val h: Float) {
-    /** 1x1 hochkant: nur das Symbol, die ganze Flaeche ist die Tippflaeche. */
-    ICON(R.layout.widget_task_icon, 40f, 40f),
+    /** 1x1 hochkant: das Symbol in der Kachel, der Name darunter; die ganze Flaeche ist die Tippflaeche. */
+    ICON(R.layout.widget_task_icon, 40f, 58f),
 
-    /** Flach und breit: Symbol links, Name und Status rechts daneben. */
+    /** Flach und breit: Symbol und Status nebeneinander in der Kachel, der Name darunter. */
     ROW(R.layout.widget_task_row, 120f, 48f),
 
-    /** Ab 2x2: Symbol, Name und Status untereinander (die Optik vor den Profilen). */
+    /** Ab 2x2: Symbol und Status untereinander in der Kachel, der Name darunter. */
     STACK(R.layout.widget_task, 120f, 110f),
 }
 

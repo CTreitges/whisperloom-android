@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Anleitungs-Illustration Pro Widgets 2: Widget-Menue mit zwei Tabs, rechter aktiv, darunter
+     Zeile zum Anlegen und Liste mit zwei Widgets.
+     Flach und schematisch im Stil der uebrigen Tutorial-Bilder; nur @color/loom_*-Farben,
+     kein Text (Bildbeschreibung: img_pro_widgets in strings.xml).
+     Erzeugt mit gen_pro.py. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:width="320dp"
+    android:height="240dp"
+    android:viewportWidth="320"
+    android:viewportHeight="240"
+    tools:ignore="VectorRaster">
+    <path
+        android:fillColor="@color/loom_surfaceContainerHigh"
+        android:pathData="M112,12 h96 a22,22 0 0 1 22,22 v172 a22,22 0 0 1 -22,22 h-96 a22,22 0 0 1 -22,-22 v-172 a22,22 0 0 1 22,-22 z" />
+    <path
+        android:fillColor="@color/loom_surfaceContainerLow"
+        android:pathData="M112,18 h96 a16,16 0 0 1 16,16 v172 a16,16 0 0 1 -16,16 h-96 a16,16 0 0 1 -16,-16 v-172 a16,16 0 0 1 16,-16 z" />
+    <path
+        android:fillColor="@color/loom_surfaceContainer"
+        android:pathData="M99.51,24 a16,16 0 0 0 -3.51,10 v10 h128 v-10 a16,16 0 0 0 -3.51,-10 z" />
+    <path
+        android:fillColor="@color/loom_onSurfaceVariant"
+        android:pathData="M109,31 h34 a3,3 0 0 1 3,3 v0 a3,3 0 0 1 -3,3 h-34 a3,3 0 0 1 -3,-3 v0 a3,3 0 0 1 3,-3 z" />
+    <path
+        android:strokeColor="@color/loom_outlineVariant"
+        android:strokeWidth="1"
+        android:fillColor="#00000000"
+        android:pathData="M96,69.5 h128" />
+    <path
+        android:fillColor="@color/loom_onSurfaceVariant"
+        android:pathData="M115,52.5 h26 a3,3 0 0 1 3,3 v0 a3,3 0 0 1 -3,3 h-26 a3,3 0 0 1 -3,-3 v0 a3,3 0 0 1 3,-3 z" />
+    <path
+        android:fillColor="@color/loom_primary"
+        android:pathData="M179,52.5 h26 a3,3 0 0 1 3,3 v0 a3,3 0 0 1 -3,3 h-26 a3,3 0 0 1 -3,-3 v0 a3,3 0 0 1 3,-3 z" />
+    <path
+        android:fillColor="@color/loom_primary"
+        android:pathData="M173.5,67 h37 a1.5,1.5 0 0 1 1.5,1.5 v0 a1.5,1.5 0 0 1 -1.5,1.5 h-37 a1.5,1.5 0 0 1 -1.5,-1.5 v0 a1.5,1.5 0 0 1 1.5,-1.5 z" />
+    <path
+        android:fillColor="@color/loom_surfaceContainerHigh"
+        android:strokeColor="@color/loom_primary"
+        android:strokeWidth="2"
+        android:pathData="M116,80 h88 a12,12 0 0 1 12,12 v8 a12,12 0 0 1 -12,12 h-88 a12,12 0 0 1 -12,-12 v-8 a12,12 0 0 1 12,-12 z" />
+    <path
+        android:fillColor="@color/loom_primary"
+        android:pathData="M112,96 a10,10 0 1 0 20,0 a10,10 0 1 0 -20,0 z" />
+    <group
+        android:translateX="114.8"
+        android:translateY="88.8"
+        android:scaleX="0.015"
+        android:scaleY="0.015">
+        <path
+            android:fillColor="@color/loom_onPrimary"
+            android:pathData="M440,520L240,520Q223,520 211.5,508.5Q200,497 200,480Q200,463 211.5,451.5Q223,440 240,440L440,440L440,240Q440,223 451.5,211.5Q463,200 480,200Q497,200 508.5,211.5Q520,223 520,240L520,440L720,440Q737,440 748.5,451.5Q760,463 760,480Q760,497 748.5,508.5Q737,520 720,520L520,520L520,720Q520,737 508.5,748.5Q497,760 480,760Q463,760 451.5,748.5Q440,737 440,720L440,520Z" />
+    </group>
+    <path
+        android:fillColor="@color/loom_onSurface"
+        android:pathData="M142.5,93.5 h45 a2.5,2.5 0 0 1 2.5,2.5 v0 a2.5,2.5 0 0 1 -2.5,2.5 h-45 a2.5,2.5 0 0 1 -2.5,-2.5 v0 a2.5,2.5 0 0 1 2.5,-2.5 z" />
+    <path
+        android:fillColor="@color/loom_surfaceContainerHigh"
+        android:pathData="M118,122 h84 a14,14 0 0 1 14,14 v60 a14,14 0 0 1 -14,14 h-84 a14,14 0 0 1 -14,-14 v-60 a14,14 0 0 1 14,-14 z" />
+    <path
+        android:fillColor="@color/loom_primaryContainer"
+        android:pathData="M119,133 h8 a7,7 0 0 1 7,7 v8 a7,7 0 0 1 -7,7 h-8 a7,7 0 0 1 -7,-7 v-8 a7,7 0 0 1 7,-7 z" />
+    <group
+        android:translateX="115.4"
+        android:translateY="136.4"
+        android:scaleX="0.01583"
+        android:scaleY="0.01583">
+        <path
+            android:fillColor="@color/loom_primary"
+            android:pathData="M480,560Q430,560 395,525Q360,490 360,440L360,200Q360,150 395,115Q430,80 480,80Q530,80 565,115Q600,150 600,200L600,440Q600,490 565,525Q530,560 480,560ZM480,320Q480,320 480,320Q480,320 480,320L480,320Q480,320 480,320Q480,320 480,320Q480,320 480,320Q480,320 480,320L480,320Q480,320 480,320Q480,320 480,320ZM440,800L440,717Q348,704 282.5,639Q217,574 203,481Q201,464 212,452Q223,440 240,440Q257,440 268.5,451.5Q280,463 284,480Q298,550 353.5,595Q409,640 480,640Q552,640 607,594.5Q662,549 676,480Q680,463 691.5,451.5Q703,440 720,440Q737,440 748,452Q759,464 757,481Q743,572 678,638Q613,704 520,717L520,800Q520,817 508.5,828.5Q497,840 480,840Q463,840 451.5,828.5Q440,817 440,800ZM480,480Q497,480 508.5,468.5Q520,457 520,440L520,200Q520,183 508.5,171.5Q497,160 480,160Q463,160 451.5,171.5Q440,183 440,200L440,440Q440,457 451.5,468.5Q463,480 480,480Z" />
+    </group>
+    <path
+        android:fillColor="@color/loom_onSurface"
+        android:pathData="M144.5,137 h37 a2.5,2.5 0 0 1 2.5,2.5 v0 a2.5,2.5 0 0 1 -2.5,2.5 h-37 a2.5,2.5 0 0 1 -2.5,-2.5 v0 a2.5,2.5 0 0 1 2.5,-2.5 z" />
+    <path
+        android:fillColor="@color/loom_onSurfaceVariant"
+        android:pathData="M144,147 h26 a2,2 0 0 1 2,2 v0 a2,2 0 0 1 -2,2 h-26 a2,2 0 0 1 -2,-2 v0 a2,2 0 0 1 2,-2 z" />
+    <group
+        android:translateX="194"
+        android:translateY="134.4"
+        android:scaleX="0.02"
+        android:scaleY="0.02">
+        <path
+            android:fillColor="@color/loom_onSurfaceVariant"
+            android:pathData="M504,480L348,324Q337,313 337,296Q337,279 348,268Q359,257 376,257Q393,257 404,268L588,452Q594,458 596.5,465Q599,472 599,480Q599,488 596.5,495Q594,502 588,508L404,692Q393,703 376,703Q359,703 348,692Q337,681 337,664Q337,647 348,636L504,480Z" />
+    </group>
+    <path
+        android:fillColor="@color/loom_primaryContainer"
+        android:pathData="M119,177 h8 a7,7 0 0 1 7,7 v8 a7,7 0 0 1 -7,7 h-8 a7,7 0 0 1 -7,-7 v-8 a7,7 0 0 1 7,-7 z" />
+    <group
+        android:translateX="115.4"
+        android:translateY="180.4"
+        android:scaleX="0.01583"
+        android:scaleY="0.01583">
+        <path
+            android:fillColor="@color/loom_primary"
+            android:pathData="M480,880Q447,880 423.5,856.5Q400,833 400,800L560,800Q560,833 536.5,856.5Q513,880 480,880ZM360,760Q343,760 331.5,748.5Q320,737 320,720Q320,703 331.5,691.5Q343,680 360,680L600,680Q617,680 628.5,691.5Q640,703 640,720Q640,737 628.5,748.5Q617,760 600,760L360,760ZM330,640Q261,599 220.5,530Q180,461 180,380Q180,255 267.5,167.5Q355,80 480,80Q605,80 692.5,167.5Q780,255 780,380Q780,461 739.5,530Q699,599 630,640L330,640ZM354,560L606,560Q651,528 675.5,481Q700,434 700,380Q700,288 636,224Q572,160 480,160Q388,160 324,224Q260,288 260,380Q260,434 284.5,481Q309,528 354,560ZM480,560Q480,560 480,560Q480,560 480,560Q480,560 480,560Q480,560 480,560Q480,560 480,560Q480,560 480,560Q480,560 480,560Q480,560 480,560L480,560Z" />
+    </group>
+    <path
+        android:fillColor="@color/loom_onSurface"
+        android:pathData="M144.5,181 h29 a2.5,2.5 0 0 1 2.5,2.5 v0 a2.5,2.5 0 0 1 -2.5,2.5 h-29 a2.5,2.5 0 0 1 -2.5,-2.5 v0 a2.5,2.5 0 0 1 2.5,-2.5 z" />
+    <path
+        android:fillColor="@color/loom_onSurfaceVariant"
+        android:pathData="M144,191 h34 a2,2 0 0 1 2,2 v0 a2,2 0 0 1 -2,2 h-34 a2,2 0 0 1 -2,-2 v0 a2,2 0 0 1 2,-2 z" />
+    <group
+        android:translateX="194"
+        android:translateY="178.4"
+        android:scaleX="0.02"
+        android:scaleY="0.02">
+        <path
+            android:fillColor="@color/loom_onSurfaceVariant"
+            android:pathData="M504,480L348,324Q337,313 337,296Q337,279 348,268Q359,257 376,257Q393,257 404,268L588,452Q594,458 596.5,465Q599,472 599,480Q599,488 596.5,495Q594,502 588,508L404,692Q393,703 376,703Q359,703 348,692Q337,681 337,664Q337,647 348,636L504,480Z" />
+    </group>
+    <path
+        android:strokeColor="@color/loom_outlineVariant"
+        android:strokeWidth="1"
+        android:strokeLineCap="butt"
+        android:fillColor="#00000000"
+        android:pathData="M112,166 h96" />
+</vector>

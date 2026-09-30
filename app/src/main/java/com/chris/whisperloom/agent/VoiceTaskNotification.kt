@@ -37,7 +37,7 @@ object VoiceTaskNotification {
             .setColor(ctx.getColor(R.color.loom_recording))
             .setContentTitle(ctx.getString(R.string.agent_notif_title))
             .setContentText(ctx.getString(R.string.agent_notif_recording))
-            .setContentIntent(PendingIntent.getActivity(ctx, 4, AppNav.agent(ctx), flags))
+            .setContentIntent(PendingIntent.getActivity(ctx, 4, AppNav.proWidgets(ctx), flags))
             .addAction(
                 Notification.Action.Builder(
                     Icon.createWithResource(ctx, R.drawable.ic_send), ctx.getString(R.string.agent_notif_stop), stop,

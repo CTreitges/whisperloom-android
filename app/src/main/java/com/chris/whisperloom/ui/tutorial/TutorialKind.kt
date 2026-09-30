@@ -12,13 +12,23 @@ enum class TutorialKind(val key: String) {
     /** Nach der Einrichtung: Knopf, Tastatur, Sprachnachrichten, Ergebnis. */
     BASICS("basics"),
 
-    /** Sprachauftrag: Widget, Server, aufnehmen, Antwort. Nur auf Wunsch. */
-    AGENT("agent");
+    /**
+     * Pro Widgets: freischalten, anlegen, Server, platzieren, aufnehmen, Antwort. Nur auf Wunsch.
+     * Schluessel "agent" und Flag `agentTutorialSeen` stammen aus 3.7.0 (Sprachauftrag) und
+     * bleiben, damit alte Routen und das Gesehen-Flag weiter gelten.
+     */
+    PRO_WIDGETS("agent");
 
-    fun seen(prefs: Prefs): Boolean = if (this == AGENT) prefs.agentTutorialSeen else prefs.tutorialSeen
+    fun seen(prefs: Prefs): Boolean = when (this) {
+        BASICS -> prefs.tutorialSeen
+        PRO_WIDGETS -> prefs.agentTutorialSeen
+    }
 
     fun markSeen(prefs: Prefs) {
-        if (this == AGENT) prefs.agentTutorialSeen = true else prefs.tutorialSeen = true
+        when (this) {
+            BASICS -> prefs.tutorialSeen = true
+            PRO_WIDGETS -> prefs.agentTutorialSeen = true
+        }
     }
 
     companion object {

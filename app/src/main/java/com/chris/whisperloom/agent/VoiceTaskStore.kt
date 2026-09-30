@@ -60,6 +60,15 @@ class VoiceTaskStore(context: Context) {
         get() = sp.getLong(KEY_DURATION, 0)
         private set(v) = sp.edit().putLong(KEY_DURATION, v).apply()
 
+    /**
+     * Widget-Profil, das den Auftrag aufgenommen hat — sein Server bekommt ihn ([VoiceTaskWorker]).
+     * Die Profil-Id, nicht die Widget-Id: die aendert sich bei einer Wiederherstellung, und die
+     * Bindung kann ein "Neu konfigurieren" umhaengen. Leer = Auftrag von vor 3.7.1.
+     */
+    var profileId: String
+        get() = sp.getString(KEY_PROFILE_ID, "") ?: ""
+        private set(v) = sp.edit().putString(KEY_PROFILE_ID, v).apply()
+
     /** ISO-8601, geht als `recorded_at` an die Bridge. */
     var recordedAt: String
         get() = sp.getString(KEY_RECORDED_AT, "") ?: ""
@@ -90,7 +99,7 @@ class VoiceTaskStore(context: Context) {
     val hasWork: Boolean get() = requestId.isNotEmpty() && (text.isNotEmpty() || audioFile.isFile)
 
     /** Legt einen neuen Auftrag an und verwirft alles Vorherige. */
-    fun begin(samples: FloatArray, durationMs: Long, recordedAt: String): String {
+    fun begin(samples: FloatArray, durationMs: Long, recordedAt: String, profileId: String): String {
         clear()
         val id = UUID.randomUUID().toString()
         runCatching { audioFile.writeBytes(VoiceTaskAudio.toBytes(samples)) }
@@ -98,6 +107,7 @@ class VoiceTaskStore(context: Context) {
         requestId = id
         this.durationMs = durationMs
         this.recordedAt = recordedAt
+        this.profileId = profileId
         return id
     }
 
@@ -115,6 +125,7 @@ class VoiceTaskStore(context: Context) {
             .remove(KEY_TEXT)
             .remove(KEY_DURATION)
             .remove(KEY_RECORDED_AT)
+            .remove(KEY_PROFILE_ID)
             .remove(KEY_REFINE_SKIPPED)
             .remove(KEY_ATTEMPT_STARTED)
             .remove(KEY_OFFLINE_RECOGNITION)
@@ -131,6 +142,7 @@ class VoiceTaskStore(context: Context) {
         private const val KEY_MESSAGE = "message"
         private const val KEY_DURATION = "duration_ms"
         private const val KEY_RECORDED_AT = "recorded_at"
+        private const val KEY_PROFILE_ID = "profile_id"
         private const val KEY_REFINE_SKIPPED = "refine_skipped"
         private const val KEY_ATTEMPT_STARTED = "attempt_started_at"
         private const val KEY_OFFLINE_RECOGNITION = "offline_recognition"

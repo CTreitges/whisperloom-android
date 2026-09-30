@@ -12,10 +12,17 @@ object AppNav {
     const val EXTRA_ROUTE = "route"
     const val EXTRA_STEP = "step"
 
+    /** Profil-Id zur Route [ROUTE_WIDGETS]: dessen Editor oeffnet sich. */
+    const val EXTRA_PROFILE = "profile"
+
     const val ROUTE_HOME = "home"
     const val ROUTE_SETUP = "setup"
     const val ROUTE_SETTINGS = "settings"
+    const val ROUTE_ADVANCED = "advanced"
+
+    /** Frueherer Name von [ROUTE_ADVANCED] (bis 3.7.0) — gilt weiter fuer schon erzeugte Intents. */
     const val ROUTE_AGENT = "agent"
+    const val ROUTE_WIDGETS = "widgets"
 
     /** Home (H): Notification-Tipp. */
     fun home(ctx: Context): Intent = intent(ctx, ROUTE_HOME)
@@ -29,8 +36,15 @@ object AppNav {
     /** Einstellungen (E): IME-Zahnrad. */
     fun settings(ctx: Context): Intent = intent(ctx, ROUTE_SETTINGS)
 
-    /** Erweiterte Optionen (Sprachauftrag): Widget-Tipp, solange nichts eingerichtet oder erlaubt ist. */
-    fun agent(ctx: Context): Intent = intent(ctx, ROUTE_AGENT)
+    /** "Erweitert": Widget-Tipp, solange Pro Widgets aus sind. */
+    fun advanced(ctx: Context): Intent = intent(ctx, ROUTE_ADVANCED)
+
+    /** Widget-Menue, Tab "Pro Widgets": Widget-Tipp ohne Mikrofon, Aufnahme-Notification. */
+    fun proWidgets(ctx: Context): Intent = intent(ctx, ROUTE_WIDGETS)
+
+    /** Wie [proWidgets], dazu oeffnet sich der Editor von [profileId]: Widget-Tipp ohne Server. */
+    fun widgetProfile(ctx: Context, profileId: String): Intent =
+        proWidgets(ctx).putExtra(EXTRA_PROFILE, profileId)
 
     private fun intent(ctx: Context, route: String): Intent =
         Intent(ctx, MainActivity::class.java)

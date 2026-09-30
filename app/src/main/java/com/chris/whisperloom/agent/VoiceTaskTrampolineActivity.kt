@@ -36,8 +36,10 @@ class VoiceTaskTrampolineActivity : Activity() {
     }
 
     private fun start() {
-        val prefs = Prefs(this)
-        if (!prefs.agentReady) {
+        // Welches Widget gestartet hat — dessen Profil bestimmt Server und wie die Aufnahme endet.
+        val widgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
+        // Erst aufnehmen, wenn das Widget auch senden kann — sonst waere die Transkription umsonst bezahlt.
+        if (!Prefs(this).proWidgetsEnabled || !WidgetProfileStore(this).forWidget(widgetId).serverReady) {
             openApp()
             return
         }
@@ -47,8 +49,6 @@ class VoiceTaskTrampolineActivity : Activity() {
             return
         }
         val service = Intent(this, VoiceTaskService::class.java).setAction(VoiceTaskService.ACTION_START)
-        // Welches Widget gestartet hat — dessen Profil bestimmt, wie die Aufnahme endet.
-        val widgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
         if (widgetId != AppWidgetManager.INVALID_APPWIDGET_ID) service.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
         startForegroundService(service)
     }
@@ -58,15 +58,34 @@ class VoiceTaskTrampolineActivity : Activity() {
      * kein Dienst, sondern direkt der Auftrag; das spart einen Foreground-Service, der nur
      * Warten wuerde. Ueber [anstossen], damit ein Doppeltipp einen gerade gestarteten Job
      * nicht wieder abbricht.
+     *
+     * Angestossen wird nur, was das Widget DES AUFTRAGS auch senden kann — egal welches Widget
+     * getippt wurde. Sonst liefe jeder Tipp in denselben Fehler, und ein unsendbarer Auftrag von
+     * Widget A blockierte auch B. Reihenfolge wie im Worker: Widget geloescht → verwerfen (wie
+     * dort) und neu anfangen; Pro Widgets aus → "Erweitert"; kein gueltiger Server → Editor
+     * genau dieses Widgets. Der Auftrag bleibt in den beiden letzten Faellen liegen.
      */
     private fun retry() {
+        val store = VoiceTaskStore(this)
         // Nichts zu wiederholen (z. B. nach "Kein Ton aufgenommen") — dann ist der Tipp
         // als neuer Anlauf gemeint, nicht als Wiederholung.
-        if (!VoiceTaskStore(this).hasWork) {
+        if (!store.hasWork) {
             start()
             return
         }
-        anstossen()
+        // Ein Auftrag von vor 3.7.1 kennt kein Profil — wie im Worker das Standardprofil.
+        val profile = WidgetProfileStore(this).get(store.profileId.ifEmpty { WidgetProfile.DEFAULT_ID })
+        when {
+            profile == null -> {
+                VoiceTaskWork.cancel(this)
+                store.clear()
+                VoiceTaskWidget.refresh(this)
+                start()
+            }
+            !Prefs(this).proWidgetsEnabled -> startActivity(AppNav.advanced(this))
+            !profile.serverReady -> startActivity(AppNav.widgetProfile(this, profile.id))
+            else -> anstossen()
+        }
     }
 
     /**
@@ -103,9 +122,21 @@ class VoiceTaskTrampolineActivity : Activity() {
         }
     }
 
-    /** Einstellungen der App — dort wird das Mikrofon erlaubt bzw. der Server eingetragen. */
+    /**
+     * Die App dort oeffnen, wo sich das Hindernis dieses Widgets beheben laesst: Pro Widgets aus
+     * → "Erweitert"; kein Mikrofon → Tab "Pro Widgets" (Mikrofon-Karte); Profil ohne Server →
+     * dessen Editor; sonst der Tab "Pro Widgets".
+     */
     private fun openApp() {
-        startActivity(AppNav.agent(this))
+        val widgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
+        val profile = WidgetProfileStore(this).forWidget(widgetId)
+        val target = when {
+            !Prefs(this).proWidgetsEnabled -> AppNav.advanced(this)
+            !VoiceTaskWidget.hasMicPermission(this) -> AppNav.proWidgets(this)
+            !profile.serverReady -> AppNav.widgetProfile(this, profile.id)
+            else -> AppNav.proWidgets(this)
+        }
+        startActivity(target)
     }
 
     companion object {

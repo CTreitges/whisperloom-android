@@ -1,6 +1,6 @@
 # WhisperLoom — Anleitung
 
-Version 3.5.0 · Stand 2026-09-24 · Für Android 8.0 (API 26) und neuer
+Version 3.7.1 · Stand 2026-09-30 · Für Android 8.0 (API 26) und neuer
 
 Diese Anleitung richtet sich an Anwender, die WhisperLoom installieren, einrichten und im Alltag nutzen wollen. Entwickler finden Bau- und Architektur-Hinweise in der [README](../README.md); was sich von Version zu Version geändert hat, steht im [CHANGELOG](../CHANGELOG.md).
 
@@ -22,7 +22,7 @@ Alle Bezeichnungen in dieser Anleitung („Mikro-Knopf starten", „Zugang prüf
 10. [Eigener Server](#10-eigener-server)
 11. [Datenschutz](#11-datenschutz)
 12. [Wenn etwas nicht klappt](#12-wenn-etwas-nicht-klappt)
-13. [Sprachauftrag an einen eigenen Agenten](#13-sprachauftrag-an-einen-eigenen-agenten)
+13. [Pro Widgets (Sprach-Command-Widgets)](#13-pro-widgets-sprach-command-widgets)
 14. [Häufige Fragen](#14-häufige-fragen)
 
 ---
@@ -71,7 +71,7 @@ WhisperLoom liegt in einem eigenen F-Droid-Repository. Damit bekommst du Updates
 
 ### 2.3 APK installieren
 
-1. Auf der Releases-Seite des Projekts das neueste Release (aktuell **3.5.0**) öffnen und die APK-Datei auf das Telefon laden (direkt im Browser des Telefons ist am einfachsten).
+1. Auf der Releases-Seite des Projekts das neueste Release (aktuell **3.7.1**) öffnen und die APK-Datei auf das Telefon laden (direkt im Browser des Telefons ist am einfachsten).
 2. Die heruntergeladene Datei antippen. Android fragt beim ersten Mal, ob der Browser (bzw. der Dateimanager) **unbekannte Apps installieren** darf — das Wording heißt je nach Hersteller „Unbekannte Apps installieren", „Aus dieser Quelle zulassen" oder „Unbekannte Quellen". Erlauben, zurück, erneut „Installieren" antippen.
 3. Google Play Protect prüft die App ggf. beim Installieren. Das ist normal für Apps außerhalb des Play Stores.
 4. Nach der Installation **WhisperLoom** öffnen — der Einrichtungs-Assistent startet ([Kapitel 3](#3-erste-einrichtung--der-assistent-schritt-für-schritt)).
@@ -80,14 +80,14 @@ WhisperLoom liegt in einem eigenen F-Droid-Repository. Damit bekommst du Updates
 
 - **Ab 3.2.0 — neuer Name WhisperLoom, neue Paket-ID `com.chris.whisperloom`:** WhisperLoom wird als neue App installiert; die vorherige Version deinstallieren und API-Key/Einstellungen einmal neu eingeben. Signaturschlüssel unverändert.
 - Eine neue Version wird einfach **über die alte installiert** (APK herunterladen, antippen, „Aktualisieren"). Alle Einstellungen, der API-Key und heruntergeladene Offline-Modelle bleiben erhalten.
-- Beim Sprung von Version 2.x auf 3.0.0 werden die alten Einstellungen automatisch übernommen (Details in den [Häufigen Fragen](#13-häufige-fragen)).
+- Beim Sprung von Version 2.x auf 3.0.0 werden die alten Einstellungen automatisch übernommen (Details in den [Häufigen Fragen](#14-häufige-fragen)).
 - Voraussetzung dafür ist derselbe **Signaturschlüssel**: Alle offiziellen Releases werden mit demselben Schlüssel signiert. Meldet Android „App nicht installiert" oder „Paket steht in Konflikt", stammt die bereits installierte Version aus einer anders signierten Quelle (z. B. ein selbst gebautes Debug-APK). Dann bleibt nur: alte Version deinstallieren (Einstellungen gehen dabei verloren) und das Release neu installieren.
 
 ---
 
 ## 3. Erste Einrichtung — der Assistent Schritt für Schritt
 
-Beim ersten Start öffnet WhisperLoom die **Einrichtung** — einen Assistenten mit bis zu sieben Schritten. Die Kopfzeile zeigt „Schritt x von y" (7 Schritte ab Android 13, sonst 6, weil es dort keinen Benachrichtigungs-Schritt gibt). Über das Listen-Symbol oben rechts („Alle Schritte anzeigen") kannst du jederzeit zu einem anderen Schritt springen. Jeder Schritt trägt einen Status-Chip: **Erledigt**, **Fehlt noch**, **Optional** oder **Übersprungen**.
+Beim ersten Start öffnet WhisperLoom die **Einrichtung** — einen Assistenten mit bis zu sieben Schritten. Die Kopfzeile zeigt „Schritt x von y" (7 Schritte ab Android 13, sonst 6, weil es dort keinen Benachrichtigungs-Schritt gibt). Über das Listen-Symbol oben rechts („Alle Schritte anzeigen") kannst du jederzeit zu einem anderen Schritt springen. Jeder Schritt zeigt oben ein Bild dazu und trägt einen Status-Chip: **Erledigt**, **Fehlt noch**, **Optional** oder **Übersprungen**.
 
 Der Assistent merkt sich, was erledigt ist. Wenn du ihn verlässt und WhisperLoom später wieder öffnest, landest du auf dem ersten noch offenen Pflichtschritt. Kehrst du aus einem Systemdialog zurück, prüft WhisperLoom den Status automatisch neu — du musst nichts bestätigen.
 
@@ -146,7 +146,7 @@ Dieser Schritt lässt sich mit **Überspringen** auslassen; auf dem Startbildsch
 
 ### Schritt 6 — Beenden per Benachrichtigung (ab Android 13, empfohlen)
 
-„Solange der Knopf läuft, zeigt Android eine stille Benachrichtigung mit „Beenden". Ohne Erlaubnis ist sie unsichtbar — beenden kannst du den Knopf dann in der App." Button **Benachrichtigungen erlauben**; bei dauerhafter Ablehnung wieder **App-Einstellungen öffnen**. Auch dieser Schritt ist überspringbar.
+„Solange der Knopf läuft, zeigt Android eine stille Benachrichtigung mit „Beenden". Ohne Erlaubnis ist sie unsichtbar — beenden kannst du dann in der App." Button **Benachrichtigungen erlauben**; bei dauerhafter Ablehnung wieder **App-Einstellungen öffnen**. Auch dieser Schritt ist überspringbar.
 
 ### Schritt 7 — Diktat-Tastatur (optional; Pflicht, wenn du in Schritt 4 „Nur Tastatur nutzen" gewählt hast)
 
@@ -179,7 +179,16 @@ Danach zeigt WhisperLoom beim Öffnen den Startbildschirm:
 - Ein Hinweis auf das Abtippen von Sprachnachrichten und ganz unten **Einrichtung erneut öffnen**.
 - Oben rechts: **?** (Anleitung und Hilfe) und **⚙** (Einstellungen).
 
-Die **Einstellungen** sind in sechs Gruppen geteilt: **Erkennung** · **Text** · **Knopf & Tastatur** · **Offline-Modelle** · **Anleitung & Hilfe** · **Über WhisperLoom**. Änderungen werden sofort gespeichert; es gibt keinen „Speichern"-Button.
+Die **Einstellungen** sind in vier Gruppen mit Überschrift geteilt:
+
+| Gruppe | Einträge |
+|---|---|
+| **GRUNDLAGEN** | **Erkennung** · **Offline-Modelle** · **Text** |
+| **BEDIENUNG** | **Knopf & Tastatur** · **Widgets** |
+| **PRO** | **Erweitert** — Pro-Funktionen für Entwickler und Bastler ([Kapitel 13](#13-pro-widgets-sprach-command-widgets), [Stufe „Prompt“](#81-textverbesserung-ki--vier-stufen)); für das normale Diktieren brauchst du hier nichts |
+| **INFO** | **Anleitung & Hilfe** · **Über WhisperLoom** |
+
+Änderungen werden sofort gespeichert; es gibt keinen „Speichern"-Button.
 
 ---
 
@@ -273,7 +282,7 @@ Sobald du zu diktieren anfängst, verschwindet der Zauberstab — an seiner Stel
 
 Die drei oberen Stufen brauchen einen KI-Zugang. Hast du keinen eingerichtet, sind sie ausgegraut und die Statuszeile sagt es dir — ein Tipp darauf führt in die Einstellungen. **Aus** bleibt immer wählbar.
 
-Hast du unter Einstellungen → Erweiterte Optionen die **Stufe „Prompt“** eingeschaltet, steht sie als fünfte Taste am Ende der Zeile ([Kapitel 8.1](#81-textverbesserung-ki--vier-stufen)).
+Hast du unter Einstellungen → Erweitert die **Stufe „Prompt“** eingeschaltet, steht sie als fünfte Taste am Ende der Zeile ([Kapitel 8.1](#81-textverbesserung-ki--vier-stufen)).
 
 ---
 
@@ -395,7 +404,7 @@ Einstellungen → **Text**. Hier stellst du ein, was mit dem erkannten Text pass
 
 Jede Stufe außer „Aus" bedeutet: „Zweite Anfrage · ca. 1–2 s länger · geringe Zusatzkosten". Für Alltagsdiktate ist **Glätten** die sinnvolle Wahl — der Wortlaut bleibt, nur Kommas, Punkte und Groß-/Kleinschreibung werden richtig gesetzt. „Verschönern" eignet sich für E-Mails aus einem Gedankenstrom, „Zusammenfassen" für lange Notizen. Die KI wird ausdrücklich angewiesen, nichts zu übersetzen und nichts zu erfinden.
 
-**Stufe „Prompt“ (erweiterte Option):** Einstellungen → Erweiterte Optionen → **Stufe „Prompt“ anbieten** schaltet eine fünfte Stufe frei — in der Tastatur und hier in der Liste. Sie formt ein Diktat zu einem Prompt für einen KI-Assistenten (ChatGPT, Claude, Gemini …). Die Gliederung richtet sich nach dem Diktat:
+**Stufe „Prompt“ (Pro-Funktion):** Einstellungen → Erweitert → Karte **Pro-Funktionen** → **Stufe „Prompt“ anbieten** schaltet eine fünfte Stufe frei — in der Tastatur und hier in der Liste. Sie formt ein Diktat zu einem Prompt für einen KI-Assistenten (ChatGPT, Claude, Gemini …). Die Gliederung richtet sich nach dem Diktat:
 
 - eine Frage oder einfache Bitte (unter 15 Wörtern immer): ein bis drei Sätze, ohne Liste,
 - mehrere Vorgaben: ein Satz mit dem Auftrag, darunter die Vorgaben als „- “-Liste,
@@ -667,6 +676,8 @@ WhisperLoom hat keinen eigenen Server, kein Konto, keine Telemetrie. Was mit dei
 
 **Eigener Server:** Audio und Text gehen nur an deinen Server.
 
+**Pro Widgets:** Der Auftrag eines Sprach-Command-Widgets geht nur an den Server, der in genau diesem Widget eingetragen ist. Erkennung und, falls eingeschaltet, Textverbesserung laufen wie beim Diktat über die eingestellten Anbieter (siehe oben, [13.9](#139-was-dabei-gesendet-wird)).
+
 **Ollama:** Beim Anbieter **Ollama (lokal / Homeserver)** geht der Text für die Textverbesserung nur an dein eigenes Ollama — er verlässt dein Netz nicht. Bei **Ollama Cloud** geht er an ollama.com.
 
 **Bedienungshilfe:** Die Bedienungshilfe „WhisperLoom Text-Einfügen" liest nichts mit und speichert nichts; sie fügt nur den diktierten Text in das fokussierte Feld ein. Android zeigt beim Aktivieren die übliche Warnung für Bedienungshilfen („kann Bildschirminhalte lesen") — WhisperLoom nutzt davon ausschließlich das Einfügen.
@@ -734,98 +745,134 @@ Einstellungen aus 2.x werden übernommen (Key, URL, Modell, Sprache, Regeln). Of
 
 ---
 
-## 13. Sprachauftrag an einen eigenen Agenten
+## 13. Pro Widgets (Sprach-Command-Widgets)
 
-Das ist die einzige Funktion in WhisperLoom, die einen Server voraussetzt, den du selbst betreibst. Wenn du keinen hast, überspring dieses Kapitel — du wirst von der Funktion sonst nirgendwo etwas merken, sie ist ab Werk aus.
+Pro Widgets sind für Entwickler und Bastler gedacht: Ein **Sprach-Command-Widget** auf dem Startbildschirm nimmt auf und schickt den erkannten Text an einen Server, den du selbst betreibst. Wenn du keinen hast, überspring dieses Kapitel — ab Werk sind Pro Widgets aus, und du merkst von ihnen nichts. Normale Widgets ohne eigenen Server folgen mit einem späteren Update; bis dahin zeigt Einstellungen → **Widgets** nur einen Platzhalter („Normale Widgets für den Startbildschirm kommen mit einem späteren Update.“).
 
-**Die Idee:** Auf deinem Startbildschirm liegt ein Widget. Du tippst darauf, sprichst deinen Auftrag, tippst noch einmal (oder hörst einfach auf zu sprechen, wenn du Auto-Stopp eingeschaltet hast) — WhisperLoom schreibt mit und schickt den Text an deinen eigenen Agenten. Der arbeitet den Auftrag ab und antwortet dort, wo du ihm sonst schreibst. Die App wartet nicht auf die Antwort; sie ist nach ein paar Sekunden fertig.
+**Die Idee:** Du tippst auf das Widget, sprichst deinen Auftrag, tippst noch einmal (oder hörst einfach auf zu sprechen, wenn du Auto-Stopp eingeschaltet hast) — WhisperLoom schreibt mit und schickt den Text an deinen eigenen Agenten. Der arbeitet den Auftrag ab und antwortet dort, wo du ihm sonst schreibst. Die App wartet nicht auf die Antwort; sie ist nach ein paar Sekunden fertig. Jedes Widget hat seinen eigenen Namen und seinen eigenen Server — ein Widget kann also an den Agenten zu Hause gehen, ein zweites an einen anderen.
 
 ### 13.1 Was du brauchst
 
-- Einen erreichbaren Server mit der **Bridge** (dem kleinen Gegenstück, das den Auftrag entgegennimmt und an deinen Agenten übergibt). Adresse und ein **Token** bekommst du von dort.
+- Einen erreichbaren Server mit der **Bridge** (dem kleinen Gegenstück, das den Auftrag entgegennimmt und an deinen Agenten übergibt). Adresse und ein **Token** bekommst du von dort. Mehrere Widgets dürfen denselben Server nutzen oder verschiedene.
 - Eine eingerichtete Erkennung — online oder offline, beides geht. Das Mitschreiben läuft genau so wie beim normalen Diktat.
 - Die Mikrofon-Berechtigung. Die hast du aus der Einrichtung meist schon.
 
-### 13.2 Einrichten
+### 13.2 Pro Widgets freischalten
 
-Einstellungen → **Erweiterte Optionen**.
+Einstellungen → Gruppe PRO → **Erweitert** → Karte **Pro-Funktionen** → Schalter **Pro Widgets** einschalten („Blendet im Widget-Menü den Tab „Pro Widgets“ ein: Sprach-Command-Widgets mit eigenem Server.“). Darunter erscheinen zwei Zeilen: **Pro Widgets verwalten** öffnet den Tab „Pro Widgets“, **Anleitung Pro Widgets** ein bebildertes Tutorial mit sechs Seiten.
 
-1. **Sprachauftrag aktivieren** einschalten.
-2. **Server-Adresse** eintragen — die Basis-Adresse ohne Pfad, zum Beispiel `https://bridge.example.de`. Unverschlüsseltes `http://` nimmt WhisperLoom nur für Adressen im Heimnetz oder VPN an; ins offene Internet gibt es eine Warnung.
-3. **Token** eintragen. Das Auge zeigt es kurz im Klartext, das Klemmbrett-Symbol fügt es aus der Zwischenablage ein.
-4. **Verbindung prüfen** antippen. Der Chip darunter sagt dir sofort, ob Adresse und Token stimmen. Die Prüfung löst **keinen** Auftrag aus — es geht nichts an deinen Agenten.
+Das Widget-Menü unter Einstellungen → **Widgets** hat danach zwei Tabs: **Widgets** (normale Widgets, noch ein Platzhalter) und **Pro Widgets** — geöffnet wird „Pro Widgets“. Ist der Schalter aus, gibt es keine Tabs, nur den Platzhalter mit dem Hinweis „Für Entwickler: Pro Widgets lassen sich unter „Erweitert“ freischalten.“ und dem Button **Erweitert**.
 
-### 13.3 Das Widget auf den Startbildschirm legen
+**Update von 3.7.0:** Hattest du den Sprachauftrag unter den früheren „Erweiterten Optionen“ eingeschaltet, sind Pro Widgets weiter an. Server-Adresse und Token von dort übernimmt WhisperLoom beim ersten Start einmalig in jedes Widget, das noch keinen eigenen Server hat — du musst nichts neu eintragen.
 
-Drücke lange auf eine freie Stelle deines Startbildschirms → **Widgets** → **WhisperLoom** → **Sprachauftrag** dorthin ziehen, wo du es haben willst. Hast du schon mehr als ein Profil angelegt (Abschnitt 13.4), fragt WhisperLoom jetzt **„Welches Profil?"** — tipp eins an, und das Widget ist da. Dort kannst du auch gleich ein **Neues Profil** anlegen; nach dem Bearbeiten ist es vorgewählt, ein Tipp darauf übernimmt es. Wischst du die Frage weg, wird das Widget nicht hinzugefügt. Gibt es nur das Standardprofil, fragt WhisperLoom nichts.
+### 13.3 Ein Widget anlegen und bearbeiten
 
-**Größe:** Zwei mal zwei Felder sind die Voreinstellung. Drück lange auf das Widget und zieh an den Rändern — alles von einem Feld bis vier mal zwei geht. Ganz klein zeigt es nur das Symbol, breit Symbol und Text nebeneinander, ab zwei mal zwei steht beides untereinander. Du kannst auch mehrere Widgets hinlegen, etwa eins pro Profil.
+Einstellungen → **Widgets** → Tab **Pro Widgets** → Karte **Neues Pro Widget** → **Sprach-Command-Widget**. WhisperLoom legt ein Widget an („Sprach-Command 2“, „Sprach-Command 3“ …) und öffnet gleich **Widget bearbeiten**. Hat eines deiner Widgets schon einen funktionierenden Server, sind dessen Adresse und Token bereits eingetragen. Das **Standard-Widget** (ab Werk „Sprach-Command“) gibt es immer; du kannst es bearbeiten, aber nicht löschen.
 
-Unter Erweiterte Optionen → **Anleitung ansehen** liegt dieselbe Erklärung noch einmal als bebildertes Tutorial.
+Unter **Deine Pro Widgets** stehen alle Widgets mit Namen, darunter Server und Modus („bridge.example.de · Tippen startet und stoppt“) oder die Warnung **Server fehlt**. Ein Tipp öffnet **Widget bearbeiten**. Jede Änderung gilt sofort, einen Speichern-Knopf gibt es nicht:
 
-### 13.4 Mehrere Widgets und Profile
+- **Name** — Pflicht, höchstens 24 Zeichen; er steht unter dem Widget auf dem Startbildschirm. Ist das Feld leer, meldet es „Jedes Widget braucht einen Namen.“ — gespeichert bleibt dann der letzte Name.
+- **Name unter dem Widget anzeigen** — ab Werk an. Ausgeschaltet zeigt das Widget nur seine Kachel.
+- **Server** — Server-Adresse, Token und Verbindung prüfen, siehe [13.4](#134-server-je-widget).
+- **Symbol** — eins von 22 eingebauten (Einkauf, Zuhause, Arbeit, Idee, Termin, Notiz …) oder **Aus Galerie**: ein eigenes Foto, rund zugeschnitten. **Bild entfernen** nimmt wieder das Mikrofon. Das Symbol siehst du, solange das Widget bereit ist oder einen Fehler zeigt; beim Aufnehmen und Senden zeigt es wie gewohnt den Zustand.
+- **Automatisch senden nach Sprechpause** — siehe [13.6](#136-auto-stopp).
+- **Widget löschen** — vorher fragt die App nach. Liegt es auf dem Startbildschirm, zeigt es danach das Standard-Widget. Wartet noch ein Auftrag dieses Widgets, wird er mit verworfen — er geht nie an den Server eines anderen Widgets.
+- **Fertig** schließt den Editor.
 
-Einstellungen → **Widgets** (oder Erweiterte Optionen → **Profile, Symbole und Auto-Stopp einstellen**). Ein **Profil** legt fest, wie ein Widget aussieht und wann die Aufnahme endet. Das Profil „Sprachauftrag" gibt es immer; du kannst es ändern, aber nicht löschen. Jede Änderung gilt sofort, einen Speichern-Knopf gibt es nicht. Ist der Sprachauftrag noch nicht eingerichtet, steht oben ein Hinweis mit dem Weg zu den Erweiterten Optionen.
+### 13.4 Server je Widget
 
-- **Neues Profil** antippen oder ein vorhandenes Profil antippen, um es zu bearbeiten:
-  - **Name** — steht auf dem Widget, höchstens 24 Zeichen. Leer heißt „Sprachauftrag".
-  - **Symbol** — eins von 22 eingebauten (Einkauf, Zuhause, Arbeit, Idee, Termin, Notiz …) oder **Aus Galerie**: ein eigenes Foto, rund zugeschnitten. **Bild entfernen** nimmt wieder das Mikrofon. Das Symbol siehst du, solange das Widget bereit ist oder einen Fehler zeigt; beim Aufnehmen und Senden zeigt es wie gewohnt den Zustand.
-  - **Automatisch senden nach Sprechpause** — siehe unten.
-  - **Profil löschen** — Widgets, die es nutzen, zeigen danach „Sprachauftrag". Vorher fragt die App nach.
-- **Auf dem Startbildschirm** listet deine platzierten Widgets („Widget 1 · Einkauf"). Ein Tipp darauf wechselt das Profil. Ab Android 12 geht das auch direkt am Widget: lange drücken → **Neu konfigurieren**.
+Jedes Widget hat seinen eigenen Server. Im Editor unter **Server**:
 
-**Auto-Stopp.** Ab Werk startet ein Tipp die Aufnahme und ein zweiter Tipp sendet. Schaltest du im Profil **Automatisch senden nach Sprechpause** ein, endet die Aufnahme von selbst, sobald du nach dem Sprechen eine Pause machst, und wird gesendet. Wie lange die Pause sein muss, stellst du darunter ein: **Kurz** (1,2 Sekunden), **Normal** (2 Sekunden) oder **Lang** (3,5 Sekunden, für Denkpausen). Ein Tipp beendet trotzdem jederzeit. Hört das Widget nach dem Start 8 Sekunden lang keine Sprache, verwirft es die Aufnahme und sendet nichts. In sehr lauter Umgebung kann Auto-Stopp zu früh oder zu spät auslösen — dann einfach per Tipp beenden oder das Profil auf „Lang" stellen.
+1. **Server-Adresse** — die Basis-Adresse deiner Bridge ohne `/v1/task`, zum Beispiel `https://bridge.example.de` (ein Unterpfad hinter einem Reverse-Proxy ist erlaubt). Unverschlüsseltes `http://` nimmt WhisperLoom nur für Adressen im Heimnetz oder VPN an; ins offene Internet gibt es eine Warnung.
+2. **Token** — das Auge zeigt es kurz im Klartext, das Klemmbrett-Symbol fügt es aus der Zwischenablage ein.
+3. **Verbindung prüfen** — antippbar, sobald Adresse und Token vollständig sind. Der Chip darunter sagt dir sofort, ob beides stimmt. Die Prüfung löst **keinen** Auftrag aus — es geht nichts an deinen Agenten.
 
-Alle Widgets zeigen dieselbe Aufnahme: startest du mit einem, zeigen alle „nimmt auf". Ob Auto-Stopp greift, richtet sich nach dem Widget, mit dem du gestartet hast.
+Ein Auftrag geht immer an den Server des Widgets, mit dem du ihn aufgenommen hast. Adresse und Token liest WhisperLoom bei jedem Sendeversuch neu: Korrigierst du sie, während ein Auftrag wartet, gilt die Korrektur beim nächsten Versuch. Fehlt einem Widget der Server oder ist die Adresse ungültig, zeigt es „Server fehlt — tippen“ und nimmt gar nicht erst auf — die Erkennung wäre sonst umsonst bezahlt.
 
-### 13.5 Benutzen — die vier Zustände
+### 13.5 Das Widget auf den Startbildschirm legen
+
+Drücke lange auf eine freie Stelle deines Startbildschirms → **Widgets** → **WhisperLoom** → **Sprach-Command** dorthin ziehen, wo du es haben willst. Hast du mehr als das Standard-Widget angelegt, fragt WhisperLoom jetzt **„Welches Widget-Profil?“** — tipp eins an, und das Widget ist da. Dort kannst du auch gleich ein **Neues Widget-Profil** anlegen; nach dem Bearbeiten ist es vorgewählt, ein Tipp darauf übernimmt es. Wischst du die Frage weg, wird das Widget nicht hinzugefügt. Gibt es nur das Standard-Widget, fragt WhisperLoom nichts. Sind Pro Widgets noch aus, steht in der Frage „Pro Widgets sind aus. In der App unter Einstellungen → Erweitert einschalten.“ — hinlegen geht trotzdem, das Widget zeigt dann „Pro Widgets aus — tippen“.
+
+**Der Name steht unter dem Widget** — wie bei den App-Symbolen, in heller Schrift mit leichtem Schatten, damit er auf jedem Hintergrundbild lesbar bleibt. Zu lange Namen enden mit „…“. Ausblenden: im Editor **Name unter dem Widget anzeigen** ausschalten.
+
+**Größe:** Zwei mal zwei Felder sind die Voreinstellung. Drück lange auf das Widget und zieh an den Rändern — alles von einem Feld bis vier mal zwei geht. Ganz klein zeigt es nur das Symbol, breit Symbol und Text nebeneinander, ab zwei mal zwei steht beides untereinander; der Name steht in jeder Größe darunter. Du kannst auch mehrere Widgets hinlegen, etwa eins pro Server oder Zweck.
+
+**Auf dem Startbildschirm** (Karte im Tab „Pro Widgets“, sobald ein Widget liegt) listet deine platzierten Widgets („Widget 1 · Einkauf“). Ein Tipp darauf wechselt das Widget-Profil. Ab Android 12 geht das auch direkt am Widget: lange drücken → **Neu konfigurieren**.
+
+Die bebilderte Anleitung dazu liegt unter Erweitert → **Anleitung Pro Widgets**, im Tab „Pro Widgets“ unter **Hilfe** → **Anleitung ansehen** und unter Anleitung & Hilfe → **Widgets & Pro Widgets**.
+
+### 13.6 Auto-Stopp
+
+Ab Werk startet ein Tipp die Aufnahme und ein zweiter Tipp sendet. Schaltest du im Editor **Automatisch senden nach Sprechpause** ein, endet die Aufnahme von selbst, sobald du nach dem Sprechen eine Pause machst, und wird gesendet. Wie lange die Pause sein muss, stellst du darunter ein: **Kurz** (1,2 Sekunden), **Normal** (2 Sekunden) oder **Lang** (3,5 Sekunden, für Denkpausen). Ein Tipp beendet trotzdem jederzeit. Hört das Widget nach dem Start 8 Sekunden lang keine Sprache, verwirft es die Aufnahme und sendet nichts. In sehr lauter Umgebung kann Auto-Stopp zu früh oder zu spät auslösen — dann einfach per Tipp beenden oder das Widget auf „Lang“ stellen.
+
+Alle Widgets zeigen dieselbe Aufnahme: startest du mit einem, zeigen alle „nimmt auf“. Ob Auto-Stopp greift und an welchen Server der Auftrag geht, richtet sich nach dem Widget, mit dem du gestartet hast.
+
+### 13.7 Benutzen — was das Widget zeigt
 
 | Widget zeigt | Bedeutung | Ein Tipp … |
 |---|---|---|
-| Symbol des Profils (ab Werk das Mikrofon), „Tippen und sprechen" | bereit | startet die Aufnahme |
+| Symbol des Widgets (ab Werk das Mikrofon), „Tippen und sprechen“ | bereit | startet die Aufnahme |
 | rot, laufende Zeit | nimmt auf | beendet die Aufnahme und schickt den Auftrag los (mit Auto-Stopp passiert das auch von selbst nach der Sprechpause) |
-| blau, „Wird gesendet …" | schreibt mit und überträgt | sendet sofort, wenn der Auftrag nur wartet. Läuft gerade ein Versuch, passiert erst nach drei Minuten etwas (bei der Offline-Erkennung erst, wenn sie fertig gerechnet hat) — ein ungeduldiger zweiter Tipp soll nichts doppelt bezahlen |
-| rot mit Fehlergrund | etwas hat nicht geklappt | schickt **denselben** Auftrag noch einmal, ohne neu aufzunehmen |
+| blau, „Wird gesendet …“ | schreibt mit und überträgt | sendet sofort, wenn der Auftrag nur wartet. Läuft gerade ein Versuch, passiert erst nach drei Minuten etwas (bei der Offline-Erkennung erst, wenn sie fertig gerechnet hat) — ein ungeduldiger zweiter Tipp soll nichts doppelt bezahlen |
+| grün, „Gesendet“ | der Auftrag ist draußen | startet eine neue Aufnahme |
+| rot mit Fehlergrund | etwas hat nicht geklappt | schickt **denselben** Auftrag noch einmal, ohne neu aufzunehmen. Kann er so nicht raus (Pro Widgets aus, seinem Widget fehlt der Server), öffnet der Tipp stattdessen die Stelle, an der du es behebst |
+| grau mit Server-Symbol, „Server fehlt — tippen“ | diesem Widget fehlen Adresse oder Token | öffnet **Widget bearbeiten** für genau dieses Widget |
+| grau mit durchgestrichenem Mikrofon, „Pro Widgets aus — tippen“ | der Schalter „Pro Widgets“ ist aus | öffnet **Erweitert** |
+| rot, „Mikrofon nicht erlaubt — tippen“ | WhisperLoom darf das Mikrofon nicht nutzen | öffnet den Tab „Pro Widgets“ mit der Karte **Mikrofon** |
 
-Ist ein Versuch gescheitert und folgt noch ein weiterer, bleibt das Widget blau und nennt den Grund: „Zeitüberschreitung … — neuer Versuch folgt, tippen = jetzt". Ein Tipp sendet dann sofort, statt auf den nächsten Versuch zu warten.
+„Bereit“ und „Server fehlt“ gelten je Widget: Ein Widget mit Server ist bereit, eines ohne zeigt „Server fehlt“. Aufnahme, Senden, „Gesendet“ und Fehler zeigen alle Widgets zugleich — es gibt immer nur einen Auftrag.
 
-Nach dem Absenden darf der Bildschirm ausgehen: Mitschreiben und Übertragen laufen als Auftrag im System weiter und überstehen auch ein kurzes Funkloch. Ist der Auftrag draußen, wird das Widget grün („Gesendet") und bleibt so, bis du das nächste Mal darauf tippst — dann beginnt wie gewohnt eine neue Aufnahme.
+Ist ein Versuch gescheitert und folgt noch ein weiterer, bleibt das Widget blau und nennt den Grund: „Zeitüberschreitung … — neuer Versuch folgt, tippen = jetzt“. Ein Tipp sendet dann sofort, statt auf den nächsten Versuch zu warten.
+
+Nach dem Absenden darf der Bildschirm ausgehen: Mitschreiben und Übertragen laufen als Auftrag im System weiter und überstehen auch ein kurzes Funkloch. Ist der Auftrag draußen, wird das Widget grün („Gesendet“) und bleibt so, bis du das nächste Mal darauf tippst — dann beginnt wie gewohnt eine neue Aufnahme.
 
 Vergisst du das Beenden, macht das Widget nach fünf Minuten von allein Schluss und schickt das Gesprochene ab. Eine Aufnahme läuft also nie unbemerkt weiter.
 
-### 13.6 Wenn etwas nicht klappt
+### 13.8 Wenn etwas nicht klappt
 
-**„Mikrofon nicht erlaubt — tippen"**
-Der Tipp führt dich in die Erweiterten Optionen; dort erlaubst du das Mikrofon.
+**„Mikrofon nicht erlaubt — tippen“**
+Der Tipp öffnet Einstellungen → Widgets → Tab „Pro Widgets“. Dort steht die Karte **Mikrofon** („Für Pro Widgets fehlt die Mikrofon-Berechtigung.“); ein Tipp darauf erklärt kurz, wofür, und fragt dann Android nach der Erlaubnis.
 
-**„Sprachauftrag ist aus — tippen"**
-Der Schalter ist aus, oder Adresse bzw. Token fehlen. Der Tipp führt direkt zur richtigen Stelle.
+**„Pro Widgets aus — tippen“**
+Der Schalter unter Erweitert ist aus. Der Tipp führt direkt dorthin.
 
-**„Kein Ton aufgenommen"**
+**„Server fehlt — tippen“**
+Diesem Widget fehlen Server-Adresse oder Token, oder die Adresse ist ungültig. Der Tipp öffnet **Widget bearbeiten** für genau dieses Widget; sobald Adresse und Token stimmen, ist es bereit.
+
+**„Server fehlt im Widget „…“ — tippen für erneuten Versuch“**
+Ein Auftrag wartet, aber sein Widget hat inzwischen keinen gültigen Server mehr. Der Auftrag bleibt gespeichert. Der Tipp — auf dieses oder ein anderes Widget — öffnet **Widget bearbeiten** für das Widget des Auftrags: Server eintragen, dann aufs Widget tippen — er geht los, ohne neu aufzunehmen.
+
+**„Pro Widgets sind aus — tippen für erneuten Versuch“**
+Du hast Pro Widgets ausgeschaltet, während ein Auftrag wartete. Er bleibt gespeichert. Der Tipp führt nach **Erweitert**: wieder einschalten, dann aufs Widget tippen — oder den Auftrag dort unter **Offener Auftrag** verwerfen.
+
+**„Widget gelöscht — Auftrag verworfen“**
+Das Widget, mit dem du aufgenommen hast, wurde gelöscht, bevor sein Auftrag draußen war. Der Auftrag ist weg — WhisperLoom schickt ihn nie an den Server eines anderen Widgets. Ein Tipp startet eine neue Aufnahme.
+
+**„Kein Ton aufgenommen“**
 Es kam nichts am Mikrofon an — etwa weil eine andere App es belegt (Telefonat, Sprachassistent) oder Android es der App im Hintergrund entzogen hat. Ein Tipp startet einen neuen Anlauf.
 
-**„Zu kurz — länger sprechen"**
+**„Zu kurz — länger sprechen“**
 Der zweite Tipp kam zu schnell. Unter einer knappen Sekunde ist es ein Fehlgriff, kein Auftrag.
 
-**„Nichts gehört — tippen für erneuten Versuch"**
-Nur mit Auto-Stopp: Das Widget hat 8 Sekunden lang keine Sprache erkannt und die Aufnahme verworfen — gesendet wurde nichts. Gleichmäßiger Lärm (Auto, Lüfter, Brummen) zählt dabei nicht als Sprache. Ein Tipp startet eine neue Aufnahme. Passiert das oft, obwohl du sprichst — etwa in lauter Umgebung —, sprich näher ans Telefon oder schalte Auto-Stopp für dieses Profil aus.
+**„Nichts gehört — tippen für erneuten Versuch“**
+Nur mit Auto-Stopp: Das Widget hat 8 Sekunden lang keine Sprache erkannt und die Aufnahme verworfen — gesendet wurde nichts. Gleichmäßiger Lärm (Auto, Lüfter, Brummen) zählt dabei nicht als Sprache. Ein Tipp startet eine neue Aufnahme. Passiert das oft, obwohl du sprichst — etwa in lauter Umgebung —, sprich näher ans Telefon oder schalte Auto-Stopp für dieses Widget aus.
 
 **Das Widget lässt sich nicht hinzufügen**
-Beim Hinzufügen erscheint „Welches Profil?", und du hast die Frage weggewischt — dann legt der Startbildschirm das Widget nicht ab. Einfach noch einmal hinziehen und ein Profil antippen.
+Beim Hinzufügen erscheint „Welches Widget-Profil?“, und du hast die Frage weggewischt — dann legt der Startbildschirm das Widget nicht ab. Einfach noch einmal hinziehen und ein Widget-Profil antippen.
 
-**Das Widget bleibt auf „Wird gesendet …" stehen oder zeigt „… — neuer Versuch folgt"**
-Ein Versuch ist gescheitert, meist am Netz oder an einem Server, der gerade erst startet. WhisperLoom versucht es von allein erneut, mit wachsendem Abstand. Ein Tipp auf die Fläche sendet sofort, ohne auf den nächsten Termin oder auf Netz zu warten. Läuft gerade ein Versuch, lässt der Tipp ihn in Ruhe; hängt er länger als drei Minuten, ersetzt ihn der Tipp. Das gilt nicht, solange die Offline-Erkennung noch rechnet: sie lässt sich nicht abbrechen, ein zweiter Versuch müsste hinter ihr warten und würde alles nur verlängern. Der Tipp tut dann nichts — bei einer langen Aufnahme mit „Genau" kann das einige Minuten dauern. Doppelt ankommen kann dabei praktisch nichts: die Bridge führt denselben Auftrag innerhalb einer Stunde nur einmal aus. Geht er erst später erneut hinaus (etwa ein roter Auftrag, den du am nächsten Tag noch einmal sendest) oder wurde die Bridge dazwischen neu gestartet, kann er in seltenen Fällen ein zweites Mal ausgeführt werden — dann nämlich, wenn der erste Versuch schon angekommen war und nur die Antwort verloren ging. Ohne Netz scheitert der sofortige Versuch ehrlich, und nach einigen Versuchen wird das Widget rot.
+**Das Widget bleibt auf „Wird gesendet …“ stehen oder zeigt „… — neuer Versuch folgt“**
+Ein Versuch ist gescheitert, meist am Netz oder an einem Server, der gerade erst startet. WhisperLoom versucht es von allein erneut, mit wachsendem Abstand. Ein Tipp auf die Fläche sendet sofort, ohne auf den nächsten Termin oder auf Netz zu warten. Läuft gerade ein Versuch, lässt der Tipp ihn in Ruhe; hängt er länger als drei Minuten, ersetzt ihn der Tipp. Das gilt nicht, solange die Offline-Erkennung noch rechnet: sie lässt sich nicht abbrechen, ein zweiter Versuch müsste hinter ihr warten und würde alles nur verlängern. Der Tipp tut dann nichts — bei einer langen Aufnahme mit „Genau“ kann das einige Minuten dauern. Doppelt ankommen kann dabei praktisch nichts: die Bridge führt denselben Auftrag innerhalb einer Stunde nur einmal aus. Geht er erst später erneut hinaus (etwa ein roter Auftrag, den du am nächsten Tag noch einmal sendest) oder wurde die Bridge dazwischen neu gestartet, kann er in seltenen Fällen ein zweites Mal ausgeführt werden — dann nämlich, wenn der erste Versuch schon angekommen war und nur die Antwort verloren ging. Ohne Netz scheitert der sofortige Versuch ehrlich, und nach einigen Versuchen wird das Widget rot.
 
 Hängt es trotzdem immer wieder: Einstellungen des Telefons → Apps → WhisperLoom → Akku → **Nicht eingeschränkt**. Manche Hersteller halten Hintergrundaufträge sonst lange zurück. Für die Fehlersuche am Rechner zeigt `adb shell dumpsys jobscheduler com.chris.whisperloom`, worauf der Auftrag wartet, und `adb shell am get-standby-bucket com.chris.whisperloom` die Standby-Stufe der App.
 
-Willst du den Auftrag loswerden: Einstellungen → Erweiterte Optionen → **Offenen Auftrag verwerfen**.
+Willst du den Auftrag loswerden: Einstellungen → Widgets → Tab „Pro Widgets“ → Karte **Offener Auftrag** → **Offenen Auftrag verwerfen**. Sind Pro Widgets aus, steht die Karte unter Einstellungen → **Erweitert**. Sie erscheint nur, solange ein Auftrag wartet.
 
 **Ein Fehler mit Zahl (z. B. 401 oder 503)**
-401 heißt: Token stimmt nicht — korrigier es in den Erweiterten Optionen und tippe dann auf das Widget, der Auftrag ist noch da. 503 heißt: die Bridge erreicht deinen Agenten gerade nicht; WhisperLoom versucht es von allein mehrmals erneut (das Widget nennt dabei den Grund), erst danach wird das Widget rot.
+401 heißt: Token stimmt nicht — korrigier es im Editor des Widgets (Einstellungen → Widgets → Pro Widgets → Widget antippen) und tippe dann auf das Widget, der Auftrag ist noch da. 503 heißt: die Bridge erreicht deinen Agenten gerade nicht; WhisperLoom versucht es von allein mehrmals erneut (das Widget nennt dabei den Grund), erst danach wird das Widget rot.
 
-### 13.7 Was dabei gesendet wird
+### 13.9 Was dabei gesendet wird
 
-An deinen Server gehen: der erkannte Text, eine Auftragskennung, Zeitpunkt und Dauer der Aufnahme. **Nur an die Adresse, die du einträgst** — nicht an den Hersteller der App und an niemanden sonst. Die Aufnahme selbst bleibt auf dem Telefon; fürs Mitschreiben geht sie an den Erkennungsweg, den du ohnehin eingestellt hast (Kapitel 11 beschreibt das im Detail). Ein Auftrag, der noch nicht durchging, liegt so lange auf dem Telefon, bis er abgeschickt oder ersetzt wird; er wird nicht in ein Cloud-Backup übernommen. Profile und Galerie-Bilder der Widgets verlassen das Telefon nie — auch sie kommen in kein Backup.
+An den Server des Widgets gehen: der erkannte Text, eine Auftragskennung, Zeitpunkt und Dauer der Aufnahme. **Den Auftrag bekommt nur die Adresse, die in diesem Widget eingetragen ist** — nicht der Hersteller der App und nicht der Server eines anderen Widgets. Erkannt und verbessert wird wie beim Diktat: Fürs Mitschreiben geht die Aufnahme an den Erkennungsweg, den du eingestellt hast, und ist die Textverbesserung an, geht der erkannte Text vorher an deren Anbieter (Kapitel 11 beschreibt das im Detail). Ein Auftrag, der noch nicht durchging, liegt so lange auf dem Telefon, bis er abgeschickt, verworfen oder ersetzt wird; er wird nicht in ein Cloud-Backup übernommen. Die Widgets mit Server-Adressen und Tokens sowie ihre Galerie-Bilder werden nur auf dem Gerät gespeichert und nicht gesichert.
 
 ---
 
@@ -868,7 +915,7 @@ Der Knopf muss über anderen Apps liegen (Overlay), und um Text in ein fremdes T
 Der Knopf bleibt im sichtbaren Bereich; eine im Querformat gemerkte Position wird im Hochformat korrigiert. Auf Tablets ist WhisperLoom nicht gesondert getestet.
 
 **Wo finde ich diese Anleitung in der App?**
-Einstellungen → **Anleitung & Hilfe** (oder das **?** oben rechts auf dem Startbildschirm): So funktioniert's · Einrichtung Schritt für Schritt · API-Key bekommen · Eigener Server · Offline-Modus · Datenschutz · Wenn etwas nicht klappt.
+Einstellungen → **Anleitung & Hilfe** (oder das **?** oben rechts auf dem Startbildschirm), acht Abschnitte, jeder mit Bild und Kurztext: So funktioniert's · Einrichtung Schritt für Schritt · API-Key bekommen · Eigener Server · Offline-Modus · Widgets & Pro Widgets · Datenschutz · Wenn etwas nicht klappt. Dazu zwei bebilderte Tutorials: das Einsteiger-Tutorial (Anleitung & Hilfe → **Tutorial erneut ansehen**) und die Anleitung Pro Widgets ([Kapitel 13](#13-pro-widgets-sprach-command-widgets)).
 
 **Wo melde ich Fehler?**
 Auf der GitHub-Seite des Projekts (Link unter Einstellungen → Über WhisperLoom → „Quellcode auf GitHub"). Hilfreich sind Android-Version, Gerät, Erkennungsweg (online/offline, Anbieter, Modell) und die genaue Fehlermeldung aus der App.

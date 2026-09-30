@@ -21,8 +21,8 @@
     <string name="common_more">Mehr</string>
     <string name="cd_back">Zurück</string>
     <string name="cd_close">Schließen</string>
-    <string name="cd_key_show">API-Key anzeigen</string>
-    <string name="cd_key_hide">API-Key verbergen</string>
+    <string name="cd_key_show">%1$s anzeigen</string>
+    <string name="cd_key_hide">%1$s verbergen</string>
     <string name="cd_paste">Aus Zwischenablage einfügen</string>
     <string name="cd_open_link">Link im Browser öffnen</string>
     <string name="cd_add_word">Wort hinzufügen</string>
@@ -130,7 +130,7 @@
     <string name="setup_status_skipped">übersprungen</string>
     <string name="setup_status_done">erledigt</string>
     <string name="welcome_title">Diktiere in jede App.</string>
-    <string name="welcome_body">WhisperLoom nimmt auf, erkennt den Text über deinen eigenen Zugang oder ein Offline-Modell und tippt ihn ins aktuelle Feld. In ein paar Schritten ist alles bereit.</string>
+    <string name="welcome_body">WhisperLoom nimmt auf, erkennt den Text über deinen eigenen Zugang oder ein Offline-Modell und tippt ihn ins aktive Feld. In wenigen Schritten ist alles bereit.</string>
     <string name="welcome_point_1">Online oder offline — du entscheidest</string>
     <string name="welcome_point_2">Dein Key bleibt auf dem Gerät</string>
     <string name="welcome_point_3">Dauert etwa zwei Minuten</string>
@@ -152,7 +152,7 @@
     <string name="setup_s3_btn">Mikrofon erlauben</string>
     <string name="setup_s3_denied">Du hast das Mikrofon abgelehnt. Bitte in den App-Einstellungen erlauben.</string>
     <string name="setup_s4_title">Über anderen Apps anzeigen</string>
-    <string name="setup_s4_body">Der schwebende Mikro-Knopf liegt über anderen Apps. Dafür braucht Android deine Erlaubnis — du landest gleich in den Systemeinstellungen: dort „WhisperLoom“ einschalten und zurück.</string>
+    <string name="setup_s4_body">Der schwebende Mikro-Knopf liegt über anderen Apps. Dafür braucht Android deine Erlaubnis: In den Systemeinstellungen „WhisperLoom“ einschalten und zurück.</string>
     <string name="setup_s4_step_1">Die Systemeinstellung öffnet sich</string>
     <string name="setup_s4_step_2">Schalter „Über anderen Apps anzeigen“ einschalten</string>
     <string name="setup_s4_step_3">Zurück-Taste — WhisperLoom prüft automatisch</string>
@@ -166,7 +166,7 @@
     <string name="setup_s5_step_3">Bei „Eingeschränkte Einstellung“: App-Info → ⋮ → Eingeschränkte Einstellungen zulassen, dann erneut</string>
     <string name="setup_s5_btn">Bedienungshilfe aktivieren</string>
     <string name="setup_s6_title">Beenden per Benachrichtigung</string>
-    <string name="setup_s6_body">Solange der Knopf läuft, zeigt Android eine stille Benachrichtigung mit „Beenden“. Ohne Erlaubnis ist sie unsichtbar — beenden kannst du den Knopf dann in der App.</string>
+    <string name="setup_s6_body">Solange der Knopf läuft, zeigt Android eine stille Benachrichtigung mit „Beenden“. Ohne Erlaubnis ist sie unsichtbar — beenden kannst du dann in der App.</string>
     <string name="setup_s6_btn">Benachrichtigungen erlauben</string>
     <string name="setup_s7_title">Diktat-Tastatur</string>
     <string name="setup_s7_body">Alternative zum Knopf: die WhisperLoom-Tastatur mit Halten-zum-Sprechen. Zwei Schritte: aktivieren, dann auswählen.</string>
@@ -196,13 +196,13 @@
     <string name="tutorial_start">Los geht\'s</string>
     <string name="tutorial_cd_page">Seite %1$d von %2$d</string>
     <string name="tutorial_p1_title">Diktieren mit dem Knopf</string>
-    <string name="tutorial_p1_body">Tippe den schwebenden Knopf an: Er wird rot und zählt die Aufnahme mit. Nochmal antippen — der Text landet im gerade aktiven Textfeld. Zum Verwerfen ziehst du den Knopf auf das ✕. Wird er rot mit ↻, ist etwas schiefgegangen: Antippen versucht es erneut.</string>
+    <string name="tutorial_p1_body">Tippe den schwebenden Knopf an: Er wird rot und nimmt auf. Nochmal antippen — der Text landet im aktiven Feld. Auf ✕ ziehen verwirft. Rot mit ↻: antippen versucht es erneut.</string>
     <string name="tutorial_p2_title">Diktier-Tastatur</string>
-    <string name="tutorial_p2_body">Manche Apps zeigen den Knopf nicht — dann hilft die WhisperLoom-Tastatur. Wechsle über das Tastatur-Symbol zu WhisperLoom, halte das Mikrofon gedrückt und sprich. Beim Loslassen wird der Text eingefügt.</string>
+    <string name="tutorial_p2_body">Zeigt eine App den Knopf nicht, hilft die WhisperLoom-Tastatur: über das Tastatur-Symbol wechseln, Mikrofon gedrückt halten, sprechen. Loslassen fügt den Text ein.</string>
     <string name="tutorial_p3_title">Sprachnachrichten abtippen</string>
-    <string name="tutorial_p3_body">Halte in WhatsApp — genauso in Telegram oder Signal — die Sprachnachricht lange gedrückt, tippe auf „Teilen“ und wähle WhisperLoom. Kurz darauf steht der Text da. Mehrere Nachrichten auf einmal gehen auch.</string>
+    <string name="tutorial_p3_body">Halte in WhatsApp, Telegram oder Signal die Sprachnachricht lange gedrückt, tippe auf „Teilen“ und wähle WhisperLoom. Kurz darauf steht der Text da — auch für mehrere.</string>
     <string name="tutorial_p4_title">Der Text ist da</string>
-    <string name="tutorial_p4_body">Der Text erscheint in Absätzen. Der Schalter „Füllwörter ausblenden“ nimmt „ähm“ und „äh“ heraus — ausgeschaltet liest du alles wortgetreu. Dann Kopieren oder Teilen. Alles hier findest du jederzeit unter Anleitung &amp; Hilfe.</string>
+    <string name="tutorial_p4_body">Der Text erscheint in Absätzen. Der Schalter „Füllwörter ausblenden“ nimmt „ähm“ und „äh“ heraus. Dann kopieren oder teilen. Alles hier steht auch unter Anleitung &amp; Hilfe.</string>
     <string name="tutorial_img_button">Handy mit Textfeld und schwebendem Mikro-Knopf, der rot pulsiert; ein Pfeil zeigt vom Knopf ins Textfeld.</string>
     <string name="tutorial_img_keyboard">Handy mit dunkler Diktier-Tastatur; ein Finger hält die große Mikrofon-Taste gedrückt, darüber Pegelbalken.</string>
     <string name="tutorial_img_share">Chat mit einer Sprachnachricht, die lange gedrückt wird; darüber der Menüpunkt „Teilen“ und daneben ein Teilen-Blatt, in dem die WhisperLoom-Kachel hervorgehoben ist.</string>
@@ -216,6 +216,11 @@
     <string name="settings_group_models">Offline-Modelle</string>
     <string name="settings_group_help">Anleitung &amp; Hilfe</string>
     <string name="settings_group_about">Über WhisperLoom</string>
+    <!-- Gruppen im Hub (angezeigt in Großbuchstaben) -->
+    <string name="settings_section_basics">Grundlagen</string>
+    <string name="settings_section_controls">Bedienung</string>
+    <string name="settings_section_pro">Pro</string>
+    <string name="settings_section_info">Info</string>
     <string name="settings_help_sub">Anleitung, API-Keys, Datenschutz</string>
     <string name="settings_models_none">Keins geladen</string>
     <string name="settings_val_bubble_on">Knopf läuft</string>
@@ -326,7 +331,7 @@
     <string name="text_gemini_warning">Free-Tier: Google darf Inhalte zum Training nutzen.</string>
     <string name="text_deepseek_warning">Server in China — Datenschutz beachten.</string>
     <string name="text_anthropic_note">OpenAI-Kompatibilitätsschicht — von Anthropic als Test-Werkzeug eingestuft.</string>
-    <string name="text_ollama_local_note">Dein eigenes Ollama, z. B. auf einem Homeserver. Das Handy muss ihn erreichen (gleiches WLAN oder VPN wie Tailscale). Auf dem Server OLLAMA_HOST=0.0.0.0 setzen, sonst hört Ollama nur auf sich selbst. Der Text verlässt dein Netz nicht.</string>
+    <string name="text_ollama_local_note">Dein eigenes Ollama, z. B. auf einem Homeserver im gleichen WLAN oder per VPN. Dort OLLAMA_HOST=0.0.0.0 setzen, sonst hört Ollama nur lokal. Der Text bleibt in deinem Netz.</string>
     <string name="text_ollama_cloud_note">Modelle laufen auf ollama.com. Den Key legst du unter ollama.com/settings/keys an. Weitere Modelle holt „Modelle vom Server laden“.</string>
     <string name="text_ollama_url">Server-Adresse</string>
     <string name="text_ollama_url_hint">Adresse deines Ollama-Servers mit Port, meist :11434. http:// nur im eigenen Netz (LAN/VPN).</string>
@@ -418,14 +423,16 @@
     <string name="models_notif_text">%1$s · %2$d %%</string>
     <string name="models_notif_done">%1$s ist bereit</string>
 
-    <!-- §6.9 Hilfe (E5, B1) -->
+    <!-- §6.9 Hilfe (E5, B1). Reihenfolge im Screen: s1–s5, widgets, s6 (Datenschutz), s7 (Probleme). -->
     <string name="help_title">Anleitung &amp; Hilfe</string>
     <string name="help_s1_title">So funktioniert\'s</string>
+    <string name="help_s1_intro">Drei Wege zum Text: der schwebende Knopf, die Diktier-Tastatur und Sprachnachrichten, die du an WhisperLoom teilst.</string>
     <string name="help_s1_bubble">Schwebender Knopf: antippen = Aufnahme, nochmal = fertig &amp; einfügen, auf ✕ ziehen = verwerfen, rot = Fehler, antippen = erneut.</string>
     <string name="help_s1_keyboard">Diktier-Tastatur: Mikrofon gedrückt halten, sprechen, loslassen.</string>
     <string name="help_s1_share">Sprachnachrichten: in WhatsApp lange drücken → Teilen → WhisperLoom. Der Text erscheint in Absätzen, du kannst ihn kopieren oder weitergeben.</string>
     <string name="help_s1_tutorial">Tutorial erneut ansehen</string>
     <string name="help_s2_title">Einrichtung Schritt für Schritt</string>
+    <string name="help_s2_intro">Jeder Schritt der Einrichtung lässt sich hier einzeln öffnen und nachholen — etwa wenn eine Berechtigung fehlt.</string>
     <string name="help_s3_title">API-Key bekommen</string>
     <string name="help_s3_intro">Ein API-Key ist ein persönlicher Zugangsschlüssel. Du bezahlst nur, was du nutzt — ein Diktat kostet meist unter einem Cent.</string>
     <string name="help_key_openai">platform.openai.com registrieren → Billing: Zahlungsmittel + Guthaben (mind. 5 $) → API keys → Create new secret key. GPT Transcribe ≈ 0,0045 $/min.</string>
@@ -440,14 +447,24 @@
     <string name="help_key_ollama_cloud">ollama.com registrieren → Settings → Keys → Add API Key. Nur Textverbesserung. Für ein lokales Ollama brauchst du keinen Key.</string>
     <string name="help_prices_note">Preise Stand 09/2026, ohne Gewähr.</string>
     <string name="help_s4_title">Eigener Server</string>
-    <string name="help_s4_body">Jeder OpenAI-kompatible Server funktioniert: Endpunkte /v1/audio/transcriptions (Erkennung) und /v1/chat/completions (Textverbesserung). Unter Erkennung → Anbieter „Eigener Server“ die Base-URL eintragen, Key nur wenn der Server einen verlangt. Empfohlene Server: speaches, whisper.cpp-server, LocalAI. Für die Textverbesserung gibt es eigene Anbieter „Ollama (lokal / Homeserver)“ (Server-Adresse wie http://homeserver:11434, kein Key) und „Ollama Cloud“ (Key von ollama.com); die Modelle kommen direkt vom Server. http:// nur im eigenen Netz oder per VPN — sonst https.</string>
+    <string name="help_s4_intro">Jeder OpenAI-kompatible Server geht, z. B. speaches, whisper.cpp-server oder LocalAI. Eintragen unter Erkennung → Anbieter „Eigener Server“.</string>
+    <string name="help_s4_body">Base-URL eintragen, Key nur falls verlangt. Endpunkte: /v1/audio/transcriptions und /v1/chat/completions.\nTextverbesserung auch über Ollama: lokal ohne Key, Cloud mit Key.\nhttp:// nur im eigenen Netz oder per VPN.</string>
     <string name="help_s5_title">Offline-Modus</string>
-    <string name="help_s5_body">Ein Offline-Modell erkennt Sprache direkt auf dem Gerät. Es wird einmalig geladen (32–574 MB) und liegt im App-Speicher; löschen kannst du es unter Offline-Modelle. Small ist für Deutsch die beste Balance. Die Erkennung dauert je Modell 2–10 Sekunden.</string>
+    <string name="help_s5_body">Ein Offline-Modell erkennt Sprache auf dem Gerät, in 2–10 Sekunden. Einmal laden (32–574 MB), löschen unter Offline-Modelle. Für Deutsch ist Small am besten.</string>
+    <string name="help_widgets_title">Widgets &amp; Pro Widgets</string>
+    <string name="help_widgets_intro">Normale Widgets für den Startbildschirm folgen mit einem Update. Pro Widgets gibt es schon: Sprach-Command-Widgets für Entwickler mit eigenem Server.</string>
+    <string name="help_widgets_unlock">Freischalten: Einstellungen → Erweitert → Pro Widgets.</string>
+    <string name="help_widgets_create">Anlegen: Widgets → Pro Widgets → Sprach-Command-Widget. Jedes Widget braucht einen Namen; er steht unter dem Widget und lässt sich ausblenden.</string>
+    <string name="help_widgets_server">Server je Widget: Adresse und Token trägst du im Widget ein, „Verbindung prüfen“ testet beides.</string>
+    <string name="help_widgets_place">Platzieren: Startbildschirm lange drücken → Widgets → WhisperLoom → „Sprach-Command“, dann das Widget-Profil wählen.</string>
+    <string name="help_widgets_open">Zu den Widgets</string>
     <string name="help_s6_title">Datenschutz</string>
-    <string name="help_s6_online">Online: Audio und Vokabular gehen an den gewählten Anbieter. Bei Textverbesserung geht der erkannte Text an das Sprachmodell — mit Ollama im eigenen Netz bleibt er dort. Dein Key bleibt auf dem Gerät. WhisperLoom speichert keine Aufnahmen; eine verknüpfte Vokabular-Datei wird nur gelesen.</string>
+    <string name="help_s6_intro">WhisperLoom speichert keine Aufnahmen, und dein Key bleibt auf dem Gerät.</string>
+    <string name="help_s6_online">Online: Audio und Vokabular gehen an den gewählten Anbieter, bei Textverbesserung auch der erkannte Text — mit Ollama im eigenen Netz bleibt er dort. Eine Vokabular-Datei wird nur gelesen.</string>
     <string name="help_s6_offline">Offline: Nichts verlässt das Gerät — nur der Modell-Download geht ins Netz.</string>
     <string name="help_s6_a11y">Die Bedienungshilfe liest nichts mit und speichert nichts; sie fügt nur den diktierten Text ein.</string>
     <string name="help_s7_title">Wenn etwas nicht klappt</string>
+    <string name="help_s7_intro">Die häufigsten Probleme und wo du sie behebst: Antippen zeigt die Lösung, „Öffnen“ führt direkt hin.</string>
     <string name="help_p1">Knopf erscheint nicht</string>
     <string name="help_p1_body">„Über anderen Apps anzeigen“ muss erlaubt sein. Zusätzlich in den Android-Einstellungen die Akku-Optimierung für WhisperLoom ausschalten.</string>
     <string name="help_p2">Text landet nur in der Zwischenablage</string>
@@ -557,16 +574,17 @@
     <string name="cd_mic_sending">Wird übertragen</string>
     <string name="cd_mic_error">Fehler — antippen für erneuten Versuch</string>
 
-    <!-- ==== Sprachauftrag: Widget (Paket B) ======================================= -->
-    <string name="widget_label">Sprachauftrag</string>
-    <string name="widget_description">Aufnehmen und als Auftrag an deinen eigenen Agenten schicken.</string>
+    <!-- ==== Sprach-Command-Widget (Paket B) ======================================= -->
+    <string name="widget_label">Sprach-Command</string>
+    <string name="widget_description">Pro Widget: sprechen und als Auftrag an deinen eigenen Server schicken.</string>
     <string name="widget_ready">Tippen und sprechen</string>
     <string name="widget_working">Wird gesendet …</string>
     <string name="widget_working_retry">%1$s — neuer Versuch folgt, tippen = jetzt</string>
     <string name="widget_sent">Gesendet</string>
     <string name="widget_sent_raw">Gesendet — ohne Textverbesserung</string>
     <string name="widget_no_mic">Mikrofon nicht erlaubt — tippen</string>
-    <string name="widget_off">Sprachauftrag ist aus — tippen</string>
+    <string name="widget_off">Pro Widgets aus — tippen</string>
+    <string name="widget_no_server">Server fehlt — tippen</string>
     <string name="widget_fgs_failed">Aufnahme ließ sich nicht starten — App öffnen und erneut versuchen</string>
     <!-- Nur der Grund: angezeigt über widget_error_retry, das den Tipp-Hinweis selbst anhängt. -->
     <string name="widget_silent">Kein Ton aufgenommen</string>
@@ -574,7 +592,7 @@
     <!-- Auto-Stopp: 8 s keine Sprache erkannt, Aufnahme verworfen. Angezeigt über widget_error_retry. -->
     <string name="widget_no_speech">Nichts gehört</string>
     <string name="widget_error_retry">%1$s — tippen für erneuten Versuch</string>
-    <string name="cd_widget_ready">Sprachauftrag aufnehmen</string>
+    <string name="cd_widget_ready">Auftrag aufnehmen</string>
     <string name="cd_widget_recording">Nimmt auf, %1$s — antippen zum Senden</string>
     <string name="cd_widget_working">Auftrag wird gesendet. Hängt es länger als drei Minuten: antippen, um erneut zu senden</string>
     <string name="cd_widget_working_retry">Senden gescheitert: %1$s. Ein neuer Versuch folgt automatisch — antippen, um sofort erneut zu senden</string>
@@ -582,10 +600,11 @@
     <string name="cd_widget_sent_raw">Auftrag gesendet, aber ohne Textverbesserung: %1$s</string>
     <string name="cd_widget_error">%1$s — antippen für erneuten Versuch</string>
     <string name="cd_widget_no_mic">Mikrofon nicht erlaubt — antippen, um es zu erlauben</string>
+    <string name="cd_widget_no_server">Server fehlt. Tippen, um ihn einzutragen.</string>
     <!-- Widget mit eigenem Profilnamen: %1$s = Name, %2$s = Zustandstext wie oben -->
     <string name="cd_widget_named">%1$s: %2$s</string>
-    <string name="agent_channel">Sprachauftrag</string>
-    <string name="agent_notif_title">Sprachauftrag</string>
+    <string name="agent_channel">Pro Widgets</string>
+    <string name="agent_notif_title">Sprach-Command</string>
     <string name="agent_notif_recording">Nimmt auf …</string>
     <string name="agent_notif_stop">Senden</string>
 
@@ -616,34 +635,44 @@
     <!-- ==== Widget-Profile: Untermenü „Widgets“ und Profil-Editor ================== -->
     <string name="settings_group_widgets">Widgets</string>
     <plurals name="widgets_sub_profiles">
-        <item quantity="one">%d Profil</item>
-        <item quantity="other">%d Profile</item>
+        <item quantity="one">%d Pro Widget</item>
+        <item quantity="other">%d Pro Widgets</item>
     </plurals>
     <plurals name="widgets_sub_placed">
         <item quantity="one">%d auf dem Startbildschirm</item>
         <item quantity="other">%d auf dem Startbildschirm</item>
     </plurals>
     <string name="widgets_sub_none_placed">noch keins auf dem Startbildschirm</string>
-    <string name="widgets_agent_off">Der Sprachauftrag ist aus. Die Widgets nehmen erst auf, wenn er unter „Erweiterte Optionen“ eingerichtet ist.</string>
-    <string name="widgets_card_profiles">Profile</string>
-    <string name="widgets_add_profile">Neues Profil</string>
+    <string name="widgets_sub_normal_soon">Normale Widgets folgen bald</string>
+    <string name="widgets_tab_normal">Widgets</string>
+    <string name="widgets_tab_pro">Pro Widgets</string>
+    <string name="widgets_normal_soon">Normale Widgets für den Startbildschirm kommen mit einem späteren Update.</string>
+    <string name="widgets_pro_unlock">Für Entwickler: Pro Widgets lassen sich unter „Erweitert“ freischalten.</string>
+    <string name="widgets_pro_intro">Sprach-Command-Widgets nehmen auf und schicken den Text an deinen eigenen Server. Jedes Widget hat seinen eigenen Namen und Server.</string>
+    <string name="widgets_card_new_pro">Neues Pro Widget</string>
+    <string name="widgets_card_pro">Deine Pro Widgets</string>
+    <string name="widgets_server_missing">Server fehlt</string>
+    <string name="widgets_add_profile">Neues Widget-Profil</string>
     <string name="widgets_card_placed">Auf dem Startbildschirm</string>
     <!-- %1$d = laufende Nummer, %2$s = Profilname -->
     <string name="widgets_placed_row">Widget %1$d · %2$s</string>
     <string name="widgets_placed_sub">Tippen, um das Profil zu wechseln</string>
-    <string name="widgets_card_help">So geht’s</string>
-    <string name="widgets_help_size">Größe ändern: Widget lange drücken und an den Rändern ziehen. Ganz klein zeigt es nur das Symbol, breit Symbol und Text, ab 2 × 2 steht beides untereinander.</string>
+    <string name="widgets_card_help">Hilfe</string>
+    <string name="widgets_help_size">Größe ändern: Widget lange drücken und an den Rändern ziehen. Ganz klein zeigt es das Symbol, breit Symbol und Text, ab 2 × 2 beides untereinander. Ist der Name eingeschaltet, steht er darunter.</string>
     <string name="widgets_help_shared">Alle Widgets zeigen dieselbe Aufnahme. Auto-Stopp richtet sich nach dem Widget, mit dem du gestartet hast.</string>
-    <string name="widget_config_title">Welches Profil?</string>
+    <string name="widget_config_title">Welches Widget-Profil?</string>
+    <string name="widget_config_pro_off">Pro Widgets sind aus. In der App unter Einstellungen → Erweitert einschalten.</string>
     <string name="widget_mode_toggle">Tippen startet und stoppt</string>
     <!-- %1$s = Sprechpause (widget_pause_*) -->
     <string name="widget_mode_autostop">Stoppt nach Sprechpause · %1$s</string>
     <!-- Name für ein neues Profil; %d = laufende Nummer -->
-    <string name="widget_profile_default_name">Profil %d</string>
-    <string name="widget_profile_title">Profil bearbeiten</string>
+    <string name="widget_profile_default_name">Sprach-Command %d</string>
+    <string name="widget_profile_title">Widget bearbeiten</string>
     <string name="widget_profile_name">Name</string>
-    <!-- %1$s = Name des leeren Profils (widget_label) -->
-    <string name="widget_profile_name_sub">Steht auf dem Widget. Leer = „%1$s“.</string>
+    <string name="widget_profile_name_sub">Steht unter dem Widget auf dem Startbildschirm.</string>
+    <string name="widget_profile_name_missing">Jedes Widget braucht einen Namen.</string>
+    <string name="widget_profile_show_name">Name unter dem Widget anzeigen</string>
+    <string name="widget_profile_server">Server</string>
     <string name="widget_profile_icon">Symbol</string>
     <string name="widget_profile_gallery">Aus Galerie</string>
     <string name="widget_profile_remove_photo">Bild entfernen</string>
@@ -657,29 +686,26 @@
     <string name="widget_pause_short_sub">Nach dem letzten Wort 1,2 Sekunden warten, dann senden.</string>
     <string name="widget_pause_normal_sub">Nach dem letzten Wort 2 Sekunden warten, dann senden.</string>
     <string name="widget_pause_long_sub">Nach dem letzten Wort 3,5 Sekunden warten, dann senden — für Denkpausen.</string>
-    <string name="widget_profile_delete">Profil löschen</string>
+    <string name="widget_profile_delete">Widget löschen</string>
     <!-- %1$s = Profilname -->
     <string name="widget_profile_delete_title">„%1$s“ löschen?</string>
     <!-- %1$d = Anzahl Widgets, %2$s = Name des Standardprofils -->
     <plurals name="widget_profile_delete_confirm">
-        <item quantity="one">%1$d Widget zeigt danach „%2$s“.</item>
-        <item quantity="other">%1$d Widgets zeigen danach „%2$s“.</item>
+        <item quantity="one">%1$d Widget auf dem Startbildschirm zeigt danach „%2$s“.</item>
+        <item quantity="other">%1$d Widgets auf dem Startbildschirm zeigen danach „%2$s“.</item>
     </plurals>
-    <string name="widget_profile_delete_unused">Kein Widget nutzt dieses Profil gerade.</string>
-    <string name="agent_widget_manage">Profile, Symbole und Auto-Stopp einstellen</string>
+    <string name="widget_profile_delete_unused">Es liegt gerade nicht auf dem Startbildschirm.</string>
 
-    <!-- ==== Sprachauftrag: Einstellungen und Tutorial (Paket C) ==================== -->
-    <string name="settings_group_agent">Erweiterte Optionen</string>
-    <string name="settings_agent_sub">Sprachauftrag an einen eigenen Agenten</string>
+    <!-- ==== „Erweitert“ (Pro-Funktionen) und Tutorial Pro Widgets ================== -->
+    <string name="settings_group_advanced">Erweitert</string>
     <string name="settings_agent_off">Aus</string>
-    <string name="agent_card_task">Sprachauftrag</string>
-    <string name="agent_card_connection">Verbindung</string>
+    <string name="advanced_intro">Pro-Funktionen für Entwickler und Bastler. Für das normale Diktieren brauchst du hier nichts.</string>
+    <string name="advanced_card_features">Pro-Funktionen</string>
+    <string name="advanced_manage_widgets">Pro Widgets verwalten</string>
+    <string name="advanced_tutorial">Anleitung Pro Widgets</string>
     <string name="agent_card_mic">Mikrofon</string>
-    <string name="agent_card_help">Hilfe</string>
-    <string name="agent_enable">Sprachauftrag aktivieren</string>
-    <string name="agent_enable_sub">Ein Widget auf dem Startbildschirm nimmt auf und schickt den Auftrag an deinen Server.</string>
     <string name="agent_url">Server-Adresse</string>
-    <string name="agent_url_hint">Adresse deiner Bridge, z. B. https://hermes-bridge.example.de</string>
+    <string name="agent_url_hint">Adresse deiner Bridge, ohne /v1/task</string>
     <string name="agent_token">Token</string>
     <string name="agent_check">Verbindung prüfen</string>
     <string name="agent_card_pending">Offener Auftrag</string>
@@ -687,25 +713,54 @@
     <string name="agent_discard_sub">Ein Auftrag wartet noch auf den Versand.</string>
     <string name="agent_discard_done">Auftrag verworfen</string>
     <string name="agent_tutorial">Anleitung ansehen</string>
-    <string name="agent_tutorial_sub">Widget hinzufügen, Server eintragen, Auftrag sprechen</string>
-    <string name="agent_privacy">Transkript und Auftrag gehen an genau den Server, den du hier einträgst — sonst nirgendwohin. Das Aufnehmen selbst läuft wie beim Diktat über die eingestellte Erkennung.</string>
-    <string name="agent_mic_missing">Für den Sprachauftrag fehlt die Mikrofon-Berechtigung.</string>
+    <string name="agent_tutorial_sub">Widget anlegen, Server eintragen, Auftrag sprechen</string>
+    <string name="agent_privacy">Der Auftrag geht nur an den Server dieses Widgets. Erkennung und Textverbesserung laufen wie beim Diktat über die eingestellten Anbieter.</string>
+    <string name="agent_mic_missing">Für Pro Widgets fehlt die Mikrofon-Berechtigung.</string>
     <string name="agent_mic_allow">Mikrofon erlauben</string>
-    <string name="agent_widget_hint">Widget hinzufügen: Startbildschirm lange drücken → Widgets → WhisperLoom → „Sprachauftrag“.</string>
+    <string name="agent_widget_hint">Widget platzieren: Startbildschirm lange drücken → Widgets → WhisperLoom → „Sprach-Command“.</string>
     <string name="settings_prompt_sub">Stufe „Prompt“</string>
-    <string name="prompt_card">Textverbesserung</string>
     <string name="prompt_enable">Stufe „Prompt“ anbieten</string>
-    <string name="prompt_enable_sub">Zusätzliche Stufe der Textverbesserung (Tastatur und Einstellungen → Text): formt ein Diktat zu einem gut gegliederten Prompt für KI-Assistenten wie ChatGPT oder Claude. Gewählt gilt sie wie jede Stufe für alle Diktate.</string>
-    <string name="tutorial_agent_p1_title">Das Widget auf den Startbildschirm</string>
-    <string name="tutorial_agent_p1_body">Drücke lange auf eine freie Stelle deines Startbildschirms, tippe auf „Widgets“, suche WhisperLoom und ziehe „Sprachauftrag“ dorthin, wo du es haben willst.</string>
-    <string name="tutorial_agent_p2_title">Server und Token eintragen</string>
-    <string name="tutorial_agent_p2_body">Unter „Erweiterte Optionen“ trägst du die Adresse deiner Bridge und das Token ein. „Verbindung prüfen“ sagt dir sofort, ob beides stimmt — ohne einen Auftrag auszulösen.</string>
-    <string name="tutorial_agent_p3_title">Tippen, sprechen, tippen</string>
-    <string name="tutorial_agent_p3_body">Ein Tipp startet die Aufnahme, das Widget zählt mit. Der zweite Tipp beendet sie: WhisperLoom schreibt mit und schickt den Auftrag los. Das läuft weiter, auch wenn der Bildschirm ausgeht.</string>
-    <string name="tutorial_agent_p4_title">Die Antwort kommt im Chat</string>
-    <string name="tutorial_agent_p4_body">Dein Agent bekommt das Transkript als Dokument und antwortet dort, wo du ihm sonst schreibst. Klappt etwas nicht, wird das Widget rot — ein Tipp schickt denselben Auftrag noch einmal, ohne neu aufzunehmen.</string>
-    <string name="tutorial_agent_img_widget">Startbildschirm mit dem Sprachauftrag-Widget zwischen anderen Symbolen</string>
-    <string name="tutorial_agent_img_server">Einstellungs-Bildschirm mit Feldern für Adresse und Token und einem grünen Haken</string>
-    <string name="tutorial_agent_img_record">Widget im Aufnahme-Zustand mit laufender Zeitanzeige und Schallwellen</string>
-    <string name="tutorial_agent_img_answer">Chat-Fenster mit einem Dokument und der Antwort des Agenten</string>
+    <string name="prompt_enable_sub">Zusätzliche Stufe in Tastatur und Einstellungen → Text: formt ein Diktat zu einem gegliederten Prompt für KI-Assistenten wie ChatGPT oder Claude.</string>
+    <string name="tutorial_pro_p1_title">Pro Widgets freischalten</string>
+    <string name="tutorial_pro_p1_body">Unter Einstellungen → Erweitert schaltest du „Pro Widgets“ ein. Danach hat das Widget-Menü einen eigenen Tab dafür.</string>
+    <string name="tutorial_pro_p2_title">Widget anlegen</string>
+    <string name="tutorial_pro_p2_body">Einstellungen → Widgets → Pro Widgets → „Sprach-Command-Widget“. Gib ihm einen Namen und wähle, ob er unter dem Widget steht.</string>
+    <string name="tutorial_pro_p3_title">Server eintragen</string>
+    <string name="tutorial_pro_p3_body">Jedes Widget hat seine eigene Server-Adresse und sein eigenes Token. „Verbindung prüfen“ sagt dir sofort, ob beides stimmt — ohne einen Auftrag auszulösen.</string>
+    <string name="tutorial_pro_p4_title">Auf den Startbildschirm</string>
+    <string name="tutorial_pro_p4_body">Startbildschirm lange drücken → Widgets → WhisperLoom → „Sprach-Command“ hinziehen und das Widget-Profil wählen. Sein Name steht unter dem Widget.</string>
+    <string name="tutorial_pro_p5_title">Tippen, sprechen, tippen</string>
+    <string name="tutorial_pro_p5_body">Ein Tipp startet die Aufnahme, der zweite schickt den Auftrag los. Mit Auto-Stopp endet sie nach einer Sprechpause. Das läuft weiter, auch wenn der Bildschirm ausgeht.</string>
+    <string name="tutorial_pro_p6_title">Die Antwort kommt im Chat</string>
+    <string name="tutorial_pro_p6_body">Dein Agent bekommt das Transkript als Dokument und antwortet dort, wo du ihm sonst schreibst. Wird das Widget rot, schickt ein Tipp denselben Auftrag noch einmal.</string>
+
+    <!-- ==== Pro Widgets (3.7.1) ==================================================== -->
+    <string name="pro_widgets">Pro Widgets</string>
+    <string name="pro_widgets_sub">Blendet im Widget-Menü den Tab „Pro Widgets“ ein: Sprach-Command-Widgets mit eigenem Server.</string>
+    <string name="pro_widgets_hub">Pro Widgets</string>
+    <string name="kind_voice_command">Sprach-Command-Widget</string>
+    <string name="kind_voice_command_sub">Sprechen und an deinen Server schicken</string>
+    <string name="img_pro_features">Einstellungsliste mit zwei Schaltern, der obere an, darunter eine Zeile mit Pfeil; oben ein Werkzeug-Abzeichen.</string>
+    <string name="img_pro_widgets">Widget-Menü mit zwei Tabs, der rechte aktiv. Darunter eine Plus-Zeile zum Anlegen und eine Liste mit zwei Widgets.</string>
+    <string name="img_widgets_normal">Startbildschirm mit App-Symbolen und einer gestrichelten, leeren Widget-Fläche mit Uhr-Symbol.</string>
+    <string name="img_agent_server">Widget-Editor mit Feldern für Name, Server-Adresse und Token, grünem Haken und dem verbundenen Server daneben</string>
+    <string name="img_agent_widget">Startbildschirm mit dem Sprach-Command-Widget zwischen App-Symbolen, sein Name steht unter der Kachel</string>
+    <string name="img_agent_record">Widget im Aufnahme-Zustand mit Schallwellen und laufender Zeit, der Name steht unter der Kachel</string>
+    <string name="img_agent_answer">Chat-Fenster mit einem Dokument und der Antwort des Agenten</string>
+    <string name="img_help_setup">Handy mit einer Checkliste: zwei Schritte mit grünem Haken erledigt, der dritte ist offen und hervorgehoben.</string>
+    <string name="img_help_key">Ein Schlüssel in einer Wolke, ein Pfeil führt zu einem Eingabefeld mit verdeckten Punkten.</string>
+    <string name="img_help_server">Handy mit Mikrofon und Wellenform, Pfeil zum eigenen Server; darunter die Server-Adresse und optional ein Schlüssel.</string>
+    <string name="img_help_offline">Durchgestrichene Wolke neben einem Handy, das ein Sprachmodell lädt: Download-Pfeil im Kreis, Modell-Karte.</string>
+    <string name="img_help_privacy">Handy mit Sprachaufnahme und Text, daneben ein grünes Schild mit Schloss.</string>
+    <string name="img_help_trouble">Handy mit gelbem Warn-Dreieck und Schraubenschlüssel, unten ein Knopf zum erneuten Versuchen.</string>
+    <string name="img_setup_engine">Zwei Karten nebeneinander: links eine Wolke für online, ausgewählt mit Haken, rechts ein Blitz für offline.</string>
+    <string name="img_setup_mic">Handy mit Android-Dialog: oben ein Mikrofon im Kreis, darunter zwei Buttons, der obere zum Erlauben hervorgehoben.</string>
+    <string name="img_setup_overlay">Handy mit einer Chat-App, darüber schwebt am rechten Rand der runde Mikrofon-Knopf von WhisperLoom.</string>
+    <string name="img_setup_a11y">Bedienungshilfen-Symbol über einer Liste, die WhisperLoom-Zeile ist hervorgehoben und ihr Schalter an.</string>
+    <string name="img_setup_notif">Glocke neben einem Handy, oben eine WhisperLoom-Benachrichtigung mit Beenden-Button, darunter zwei blasse Meldungen.</string>
+    <!-- Gründe, warum ein Auftrag nicht gesendet wird; angezeigt über widget_error_retry. -->
+    <string name="widget_task_profile_gone">Widget gelöscht — Auftrag verworfen</string>
+    <string name="widget_task_pro_off">Pro Widgets sind aus</string>
+    <!-- %1$s = Name des Widgets -->
+    <string name="widget_task_no_server">Server fehlt im Widget „%1$s“</string>
 </resources>

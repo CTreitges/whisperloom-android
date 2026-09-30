@@ -2,7 +2,6 @@ package com.chris.whisperloom
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.chris.whisperloom.agent.AgentUrlCheck
 import com.chris.whisperloom.api.AccessResolver
 import com.chris.whisperloom.api.ApiAccess
 import com.chris.whisperloom.api.Provider
@@ -56,7 +55,7 @@ enum class RefineMode(val key: String) {
  */
 class Prefs(context: Context) {
 
-    private val sp = context.getSharedPreferences("whisperloom", Context.MODE_PRIVATE)
+    private val sp = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
 
     init {
         migrate()
@@ -202,10 +201,10 @@ class Prefs(context: Context) {
         }
         set(v) = sp.edit().putString(KEY_REFINE_MODE, v.key).apply()
 
-    /** Erweiterte Optionen: Stufe "Prompt" in Tastatur und Einstellungen anbieten. */
+    /** Pro-Funktion ([ProFeature.PROMPT]): Stufe "Prompt" in Tastatur und Einstellungen anbieten. */
     var promptLevelEnabled: Boolean
-        get() = sp.getBoolean(KEY_PROMPT_LEVEL, false)
-        set(v) = sp.edit().putBoolean(KEY_PROMPT_LEVEL, v).apply()
+        get() = isEnabled(ProFeature.PROMPT)
+        set(v) = setEnabled(ProFeature.PROMPT, v)
 
     /**
      * Statt fester Wortliste entscheidet das Sprachmodell selbst, welche Fuellwoerter,
@@ -316,36 +315,30 @@ class Prefs(context: Context) {
         get() = sp.getInt(KEY_FLOAT_Y, DEFAULT_FLOAT_Y)
         set(v) = sp.edit().putInt(KEY_FLOAT_Y, v).apply()
 
-    // --- Sprachauftrag (Widget -> eigener Agent) ------------------------------
+    // --- Pro-Funktionen ("Erweitert") ----------------------------------------
 
-    /** Default aus: wer das Feature nicht nutzt, soll es nirgends bemerken. */
-    var agentEnabled: Boolean
-        get() = sp.getBoolean(KEY_AGENT_ENABLED, false)
-        set(v) = sp.edit().putBoolean(KEY_AGENT_ENABLED, v).apply()
+    /** Default aus: wer eine Pro-Funktion nicht nutzt, soll sie nirgends bemerken. */
+    fun isEnabled(feature: ProFeature): Boolean = sp.getBoolean(keyOf(feature), false)
 
-    /** Base-URL der Bridge ohne Pfad, z. B. https://hermes-bridge.example.de. */
-    var agentUrl: String
-        get() = sp.getString(KEY_AGENT_URL, "") ?: ""
-        set(v) = sp.edit().putString(KEY_AGENT_URL, v).apply()
+    fun setEnabled(feature: ProFeature, on: Boolean) = sp.edit().putBoolean(keyOf(feature), on).apply()
 
-    /** Bearer-Token der Bridge. Wie die API-Keys unverschluesselt hier — allowBackup=false gilt. */
-    var agentToken: String
-        get() = sp.getString(KEY_AGENT_TOKEN, "") ?: ""
-        set(v) = sp.edit().putString(KEY_AGENT_TOKEN, v).apply()
+    /**
+     * Pro Widgets (Sprach-Command-Widgets mit eigenem Server). Server und Token stehen seit 3.7.1
+     * im jeweiligen Widget-Profil ([com.chris.whisperloom.agent.WidgetProfile.serverReady]).
+     */
+    var proWidgetsEnabled: Boolean
+        get() = isEnabled(ProFeature.WIDGETS)
+        set(v) = setEnabled(ProFeature.WIDGETS, v)
 
     /** Eigenes Flag: [tutorialSeen] bedeutet weiterhin "Einsteiger-Tutorial gesehen". */
     var agentTutorialSeen: Boolean
         get() = sp.getBoolean(KEY_AGENT_TUTORIAL_SEEN, false)
         set(v) = sp.edit().putBoolean(KEY_AGENT_TUTORIAL_SEEN, v).apply()
 
-    /**
-     * Eingeschaltet UND brauchbar — erst dann kann das Widget ueberhaupt etwas senden.
-     * Die Adresse wird geprueft, nicht nur auf "nicht leer": eine Adresse ohne Schema haette
-     * das Widget sonst auf "bereit" gestellt, und der Fehler waere erst nach Aufnahme UND
-     * bezahlter Transkription aufgefallen.
-     */
-    val agentReady: Boolean
-        get() = agentEnabled && agentToken.isNotBlank() && AgentUrlCheck.isValid(agentUrl)
+    private fun keyOf(feature: ProFeature): String = when (feature) {
+        ProFeature.WIDGETS -> KEY_PRO_WIDGETS
+        ProFeature.PROMPT -> KEY_PROMPT_LEVEL
+    }
 
     // --- Aufgeloeste Zugaenge ------------------------------------------------
 
@@ -402,12 +395,21 @@ class Prefs(context: Context) {
         private const val KEY_OFFLINE_ACCURATE = "offline_accurate"
         private const val KEY_SHARE_HIDE_FILLERS = "share_hide_fillers"
         private const val KEY_SHARE_REFINE_MODE = "share_refine_mode"
-        private const val KEY_AGENT_ENABLED = "agent_enabled"
-        private const val KEY_AGENT_URL = "agent_url"
-        private const val KEY_AGENT_TOKEN = "agent_token"
+        /** Schluessel aus der Zeit des "Sprachauftrags" — bleibt, damit nichts migriert werden muss. */
+        private const val KEY_PRO_WIDGETS = "agent_enabled"
         private const val KEY_AGENT_TUTORIAL_SEEN = "agent_tutorial_seen"
         private const val KEY_FLOAT_X = "float_x"
         private const val KEY_FLOAT_Y = "float_y"
+
+        /** Datei der Einstellungen (`shared_prefs/whisperloom.xml`). */
+        const val FILE = "whisperloom"
+
+        /**
+         * Bis 3.7.0 ein Server fuer alle Widgets. Nur noch fuer
+         * [com.chris.whisperloom.agent.WidgetProfileStore.migrateLegacyServer], die ihn in die Profile kopiert.
+         */
+        const val LEGACY_KEY_AGENT_URL = "agent_url"
+        const val LEGACY_KEY_AGENT_TOKEN = "agent_token"
 
         const val MIN_TIMEOUT_SEC = 30
         const val MAX_TIMEOUT_SEC = 1800

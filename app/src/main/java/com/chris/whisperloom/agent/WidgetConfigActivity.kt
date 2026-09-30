@@ -18,7 +18,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
+import com.chris.whisperloom.ui.components.InfoCard
 import com.chris.whisperloom.ui.components.LoomIcon
 import com.chris.whisperloom.ui.components.LoomRow
 import com.chris.whisperloom.ui.components.LoomSheet
@@ -36,8 +38,8 @@ import com.chris.whisperloom.ui.theme.WhisperLoomTheme
  * - Sie ist exported (der Launcher startet sie von aussen) und nimmt deshalb nur Ids an, die
  *   wirklich zu [VoiceTaskWidget] gehoeren.
  * - Erstplatzierung mit nur dem Standardprofil: unsichtbar binden und fertig — es gibt nichts zu
- *   waehlen. Sonst das Sheet "Welches Profil?", beim Neu-Konfigurieren immer, vorgewaehlt ist das
- *   Profil, das die Instanz gerade zeigt.
+ *   waehlen. Sonst das Sheet "Welches Widget-Profil?", beim Neu-Konfigurieren immer, vorgewaehlt
+ *   ist das Profil, das die Instanz gerade zeigt. Zur Wahl stehen nur Sprach-Command-Profile.
  * - "Ungebunden" heisst Erstplatzierung: Widgets, die schon vor den Profilen lagen, bindet
  *   [VoiceTaskWidget] nach dem App-Update an das Standardprofil ([WidgetProfileStore.adopt]).
  *
@@ -77,10 +79,11 @@ class WidgetConfigActivity : ComponentActivity() {
             AppWidgetManager.getInstance(this).getAppWidgetInfo(id)?.provider ==
             ComponentName(this, VoiceTaskWidget::class.java)
 
-    /** Binden, diese Instanz selbst zeichnen, OK melden. */
+    /** Binden, diese Instanz mit ihrem Profil selbst zeichnen (ohne Server: "Server fehlt"), OK melden. */
     private fun pick(profileId: String) {
-        WidgetProfileStore(this).bind(widgetId, profileId)
-        val (state, message) = VoiceTaskWidget.resolve(this)
+        val store = WidgetProfileStore(this)
+        store.bind(widgetId, profileId)
+        val (state, message) = VoiceTaskWidget.resolve(this, store.forWidget(widgetId))
         VoiceTaskWidgetView.pushTo(this, AppWidgetManager.getInstance(this), intArrayOf(widgetId), state, message = message)
         setResult(RESULT_OK, result())
         finish()
@@ -90,8 +93,10 @@ class WidgetConfigActivity : ComponentActivity() {
 }
 
 /**
- * "Welches Profil?": ein Tipp auf ein Profil bestaetigt. "Neues Profil" legt es an und oeffnet den
- * Editor; danach ist das neue Profil vorgewaehlt (ein Tipp bestaetigt es). Wegwischen bricht ab.
+ * "Welches Widget-Profil?": ein Tipp auf ein Profil bestaetigt. "Neues Widget-Profil" legt es an
+ * und oeffnet den Editor; danach ist das neue Profil vorgewaehlt (ein Tipp bestaetigt es).
+ * Wegwischen bricht ab. Sind Pro Widgets aus, sagt ein Hinweis, wo sie sich einschalten lassen —
+ * platzieren geht trotzdem, das Widget zeigt dann "aus".
  */
 @Composable
 private fun ProfileChoice(preselected: String, onPick: (String) -> Unit, onCancel: () -> Unit) {
@@ -99,15 +104,17 @@ private fun ProfileChoice(preselected: String, onPick: (String) -> Unit, onCance
     val widgets = remember { WidgetProfilesState(ctx) }
     var selected by rememberSaveable { mutableStateOf(preselected) }
     var editing by rememberSaveable { mutableStateOf<String?>(null) }
+    val proOff = remember { !Prefs(ctx).proWidgetsEnabled }
 
     val editId = editing
     if (editId == null) {
         LoomSheet(title = stringResource(R.string.widget_config_title), onDismiss = onCancel) {
-            ProfilePicker(widgets.profiles, selected = selected, onPick = onPick)
+            if (proOff) InfoCard(stringResource(R.string.widget_config_pro_off))
+            ProfilePicker(widgets.profiles.filter { it.kind == WidgetKind.VOICE_COMMAND }, selected = selected, onPick = onPick)
             LoomRow(
                 headline = stringResource(R.string.widgets_add_profile),
                 leading = { LoomIcon(R.drawable.ic_add, null, Modifier.size(24.dp), MaterialTheme.colorScheme.primary) },
-                onClick = { editing = widgets.createNew().id },
+                onClick = { editing = widgets.createNew(WidgetKind.VOICE_COMMAND).id },
             )
         }
     } else {

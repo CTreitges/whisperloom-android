@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
@@ -31,10 +32,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.chris.whisperloom.BuildConfig
 import com.chris.whisperloom.Engine
+import com.chris.whisperloom.ProFeature
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.agent.Tier
 import com.chris.whisperloom.ui.components.DetailScaffold
 import com.chris.whisperloom.ui.components.LoomIcon
+import com.chris.whisperloom.ui.components.SectionHeader
 import com.chris.whisperloom.ui.components.fileSize
 import com.chris.whisperloom.ui.components.levelLabel
 import com.chris.whisperloom.ui.components.modelLabel
@@ -46,7 +50,12 @@ import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.WidgetProfilesState
 
-/** E — Einstellungen-Hub (UX-Spec §2.3): die Gruppen + Ueber, Supporting = aktueller Wert. */
+/** Trenner zwischen zwei Hub-Zeilen — fuer Tests, die pruefen, dass eine Gruppe ohne Trenner endet. */
+const val HUB_DIVIDER_TAG = "hub-divider"
+
+/**
+ * E — Einstellungen-Hub (UX-Spec §2.3): Grundlagen, Bedienung, Pro, Info; Supporting = aktueller Wert.
+ */
 @Composable
 fun SettingsHubScreen(nav: NavState) {
     val ctx = LocalContext.current
@@ -71,20 +80,19 @@ fun SettingsHubScreen(nav: NavState) {
     else stringResource(R.string.settings_val_text, levelLabel(prefs.refineMode), rules.joinToString(" · "))
     val button = stringResource(if (status.bubbleRunning) R.string.settings_val_bubble_on else R.string.settings_val_bubble_off) +
         " · " + stringResource(if (status.imeEnabled) R.string.settings_val_kb_on else R.string.settings_val_kb_off)
-    // Kein Schalter auf Hub-Ebene (Spec §2.3) — nur der aktuelle Wert als Unterzeile.
-    val advanced = buildList {
-        if (prefs.agentReady) add(stringResource(R.string.settings_agent_sub))
-        if (prefs.promptLevelEnabled) add(stringResource(R.string.settings_prompt_sub))
-    }
-    val agent = if (advanced.isEmpty()) stringResource(R.string.settings_agent_off) else advanced.joinToString(" · ")
-    // Immer sichtbar (User-Entscheidung): ohne eingerichteten Sprachauftrag erklaert das Untermenue selbst, was fehlt.
+    // Kein Schalter auf Hub-Ebene (Spec §2.3) — nur die eingeschalteten Pro-Funktionen als Unterzeile.
+    val active = ProFeature.entries.filter { prefs.isEnabled(it) }.map { stringResource(it.hubLabel) }
+    val advanced = if (active.isEmpty()) stringResource(R.string.settings_agent_off) else active.joinToString(" · ")
+    // Immer sichtbar (User-Entscheidung): ohne Pro Widgets zeigt das Untermenue den Platzhalter fuer normale Widgets.
     val widgetState = remember { WidgetProfilesState(ctx) }
     LifecycleResumeEffect(widgetState) {
         widgetState.reload()
         onPauseOrDispose { }
     }
     val placed = widgetState.placed.size
-    val widgets = pluralStringResource(R.plurals.widgets_sub_profiles, widgetState.profiles.size, widgetState.profiles.size) + " · " +
+    val proCount = widgetState.profiles(Tier.PRO).size
+    val widgets = if (!prefs.proWidgetsEnabled) stringResource(R.string.widgets_sub_normal_soon)
+    else pluralStringResource(R.plurals.widgets_sub_profiles, proCount, proCount) + " · " +
         if (placed == 0) stringResource(R.string.widgets_sub_none_placed)
         else pluralStringResource(R.plurals.widgets_sub_placed, placed, placed)
     val n = status.installedModels.size
@@ -92,14 +100,22 @@ fun SettingsHubScreen(nav: NavState) {
     else stringResource(R.string.settings_models_none)
 
     DetailScaffold(title = stringResource(R.string.settings_title), onBack = { nav.pop() }, snack = snack) { padding ->
+        // Gruppen mit Ueberschrift (User-Entscheidung U3); die letzte Zeile einer Gruppe ohne Trenner.
         LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(bottom = 24.dp)) {
+            item { SectionHeader(stringResource(R.string.settings_section_basics)) }
             item { HubRow(R.drawable.ic_graphic_eq, stringResource(R.string.settings_group_recognition), recognition) { nav.push(Screen.Recognition) } }
-            item { HubRow(R.drawable.ic_auto_fix_high, stringResource(R.string.settings_group_text), text) { nav.push(Screen.TextSettings) } }
-            item { HubRow(R.drawable.ic_touch_app, stringResource(R.string.settings_group_button), button) { nav.push(Screen.ButtonKeyboard) } }
-            item { HubRow(R.drawable.ic_layers, stringResource(R.string.settings_group_widgets), widgets) { nav.push(Screen.Widgets) } }
             item { HubRow(R.drawable.ic_download_for_offline, stringResource(R.string.settings_group_models), models) { nav.push(Screen.Models) } }
+            item { HubRow(R.drawable.ic_auto_fix_high, stringResource(R.string.settings_group_text), text, divider = false) { nav.push(Screen.TextSettings) } }
+
+            item { SectionHeader(stringResource(R.string.settings_section_controls)) }
+            item { HubRow(R.drawable.ic_touch_app, stringResource(R.string.settings_group_button), button) { nav.push(Screen.ButtonKeyboard) } }
+            item { HubRow(R.drawable.ic_layers, stringResource(R.string.settings_group_widgets), widgets, divider = false) { nav.push(Screen.Widgets()) } }
+
+            item { SectionHeader(stringResource(R.string.settings_section_pro)) }
+            item { HubRow(R.drawable.ic_build, stringResource(R.string.settings_group_advanced), advanced, divider = false) { nav.push(Screen.Advanced) } }
+
+            item { SectionHeader(stringResource(R.string.settings_section_info)) }
             item { HubRow(R.drawable.ic_help, stringResource(R.string.settings_group_help), stringResource(R.string.settings_help_sub)) { nav.push(Screen.Help(1)) } }
-            item { HubRow(R.drawable.ic_build, stringResource(R.string.settings_group_agent), agent) { nav.push(Screen.Agent) } }
             item {
                 HubRow(
                     R.drawable.ic_info, stringResource(R.string.settings_group_about),
@@ -129,5 +145,10 @@ private fun HubRow(icon: Int, headline: String, value: String, divider: Boolean 
             .clickable(onClick = onClick)
             .semantics(mergeDescendants = true) { stateDescription = value },
     )
-    if (divider) HorizontalDivider(Modifier.padding(start = 76.dp), color = MaterialTheme.colorScheme.outlineVariant)
+    if (divider) {
+        HorizontalDivider(
+            Modifier.padding(start = 76.dp).testTag(HUB_DIVIDER_TAG),
+            color = MaterialTheme.colorScheme.outlineVariant,
+        )
+    }
 }

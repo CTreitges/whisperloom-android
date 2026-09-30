@@ -1,58 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Sprachauftrag-Widget, Variante ROW (flach und breit, Idealgroesse 120x48 dp; z. B. 2x1 bis
-     4x1, im Querformat auch 1x1): Symbol links, Profilname und Statuszeile je einzeilig rechts
-     daneben. Gleiche Ids wie STACK, damit VoiceTaskWidgetView jede Variante gleich befuellt.
-     Bemessen fuer 48 dp Hoehe: 4 + Name (1 Zeile) + Status (1 Zeile) + 4. -->
+<!-- Sprach-Command-Widget, Variante ROW (flach und breit, Idealgroesse 120x48 dp; z. B. 2x1 bis
+     4x1, im Querformat auch 1x1): Kachel mit Symbol links und einzeiliger Statuszeile daneben,
+     darunter der Profilname. Gleiche Ids und gleicher Aufbau (durchsichtige Wurzel, Kachel mit
+     Hintergrund, Name darunter) wie STACK, damit VoiceTaskWidgetView jede Variante gleich befuellt.
+     Die Statuszeile nimmt per match_parent den Rest der Breite (ohne verschachtelte Gewichte).
+     Bemessen fuer 48 dp Hoehe: Kachel 2 + 24 (Symbol) + 2, dann 2 + Name (1 Zeile). -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="horizontal"
-    android:gravity="center_vertical"
-    android:paddingHorizontal="10dp"
-    android:paddingVertical="4dp"
-    android:background="@drawable/widget_bg_ready">
-
-    <ImageView
-        android:id="@+id/widget_icon"
-        android:layout_width="28dp"
-        android:layout_height="28dp"
-        android:src="@drawable/ic_mic"
-        android:importantForAccessibility="no" />
-
-    <ImageView
-        android:id="@+id/widget_photo"
-        android:layout_width="28dp"
-        android:layout_height="28dp"
-        android:visibility="gone"
-        android:importantForAccessibility="no" />
+    android:orientation="vertical">
 
     <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:id="@+id/widget_tile"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_marginStart="8dp"
-        android:orientation="vertical">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="2dp"
+        android:background="@drawable/widget_bg_ready">
 
-        <TextView
-            android:id="@+id/widget_name"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:textColor="@color/loom_onSurfaceVariant"
-            android:text="@string/widget_label" />
+        <ImageView
+            android:id="@+id/widget_icon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_mic"
+            android:importantForAccessibility="no" />
+
+        <ImageView
+            android:id="@+id/widget_photo"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:visibility="gone"
+            android:importantForAccessibility="no" />
 
         <TextView
             android:id="@+id/widget_status"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
             android:maxLines="1"
             android:ellipsize="end"
             android:textSize="12sp"
             android:textColor="@color/loom_onSurfaceVariant"
             android:text="@string/widget_ready" />
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/widget_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:gravity="center"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textSize="12sp"
+        android:textColor="@color/loom_onSurface"
+        android:shadowColor="@color/loom_labelShadow"
+        android:shadowDy="1"
+        android:shadowRadius="4"
+        android:text="@string/widget_label" />
 </LinearLayout>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Tutorial-Illustration Sprachauftrag 4: Chat mit gesendetem Dokument und der Antwort des Agenten.
      Flach und schematisch im Stil der uebrigen Tutorial-Bilder; nur @color/loom_*-Farben,
-     kein Text (Bildbeschreibung: tutorial_agent_img_* in strings.xml).
+     kein Text (Bildbeschreibung: img_agent_answer in strings.xml).
      Erzeugt mit scratchpad/gen_agent_ill.py. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"

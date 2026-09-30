@@ -200,8 +200,10 @@ class VoiceTaskWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, para
 
             is TaskOutcome.Failed -> {
                 outcome.text?.let { store.text = it }
-                // Nichts verstanden = nichts zu wiederholen; alles andere bleibt gepuffert.
-                if (outcome.reason == VoiceTaskPipeline.MSG_EMPTY) store.clear()
+                // Nichts verstanden oder Widget geloescht = nichts zu wiederholen; alles andere bleibt gepuffert.
+                if (outcome.reason == VoiceTaskPipeline.MSG_EMPTY || outcome.reason == ctx.getString(R.string.widget_task_profile_gone)) {
+                    store.clear()
+                }
                 finish(ctx, store, VoiceTaskState.ERROR, outcome.reason)
                 Result.failure()
             }
@@ -256,16 +258,17 @@ class VoiceTaskWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, para
          * Kennung, Zeitpunkt und Dauer werden beim Bau EINGEFROREN, nicht beim Senden gelesen:
          * ein abgeloester Lauf, der bis zu 600 s in der Erkennung haengt, saehe sonst schon die
          * Kennung eines NEUEN Auftrags und schickte alten Text darunter — die Bridge claimte die
-         * Kennung, und der echte Auftrag ginge als Duplikat verloren. Der dritte Parameter ist
+         * Kennung, und der echte Auftrag ginge als Duplikat verloren. Ebenso das Profil: sonst
+         * ginge der alte Text an den Server des neuen Auftrags. Der dritte Parameter ist
          * `stillCurrent` fuer [VoiceTaskPipeline].
          */
         @VisibleForTesting
         var pipelineFactory: (Context, VoiceTaskStore, () -> Boolean) -> VoiceTaskPipeline = { ctx, store, stillCurrent ->
-            val prefs = Prefs(ctx)
-            val bridge = AgentBridge(prefs.agentUrl, prefs.agentToken)
             val id = store.requestId
             val at = store.recordedAt
             val dur = store.durationMs
+            // Ein Auftrag von vor 3.7.1 kennt kein Profil; die Migration hat den alten Server ins Standardprofil kopiert.
+            val profileId = store.profileId.ifEmpty { WidgetProfile.DEFAULT_ID }
             VoiceTaskPipeline(
                 samples = { store.loadSamples() },
                 transcribe = { samples ->
@@ -277,12 +280,33 @@ class VoiceTaskWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, para
                         if (store.requestId == id) store.refineSkipped = hinweis
                     }
                 },
-                send = { text -> bridge.send(id, text, at, dur) },
+                send = { text -> bridgeFor(ctx, profileId).send(id, text, at, dur) },
                 stillCurrent = stillCurrent,
             )
+        }
+
+        /**
+         * Der Server des Widgets, das aufgenommen hat — je Versuch frisch gelesen, damit eine
+         * Korrektur im Editor beim naechsten Versuch wirkt. Bewusst [WidgetProfileStore.get] ohne
+         * Rueckfall aufs Standardprofil: der Auftrag eines geloeschten Widgets geht nie an einen
+         * fremden Server.
+         *
+         * @throws ProfileGoneException Widget geloescht — der Worker verwirft den Auftrag.
+         * @throws IllegalStateException Pro Widgets aus oder kein brauchbarer Server — nicht
+         *   wiederholbar, der Auftrag bleibt liegen, bis der Nutzer es aendert und erneut tippt.
+         */
+        private fun bridgeFor(ctx: Context, profileId: String): AgentBridge {
+            val profile = WidgetProfileStore(ctx).get(profileId)
+                ?: throw ProfileGoneException(ctx.getString(R.string.widget_task_profile_gone))
+            check(Prefs(ctx).proWidgetsEnabled) { ctx.getString(R.string.widget_task_pro_off) }
+            check(profile.serverReady) { ctx.getString(R.string.widget_task_no_server, profile.displayName(ctx)) }
+            return AgentBridge(profile.serverUrl, profile.serverToken)
         }
 
         private fun pipeline(ctx: Context, store: VoiceTaskStore, stillCurrent: () -> Boolean) =
             pipelineFactory(ctx, store, stillCurrent)
     }
 }
+
+/** Das Widget des Auftrags gibt es nicht mehr. Nicht wiederholbar; der Auftrag wird verworfen, nie umgeleitet. */
+class ProfileGoneException(message: String) : RuntimeException(message)

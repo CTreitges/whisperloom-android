@@ -10,9 +10,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,13 +18,12 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
@@ -50,6 +47,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chris.whisperloom.R
 import com.chris.whisperloom.overlay.FloatingMicService
+import com.chris.whisperloom.ui.components.GuideHeader
 import com.chris.whisperloom.ui.components.PrimaryButton
 import com.chris.whisperloom.ui.components.SmallTopBar
 import com.chris.whisperloom.ui.components.StepStateChip
@@ -192,7 +190,7 @@ private fun ProgressRow(step: Int, facts: SetupFacts) {
     }
 }
 
-/** Eine Schritt-Seite: Icon-Kreis, Titel, Erklaerung, Status-Chip, Inhalt; darunter die Bottom-Bar. */
+/** Eine Schritt-Seite: Illustration (max. 140 dp hoch), Titel, Erklaerung, Status-Chip, Inhalt; darunter die Bottom-Bar. */
 @Composable
 private fun StepPage(ui: StepUi, showBack: Boolean, onBack: () -> Unit) {
     // imePadding aussen: die Bottom-Bar sitzt ueber der Tastatur, und ihr navigationBarsPadding
@@ -205,12 +203,7 @@ private fun StepPage(ui: StepUi, showBack: Boolean, onBack: () -> Unit) {
                 .padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Box(
-                Modifier.size(72.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                LoomIcon(ui.icon, null, Modifier.size(36.dp), MaterialTheme.colorScheme.onPrimaryContainer)
-            }
+            GuideHeader(ui.image, ui.imageText, Modifier.heightIn(max = 140.dp))
             Text(ui.title, style = MaterialTheme.typography.headlineSmall)
             Text(ui.body, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             // Chip morpht offen -> erledigt (Crossfade + Skalierung 0,6 -> 1,0, Spec §5.4).

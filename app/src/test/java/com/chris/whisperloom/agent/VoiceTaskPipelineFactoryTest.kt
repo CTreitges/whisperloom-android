@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.Engine
 import com.chris.whisperloom.Prefs
+import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.api.ProviderCatalog
 import com.sun.net.httpserver.HttpServer
@@ -39,9 +40,14 @@ class VoiceTaskPipelineFactoryTest {
     private val gesendet = mutableListOf<String>()
     private val kennungen = mutableListOf<Pair<String, String>>()
 
+    /** Welcher Endpunkt den Auftrag bekam — je Widget ein eigener Pfad vor /v1/task. */
+    private val pfade = mutableListOf<String>()
+    private val basis get() = "http://127.0.0.1:${server.address.port}"
+
     @Before fun aufbauen() {
         ctx.getSharedPreferences("whisperloom", Context.MODE_PRIVATE).edit().clear().commit()
         ctx.getSharedPreferences(VoiceTaskStore.FILE, Context.MODE_PRIVATE).edit().clear().commit()
+        ctx.getSharedPreferences(WidgetProfileStore.FILE, Context.MODE_PRIVATE).edit().clear().commit()
         store = VoiceTaskStore(ctx)
         store.clear()
 
@@ -56,11 +62,14 @@ class VoiceTaskPipelineFactoryTest {
             if (body == null) antwort(ex, 500, """{"error":{"message":"Modell ueberlastet"}}""")
             else antwort(ex, 200, body)
         }
-        server.createContext("/v1/task") { ex ->
-            val json = org.json.JSONObject(String(ex.requestBody.readBytes()))
-            gesendet += json.getString("transcript")
-            kennungen += json.getString("request_id") to json.getString("recorded_at")
-            antwort(ex, 202, """{"status":"accepted"}""")
+        listOf("/v1/task", "/a/v1/task", "/b/v1/task").forEach { pfad ->
+            server.createContext(pfad) { ex ->
+                val json = org.json.JSONObject(String(ex.requestBody.readBytes()))
+                gesendet += json.getString("transcript")
+                kennungen += json.getString("request_id") to json.getString("recorded_at")
+                pfade += ex.requestURI.path
+                antwort(ex, 202, """{"status":"accepted"}""")
+            }
         }
         server.start()
 
@@ -71,10 +80,9 @@ class VoiceTaskPipelineFactoryTest {
             apiKey = "egal"
             apiModel = "whisper-1"
             refineMode = RefineMode.POLISH
-            agentUrl = "http://127.0.0.1:${server.address.port}"
-            agentToken = "geheim"
-            agentEnabled = true
         }
+        // Das Standardprofil sendet an /v1/task — jeder Rueckfall darauf faellt in den Tests auf.
+        serverEinrichten(ctx, url = basis)
     }
 
     @After fun abbauen() {
@@ -88,8 +96,15 @@ class VoiceTaskPipelineFactoryTest {
         ex.responseBody.use { it.write(b) }
     }
 
-    private fun auftrag(recordedAt: String = "2026-09-22T00:00:00Z") =
-        store.begin(FloatArray(16_000) { i -> if (i % 2 == 0) 0.3f else -0.3f }, 4000, recordedAt)
+    private fun auftrag(recordedAt: String = "2026-09-22T00:00:00Z", profileId: String = WidgetProfile.DEFAULT_ID) =
+        store.begin(FloatArray(16_000) { i -> if (i % 2 == 0) 0.3f else -0.3f }, 4000, recordedAt, profileId)
+
+    /** Ein weiteres Widget-Profil; [pfad] = eigener Server ("" = keiner). */
+    private fun widget(name: String, pfad: String): WidgetProfile {
+        val profiles = WidgetProfileStore(ctx)
+        val p = profiles.create(name)
+        return if (pfad.isEmpty()) p else serverEinrichten(ctx, p.id, url = basis + pfad)
+    }
 
     /** Die ECHTE Fabrik, unveraendert — auch der Versand geht an den Testserver. */
     private fun lauf(): TaskOutcome {
@@ -104,11 +119,12 @@ class VoiceTaskPipelineFactoryTest {
         veredelung = null // damit der Ausfall-Hinweis geschrieben wuerde
         val alt = auftrag("2026-09-22T00:00:00Z")
         val pipeline = VoiceTaskWorker.pipelineFactory(ctx, store) { true }
-        val neu = auftrag("2026-09-22T00:05:00Z")
+        val neu = auftrag("2026-09-22T00:05:00Z", widget("Arbeit", "/b").id)
 
         assertTrue(pipeline.run(null) is TaskOutcome.Sent)
 
         assertEquals(alt to "2026-09-22T00:00:00Z", kennungen.single())
+        assertEquals("Auch der Server gehoert zum alten Auftrag", listOf("/v1/task"), pfade)
         assertEquals(neu, store.requestId)
         assertEquals("Der Hinweis des alten Laufs gehoert nicht zum neuen Auftrag", "", store.refineSkipped)
     }
@@ -136,5 +152,63 @@ class VoiceTaskPipelineFactoryTest {
         assertEquals("Kauf milch", gesendet.single())
         assertTrue("Der Ausfall muss vermerkt sein", store.refineSkipped.isNotBlank())
         assertTrue(store.refineSkipped.contains("500"))
+    }
+
+    // --- Server je Widget (3.7.1) --------------------------------------------------
+
+    @Test fun derAuftragGehtAnDenServerSeinesWidgets() {
+        widget("Einkauf", "/a")
+        auftrag(profileId = widget("Arbeit", "/b").id)
+        assertTrue(VoiceTaskWorker.pipelineFactory(ctx, store) { true }.run(null) is TaskOutcome.Sent)
+        assertEquals(listOf("/b/v1/task"), pfade)
+    }
+
+    @Test fun einAuftragVonVorDemUpdateGehtAnsStandardprofil() {
+        // Die Migration hat den alten, gemeinsamen Server ins Standardprofil kopiert.
+        auftrag(profileId = "")
+        assertTrue(VoiceTaskWorker.pipelineFactory(ctx, store) { true }.run(null) is TaskOutcome.Sent)
+        assertEquals(listOf("/v1/task"), pfade)
+    }
+
+    @Test fun einGeloeschtesWidgetErreichtKeinenServer() {
+        // R1: forWidget oder ein Rueckfall aufs Standardprofil schickte den Auftrag an einen fremden Server.
+        val arbeit = widget("Arbeit", "/b")
+        auftrag(profileId = arbeit.id)
+        WidgetProfileStore(ctx).delete(arbeit.id)
+
+        val outcome = VoiceTaskWorker.pipelineFactory(ctx, store) { true }.run(null)
+
+        assertEquals(ctx.getString(R.string.widget_task_profile_gone), (outcome as TaskOutcome.Failed).reason)
+        assertTrue("Der Poster darf nie aufgerufen werden: $pfade", pfade.isEmpty())
+    }
+
+    @Test fun mitProWidgetsAusGehtNichtsRaus() {
+        Prefs(ctx).proWidgetsEnabled = false
+        auftrag()
+
+        val outcome = VoiceTaskWorker.pipelineFactory(ctx, store) { true }.run(null)
+
+        assertEquals(ctx.getString(R.string.widget_task_pro_off), (outcome as TaskOutcome.Failed).reason)
+        assertEquals("Der bezahlte Text kommt zum Cachen zurueck", "Kauf bitte Milch.", outcome.text)
+        assertTrue(pfade.isEmpty())
+    }
+
+    @Test fun ohneServerImWidgetGehtNichtsRaus() {
+        auftrag(profileId = widget("Einkauf", "").id)
+
+        val outcome = VoiceTaskWorker.pipelineFactory(ctx, store) { true }.run(null)
+
+        assertEquals(ctx.getString(R.string.widget_task_no_server, "Einkauf"), (outcome as TaskOutcome.Failed).reason)
+        assertTrue("Statt des Standardprofils: gar nichts", pfade.isEmpty())
+    }
+
+    @Test fun eineKorrekturDesServersWirktBeimNaechstenVersuch() {
+        val einkauf = widget("Einkauf", "/a")
+        auftrag(profileId = einkauf.id)
+        val pipeline = VoiceTaskWorker.pipelineFactory(ctx, store) { true }
+        serverEinrichten(ctx, einkauf.id, url = "$basis/b")
+
+        assertTrue(pipeline.run(null) is TaskOutcome.Sent)
+        assertEquals(listOf("/b/v1/task"), pfade)
     }
 }

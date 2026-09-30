@@ -39,6 +39,9 @@ class VoiceTaskService : Service() {
     private var startedAt = 0L
     private var recordedAt = ""
 
+    /** Profil des startenden Widgets — der Auftrag geht an dessen Server. */
+    private var profileId = WidgetProfile.DEFAULT_ID
+
     /**
      * stopSelf() in onCreate haelt ein bereits eingereihtes onStartCommand NICHT auf — ohne
      * dieses Merkmal liefe danach noch start() durch und liesse ein eingefrorenes "nimmt auf"
@@ -115,7 +118,11 @@ class VoiceTaskService : Service() {
         super.onDestroy()
     }
 
-    /** [widgetId]: das startende Widget — sein Profil entscheidet, ob die Aufnahme von selbst endet. */
+    /**
+     * [widgetId]: das startende Widget — sein Profil entscheidet, ob die Aufnahme von selbst endet
+     * und an welchen Server der Auftrag geht. Einmal aufgeloest: ein Umbinden waehrend der
+     * Aufnahme aendert beides nicht mehr.
+     */
     private fun start(widgetId: Int) {
         // Absicht, kein Umschalter: ein zweites START waehrend der Aufnahme ist ein Doppelklick.
         if (recording) return
@@ -124,8 +131,10 @@ class VoiceTaskService : Service() {
             stopSelf()
             return
         }
+        val profile = WidgetProfileStore(this).forWidget(widgetId)
+        profileId = profile.id
         // VOR recorder.start(): sonst gingen die ersten Puffer am Detektor vorbei.
-        armAutoStop(WidgetProfileStore(this).forWidget(widgetId))
+        armAutoStop(profile)
         if (!recorder.start()) {
             recorder.onAmplitude = null
             fail(getString(R.string.widget_silent))
@@ -223,9 +232,17 @@ class VoiceTaskService : Service() {
     /**
      * Auftrag auf die Platte legen und dem WorkManager uebergeben; ab hier lebt der Dienst nicht
      * mehr. Automatischer Weg: mit Netz-Bedingung, ein noch laufender alter Job wird ersetzt.
+     *
+     * Wurde das Widget waehrend der Aufnahme geloescht, fand das Loeschen noch keinen Auftrag
+     * dieses Widgets — er entsteht erst hier. Dann gar nicht erst ablegen: der Text ginge nie
+     * raus (nie an einen fremden Server), die Erkennung waere umsonst bezahlt.
      */
     private fun hand(samples: FloatArray, duration: Long) {
-        store.begin(samples, duration, recordedAt)
+        if (profileId != WidgetProfile.DEFAULT_ID && WidgetProfileStore(this).get(profileId) == null) {
+            fail(getString(R.string.widget_task_profile_gone))
+            return
+        }
+        store.begin(samples, duration, recordedAt, profileId)
         store.message = ""
         store.state = VoiceTaskState.WORKING
         VoiceTaskWidgetView.push(this, VoiceTaskState.WORKING)
