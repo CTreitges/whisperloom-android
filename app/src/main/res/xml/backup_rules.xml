@@ -7,5 +7,6 @@
     <exclude domain="file" path="models" />
     <exclude domain="file" path="voice_task.pcm" />
     <exclude domain="sharedpref" path="whisperloom_widgets.xml" />
+    <exclude domain="sharedpref" path="whisperloom_models.xml" />
     <exclude domain="file" path="widget_icons" />
 </full-backup-content>
