@@ -1,0 +1,5 @@
+WhisperLoom 3.8.0
+• New: ElevenLabs (Scribe v2) for speech recognition
+• Pro: models from the server – every provider loads its current model list, with search and "refresh models"
+• Updated recommendations (DeepSeek, Gemini 3.x, Groq, OpenRouter)
+• Text improvement retries without temperature for new models
