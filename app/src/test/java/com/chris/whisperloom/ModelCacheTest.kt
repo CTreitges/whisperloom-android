@@ -152,4 +152,27 @@ class ModelCacheTest {
         assertThrows(ApiHttpException::class.java) { cache.refresh(access, ModelKind.STT) }
         assertEquals(entry, cache.get(access, ModelKind.STT))
     }
+
+    @Test fun fehlschlagWirdEinenTagGemerktUndErfolgVergisstIhn() {
+        val access = stt("groq", "http://127.0.0.1:${server.address.port}/v1")
+        val key = ModelCache.key("groq", ModelKind.STT, access.baseUrl)
+        assertFalse(cache.failedRecently(key))
+        status = 500
+        assertThrows(ApiHttpException::class.java) { cache.refresh(access, ModelKind.STT) }
+        assertTrue(cache.failedRecently(key))
+        assertFalse("nur dieser Schluessel", cache.failedRecently(ModelCache.key("groq", ModelKind.LLM, access.baseUrl)))
+        assertNull("der Merker ist keine Liste", cache.get(access, ModelKind.STT))
+        assertFalse(sp.all.entries.any { (k, v) -> "sk-streng-geheim" in k || "sk-streng-geheim" in v.toString() })
+        clock += ModelCache.MAX_AGE_MS
+        assertTrue(cache.failedRecently(key))
+        clock += 1
+        assertFalse("nach einem Tag wieder automatisch", cache.failedRecently(key))
+
+        // Erneut gescheitert, dann geklappt: der Merker ist weg.
+        assertThrows(ApiHttpException::class.java) { cache.refresh(access, ModelKind.STT) }
+        assertTrue(cache.failedRecently(key))
+        status = 200
+        cache.refresh(access, ModelKind.STT)
+        assertFalse(cache.failedRecently(key))
+    }
 }

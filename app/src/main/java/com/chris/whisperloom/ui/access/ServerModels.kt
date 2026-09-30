@@ -39,7 +39,12 @@ import kotlinx.coroutines.withContext
  * davon, landet ein noch laufendes Laden in der alten Instanz und nicht mehr in der Anzeige.
  */
 @Stable
-class ServerModels(private val cache: ModelCache, private val kind: ModelKind, initial: ModelCache.Entry?) {
+class ServerModels(
+    private val cache: ModelCache,
+    private val kind: ModelKind,
+    private val key: String,
+    initial: ModelCache.Entry?,
+) {
     var entry by mutableStateOf(initial)
         private set
 
@@ -51,6 +56,9 @@ class ServerModels(private val cache: ModelCache, private val kind: ModelKind, i
 
     /** Keine Liste oder aelter als ein Tag. */
     val isStale: Boolean get() = cache.isStale(entry)
+
+    /** Letztes Laden vor weniger als einem Tag gescheitert ([ModelCache.failedRecently]). */
+    val failedRecently: Boolean get() = cache.failedRecently(key)
 
     /** Laedt neu und legt die Liste ab. Bei einem Fehler bleibt die alte stehen. */
     suspend fun refresh(access: ApiAccess, showLoading: Boolean): Result<ModelCache.Entry> {
@@ -69,15 +77,15 @@ class ServerModels(private val cache: ModelCache, private val kind: ModelKind, i
 @Composable
 fun rememberServerModels(access: ApiAccess, kind: ModelKind): ServerModels {
     val cache = LocalAppEnv.current.prefs.prefs.modelCache
-    return remember(ModelCache.key(access.provider.id, kind, access.baseUrl)) {
-        ServerModels(cache, kind, cache.get(access, kind))
-    }
+    val key = ModelCache.key(access.provider.id, kind, access.baseUrl)
+    return remember(key) { ServerModels(cache, kind, key, cache.get(access, kind)) }
 }
 
 /**
  * Laedt die Liste still im Hintergrund, sobald der Zugang steht ([ready]): nur wenn sie fehlt oder
  * veraltet ist, mit [always] bei jedem Oeffnen (Ollama wie bisher). Die Pause entprellt das Tippen
- * in Adress- und Key-Feld; ein Fehler bleibt hier stumm (der Knopf meldet ihn).
+ * in Adress- und Key-Feld; ein Fehler bleibt hier stumm (der Knopf meldet ihn). Ist das Laden
+ * innerhalb eines Tages schon gescheitert, wartet es — ausser der Key wurde seit dem Oeffnen geaendert.
  */
 @Composable
 fun AutoLoadModels(
@@ -88,8 +96,10 @@ fun AutoLoadModels(
     onLoaded: (ModelCache.Entry) -> Unit = {},
     access: () -> ApiAccess,
 ) {
+    val keyAtOpen = remember(models) { apiKey }
     LaunchedEffect(models, ready, apiKey) {
         if (!ready || !(always || models.isStale)) return@LaunchedEffect
+        if (!always && apiKey == keyAtOpen && models.failedRecently) return@LaunchedEffect
         delay(AUTOLOAD_DELAY_MS)
         models.refresh(access(), showLoading = false).onSuccess(onLoaded)
     }

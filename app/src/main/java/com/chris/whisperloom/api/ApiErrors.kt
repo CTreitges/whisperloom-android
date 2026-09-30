@@ -33,9 +33,14 @@ class ModelListException(cause: Throwable? = null) :
  * eines eigenen Servers haengt ein Hinweis an der Meldung.
  *
  * @param style Protokoll des Anbieters: ElevenLabs bekommt eigene Hinweise (Berechtigung statt /v1).
+ * @param hint Hinweis hinter der Meldung; der Aufrufer kann einen passenderen setzen (Modell-Liste).
  */
-class ApiHttpException(val code: Int, val detail: String, style: ApiStyle = ApiStyle.OPENAI) :
-    RuntimeException(message(code, detail, style)) {
+class ApiHttpException(
+    val code: Int,
+    val detail: String,
+    style: ApiStyle = ApiStyle.OPENAI,
+    hint: String? = ApiHttpException.hint(code, detail, style),
+) : RuntimeException(message(code, detail, hint)) {
 
     companion object {
         fun hint(code: Int, detail: String, style: ApiStyle = ApiStyle.OPENAI): String? = when {
@@ -54,9 +59,9 @@ class ApiHttpException(val code: Int, val detail: String, style: ApiStyle = ApiS
             else -> null
         }
 
-        private fun message(code: Int, detail: String, style: ApiStyle): String {
+        private fun message(code: Int, detail: String, hint: String?): String {
             val base = "API-Fehler $code: $detail"
-            return hint(code, detail, style)?.let { "$base — $it" } ?: base
+            return hint?.let { "$base — $it" } ?: base
         }
     }
 }

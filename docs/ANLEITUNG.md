@@ -372,7 +372,7 @@ Dieselben Schritte zeigt WhisperLoom unter **Wo bekomme ich einen Key?** (im Ass
 
 **Mistral** — 1) https://console.mistral.ai registrieren, Studio aktivieren. 2) Plan wählen: *Experiment* (gratis, Telefonnummer verifizieren) oder *Pay-as-you-go* (Karte). 3) *API Keys* → *Create new key*.
 
-**ElevenLabs** (nur Erkennung) — 1) https://elevenlabs.io registrieren (Free-Plan mit 4 h 30 min Scribe). 2) *Settings → API Keys* → *Create API Key* (direkt: https://elevenlabs.io/app/settings/api-keys) und bei den Berechtigungen **„Speech to Text"** erlauben — ohne sie lehnt ElevenLabs jede Erkennung ab, WhisperLoom meldet dann „Key oder Berechtigung „Speech to Text" prüfen". 3) In WhisperLoom: Anbieter „ElevenLabs (Scribe)", Key einfügen. Für die Textverbesserung brauchst du einen zweiten Zugang, etwa Groq ([8.2](#82-zugang-für-die-textverbesserung)).
+**ElevenLabs** (nur Erkennung) — 1) https://elevenlabs.io registrieren (Free-Plan mit 4 h 30 min Scribe). 2) *Settings → API Keys* → *Create API Key* (direkt: https://elevenlabs.io/app/settings/api-keys) und bei den Berechtigungen **„Speech to Text"** erlauben — ohne sie lehnt ElevenLabs jede Erkennung ab, WhisperLoom meldet dann „Key oder Berechtigung „Speech to Text" prüfen". Für **Modelle vom Server** ([7.6](#76-modelle-vom-server-pro-funktion)) zusätzlich **„Models: Lesen"**. 3) In WhisperLoom: Anbieter „ElevenLabs (Scribe)", Key einfügen. Für die Textverbesserung brauchst du einen zweiten Zugang, etwa Groq ([8.2](#82-zugang-für-die-textverbesserung)).
 
 **Together AI** — 1) https://api.together.ai registrieren (Startguthaben). 2) *Settings → API Keys* → *Create key*.
 
@@ -402,11 +402,11 @@ Eingeschaltet wird das Feld **Modell** unter Erkennung und unter Text (auch bei 
 - Antippen öffnet **Modell wählen**: oben das Suchfeld **Modell suchen**, darunter **Empfohlen** (die eingebauten Modelle mit ihren Notizen) und **Vom Server · Stand …** mit der geladenen Liste — alphabetisch, bei Anthropic neueste zuerst. Unten **Eigenes Modell …** und **Schließen**.
 - Eine Empfehlung, die der Anbieter nicht mehr listet, trägt den Zusatz **nicht mehr gelistet**. Dein gewähltes Modell bleibt trotzdem gültig; steht es in keiner Liste, erscheint es markiert ganz oben.
 - Der Knopf **Modelle aktualisieren** unter dem Feld lädt die Liste neu und meldet „n Modelle gefunden", „Keine passenden Modelle gefunden." oder „Modelle nicht geladen: …" mit dem Grund. Bei einem Fehler bleibt die bisherige Liste.
-- Beim Öffnen von Erkennung bzw. Text lädt WhisperLoom die Liste still nach, wenn sie fehlt oder älter als einen Tag ist und der Key (falls nötig) eingetragen ist. Ein Fehler dabei bleibt stumm.
+- Beim Öffnen von Erkennung bzw. Text lädt WhisperLoom die Liste still nach, wenn sie fehlt oder älter als einen Tag ist und der Key (falls nötig) eingetragen ist. Ein Fehler dabei bleibt stumm; nach einem Fehlschlag versucht es WhisperLoom still erst am nächsten Tag wieder — sofort, wenn du den Key änderst oder den Knopf drückst.
 
 WhisperLoom zeigt nur, was passt: unter Erkennung Spracherkennungs-Modelle, unter Text Chat-Modelle — ohne Einbettungs-, Bild- oder Sprachausgabe-Modelle. Abgeschaltete Modelle fallen weg, soweit der Anbieter ein Datum nennt; ein künftiges Abschaltdatum steht als „Auslauf JJJJ-MM-TT" dabei. Für Modelle ohne eingebauten Eintrag setzt WhisperLoom die Parameter selbst ([7.5](#75-eigenes-modell-und-zugang-prüfen)).
 
-**ElevenLabs** listet Scribe womöglich gar nicht — dann bleibt nur „Empfohlen", und „nicht mehr gelistet" erscheint dort nie. Scheitert „Modelle aktualisieren" bei ElevenLabs, fehlt dem Key meist die Berechtigung „Models" (Lesen); fürs Diktieren braucht er sie nicht. **Ollama** lädt seine Liste wie bisher bei jedem Öffnen. Die Listen speichert WhisperLoom auf dem Gerät, ohne Key ([Kapitel 11](#11-datenschutz)).
+**ElevenLabs** listet Scribe womöglich gar nicht — dann bleibt nur „Empfohlen", und „nicht mehr gelistet" erscheint dort nie. Scheitert „Modelle aktualisieren" bei ElevenLabs mit „Key oder Berechtigung „Models: Lesen" prüfen", fehlt dem Key diese Berechtigung; fürs Diktieren braucht er sie nicht. **Ollama** lädt seine Liste wie bisher bei jedem Öffnen. Die Listen speichert WhisperLoom auf dem Gerät, ohne Key ([Kapitel 11](#11-datenschutz)).
 
 ---
 

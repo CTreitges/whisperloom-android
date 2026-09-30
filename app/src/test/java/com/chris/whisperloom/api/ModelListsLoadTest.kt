@@ -3,8 +3,10 @@ package com.chris.whisperloom.api
 import com.sun.net.httpserver.HttpServer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -153,5 +155,28 @@ class ModelListsLoadTest {
     @Test fun ohneAdresseKeineAnfrage() {
         assertThrows(ApiNotConfiguredException::class.java) { ModelLists.load(stt("custom", url = ""), ModelKind.STT) }
         assertNull(path)
+    }
+
+    @Test fun elevenLabsKeyOhneModelsBerechtigungBekommtDenPassendenHinweis() {
+        status = 401
+        response = """{"detail":{"status":"missing_permissions","message":"The API key you used is missing the permission models_read to execute this operation."}}"""
+        val e = assertThrows(ApiHttpException::class.java) { ModelLists.load(stt("elevenlabs"), ModelKind.STT) }
+        assertEquals(401, e.code)
+        assertEquals(ModelLists.HINT_ELEVENLABS_MODELS, e.message!!.substringAfter(" — "))
+        assertTrue(e.message!!.contains("models_read"))
+        assertFalse(e.message!!.contains("Server verlangt"))
+        assertFalse(e.message!!.contains("Speech to Text"))
+        status = 403
+        assertTrue(assertThrows(ApiHttpException::class.java) { ModelLists.load(stt("elevenlabs"), ModelKind.STT) }.message!!.contains("Models: Lesen"))
+    }
+
+    @Test fun andereAnbieterBehaltenIhrenHinweis() {
+        status = 401
+        response = """{"error":{"message":"Incorrect API key provided"}}"""
+        val e = assertThrows(ApiHttpException::class.java) { ModelLists.load(stt("openai"), ModelKind.STT) }
+        assertTrue(e.message!!.contains("Server verlangt einen (anderen) API-Key"))
+        // ElevenLabs mit anderem Fehler: kein Berechtigungs-Hinweis.
+        status = 500
+        assertFalse(assertThrows(ApiHttpException::class.java) { ModelLists.load(stt("elevenlabs"), ModelKind.STT) }.message!!.contains("Models"))
     }
 }

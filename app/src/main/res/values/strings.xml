@@ -452,7 +452,7 @@
     <string name="help_key_openai">platform.openai.com registrieren → Billing: Zahlungsmittel + Guthaben (mind. 5 $) → API keys → Create new secret key. GPT Transcribe ≈ 0,0045 $/min.</string>
     <string name="help_key_groq">console.groq.com registrieren → API Keys → Create API Key. Kostenlos ohne Zahlungsmittel (8 h Audio/Tag).</string>
     <string name="help_key_mistral">console.mistral.ai registrieren → Plan „Experiment“ (gratis, Telefon-Verifizierung) oder Pay-as-you-go → API Keys → Create new key. Voxtral ≈ 0,003 $/min.</string>
-    <string name="help_key_elevenlabs">elevenlabs.io registrieren → Settings → API Keys → Create API Key, Berechtigung „Speech to Text“ erlauben. Scribe v2 ≈ 0,22 $/h.</string>
+    <string name="help_key_elevenlabs">elevenlabs.io registrieren → Settings → API Keys → Create API Key, Berechtigungen „Speech to Text“ und „Models: Lesen“ (für die Modell-Liste) erlauben. Scribe v2 ≈ 0,22 $/h.</string>
     <string name="help_key_together">api.together.ai registrieren (Startguthaben) → Settings → API Keys → Create key. Whisper Large v3 ≈ 0,0015 $/min.</string>
     <string name="help_key_deepinfra">deepinfra.com anmelden → Dashboard → API Keys → New API Key → Guthaben aufladen. Whisper Turbo ≈ 0,0002 $/min.</string>
     <string name="help_key_openrouter">openrouter.ai anmelden → Credits aufladen → Settings → Keys → Create Key. Ein Key für viele Modelle.</string>

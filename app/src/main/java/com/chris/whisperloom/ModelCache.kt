@@ -46,18 +46,38 @@ class ModelCache(context: Context, private val now: () -> Long = System::current
     override fun find(providerId: String, kind: ModelKind, baseUrl: String, id: String): RemoteModel? =
         get(providerId, kind, baseUrl)?.models?.firstOrNull { it.id == id }
 
-    /** Legt die Liste mit dem aktuellen Zeitpunkt ab (ersetzt die alte). */
+    /** Legt die Liste mit dem aktuellen Zeitpunkt ab (ersetzt die alte, vergisst einen Fehlschlag). */
     fun put(access: ApiAccess, kind: ModelKind, models: List<RemoteModel>): Entry {
         val entry = Entry(now(), models)
-        sp.edit().putString(key(access.provider.id, kind, access.baseUrl), encode(entry)).apply()
+        val key = key(access.provider.id, kind, access.baseUrl)
+        sp.edit().putString(key, encode(entry)).remove(FAILED_PREFIX + key).apply()
         return entry
     }
 
     /**
      * Laedt die Liste vom Server und legt sie ab. Blockierend — aus einem Hintergrund-Thread aufrufen.
-     * Fehler wie [ModelLists.load]; die alte Liste bleibt dann stehen.
+     * Fehler wie [ModelLists.load]; die alte Liste bleibt dann stehen, der Zeitpunkt wird gemerkt
+     * ([failedRecently]).
      */
-    fun refresh(access: ApiAccess, kind: ModelKind): Entry = put(access, kind, ModelLists.load(access, kind))
+    fun refresh(access: ApiAccess, kind: ModelKind): Entry {
+        val models = try {
+            ModelLists.load(access, kind)
+        } catch (e: Exception) {
+            sp.edit().putLong(FAILED_PREFIX + key(access.provider.id, kind, access.baseUrl), now()).apply()
+            throw e
+        }
+        return put(access, kind, models)
+    }
+
+    /**
+     * Das letzte Laden fuer [key] ([ModelCache.key]) scheiterte vor hoechstens [MAX_AGE_MS] — das stille
+     * Nachladen wartet dann, statt bei jedem Oeffnen denselben Fehler zu holen (z. B. ElevenLabs-Key
+     * ohne "Models: Lesen"). Der Knopf laedt immer.
+     */
+    fun failedRecently(key: String): Boolean {
+        val at = sp.getLong(FAILED_PREFIX + key, -1L)
+        return at >= 0 && now() - at in 0..MAX_AGE_MS
+    }
 
     /** Wie alt die Liste ist, in ms. */
     fun ageMs(entry: Entry): Long = now() - entry.fetchedAt
@@ -70,6 +90,9 @@ class ModelCache(context: Context, private val now: () -> Long = System::current
 
         /** Aelter als ein Tag = automatisch neu laden (UI-Seite, Spec §2). */
         const val MAX_AGE_MS = 24L * 60 * 60 * 1000
+
+        /** Vor dem Schluessel: Zeitpunkt des letzten Fehlschlags ([failedRecently]). */
+        private const val FAILED_PREFIX = "failedAt|"
 
         /** `<providerId>|<stt|llm>|<baseUrl>`, die Adresse ohne Leerraum und ohne Schraegstrich am Ende. */
         fun key(providerId: String, kind: ModelKind, baseUrl: String): String =

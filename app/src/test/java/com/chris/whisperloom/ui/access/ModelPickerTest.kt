@@ -367,6 +367,48 @@ class ModelPickerTest {
         compose.onNodeWithText("Modelle nicht geladen:", substring = true).assertDoesNotExist()
     }
 
+    /** Eigener Server ohne Liste, das letzte Laden ist gescheitert (vor [ageMs]). */
+    private fun eigenerServerZuletztGescheitert(ageMs: Long = 0) {
+        prefs.serverModelsEnabled = true
+        prefs.sttProviderId = "custom"
+        prefs.apiBaseUrl = "$url/v1"
+        status = 500
+        val then = System.currentTimeMillis() - ageMs
+        runCatching { ModelCache(ctx) { then }.refresh(prefs.sttAccess(), ModelKind.STT) }
+        assertEquals(1, hits.get())
+    }
+
+    @Test fun einFehlschlagWirdNichtBeiJedemOeffnenWiederholt() {
+        // z. B. ElevenLabs-Key ohne "Models: Lesen": sonst bei jedem Oeffnen derselbe 401.
+        eigenerServerZuletztGescheitert()
+        erkennung()
+        afterPause()
+        Thread.sleep(200)
+        assertEquals(1, hits.get())
+        // Der Knopf laedt trotzdem.
+        click("Modelle aktualisieren")
+        compose.waitUntil(5_000) { hits.get() == 2 }
+    }
+
+    @Test fun nachEinemTagVersuchtEsDasStilleNachladenWieder() {
+        eigenerServerZuletztGescheitert(ageMs = ModelCache.MAX_AGE_MS + 60_000)
+        status = 200
+        erkennung()
+        afterPause()
+        compose.waitUntil(5_000) { cachedIds(prefs.sttAccess(), ModelKind.STT) == listOf("whisper-1", "whisper-large-v3") }
+        assertEquals(2, hits.get())
+    }
+
+    @Test fun einNeuerKeyVersuchtEsSofortWieder() {
+        eigenerServerZuletztGescheitert()
+        status = 200
+        erkennung()
+        compose.onNode(hasSetTextAction() and hasText("API-Key (optional)")).performTextInput("neuer-key")
+        compose.waitForIdle()
+        afterPause()
+        compose.waitUntil(5_000) { hits.get() == 2 }
+    }
+
     // --- Ollama: ohne Pro wie bisher, jetzt ueber den Cache ------------------------------
 
     @Test fun ollamaOhneProLaedtBeiJedemOeffnenUndUebernimmtDasErsteModell() {

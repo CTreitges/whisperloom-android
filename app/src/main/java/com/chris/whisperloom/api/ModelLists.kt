@@ -155,9 +155,21 @@ object ModelLists {
     fun load(access: ApiAccess, kind: ModelKind): List<RemoteModel> {
         if (access.baseUrl.isBlank()) throw ApiNotConfiguredException()
         val r = request(access, kind)
-        val body = Http.get(r.url, access.apiKey, TIMEOUT_MS, r.followRedirects, r.authHeader, r.headers)
+        val body = try {
+            Http.get(r.url, access.apiKey, TIMEOUT_MS, r.followRedirects, r.authHeader, r.headers)
+        } catch (e: ApiHttpException) {
+            // ElevenLabs-Keys sind auf Endpunkte beschraenkt: die Liste braucht "Models: Lesen" — nicht
+            // "einen (anderen) API-Key", und nicht "Speech to Text" wie beim Diktat.
+            if (access.provider.api == ApiStyle.ELEVENLABS && (e.code == 401 || e.code == 403)) {
+                throw ApiHttpException(e.code, e.detail, hint = HINT_ELEVENLABS_MODELS)
+            }
+            throw e
+        }
         return parse(access.provider, kind, body)
     }
+
+    /** Hinweis, wenn der ElevenLabs-Key die Modell-Liste nicht lesen darf. */
+    const val HINT_ELEVENLABS_MODELS = "Key oder Berechtigung „Models: Lesen“ prüfen (nur für die Modell-Liste nötig)"
 
     /**
      * Die Modelle der Antwort, die fuer [kind] taugen: ohne Duplikate, alphabetisch (Anthropic in

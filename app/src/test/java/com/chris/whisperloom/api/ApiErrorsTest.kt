@@ -113,4 +113,11 @@ class ApiErrorsTest {
         assertTrue(ApiHttpException(401, "x").message!!.contains("API-Key"))
         assertTrue(ApiHttpException(404, "x").message!!.contains("/v1"))
     }
+
+    @Test fun aufruferKannDenHinweisErsetzen() {
+        assertEquals("API-Fehler 401: nope — Eigener Hinweis", ApiHttpException(401, "nope", hint = "Eigener Hinweis").message)
+        assertEquals("API-Fehler 401: nope", ApiHttpException(401, "nope", hint = null).message)
+        // Ohne Angabe wie bisher der Hinweis zum Status.
+        assertTrue(ApiHttpException(401, "nope").message!!.contains("Server verlangt"))
+    }
 }
