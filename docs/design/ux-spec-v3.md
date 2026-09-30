@@ -61,6 +61,8 @@ Diese Datei ist die **einzige Vorlage** für die Implementierungs-Agenten. Wo di
 | W1w | **Sprachauftrag-Widget** | RemoteViews (`AppWidgetProvider`) | 4 Zustände auf dem Startbildschirm; `updatePeriodMillis=0`; skalierbar 1×1 bis 4×2, Profil je Widget (§6.14) |
 | N2 | Foreground-Notification Sprachauftrag | Framework | „Nimmt auf …" + Senden |
 
+> **Nachtrag 3.7.1:** E, E5, E7 („Erweitert“), E8 (Widgets), W1c, T2 und W1w sind geändert — siehe [§6.15](#615-nachtrag-371-pro-widgets).
+
 ### 1.2 Startlogik (Router) — präzise Bedingung „eingerichtet"
 
 Wird bei jedem `onResume` der `MainActivity` ausgewertet (Systemdialoge ändern Status außerhalb der App):
@@ -274,6 +276,8 @@ Rückkehr aus Systemdialogen/-einstellungen: `onResume` → Status aller Schritt
 
 ### 2.3 E — Einstellungen (Hub)
 
+> **3.7.1:** vier Gruppen mit Überschrift, dazu Widgets (E8) und Erweitert (E7) — siehe [§6.15](#615-nachtrag-371-pro-widgets).
+
 ```
 Scaffold(topBar = LargeTopAppBar(title settings_title "Einstellungen", navigationIcon ic_arrow_back, scrollBehavior exitUntilCollapsed))
 LazyColumn — ListItem je Gruppe (Leading: Icon 24 in 40-dp-Kreis surfaceContainerHigh · Headline titleMedium · Supporting bodyMedium = aktueller Wert · Trailing ic_chevron_right), getrennt durch HorizontalDivider(outlineVariant, inset 76 dp)
@@ -395,6 +399,8 @@ Verhalten: Download läuft in einem Foreground-Service (`dataSync`) weiter, wenn
 Modell-Daten (Dateinamen, Bytes, SHA-256, URL-Schema `https://huggingface.co/ggerganov/whisper.cpp/resolve/main/<datei>`): `ggml-tiny-q5_1.bin` 32 152 673 · `ggml-base-q5_1.bin` 59 707 625 · `ggml-small-q5_1.bin` 190 085 487 · `ggml-large-v3-turbo-q5_0.bin` 574 041 195 — Hashes in `whisper-cpp.md §5`.
 
 ### 2.8 E5 — Hilfe & Anleitung
+
+> **3.7.1:** acht Abschnitte mit Illustration, neu „Widgets & Pro Widgets“ — siehe [§6.15](#615-nachtrag-371-pro-widgets).
 
 `LargeTopAppBar` `help_title` „Anleitung & Hilfe". `LazyColumn` mit aufklappbaren `ElevatedCard`-Abschnitten (Kopfzeile: Icon 24 primary · titleMedium · Trailing ic_expand_more, rotiert 180° bei offen; `AnimatedVisibility`); Abschnitt 1 initial offen; Deep-Link `section` öffnet einen bestimmten. Links als `ListItem` mit Trailing ic_open_in_new (cd `cd_open_link`), `ACTION_VIEW`; kein Browser (`ActivityNotFoundException`) → Snackbar `err_no_browser` „Kein Browser gefunden" mit Aktion `common_copy_link` „Link kopieren".
 
@@ -1245,6 +1251,8 @@ und beim Verlassen zurück auf `polite`.
 
 ### 6.13 Sprachauftrag — Widget (W1w), Erweiterte Optionen (E7), Tutorial (T2), Notification (N2)
 
+> **3.7.1:** „Erweiterte Optionen“ heißt „Erweitert“, das Widget „Sprach-Command“, Server-Felder und Tutorial sind umgezogen — siehe [§6.15](#615-nachtrag-371-pro-widgets).
+
 | Key | Text |
 |---|---|
 | `widget_label` | Sprachauftrag |
@@ -1311,6 +1319,8 @@ getrennte Tipps — anders als Overlay und Tastatur hat dieser Weg kein natürli
 
 ### 6.14 Widgets — Profile, Größen, Auto-Stopp, Profilwahl
 
+> **3.7.1:** Server je Widget, Name unter der Kachel, Tabs „Widgets“/„Pro Widgets“, neue Texte — siehe [§6.15](#615-nachtrag-371-pro-widgets).
+
 **Profile.** Jedes Widget zeigt ein Profil: Name (max. 24 Zeichen, leer = `widget_label`), Symbol
 (22 eingebaute oder ein Galerie-Bild, rund zugeschnitten) und Auto-Stopp mit Sprechpause. Das
 Standardprofil gibt es immer; es ist bearbeitbar, aber nicht löschbar, und fängt jedes verwaiste
@@ -1363,6 +1373,100 @@ eingerichtet, steht oben `widgets_agent_off` mit Link zu E7. Karten: Profile · 
 | `widget_no_speech` | Nichts gehört (über `widget_error_retry`: „Nichts gehört — tippen für erneuten Versuch“) |
 | `cd_widget_named` | %1$s: %2$s (Profilname: Zustand) |
 | `widget_icon_*` | TalkBack-Namen der 22 Symbole |
+
+### 6.15 Nachtrag 3.7.1: Pro Widgets
+
+Ergänzt §1.1, §2.3, §2.8, §6.13, §6.14 und §8.1; wo sie widersprechen, gilt dieser Abschnitt.
+Nutzer-Sicht: `docs/ANLEITUNG.md` Kapitel 13.
+
+**Begriffe.** „Erweiterte Optionen“ → **„Erweitert“** (Ort zum Freischalten der Pro-/Entwickler-Funktionen) ·
+Schalter „Sprachauftrag aktivieren“ → **„Pro Widgets“** · Widget „Sprachauftrag“ → **„Sprach-Command“**, das
+Konzept heißt „Sprach-Command-Widget“ · ein Profil heißt im UI „Widget“ (Code weiter `WidgetProfile`),
+„Widget-Profil“ nur bei der Zuordnung · „Auftrag“ bleibt.
+
+**Code-Struktur.** `agent/WidgetKind.kt`: `Tier { NORMAL, PRO }` und `WidgetKind(key, tier, title,
+description, icon)` mit `VOICE_COMMAND("voice_command", PRO)`; gespeichert wird `key`. `ProFeature`
+(`WIDGETS`, `PROMPT`) mit `Prefs.isEnabled/setEnabled`; E7 und die Hub-Unterzeile iterieren `ProFeature.entries`.
+
+**Screens.**
+- **E (Hub)** in vier Gruppen mit `SectionHeader` (labelLarge, primary, Großbuchstaben, `heading()`):
+  GRUNDLAGEN (E1, E4, E2) · BEDIENUNG (E3, E8) · PRO (E7) · INFO (E5, E6); letzte Zeile je Gruppe ohne
+  Trenner. Unterzeilen: E8 „n Pro Widget(s) · …“ bzw. `widgets_sub_normal_soon`; E7 aktive
+  `ProFeature.hubLabel`s mit „ · “ oder `settings_agent_off`.
+- **E7 „Erweitert“** (`AdvancedScreen`, `Screen.Advanced`, Key `advanced`, `agent` bleibt Alias):
+  `GuideHeader(ill_pro_features)` + Karte `advanced_card_features` mit je `ProFeature` einer `SwitchRow`;
+  bei Pro Widgets an: `advanced_manage_widgets` → E8 Tab Pro, `advanced_tutorial` → T2. Keine Server-,
+  Mikrofon- oder Auftrags-Karte mehr.
+- **E8 Widgets** (`Screen.Widgets(tab, edit)`, Encoding `widgets:<tab>:<edit>`, `WidgetTab { NORMAL, PRO }`):
+  Pro Widgets aus → keine Tabs, nur Normal-Inhalt (`GuideHeader(ill_widgets_normal)`, InfoCard
+  `widgets_pro_unlock` mit Button → E7). Pro an → `PrimaryTabRow` „Widgets“ | „Pro Widgets“ (Start: Pro;
+  der Tab steht im Back-Stack). Pro-Tab: `GuideHeader(ill_pro_widgets)` · Mikrofon (nur ohne Erlaubnis,
+  Disclosure vor dem Systemdialog) · Offener Auftrag (nur mit Auftrag) · „Neues Pro Widget“ (je
+  `WidgetKind.of(PRO)`) · „Deine Pro Widgets“ (Host · Modus bzw. `widgets_server_missing` als Warnung) ·
+  „Auf dem Startbildschirm“ · Hilfe. `edit` öffnet den Editor einmalig.
+- **Editor „Widget bearbeiten“** (`WidgetProfileSheet`): Name (Pflicht, leer → `isError` +
+  `widget_profile_name_missing`, gespeichert nur ein nicht-leerer Name) · `widget_profile_show_name` ·
+  Server (nur `VOICE_COMMAND`: `agent_url`, `agent_token`, `agent_check`, `agent_privacy`) · Symbol ·
+  Auto-Stopp · Löschen (verwirft einen offenen Auftrag dieses Widgets).
+- **W1c** `widget_config_title` „Welches Widget-Profil?“: nur `VOICE_COMMAND`-Profile, bei Pro aus InfoCard
+  `widget_config_pro_off`; „Neues Widget-Profil“.
+- **T2** Tutorial „Pro Widgets“ (`TutorialKind.PRO_WIDGETS`, Key `agent`, Flag `agent_tutorial_seen`):
+  6 Seiten `tutorial_pro_p1..p6` (freischalten · anlegen · Server · platzieren · aufnehmen · Antwort).
+- **E5 Hilfe**: 8 Abschnitte, jeder beginnt mit `GuideHeader` + Kurztext; neu Abschnitt 6 „Widgets &
+  Pro Widgets“ (`help_widgets_*`, ic_layers); Datenschutz = 7, Probleme = 8.
+- **W** Assistent: Schritt-Illustration (`GuideHeader`, max. 140 dp) statt 72-dp-Icon-Kreis. **E3**: Karte
+  „Kurzanleitung“ zuerst, mit `ill_tutorial_button`.
+
+**Anleitungsbilder** `res/drawable/ill_*.xml` (320 × 240, Vektor, nur `loom_*`-Farben), je mit Bildtext
+`img_<name>` (≤ 120 Zeichen); Komponente `ui/components/Guide.kt` `GuideHeader(image, imageText, modifier,
+text)`: Bild max. 168 dp hoch, Text bodyMedium onSurfaceVariant.
+
+**W1w Widget.** Jedes Layout (STACK, ROW, ICON, Preview) = Kachel `widget_tile` (Hintergrund, Symbol,
+Status) + Name `widget_name` darunter (12 sp, eine Zeile, `loom_onSurface`, Schatten `loom_labelShadow`),
+je Widget abschaltbar (`showName`). Idealgrößen ICON 40 × 58, ROW 120 × 48, STACK 120 × 110 dp. Neuer
+Zustand **NO_SERVER**: Hintergrund wie bereit, `ic_dns` in `loom_outline`, `widget_no_server`. Ruhezustand
+je Widget (aus → kein Mikrofon → laufender Auftrag → kein Server → bereit); aktive Zustände zeigen alle.
+Tipp-Ziele: Pro aus → E7, kein Mikrofon → E8 Tab Pro, kein Server → Editor dieses Widgets, sonst E8 Tab Pro
+(auch die Aufnahme-Notification). Routen `AppNav.ROUTE_ADVANCED = "advanced"` (Alias `agent`),
+`ROUTE_WIDGETS = "widgets"` mit Extra `profile`.
+
+**Daten.** `WidgetProfile` neu `kind`, `showName` (true), `serverUrl`, `serverToken` in
+`whisperloom_widgets.xml` (backup-ausgeschlossen; `toString()` maskiert das Token). Prefs `agent_url` /
+`agent_token` entfallen: `WidgetProfileStore.migrateLegacyServer` kopiert sie beim App-Start einmalig in
+jedes Profil ohne Server und löscht sie danach. `agent_enabled` bleibt der Key von „Pro Widgets“
+(`Prefs.proWidgetsEnabled`). `VoiceTaskStore` neu `profile_id`: der Auftrag geht an den Server seines
+Widgets; fehlt das Widget, wird er verworfen, nie umgeleitet.
+
+| Key | Text |
+|---|---|
+| `settings_section_basics` / `_controls` / `_pro` / `_info` | Grundlagen / Bedienung / Pro / Info (angezeigt in Großbuchstaben) |
+| `settings_group_advanced` | Erweitert (ersetzt `settings_group_agent`) |
+| `advanced_intro` | Pro-Funktionen für Entwickler und Bastler. Für das normale Diktieren brauchst du hier nichts. |
+| `advanced_card_features` / `advanced_manage_widgets` / `advanced_tutorial` | Pro-Funktionen / Pro Widgets verwalten / Anleitung Pro Widgets |
+| `pro_widgets` / `pro_widgets_sub` / `pro_widgets_hub` | Pro Widgets / Blendet im Widget-Menü den Tab „Pro Widgets“ ein: Sprach-Command-Widgets mit eigenem Server. / Pro Widgets |
+| `prompt_enable_sub` | Zusätzliche Stufe in Tastatur und Einstellungen → Text: formt ein Diktat zu einem gegliederten Prompt für KI-Assistenten wie ChatGPT oder Claude. |
+| `kind_voice_command` / `kind_voice_command_sub` | Sprach-Command-Widget / Sprechen und an deinen Server schicken |
+| `widget_label` / `widget_description` | Sprach-Command / Pro Widget: sprechen und als Auftrag an deinen eigenen Server schicken. |
+| `widget_off` / `widget_no_server` / `cd_widget_no_server` | Pro Widgets aus — tippen / Server fehlt — tippen / Server fehlt. Tippen, um ihn einzutragen. |
+| `widget_task_profile_gone` / `widget_task_pro_off` / `widget_task_no_server` | Widget gelöscht — Auftrag verworfen / Pro Widgets sind aus / Server fehlt im Widget „%1$s“ (über `widget_error_retry`) |
+| `widgets_sub_profiles` / `widgets_sub_normal_soon` | %d Pro Widget(s) / Normale Widgets folgen bald |
+| `widgets_tab_normal` / `widgets_tab_pro` | Widgets / Pro Widgets |
+| `widgets_normal_soon` / `widgets_pro_unlock` / `widgets_pro_intro` | Normale Widgets für den Startbildschirm kommen mit einem späteren Update. / Für Entwickler: Pro Widgets lassen sich unter „Erweitert“ freischalten. / Sprach-Command-Widgets nehmen auf und schicken den Text an deinen eigenen Server. … |
+| `widgets_card_new_pro` / `widgets_card_pro` / `widgets_server_missing` / `widgets_card_help` | Neues Pro Widget / Deine Pro Widgets / Server fehlt / Hilfe |
+| `widgets_add_profile` / `widget_config_title` / `widget_config_pro_off` | Neues Widget-Profil / Welches Widget-Profil? / Pro Widgets sind aus. In der App unter Einstellungen → Erweitert einschalten. |
+| `widget_profile_title` / `widget_profile_default_name` | Widget bearbeiten / Sprach-Command %d |
+| `widget_profile_name_sub` / `widget_profile_name_missing` / `widget_profile_show_name` / `widget_profile_server` | Steht unter dem Widget auf dem Startbildschirm. / Jedes Widget braucht einen Namen. / Name unter dem Widget anzeigen / Server |
+| `widget_profile_delete` / `widget_profile_delete_unused` | Widget löschen / Es liegt gerade nicht auf dem Startbildschirm. |
+| `agent_mic_missing` / `agent_privacy` / `agent_widget_hint` / `agent_tutorial_sub` | Für Pro Widgets fehlt die Mikrofon-Berechtigung. / Transkript und Auftrag gehen nur an den Server dieses Widgets. … / Widget platzieren: … → „Sprach-Command“. / Widget anlegen, Server eintragen, Auftrag sprechen |
+| `help_widgets_title` / `_intro` / `_unlock` / `_create` / `_server` / `_place` / `_open` | Hilfe-Abschnitt 6 „Widgets & Pro Widgets“ |
+| `help_s1_intro` … `help_s4_intro`, `help_s6_intro`, `help_s7_intro` | Kurztexte unter den Hilfe-Bildern |
+| `tutorial_pro_p1..p6_title` / `_body` | Die sechs Seiten von T2 (ersetzt `tutorial_agent_p1..p4`) |
+| `img_*` | Bildtexte der Illustrationen `ill_*` (ersetzt `tutorial_agent_img_*`) |
+
+Entfallen: `settings_group_agent`, `settings_agent_sub`, `agent_card_task` / `_connection` / `_help`,
+`agent_enable` / `_sub`, `widgets_agent_off`, `widgets_card_profiles`, `agent_widget_manage`, `prompt_card`,
+`tutorial_agent_*`. Noch mit altem Wortlaut „Sprachauftrag“: `cd_widget_ready`, `agent_channel`,
+`agent_notif_title`.
 
 ---
 
@@ -1453,6 +1557,8 @@ eingerichtet, steht oben `widgets_agent_off` mit Link zu E7. Karten: Profile · 
 ## 8. Anhang
 
 ### 8.1 Neue/geänderte Prefs (`Prefs.kt`; bestehende Keys bleiben)
+
+> **3.7.1:** `agentEnabled` heißt `proWidgetsEnabled` (Key `agent_enabled` bleibt); `agent_url`/`agent_token` wandern in die Widget-Profile — siehe [§6.15](#615-nachtrag-371-pro-widgets).
 
 | Property | Key | Typ / Default | Zweck |
 |---|---|---|---|

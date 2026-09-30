@@ -3,7 +3,7 @@ WhisperLoom types for you: tap, speak, done – the recognised text lands right 
 Three ways to dictate:
 • A floating microphone button above all apps (your keyboard stays as it is). Tap to record, tap again to insert, drag to ✕ to discard.
 • A dictation keyboard with hold-to-talk for apps that block overlays. While recording, swipe right to lock – recording continues hands-free, then send or discard; swipe left to discard right away. The wand above the microphone opens the four text levels without leaving the app.
-• A home screen widget for voice tasks to your own agent (see below). Off by default.
+• Pro Widgets for developers: voice command widgets on the home screen send voice tasks to your own server (see below). Off by default.
 
 Recognition your way:
 • Online with your own account at OpenAI, Groq (free tier), Mistral, Together, DeepInfra, OpenRouter, or any OpenAI-compatible server you host yourself (speaches, whisper.cpp server).
@@ -13,11 +13,11 @@ Recognition your way:
 Text the way you want it:
 • Remove filler words (editable list), automatic capitalisation.
 • Optional clean-up by a language model in three levels: polish, rephrase, summarise – using your own or the recognition account, including Ollama: locally on your home server without a key (the text never leaves your network) or via Ollama Cloud. The model list comes straight from the server.
-• For AI users, switchable in the advanced options: the "Prompt" level turns a dictation into a well-structured prompt for ChatGPT, Claude & co.
+• For AI users, switchable under Settings → Advanced ("Erweitert"): the "Prompt" level turns a dictation into a well-structured prompt for ChatGPT, Claude & co.
 • "Automatic paragraphs" switch: the AI splits longer dictations into paragraphs – or, when switched off, returns everything as one continuous text.
 
 Transcribe voice messages: share a message from WhatsApp, Telegram or Signal → WhisperLoom. The text appears in readable paragraphs, verbatim or without fillers, ready to copy or forward. Optionally with its own AI level: polish, rephrase or summarise.
 
-Voice tasks for your own agent: tap, speak, tap – WhisperLoom transcribes and sends the task to a server you run yourself; the reply arrives wherever you normally message your agent. Delivery keeps going with the screen off. Each widget can carry its own profile – name, icon or gallery picture, auto-stop after a pause – and resizes freely from 1 × 1 to 4 × 2. Requires your own server (the open-source counterpart is on GitHub) and stays invisible until you set it up.
+Pro Widgets for your own agent: tap, speak, tap – a voice command widget transcribes and sends the task to a server you run yourself; the reply arrives wherever you normally message your agent. Delivery keeps going with the screen off. Each widget has its own name (shown below the widget, can be hidden), its own server and token, an icon or gallery picture and optional auto-stop after a pause; resizes freely from 1 × 1 to 4 × 2. Unlock them under Settings → Advanced ("Erweitert"). Requires your own server (the open-source counterpart is on GitHub) and stays invisible otherwise.
 
 Privacy: your API key never leaves the device. Online, only the audio goes to the provider you chose; offline, nothing leaves the phone. No accounts, no ads, no tracking.
