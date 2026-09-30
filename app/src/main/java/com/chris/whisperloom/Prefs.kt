@@ -81,16 +81,31 @@ class Prefs(context: Context) {
     }
 
     /**
-     * v2 -> v3, laeuft genau einmal (prefs_version) und ist idempotent:
+     * Laeuft je Stufe genau einmal (prefs_version) und ist idempotent.
+     *
+     * v2 -> v3:
      *  - der Schalter "KI glaetten" (llm_polish) wird zum Modus refine_mode
      *  - v2 hatte eine freie api_url ohne Anbieter: passt sie zu einem Katalog-Preset, wird
      *    dieser Anbieter gesetzt, sonst "Eigener Server" (sonst bliebe ein LAN-Server unter
      *    dem Label OpenAI mit https-Pflicht haengen — der Assistent kaeme nie zu "fertig")
      *  - Bestandsnutzer (API-Key da bzw. eigener Server, keine Engine gewaehlt) bleiben online
+     *
+     * v3 -> v4 (3.8.0): Gemini-Nutzer ohne gewaehltes Modell liefen auf der Voreinstellung
+     * gemini-2.5-flash-lite. Die Voreinstellung ist jetzt 3.5 Flash-Lite (fuer neue Konten) — wer
+     * schon 2.5 nutzt, behaelt es, statt unbemerkt auf ein anderes, nachdenkendes Modell zu wechseln.
      */
     private fun migrate() {
-        if (sp.getInt(KEY_PREFS_VERSION, 0) >= PREFS_VERSION) return
+        val version = sp.getInt(KEY_PREFS_VERSION, 0)
+        if (version >= PREFS_VERSION) return
         val e = sp.edit()
+        if (version < 3) migrateToV3(e)
+        if (version < 4 && sp.getString(KEY_LLM_PROVIDER, "") == GEMINI_ID && sp.getString(KEY_LLM_MODEL, "").isNullOrBlank()) {
+            e.putString(KEY_LLM_MODEL, GEMINI_LEGACY_DEFAULT)
+        }
+        e.putInt(KEY_PREFS_VERSION, PREFS_VERSION).apply()
+    }
+
+    private fun migrateToV3(e: SharedPreferences.Editor) {
         if (!sp.contains(KEY_REFINE_MODE) && sp.getBoolean(KEY_LLM_POLISH_LEGACY, false)) {
             e.putString(KEY_REFINE_MODE, RefineMode.POLISH.key)
         }
@@ -104,7 +119,6 @@ class Prefs(context: Context) {
         if (sp.getString(KEY_ENGINE, "").isNullOrBlank() && (hasKey || !provider.needsKey)) {
             e.putString(KEY_ENGINE, Engine.ONLINE.key)
         }
-        e.putInt(KEY_PREFS_VERSION, PREFS_VERSION).apply()
     }
 
     /** Katalog-Anbieter mit genau dieser Base-URL, sonst der eigene Server. */
@@ -373,7 +387,11 @@ class Prefs(context: Context) {
     )
 
     companion object {
-        private const val PREFS_VERSION = 3
+        private const val PREFS_VERSION = 4
+
+        /** v4: Voreinstellung bis 3.7 — bleibt fuer Gemini-Bestandsnutzer ohne gewaehltes Modell. */
+        private const val GEMINI_ID = "gemini"
+        private const val GEMINI_LEGACY_DEFAULT = "gemini-2.5-flash-lite"
         private const val KEY_PREFS_VERSION = "prefs_version"
         private const val KEY_LANGUAGE = "language"
         private const val KEY_ENGINE = "engine"

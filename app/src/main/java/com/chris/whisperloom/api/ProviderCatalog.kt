@@ -263,7 +263,8 @@ object ProviderCatalog {
                 // google/gemini-2.5-* laeuft bei OpenRouter am 2026-10-20 aus (live expiration_date).
                 ModelOption(
                     "google/gemini-3.8-flash", "Gemini 3.8 Flash",
-                    "Nachfolger von Gemini 2.5. Reasoning nicht abschaltbar -> langsamer.",
+                    "Nachfolger von Gemini 2.5. Reasoning nicht abschaltbar -> langsamer. Kein temperature.",
+                    temperatureSupported = false,
                 ),
                 ModelOption("anthropic/claude-haiku-4.5", "Claude Haiku 4.5", "\$1/\$5 je 1M."),
                 ModelOption("mistralai/mistral-small-2603", "Mistral Small 4", "günstig, EU-Provider wählbar."),
@@ -287,15 +288,18 @@ object ProviderCatalog {
             baseUrl = "https://generativelanguage.googleapis.com/v1beta/openai",
             keyUrl = "https://aistudio.google.com/apikey",
             // Google gibt 2.5 nur noch an Konten, die es schon genutzt haben; fuer neue Projekte
-            // empfiehlt es 3.5 Flash-Lite oder 3.8 Flash. Reasoning ist ab 3 nicht abschaltbar.
+            // empfiehlt es 3.5 Flash-Lite oder 3.8 Flash. Reasoning ist ab 3 nicht abschaltbar, und
+            // Google raet bei Gemini 3 von temperature < 1 ab (Schleifen) -> Feld weglassen.
             llmModels = listOf(
                 ModelOption(
                     "gemini-3.5-flash-lite", "Gemini 3.5 Flash-Lite",
-                    "Googles Empfehlung für neue Projekte. Reasoning nicht abschaltbar.",
+                    "Googles Empfehlung für neue Projekte. Reasoning nicht abschaltbar, kein temperature.",
+                    temperatureSupported = false,
                 ),
                 ModelOption(
                     "gemini-3.8-flash", "Gemini 3.8 Flash",
-                    "\$0.75/\$3.75 je 1M. Reasoning nicht abschaltbar -> langsamer.",
+                    "\$0.75/\$3.75 je 1M. Reasoning nicht abschaltbar -> langsamer. Kein temperature.",
+                    temperatureSupported = false,
                 ),
                 ModelOption(
                     "gemini-2.5-flash-lite", "Gemini 2.5 Flash-Lite (nur Bestandskonten)",

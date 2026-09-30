@@ -98,4 +98,18 @@ class ModelFlagsTest {
         assertNull(s.temperature)
         assertEquals(ChatPayload.MAX_COMPLETION_TOKENS, s.maxCompletionTokens)
     }
+
+    @Test fun gemini3OhneTemperatureNurBeimAnbieterGemini() {
+        // Google raet bei Gemini 3 von temperature < 1 ab; Reasoning ist nicht abschaltbar -> kein effort.
+        for (id in listOf("gemini-3.6-flash", "gemini-3.1-pro-preview", "gemini-3-flash-preview")) {
+            val o = llm("gemini", id)!!
+            assertFalse(id, o.temperatureSupported)
+            assertNull(id, o.reasoningEffort)
+        }
+        // Snapshot eines Katalog-Modells erbt dessen Flag.
+        assertFalse(llm("gemini", "gemini-3.5-flash-lite-preview-09-2026")!!.temperatureSupported)
+        // Gemini 2.5 und andere Anbieter bleiben bei den Defaults.
+        assertNull(llm("gemini", "gemini-2.5-pro"))
+        assertNull(llm("custom", "gemini-3.6-flash"))
+    }
 }

@@ -85,7 +85,8 @@ class ProviderCatalogTest {
 
     @Test fun reasoningModelleOhneTemperatureHabenEinenEffort() {
         for (p in ProviderCatalog.providers) {
-            for (m in p.llmModels.filter { !it.temperatureSupported }) {
+            // Ausnahme Gemini 3: temperature faellt auf Googles Rat weg, das Denken ist nicht abschaltbar.
+            for (m in p.llmModels.filter { !it.temperatureSupported && !it.id.contains("gemini-3") }) {
                 assertNotNull("${p.id}/${m.id}", m.reasoningEffort)
             }
         }
@@ -177,6 +178,11 @@ class ProviderCatalogTest {
         )
         // Reasoning ist ab Gemini 3 nicht abschaltbar -> kein reasoning_effort=none.
         assertNull(gemini.llmModel("gemini-3.5-flash-lite")!!.reasoningEffort)
+        // Google raet bei Gemini 3 von temperature < 1 ab -> alle 3.x-Eintraege ohne temperature.
+        val gemini3 = (gemini.llmModels + ProviderCatalog.byId("openrouter").llmModels).filter { it.id.contains("gemini-3") }
+        assertEquals(3, gemini3.size)
+        assertTrue(gemini3.toString(), gemini3.none { it.temperatureSupported })
+        assertTrue(gemini.llmModel("gemini-2.5-flash-lite")!!.temperatureSupported)
         // OpenRouter nimmt google/gemini-2.5-* am 2026-10-20 aus dem Angebot.
         val openrouter = ProviderCatalog.byId("openrouter").llmModels.map { it.id }
         assertTrue(openrouter.toString(), openrouter.none { it.startsWith("google/gemini-2.5-") })

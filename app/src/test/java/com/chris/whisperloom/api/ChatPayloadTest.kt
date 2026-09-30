@@ -52,4 +52,15 @@ class ChatPayloadTest {
         val s = ChatPayload.sampling(llm("openai", "same", "irgendwas-neues"))
         assertEquals(ChatPayload.Sampling(temperature = 0), s)
     }
+
+    @Test fun gemini3OhneTemperature() {
+        // Neuer Default und Katalog-Eintraege: kein temperature, dafuer die Laengengrenze.
+        for (model in listOf("", "gemini-3.5-flash-lite", "gemini-3.8-flash")) {
+            val s = ChatPayload.sampling(llm("openai", "gemini", model))
+            assertEquals(model, ChatPayload.Sampling(temperature = null, maxCompletionTokens = ChatPayload.MAX_COMPLETION_TOKENS), s)
+        }
+        assertNull(ChatPayload.sampling(llm("openai", "openrouter", "google/gemini-3.8-flash")).temperature)
+        // Gemini 2.5 (Bestandskonten) behaelt temperature 0 und schaltet das Denken ab.
+        assertEquals(0, ChatPayload.sampling(llm("openai", "gemini", "gemini-2.5-flash-lite")).temperature)
+    }
 }

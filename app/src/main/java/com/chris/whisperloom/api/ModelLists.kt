@@ -120,6 +120,7 @@ object ModelLists {
 
     // Heuristik fuer Flags (optionFor), angewandt auf den Namen ohne Anbieter-Praefix.
     private val OPENAI_REASONING = rx("^(ft:)?(o\\d|gpt-5|gpt-6)")
+    private val GEMINI_3 = rx("^gemini-3")
     private val GPT_TRANSCRIBE = rx("^gpt-.*transcribe")
     private val QWEN3 = rx("^qwen3")
     private val GPT_OSS = rx("^gpt-oss")
@@ -198,7 +199,7 @@ object ModelLists {
         val name = id.substringAfterLast('/')
         val chat = kind == ModelKind.LLM
         val temperature = server?.temperatureSupported ?: base?.temperatureSupported
-            ?: if (chat && OPENAI_REASONING.containsMatchIn(name)) false else null
+            ?: if (chat && noTemperature(provider, name)) false else null
         val effort = server?.reasoningEffort ?: base?.reasoningEffort ?: if (chat) groqEffort(provider, name) else null
         val languageField = base?.languageField
             ?: if (!chat && provider.id == OPENAI && GPT_TRANSCRIBE.containsMatchIn(name)) "languages[]" else null
@@ -212,6 +213,10 @@ object ModelLists {
             languageField = languageField ?: "language",
         )
     }
+
+    /** OpenAI-Reasoning-Modelle lehnen temperature ab (400); Google raet bei Gemini 3 von temperature < 1 ab. */
+    private fun noTemperature(provider: Provider, name: String): Boolean =
+        OPENAI_REASONING.containsMatchIn(name) || (provider.id == GEMINI && GEMINI_3.containsMatchIn(name))
 
     /** Groq: Qwen3 schreibt sonst <think>-Tags in den Text; gpt-oss kennt nur Stufen, "low" haelt es schnell. */
     private fun groqEffort(provider: Provider, name: String): String? = when {

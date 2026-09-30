@@ -52,7 +52,7 @@ class PrefsTest {
         assertFalse(p.a11ySkipped)
         assertFalse(p.notifSkipped)
         assertFalse(p.keyboardSkipped)
-        assertEquals(3, sp.getInt("prefs_version", 0))
+        assertEquals(4, sp.getInt("prefs_version", 0))
         // Ohne Engine ist die App nicht eingerichtet — auch nicht mit Key.
         assertFalse(TranscriptionEngine.isConfigured(ctx))
     }
@@ -74,7 +74,7 @@ class PrefsTest {
         assertEquals("sk-alt", stt.apiKey)
         assertEquals("gpt-4o-mini", p.llmAccess().model)
         assertTrue(TranscriptionEngine.isConfigured(ctx))
-        assertEquals(3, sp.getInt("prefs_version", 0))
+        assertEquals(4, sp.getInt("prefs_version", 0))
     }
 
     // --- Review KOR-2/SEC-3: v2 hatte eine freie api_url ohne Anbieter ---------------------
@@ -133,6 +133,41 @@ class PrefsTest {
     @Test fun altesLlmPolishFalseBleibtOff() {
         sp.edit().putString("api_key", "sk").putBoolean("llm_polish", false).commit()
         assertEquals(RefineMode.OFF, Prefs(ctx).refineMode)
+    }
+
+    // --- v4 (3.8.0): Gemini-Bestandsnutzer behalten 2.5 Flash-Lite --------------------------
+
+    @Test fun geminiBestandsnutzerOhneModellBehaeltGemini25() {
+        // Stand 3.7: prefs_version 3, Gemini gewaehlt, Modell leer = damalige Voreinstellung 2.5 Flash-Lite.
+        sp.edit().putInt("prefs_version", 3).putString("llm_provider", "gemini").putString("llm_key", "AIza").commit()
+        val p = Prefs(ctx)
+        assertEquals("gemini-2.5-flash-lite", p.llmModel)
+        assertEquals("gemini-2.5-flash-lite", p.llmAccess().model)
+        assertEquals(4, sp.getInt("prefs_version", 0))
+    }
+
+    @Test fun geminiMitGewaehltemModellUndAndereAnbieterBleibenUnveraendert() {
+        sp.edit().putInt("prefs_version", 3).putString("llm_provider", "gemini").putString("llm_model", "gemini-2.5-flash").commit()
+        assertEquals("gemini-2.5-flash", Prefs(ctx).llmModel)
+
+        sp.edit().clear().putInt("prefs_version", 3).putString("llm_provider", "deepseek").commit()
+        assertEquals("", Prefs(ctx).llmModel)
+        sp.edit().clear().putInt("prefs_version", 3).commit() // "wie Erkennung"
+        assertEquals("", Prefs(ctx).llmModel)
+    }
+
+    @Test fun geminiMigrationLaeuftNurEinmal() {
+        sp.edit().putInt("prefs_version", 3).putString("llm_provider", "gemini").commit()
+        Prefs(ctx)
+        // Wer danach (ab 3.8) Gemini neu waehlt, bekommt die neue Voreinstellung — keine zweite Migration.
+        Prefs(ctx).llmModel = ""
+        assertEquals("", Prefs(ctx).llmModel)
+        assertEquals("gemini-3.5-flash-lite", Prefs(ctx).llmAccess().model)
+    }
+
+    @Test fun neuinstallationMitGeminiBekommtNeueVoreinstellung() {
+        Prefs(ctx).llmProviderId = "gemini"
+        assertEquals("gemini-3.5-flash-lite", Prefs(ctx).llmAccess().model)
     }
 
     // --- Stufe "Prompt" ------------------------------------------------------
