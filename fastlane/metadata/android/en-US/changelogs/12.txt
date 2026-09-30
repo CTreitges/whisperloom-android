@@ -1,0 +1,6 @@
+WhisperLoom 3.7.1
+• Pro Widgets: unlock in "Advanced", own tab in the widget menu for voice command widgets
+• Server address and token right in each widget – every widget can use its own server
+• Name shown below the widget, can be hidden per widget
+• Settings regrouped: basics, controls, pro, info
+• All guides shorter and illustrated
