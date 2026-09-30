@@ -371,6 +371,20 @@ class VoiceTaskTrampolineTest {
         assertNull("Die App bleibt zu", shadowOf(app).nextStartedActivity)
     }
 
+    @Test fun einAuftragVonVor371OhneProfilGehtUeberDasStandardprofilRaus() {
+        // Leere profile_id = Auftrag von vor 3.7.1 — wie im Worker das Standardprofil, nicht verwerfen.
+        store.begin(FloatArray(800) { 0.3f }, 4000, "2026-09-21T20:00:00Z", "")
+        store.state = VoiceTaskState.ERROR
+
+        tippen(TapIntent.RETRY, 42)
+
+        assertEquals("Wird angestossen", listOf(true), aufrufe)
+        assertEquals("Nichts verworfen", 0, abgebrochen)
+        assertTrue(store.hasWork)
+        assertNull("Kein neuer Anlauf", gestarteterDienst())
+        assertNull("Die App bleibt zu", shadowOf(app).nextStartedActivity)
+    }
+
     // --- Tipp auf "Wird gesendet …" (#10) -----------------------------------
 
     @Test fun einWartenderAuftragWirdSofortGesendet() {
