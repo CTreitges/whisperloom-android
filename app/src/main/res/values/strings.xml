@@ -339,13 +339,21 @@
     <string name="text_ollama_url">Server-Adresse</string>
     <string name="text_ollama_url_hint">Adresse deines Ollama-Servers mit Port, meist :11434. http:// nur im eigenen Netz (LAN/VPN).</string>
     <string name="text_ollama_load_models">Modelle vom Server laden</string>
-    <string name="text_ollama_loading">Lade Modelle …</string>
     <string name="text_ollama_no_models">Der Server hat keine Modelle. Auf dem Server z. B. „ollama pull gemma3“ ausführen.</string>
-    <plurals name="text_ollama_models_found">
+    <!-- Modell-Listen der Anbieter (Ollama immer, alle anderen mit Pro „Modelle vom Server“); „Empfohlen“ = models_recommended -->
+    <string name="models_pick">Modell wählen</string>
+    <string name="models_search">Modell suchen</string>
+    <!-- %1$s = Datum und Uhrzeit der zuletzt geladenen Liste -->
+    <string name="models_server">Vom Server · Stand %1$s</string>
+    <string name="models_stale">nicht mehr gelistet</string>
+    <string name="models_refresh">Modelle aktualisieren</string>
+    <string name="models_loading">Lade Modelle …</string>
+    <string name="models_none">Keine passenden Modelle gefunden.</string>
+    <plurals name="models_count">
         <item quantity="one">%d Modell gefunden</item>
         <item quantity="other">%d Modelle gefunden</item>
     </plurals>
-    <string name="text_ollama_models_failed">Modelle nicht geladen: %1$s</string>
+    <string name="models_load_failed">Modelle nicht geladen: %1$s</string>
     <string name="text_needs_online">Textverbesserung braucht einen Online-Zugang.</string>
     <string name="text_no_llm">%1$s erkennt nur Sprache und bietet keine Textverbesserung.</string>
     <string name="text_add_access">Eigenen Zugang eintragen</string>
@@ -743,6 +751,8 @@
     <string name="pro_widgets">Pro Widgets</string>
     <string name="pro_widgets_sub">Blendet im Widget-Menü den Tab „Pro Widgets“ ein: Sprach-Command-Widgets mit eigenem Server.</string>
     <string name="pro_widgets_hub">Pro Widgets</string>
+    <string name="pro_server_models">Modelle vom Server</string>
+    <string name="pro_server_models_sub">Lädt bei jedem Anbieter die aktuelle Modell-Liste – für Erkennung und Textverbesserung.</string>
     <string name="kind_voice_command">Sprach-Command-Widget</string>
     <string name="kind_voice_command_sub">Sprechen und an deinen Server schicken</string>
     <string name="img_pro_features">Einstellungsliste mit zwei Schaltern, der obere an, darunter eine Zeile mit Pfeil; oben ein Werkzeug-Abzeichen.</string>

@@ -857,4 +857,12 @@ class MainFlowTest {
         screen(env()) { SettingsHubScreen(it) }
         compose.onNodeWithText("Pro Widgets · Stufe „Prompt“").assertExists()
     }
+
+    @Test fun modelleVomServerStehenUnterErweitert() {
+        prefs.engine = Engine.ONLINE
+        prefs.promptLevelEnabled = true
+        prefs.serverModelsEnabled = true
+        screen(env()) { SettingsHubScreen(it) }
+        compose.onNodeWithText("Stufe „Prompt“ · Modelle vom Server").assertExists()
+    }
 }

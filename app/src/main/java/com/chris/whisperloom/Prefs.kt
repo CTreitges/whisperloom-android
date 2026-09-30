@@ -333,6 +333,14 @@ class Prefs(context: Context) {
         get() = isEnabled(ProFeature.WIDGETS)
         set(v) = setEnabled(ProFeature.WIDGETS, v)
 
+    /**
+     * Modelle vom Server: Modellwahl mit der aktuellen Liste des Anbieters (Liste in [modelCache]).
+     * Aus = Empfehlungen aus dem Katalog wie bisher.
+     */
+    var serverModelsEnabled: Boolean
+        get() = isEnabled(ProFeature.SERVER_MODELS)
+        set(v) = setEnabled(ProFeature.SERVER_MODELS, v)
+
     /** Eigenes Flag: [tutorialSeen] bedeutet weiterhin "Einsteiger-Tutorial gesehen". */
     var agentTutorialSeen: Boolean
         get() = sp.getBoolean(KEY_AGENT_TUTORIAL_SEEN, false)
@@ -341,6 +349,7 @@ class Prefs(context: Context) {
     private fun keyOf(feature: ProFeature): String = when (feature) {
         ProFeature.WIDGETS -> KEY_PRO_WIDGETS
         ProFeature.PROMPT -> KEY_PROMPT_LEVEL
+        ProFeature.SERVER_MODELS -> KEY_SERVER_MODELS
     }
 
     // --- Aufgeloeste Zugaenge ------------------------------------------------
@@ -403,6 +412,7 @@ class Prefs(context: Context) {
         /** Schluessel aus der Zeit des "Sprachauftrags" — bleibt, damit nichts migriert werden muss. */
         private const val KEY_PRO_WIDGETS = "agent_enabled"
         private const val KEY_AGENT_TUTORIAL_SEEN = "agent_tutorial_seen"
+        private const val KEY_SERVER_MODELS = "pro_server_models"
         private const val KEY_FLOAT_X = "float_x"
         private const val KEY_FLOAT_Y = "float_y"
 

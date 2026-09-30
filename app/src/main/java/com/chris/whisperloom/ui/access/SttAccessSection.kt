@@ -24,12 +24,14 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.chris.whisperloom.R
 import com.chris.whisperloom.Vocabulary
+import com.chris.whisperloom.api.ModelKind
 import com.chris.whisperloom.api.ProviderCatalog
 import com.chris.whisperloom.api.ServerUrlCheck
 import com.chris.whisperloom.ui.components.ApiKeyField
 import com.chris.whisperloom.ui.components.SnackController
 import com.chris.whisperloom.ui.components.LoomDropdown
 import com.chris.whisperloom.ui.components.LoomIcon
+import com.chris.whisperloom.ui.components.LoomPickerField
 import com.chris.whisperloom.ui.components.modelLabel
 import com.chris.whisperloom.ui.components.providerLabel
 import com.chris.whisperloom.ui.components.providerShortName
@@ -38,7 +40,8 @@ import com.chris.whisperloom.ui.state.LocalAppEnv
 /**
  * Zugang zum Transkriptions-Dienst — identisch in Schritt 2a und E1 (Spec §2.2/§2.4):
  * Anbieter, Base-URL (Preset-Zeile bzw. Feld beim eigenen Server), API-Key, Modell,
- * "Wo bekomme ich einen Key?", "Zugang pruefen", Datenschutz-Zeile.
+ * "Wo bekomme ich einen Key?", "Zugang pruefen", Datenschutz-Zeile. Mit Pro "Modelle vom Server"
+ * waehlt [ModelPickerSheet] das Modell aus der Liste des Anbieters.
  */
 @Composable
 fun SttAccessSection(snack: SnackController, showPrivacy: Boolean = true) {
@@ -49,6 +52,14 @@ fun SttAccessSection(snack: SnackController, showPrivacy: Boolean = true) {
     val labels = providers.associate { it.id to providerLabel(it) }
     var showKeySheet by rememberSaveable { mutableStateOf(false) }
     var showCustomModel by rememberSaveable { mutableStateOf(false) }
+    var showPicker by rememberSaveable { mutableStateOf(false) }
+    val pro = prefs.serverModelsEnabled
+    val server = rememberServerModels(access, ModelKind.STT)
+    AutoLoadModels(
+        server,
+        ready = pro && access.baseUrl.isNotBlank() && (!provider.needsKey || access.apiKey.isNotBlank()),
+        apiKey = access.apiKey,
+    ) { prefs.sttAccess() }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         LoomDropdown(
@@ -86,7 +97,16 @@ fun SttAccessSection(snack: SnackController, showPrivacy: Boolean = true) {
 
         ApiKeyField(value = prefs.apiKey, onValueChange = { prefs.apiKey = it }, optional = provider.isCustom)
 
-        if (provider.isCustom) {
+        if (pro) {
+            LoomPickerField(
+                label = stringResource(R.string.rec_model),
+                value = modelLabel(access),
+                onClick = { showPicker = true },
+                isError = provider.isCustom && prefs.apiModel.isBlank(),
+                supportingText = if (provider.isCustom) ({ Text(stringResource(R.string.model_custom_info)) }) else null,
+            )
+            LoadModelsButton(server, enabled = access.baseUrl.isNotBlank(), snack = snack) { prefs.sttAccess() }
+        } else if (provider.isCustom) {
             OutlinedTextField(
                 value = prefs.apiModel,
                 onValueChange = { prefs.apiModel = it },
@@ -124,6 +144,20 @@ fun SttAccessSection(snack: SnackController, showPrivacy: Boolean = true) {
     }
 
     if (showKeySheet) KeySheet(providers, snack) { showKeySheet = false }
+    if (showPicker) {
+        ModelPickerSheet(
+            recommended = provider.sttModels,
+            server = server.entry,
+            selected = access.model,
+            onSelect = { prefs.apiModel = it },
+            onCustom = {
+                showPicker = false
+                showCustomModel = true
+            },
+            onDismiss = { showPicker = false },
+            checkListed = provider.id != ProviderCatalog.ELEVENLABS_ID,
+        )
+    }
     if (showCustomModel) {
         CustomModelSheet(
             placeholder = "whisper-1",

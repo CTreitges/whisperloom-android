@@ -83,3 +83,36 @@ fun <T> LoomDropdown(
         }
     }
 }
+
+/**
+ * Sieht aus wie [LoomDropdown], oeffnet aber statt des Menues [onClick] — fuer Auswahlen mit
+ * eigenem Sheet (Modell-Liste vom Server mit Suche und Hunderten Eintraegen).
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LoomPickerField(
+    label: String,
+    value: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    isError: Boolean = false,
+    supportingText: (@Composable () -> Unit)? = null,
+) {
+    // Das Menue bleibt zu: die Box liefert nur Anker, Klick und Pfeil wie beim Dropdown.
+    ExposedDropdownMenuBox(expanded = false, onExpandedChange = { onClick() }, modifier = modifier) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = {},
+            readOnly = true,
+            singleLine = true,
+            label = { Text(label) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = false) },
+            isError = isError,
+            supportingText = supportingText,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("picker:$label")
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+        )
+    }
+}

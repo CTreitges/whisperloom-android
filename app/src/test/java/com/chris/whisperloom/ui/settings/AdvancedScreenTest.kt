@@ -105,6 +105,18 @@ class AdvancedScreenTest {
         }
         compose.onNodeWithText("Pro Widgets").assertExists()
         compose.onNodeWithText("Stufe „Prompt“ anbieten").assertExists()
+        compose.onNodeWithText("Modelle vom Server").assertExists()
+    }
+
+    @Test fun derSchalterModelleVomServerSchreibtSofortDurch() {
+        val sub = ctx.getString(R.string.pro_server_models_sub)
+        assertTrue("Unterzeile hoechstens 160 Zeichen", sub.length <= 160)
+        show()
+        compose.onNodeWithText(sub).assertExists()
+        click("Modelle vom Server")
+        assertTrue(Prefs(ctx).serverModelsEnabled)
+        assertFalse(Prefs(ctx).proWidgetsEnabled)
+        assertFalse(Prefs(ctx).promptLevelEnabled)
     }
 
     @Test fun derSchalterProWidgetsSchreibtSofortDurch() {

@@ -297,6 +297,22 @@ class PrefsTest {
         assertTrue(p.isEnabled(ProFeature.WIDGETS))
     }
 
+    @Test fun modelleVomServerHabenEinenEigenenSchluessel() {
+        val p = Prefs(ctx)
+        p.setEnabled(ProFeature.SERVER_MODELS, true)
+        assertTrue(p.serverModelsEnabled)
+        assertTrue(sp.getBoolean("pro_server_models", false))
+        assertFalse(p.isEnabled(ProFeature.WIDGETS))
+        assertFalse(p.isEnabled(ProFeature.PROMPT))
+
+        val state = PrefsState(p)
+        assertTrue(state.isEnabled(ProFeature.SERVER_MODELS))
+        state.setEnabled(ProFeature.SERVER_MODELS, false)
+        assertFalse(Prefs(ctx).serverModelsEnabled)
+        assertFalse(state.serverModelsEnabled)
+        state.dispose()
+    }
+
     @Test fun dieAltenServerSchluesselSindFestgeschrieben() {
         // Nur noch fuer die Migration in die Widget-Profile — ein Umbenennen liesse den Server liegen.
         assertEquals("agent_url", Prefs.LEGACY_KEY_AGENT_URL)

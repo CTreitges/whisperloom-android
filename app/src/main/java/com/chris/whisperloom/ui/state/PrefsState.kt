@@ -65,12 +65,14 @@ class PrefsState(val prefs: Prefs) {
 
     // Pro-Funktionen ("Erweitert"); Server und Token stehen je Widget im Profil, nicht hier.
     var proWidgetsEnabled: Boolean by pref({ prefs.proWidgetsEnabled }) { prefs.proWidgetsEnabled = it }
+    var serverModelsEnabled: Boolean by pref({ prefs.serverModelsEnabled }) { prefs.serverModelsEnabled = it }
     var agentTutorialSeen: Boolean by pref({ prefs.agentTutorialSeen }) { prefs.agentTutorialSeen = it }
 
     /** Wie [Prefs.isEnabled], aber ueber die Spiegel — damit Compose Aenderungen sieht. */
     fun isEnabled(feature: ProFeature): Boolean = when (feature) {
         ProFeature.WIDGETS -> proWidgetsEnabled
         ProFeature.PROMPT -> promptLevelEnabled
+        ProFeature.SERVER_MODELS -> serverModelsEnabled
     }
 
     /** Schalter in "Erweitert": schreibt sofort durch, wie jede Zuweisung hier. */
@@ -78,6 +80,7 @@ class PrefsState(val prefs: Prefs) {
         when (feature) {
             ProFeature.WIDGETS -> proWidgetsEnabled = on
             ProFeature.PROMPT -> promptLevelEnabled = on
+            ProFeature.SERVER_MODELS -> serverModelsEnabled = on
         }
     }
 
