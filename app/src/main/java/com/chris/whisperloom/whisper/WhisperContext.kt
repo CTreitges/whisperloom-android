@@ -44,7 +44,9 @@ internal class WhisperContext private constructor() {
             // Job. Sonst verschluckt der Abbruch der Share-Ansicht ein gleichzeitig eingereihtes Diktat
             // (liefert still ""), oder ein eingereihter Job hebt den Abbruch des laufenden wieder auf.
             abortRequested = false
-            val rc = WhisperLib.fullTranscribe(ctx, threads, language, initialPrompt.ifBlank { null }, beamSize, true, audio)
+            val rc = WhisperLib.fullTranscribe(
+                ctx, threads, language, initialPrompt.ifBlank { null }, beamSize, true, useTimestamps(audio.size), audio,
+            )
             if (rc != 0) {
                 if (abortRequested) return@onWorker TranscriptResult("")
                 throw OfflineTranscriptionException(rc)
@@ -91,6 +93,18 @@ internal class WhisperContext private constructor() {
 
         internal fun padToMinimum(samples: FloatArray): FloatArray =
             if (samples.size >= MIN_SAMPLES) samples else samples.copyOf(MIN_SAMPLES)
+
+        /** whisper.cpp erkennt in Fenstern von 30 s (WHISPER_CHUNK_SIZE). */
+        internal const val WINDOW_SAMPLES = 30 * AudioUtils.SAMPLE_RATE
+
+        /**
+         * Zeitstempel-Tokens nur bei Audio ueber einem Fenster. Ohne sie (no_timestamps) rueckt
+         * whisper.cpp stur um 30 s weiter und schneidet alle 30 s mitten im Wort (v1.9.3
+         * src/whisper.cpp Z.7418-7420); mit ihnen beginnt das naechste Fenster am letzten
+         * Zeitstempel (Z.7377-7390, Z.7558). Bis 30 s gibt es nur ein Fenster: dort bleibt es bei
+         * no_timestamps (weniger Tokens, schneller). Der Segmenttext enthaelt die Zeitstempel nicht.
+         */
+        internal fun useTimestamps(sampleCount: Int): Boolean = sampleCount > WINDOW_SAMPLES
 
         /** Laedt das Modell (blockierend, Sekunden). @throws OfflineNotAvailableException wenn whisper es ablehnt */
         fun load(file: File, flashAttn: Boolean = true): WhisperContext =

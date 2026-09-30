@@ -370,6 +370,29 @@ class TranscriptionEngineTest {
         assertTrue(hint != null)
     }
 
+    /** Review Share-Stufe HOCH: eine an der Laengengrenze abgebrochene Antwort ist nur der Anfang. */
+    @Test fun abgeschnitteneKiAntwortLiefertDenRohtextMitHinweis() {
+        useLocalServer()
+        prefs.refineMode = RefineMode.POLISH
+        chatResponse = """{"choices":[{"message":{"content":"Also hallo"},"finish_reason":"length"}]}"""
+        var hint: String? = null
+        assertEquals("Also hallo welt", TranscriptionEngine.transcribe(ctx, speech) { hint = it })
+        assertEquals(com.chris.whisperloom.api.TextRefiner.MSG_TRUNCATED, hint)
+
+        chatResponse = """{"choices":[{"message":{"content":"Hallo Welt."},"finish_reason":"stop"}]}"""
+        hint = null
+        assertEquals("Hallo Welt.", TranscriptionEngine.transcribe(ctx, speech) { hint = it })
+        assertNull(hint)
+    }
+
+    @Test fun abgeschnitteneOllamaAntwortLiefertDenRohtextMitHinweis() {
+        useOllama("ollama")
+        ollamaResponse = """{"message":{"content":"Also hallo"},"done":true,"done_reason":"length"}"""
+        var hint: String? = null
+        assertEquals("Also hallo welt", TranscriptionEngine.transcribe(ctx, speech) { hint = it })
+        assertEquals(com.chris.whisperloom.api.TextRefiner.MSG_TRUNCATED, hint)
+    }
+
     @Test fun llmOhneBaseUrlWirdUebersprungenUndSttFehlerBleibtEinFehler() {
         // Eigener LLM-Zugang ohne URL bei Cloud-STT: Refine ueberspringen (API-4), Diktat kommt an.
         useLocalServer()

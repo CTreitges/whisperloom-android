@@ -1,5 +1,6 @@
 package com.chris.whisperloom.ui.share
 
+import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.SharedTranscript
 
 /** Globale Zustaende der Share-Ansicht (UX-Spec §2.9). */
@@ -55,6 +56,18 @@ data class ShareUiState(
     val results: List<SharedTranscript> get() = files.mapNotNull { it.result }
     val hasErrors: Boolean get() = files.any { it.error != null }
     val totalDurationMs: Long get() = results.sumOf { it.durationMs }
+
+    /** Nur Ergebnisse ohne KI-Fassung haben etwas, das "Fuellwoerter ausblenden" umschalten koennte. */
+    val hasUnrefined: Boolean get() = results.any { it.paragraphsRefined == null }
+
+    /** Die fuer geteilte Audios eingestellte KI-Stufe dieses Laufs; OFF = keine. */
+    val refineMode: RefineMode get() = results.firstOrNull { it.refineMode != RefineMode.OFF }?.refineMode ?: RefineMode.OFF
+
+    /** Grund, falls die Textverbesserung bei einer Datei gescheitert ist (der erste). */
+    val refineSkipped: String? get() = results.firstNotNullOfOrNull { it.refineSkipped }
+
+    /** Bei wie vielen Dateien die Textverbesserung gescheitert ist. */
+    val refineFailures: Int get() = results.count { it.refineSkipped != null }
 
     fun withFile(index: Int, change: (ShareFile) -> ShareFile): ShareUiState =
         copy(files = files.mapIndexed { i, f -> if (i == index) change(f) else f })

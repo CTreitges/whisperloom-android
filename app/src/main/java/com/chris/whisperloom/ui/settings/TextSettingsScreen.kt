@@ -13,6 +13,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import com.chris.whisperloom.R
@@ -28,13 +29,18 @@ import com.chris.whisperloom.ui.components.rememberSnack
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.state.LocalAppEnv
 
-/** E2 — Text (UX-Spec §2.5): Stufe, KI-Fuellwoerter, eigener LLM-Zugang, Regeln ohne KI, Sheet B3. */
+/** Die Stufen-Auswahl fuer geteilte Audios — ihre Labels gibt es in der Diktat-Karte ein zweites Mal. */
+const val SHARE_REFINE_TAG = "share-refine"
+
+/** E2 — Text (UX-Spec §2.5): Stufe, KI-Fuellwoerter, Stufe fuer geteilte Audios, eigener LLM-Zugang, Regeln ohne KI, Sheet B3. */
 @Composable
 fun TextSettingsScreen(nav: NavState) {
     val prefs = LocalAppEnv.current.prefs
     val snack = rememberSnack()
     var showFillers by rememberSaveable { mutableStateOf(false) }
     val off = prefs.refineMode == RefineMode.OFF
+    // "Intelligent entfernen" wirkt auch auf geteilte Audios — bedienbar, sobald irgendeine KI-Stufe gilt.
+    val noAi = off && prefs.shareRefineMode == RefineMode.OFF
 
     DetailScaffold(title = stringResource(R.string.text_title), onBack = { nav.pop() }, snack = snack) { padding ->
         ScrollColumn(padding) {
@@ -62,10 +68,10 @@ fun TextSettingsScreen(nav: NavState) {
                 )
                 SwitchRow(
                     headline = stringResource(R.string.pref_smart_fillers),
-                    supporting = stringResource(if (off) R.string.text_smart_needs_level else R.string.pref_smart_fillers_info),
+                    supporting = stringResource(if (noAi) R.string.text_smart_needs_level else R.string.pref_smart_fillers_info),
                     checked = prefs.smartFillers,
                     onCheckedChange = { prefs.smartFillers = it },
-                    enabled = !off,
+                    enabled = !noAi,
                 )
                 SwitchRow(
                     headline = stringResource(R.string.pref_refine_paragraphs),
@@ -74,6 +80,29 @@ fun TextSettingsScreen(nav: NavState) {
                     onCheckedChange = { prefs.refineParagraphs = it },
                     enabled = !off,
                 )
+            }
+
+            SectionCard(
+                title = stringResource(R.string.text_card_share),
+                titleIcon = R.drawable.ic_voicemail,
+                gap = 4.dp,
+            ) {
+                Text(
+                    stringResource(R.string.text_share_intro),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Column(Modifier.selectableGroup().testTag(SHARE_REFINE_TAG)) {
+                    RefineMode.SETTINGS.forEach { mode ->
+                        val selected = prefs.shareRefineMode == mode
+                        LoomRow(
+                            headline = levelLabel(mode),
+                            supporting = stringResource(if (mode == RefineMode.OFF) R.string.text_share_off_sub else levelSubtitle(mode)),
+                            modifier = Modifier.selectable(selected = selected, role = Role.RadioButton) { prefs.shareRefineMode = mode },
+                            trailing = { RadioButton(selected = selected, onClick = null) },
+                        )
+                    }
+                }
             }
 
             SectionCard(title = stringResource(R.string.text_card_access)) {
@@ -100,7 +129,7 @@ fun TextSettingsScreen(nav: NavState) {
                     checked = prefs.trailingSpace,
                     onCheckedChange = { prefs.trailingSpace = it },
                 )
-                if (prefs.smartFillers && !off) {
+                if (prefs.smartFillers && !noAi) {
                     Text(
                         stringResource(R.string.text_fillers_paused),
                         style = MaterialTheme.typography.bodySmall,
