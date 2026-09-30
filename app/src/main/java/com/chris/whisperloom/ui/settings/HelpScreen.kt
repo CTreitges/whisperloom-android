@@ -33,6 +33,7 @@ import com.chris.whisperloom.api.ProviderCatalog
 import com.chris.whisperloom.ui.access.helpKeyText
 import com.chris.whisperloom.ui.components.DetailScaffold
 import com.chris.whisperloom.ui.components.ExpandableCard
+import com.chris.whisperloom.ui.components.GuideHeader
 import com.chris.whisperloom.ui.components.LinkRow
 import com.chris.whisperloom.ui.components.OutlinedSection
 import com.chris.whisperloom.ui.components.SnackController
@@ -48,15 +49,19 @@ import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SetupRouter
 import com.chris.whisperloom.ui.setup.stepName
 import com.chris.whisperloom.ui.state.LocalAppEnv
+import com.chris.whisperloom.ui.tutorial.TutorialKind
 
-/** E5 — Anleitung & Hilfe (UX-Spec §2.8): sieben aufklappbare Abschnitte, [section] initial offen. */
+/**
+ * E5 — Anleitung & Hilfe (UX-Spec §2.8): acht aufklappbare Abschnitte, [section] (1–8) initial offen.
+ * Jeder Abschnitt beginnt mit Illustration und Kurztext ([GuideHeader]).
+ */
 @Composable
 fun HelpScreen(section: Int, nav: NavState) {
     val ctx = LocalContext.current
     val status = LocalAppEnv.current.status
     val snack = rememberSnack()
     // Offene Abschnitte als Bitmaske (rememberSaveable-tauglich).
-    var openMask by rememberSaveable { mutableIntStateOf(1 shl section.coerceIn(1, 7)) }
+    var openMask by rememberSaveable { mutableIntStateOf(1 shl section.coerceIn(1, HELP_SECTIONS)) }
     fun isOpen(n: Int) = openMask and (1 shl n) != 0
     fun toggle(n: Int) { openMask = openMask xor (1 shl n) }
 
@@ -68,22 +73,17 @@ fun HelpScreen(section: Int, nav: NavState) {
         ) {
             item {
                 ExpandableCard(stringResource(R.string.help_s1_title), isOpen(1), { toggle(1) }, icon = R.drawable.ic_touch_app) {
+                    GuideHeader(R.drawable.ill_tutorial_button, R.string.tutorial_img_button, text = stringResource(R.string.help_s1_intro))
                     HelpLine(R.drawable.ic_touch_app, stringResource(R.string.help_s1_bubble))
                     HelpLine(R.drawable.ic_keyboard, stringResource(R.string.help_s1_keyboard))
                     HelpLine(R.drawable.ic_voicemail, stringResource(R.string.help_s1_share))
                     // Nur anzeigen — tutorialSeen bleibt gesetzt.
-                    LoomRow(
-                        headline = stringResource(R.string.help_s1_tutorial),
-                        leading = { LoomIcon(R.drawable.ic_replay, null, Modifier.size(24.dp), MaterialTheme.colorScheme.primary) },
-                        trailing = {
-                            LoomIcon(R.drawable.ic_chevron_right, null, Modifier.size(24.dp), MaterialTheme.colorScheme.onSurfaceVariant)
-                        },
-                        onClick = { nav.push(Screen.Tutorial()) },
-                    )
+                    HelpNavRow(R.drawable.ic_replay, stringResource(R.string.help_s1_tutorial)) { nav.push(Screen.Tutorial()) }
                 }
             }
             item {
                 ExpandableCard(stringResource(R.string.help_s2_title), isOpen(2), { toggle(2) }, icon = R.drawable.ic_checklist) {
+                    GuideHeader(R.drawable.ill_help_setup, R.string.img_help_setup, text = stringResource(R.string.help_s2_intro))
                     val steps = (SetupRouter.STEP_ENGINE..SetupRouter.STEP_KEYBOARD).filter { it != SetupRouter.STEP_NOTIF || status.notifNeeded }
                     steps.forEach { step ->
                         LoomRow(
@@ -98,7 +98,7 @@ fun HelpScreen(section: Int, nav: NavState) {
             }
             item {
                 ExpandableCard(stringResource(R.string.help_s3_title), isOpen(3), { toggle(3) }, icon = R.drawable.ic_key) {
-                    Text(stringResource(R.string.help_s3_intro), style = MaterialTheme.typography.bodyMedium)
+                    GuideHeader(R.drawable.ill_help_key, R.string.img_help_key, text = stringResource(R.string.help_s3_intro))
                     ProviderCatalog.providers.filter { it.keyUrl.isNotEmpty() }.forEach { p ->
                         LinkRow(headline = providerLabel(p), supporting = helpKeyText(p.id), url = p.keyUrl, snack = snack)
                     }
@@ -111,22 +111,38 @@ fun HelpScreen(section: Int, nav: NavState) {
             }
             item {
                 ExpandableCard(stringResource(R.string.help_s4_title), isOpen(4), { toggle(4) }, icon = R.drawable.ic_dns) {
+                    GuideHeader(R.drawable.ill_agent_server, R.string.img_agent_server, text = stringResource(R.string.help_s4_intro))
                     Text(stringResource(R.string.help_s4_body), style = MaterialTheme.typography.bodyMedium)
                 }
             }
             item {
                 ExpandableCard(stringResource(R.string.help_s5_title), isOpen(5), { toggle(5) }, icon = R.drawable.ic_offline_bolt) {
-                    Text(stringResource(R.string.help_s5_body), style = MaterialTheme.typography.bodyMedium)
+                    GuideHeader(R.drawable.ill_help_offline, R.string.img_help_offline, text = stringResource(R.string.help_s5_body))
                 }
             }
             item {
-                ExpandableCard(stringResource(R.string.help_s6_title), isOpen(6), { toggle(6) }, icon = R.drawable.ic_lock) {
+                ExpandableCard(stringResource(R.string.help_widgets_title), isOpen(6), { toggle(6) }, icon = R.drawable.ic_layers) {
+                    GuideHeader(R.drawable.ill_pro_widgets, R.string.img_pro_widgets, text = stringResource(R.string.help_widgets_intro))
+                    HelpLine(R.drawable.ic_build, stringResource(R.string.help_widgets_unlock))
+                    HelpLine(R.drawable.ic_add, stringResource(R.string.help_widgets_create))
+                    HelpLine(R.drawable.ic_dns, stringResource(R.string.help_widgets_server))
+                    HelpLine(R.drawable.ic_home, stringResource(R.string.help_widgets_place))
+                    HelpNavRow(R.drawable.ic_help, stringResource(R.string.advanced_tutorial)) {
+                        nav.push(Screen.Tutorial(kind = TutorialKind.PRO_WIDGETS))
+                    }
+                    HelpNavRow(R.drawable.ic_layers, stringResource(R.string.help_widgets_open)) { nav.push(Screen.Widgets()) }
+                }
+            }
+            item {
+                ExpandableCard(stringResource(R.string.help_s6_title), isOpen(7), { toggle(7) }, icon = R.drawable.ic_lock) {
+                    GuideHeader(R.drawable.ill_help_privacy, R.string.img_help_privacy, text = stringResource(R.string.help_s6_intro))
                     PrivacyCards()
                     HelpLine(R.drawable.ic_accessibility_new, stringResource(R.string.help_s6_a11y))
                 }
             }
             item {
-                ExpandableCard(stringResource(R.string.help_s7_title), isOpen(7), { toggle(7) }, icon = R.drawable.ic_build) {
+                ExpandableCard(stringResource(R.string.help_s7_title), isOpen(8), { toggle(8) }, icon = R.drawable.ic_build) {
+                    GuideHeader(R.drawable.ill_help_trouble, R.string.img_help_trouble, text = stringResource(R.string.help_s7_intro))
                     ProblemEntry(stringResource(R.string.help_p1), stringResource(R.string.help_p1_body)) { nav.push(Screen.Setup(SetupRouter.STEP_OVERLAY)) }
                     ProblemEntry(stringResource(R.string.help_p2), stringResource(R.string.help_p2_body)) { nav.push(Screen.Setup(SetupRouter.STEP_A11Y)) }
                     ProblemEntry(stringResource(R.string.help_p3), stringResource(R.string.help_p3_body)) { nav.push(Screen.Recognition) }
@@ -139,6 +155,20 @@ fun HelpScreen(section: Int, nav: NavState) {
             item { HelpFooter(snack) }
         }
     }
+}
+
+/** Anzahl der Abschnitte; [HelpScreen] klemmt `section` auf 1..HELP_SECTIONS. */
+private const val HELP_SECTIONS = 8
+
+/** Zeile mit Symbol und Pfeil, die zu einer Anleitung oder einem Screen fuehrt. */
+@Composable
+private fun HelpNavRow(icon: Int, headline: String, onClick: () -> Unit) {
+    LoomRow(
+        headline = headline,
+        leading = { LoomIcon(icon, null, Modifier.size(24.dp), MaterialTheme.colorScheme.primary) },
+        trailing = { LoomIcon(R.drawable.ic_chevron_right, null, Modifier.size(24.dp), MaterialTheme.colorScheme.onSurfaceVariant) },
+        onClick = onClick,
+    )
 }
 
 @Composable

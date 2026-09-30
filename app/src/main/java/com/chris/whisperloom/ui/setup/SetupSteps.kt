@@ -85,7 +85,8 @@ private fun engineStep(facts: SetupFacts, actions: StepActions): StepUi {
     val env = LocalAppEnv.current
     val prefs = env.prefs
     return StepUi(
-        icon = R.drawable.ic_graphic_eq,
+        image = R.drawable.ill_setup_engine,
+        imageText = R.string.img_setup_engine,
         title = stringResource(R.string.setup_s1_title),
         body = stringResource(R.string.setup_s1_body),
         state = SetupRouter.stepState(SetupRouter.STEP_ENGINE, facts),
@@ -166,7 +167,8 @@ private fun EngineOption(
 
 @Composable
 private fun accessStep(facts: SetupFacts, actions: StepActions): StepUi = StepUi(
-    icon = R.drawable.ic_key,
+    image = R.drawable.ill_help_key,
+    imageText = R.string.img_help_key,
     title = stringResource(R.string.setup_s2a_title),
     body = stringResource(R.string.setup_s2a_body),
     state = SetupRouter.stepState(SetupRouter.STEP_ACCESS, facts),
@@ -177,7 +179,8 @@ private fun accessStep(facts: SetupFacts, actions: StepActions): StepUi = StepUi
 
 @Composable
 private fun modelStep(facts: SetupFacts, actions: StepActions): StepUi = StepUi(
-    icon = R.drawable.ic_download,
+    image = R.drawable.ill_help_offline,
+    imageText = R.string.img_help_offline,
     title = stringResource(R.string.setup_s2b_title),
     body = stringResource(R.string.setup_s2b_body),
     state = SetupRouter.stepState(SetupRouter.STEP_ACCESS, facts),
@@ -195,7 +198,8 @@ private fun micStep(facts: SetupFacts, actions: StepActions): StepUi {
     val micGate = rememberDisclosureGate(DisclosureKind.MICROPHONE, onAccept = mic.request)
     val denied = mic.deniedPermanently && !facts.micGranted
     return StepUi(
-        icon = R.drawable.ic_mic,
+        image = R.drawable.ill_setup_mic,
+        imageText = R.string.img_setup_mic,
         title = stringResource(R.string.setup_s3_title),
         body = stringResource(if (denied) R.string.setup_s3_denied else R.string.setup_s3_body),
         state = SetupRouter.stepState(SetupRouter.STEP_MIC, facts),
@@ -215,7 +219,8 @@ private fun overlayStep(facts: SetupFacts, actions: StepActions): StepUi {
     val prefs = LocalAppEnv.current.prefs
     val state = SetupRouter.stepState(SetupRouter.STEP_OVERLAY, facts)
     return StepUi(
-        icon = R.drawable.ic_layers,
+        image = R.drawable.ill_setup_overlay,
+        imageText = R.string.img_setup_overlay,
         title = stringResource(R.string.setup_s4_title),
         body = stringResource(R.string.setup_s4_body),
         state = state,
@@ -273,7 +278,8 @@ private fun a11yStep(facts: SetupFacts, actions: StepActions): StepUi {
         onAccept = { openOrSnack(ctx, SystemIntents.accessibility(), actions.snack) },
     )
     return StepUi(
-        icon = R.drawable.ic_accessibility_new,
+        image = R.drawable.ill_setup_a11y,
+        imageText = R.string.img_setup_a11y,
         title = stringResource(R.string.setup_s5_title),
         body = stringResource(R.string.a11y_description),
         state = SetupRouter.stepState(SetupRouter.STEP_A11Y, facts),
@@ -296,7 +302,8 @@ private fun notifStep(facts: SetupFacts, actions: StepActions): StepUi {
     val prefs = LocalAppEnv.current.prefs
     val notif = rememberPermissionRequest(POST_NOTIFICATIONS)
     return StepUi(
-        icon = R.drawable.ic_notifications,
+        image = R.drawable.ill_setup_notif,
+        imageText = R.string.img_setup_notif,
         title = stringResource(R.string.setup_s6_title),
         body = stringResource(R.string.setup_s6_body),
         state = SetupRouter.stepState(SetupRouter.STEP_NOTIF, facts),
@@ -320,7 +327,8 @@ private fun keyboardStep(facts: SetupFacts, actions: StepActions): StepUi {
     val prefs = LocalAppEnv.current.prefs
     val mandatory = SetupRouter.isMandatory(SetupRouter.STEP_KEYBOARD, facts)
     return StepUi(
-        icon = R.drawable.ic_keyboard,
+        image = R.drawable.ill_tutorial_keyboard,
+        imageText = R.string.tutorial_img_keyboard,
         title = stringResource(R.string.setup_s7_title),
         body = stringResource(R.string.setup_s7_body),
         state = SetupRouter.stepState(SetupRouter.STEP_KEYBOARD, facts),

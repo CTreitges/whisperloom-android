@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Anleitungs-Illustration Hilfe 3 (API-Key): Wolke des Anbieters mit Schluessel, Pfeil zum
+     Eingabefeld mit verdeckten Punkten.
+     Flach und schematisch im Stil der uebrigen Tutorial-Bilder; nur @color/loom_*-Farben,
+     kein Text (Bildbeschreibung: img_help_key in strings.xml).
+     Erzeugt mit gen_help.py. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:width="320dp"
+    android:height="240dp"
+    android:viewportWidth="320"
+    android:viewportHeight="240"
+    tools:ignore="VectorRaster">
+    <path
+        android:fillColor="@color/loom_secondaryContainer"
+        android:strokeColor="@color/loom_secondary"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M62.32,108.4 A22.32,22.32 0 0 1 59.12,63.99 A22.32,22.32 0 0 1 84.2,50.83 A31.25,31.25 0 0 1 143.13,63.81 A22.32,22.32 0 0 1 141.68,108.4 Z" />
+    <group
+        android:translateX="78"
+        android:translateY="50"
+        android:scaleX="0.05"
+        android:scaleY="0.05">
+        <path
+            android:fillColor="@color/loom_onSecondaryContainer"
+            android:pathData="M280,560Q247,560 223.5,536.5Q200,513 200,480Q200,447 223.5,423.5Q247,400 280,400Q313,400 336.5,423.5Q360,447 360,480Q360,513 336.5,536.5Q313,560 280,560ZM280,720Q180,720 110,650Q40,580 40,480Q40,380 110,310Q180,240 280,240Q347,240 401.5,273Q456,306 488,360L823,360Q831,360 838.5,363Q846,366 852,372L932,452Q938,458 940.5,465Q943,472 943,480Q943,488 940.5,495Q938,502 932,508L805,635Q800,640 793,643Q786,646 779,647Q772,648 765,646Q758,644 752,639L700,600L643,643Q638,647 632,649Q626,651 620,651Q614,651 607.5,649Q601,647 596,643L535,600L488,600Q456,654 401.5,687Q347,720 280,720ZM280,640Q336,640 378.5,606Q421,572 435,520L560,520L618,561Q618,561 618,561.5Q618,562 618,561Q618,561 618,561Q618,561 618,561L700,500L771,555Q771,555 771,555Q771,555 771,555Q771,555 771,555Q771,555 771,555L846,480Q845,480 845.5,480Q846,480 846,480Q846,480 846,480Q846,480 846,480L806,440Q806,439 806,439.5Q806,440 806,440L435,440Q421,388 378.5,354Q336,320 280,320Q214,320 167,367Q120,414 120,480Q120,546 167,593Q214,640 280,640Z" />
+    </group>
+    <path
+        android:strokeColor="@color/loom_primary"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M174,72 Q238,74 240,132" />
+    <path
+        android:fillColor="@color/loom_primary"
+        android:pathData="M240.31,140.99 L234.5,132.19 L245.5,131.81 z" />
+    <path
+        android:fillColor="@color/loom_surfaceContainerHigh"
+        android:strokeColor="@color/loom_primary"
+        android:strokeWidth="2"
+        android:pathData="M54,156 h212 a14,14 0 0 1 14,14 v20 a14,14 0 0 1 -14,14 h-212 a14,14 0 0 1 -14,-14 v-20 a14,14 0 0 1 14,-14 z" />
+    <path
+        android:fillColor="@color/loom_onSurface"
+        android:pathData="M60,180 a4,4 0 1 0 8,0 a4,4 0 1 0 -8,0 z" />
+    <path
+        android:fillColor="@color/loom_onSurface"
+        android:pathData="M76,180 a4,4 0 1 0 8,0 a4,4 0 1 0 -8,0 z" />
+    <path
+        android:fillColor="@color/loom_onSurface"
+        android:pathData="M92,180 a4,4 0 1 0 8,0 a4,4 0 1 0 -8,0 z" />
+    <path
+        android:fillColor="@color/loom_onSurface"
+        android:pathData="M108,180 a4,4 0 1 0 8,0 a4,4 0 1 0 -8,0 z" />
+    <path
+        android:fillColor="@color/loom_onSurface"
+        android:pathData="M124,180 a4,4 0 1 0 8,0 a4,4 0 1 0 -8,0 z" />
+    <path
+        android:fillColor="@color/loom_onSurface"
+        android:pathData="M140,180 a4,4 0 1 0 8,0 a4,4 0 1 0 -8,0 z" />
+    <path
+        android:fillColor="@color/loom_onSurface"
+        android:pathData="M156,180 a4,4 0 1 0 8,0 a4,4 0 1 0 -8,0 z" />
+    <path
+        android:fillColor="@color/loom_onSurface"
+        android:pathData="M172,180 a4,4 0 1 0 8,0 a4,4 0 1 0 -8,0 z" />
+    <path
+        android:fillColor="@color/loom_onSurface"
+        android:pathData="M188,180 a4,4 0 1 0 8,0 a4,4 0 1 0 -8,0 z" />
+    <path
+        android:fillColor="@color/loom_onSurface"
+        android:pathData="M204,180 a4,4 0 1 0 8,0 a4,4 0 1 0 -8,0 z" />
+    <path
+        android:fillColor="@color/loom_primary"
+        android:pathData="M221,169 h2 v22 h-2 z" />
+</vector>

@@ -71,12 +71,14 @@ class RouteRequestTest {
             Screen.ButtonKeyboard, Screen.Models, Screen.Advanced, Screen.Widgets(), Screen.Widgets(WidgetTab.NORMAL),
             Screen.Widgets(WidgetTab.PRO), Screen.Widgets(WidgetTab.PRO, "p1"), Screen.Widgets(edit = "default"),
             Screen.Help(4), Screen.Tutorial(2),
-            Screen.Tutorial(1, startBubbleAfter = true), Screen.Tutorial(0, kind = TutorialKind.AGENT),
+            Screen.Tutorial(1, startBubbleAfter = true), Screen.Tutorial(0, kind = TutorialKind.PRO_WIDGETS),
         )
         screens.forEach { assertEquals(it, Screen.decode(it.encode())) }
         assertEquals(Screen.Home, Screen.decode("unbekannt"))
         assertEquals("widgets:pro:p1", Screen.Widgets(WidgetTab.PRO, "p1").encode())
         assertEquals("advanced", Screen.Advanced.encode())
+        // Das Pro-Widgets-Heft behaelt den Schluessel aus 3.7.0 (Sprachauftrag).
+        assertEquals("tutorial:0:0:agent", Screen.Tutorial(kind = TutorialKind.PRO_WIDGETS).encode())
     }
 
     @Test fun alteBackStacksBleibenLesbar() {

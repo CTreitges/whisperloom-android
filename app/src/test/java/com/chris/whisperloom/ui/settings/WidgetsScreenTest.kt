@@ -390,7 +390,7 @@ class WidgetsScreenTest {
         compose.onNodeWithText("Widget platzieren: Startbildschirm lange drücken → Widgets → WhisperLoom → „Sprach-Command“.")
             .assertExists()
         click("Anleitung ansehen")
-        assertEquals(Screen.Tutorial(kind = TutorialKind.AGENT), nav.current)
+        assertEquals(Screen.Tutorial(kind = TutorialKind.PRO_WIDGETS), nav.current)
     }
 
     // --- Editor per Deep-Link (Widget-Tipp ohne Server) ------------------------------

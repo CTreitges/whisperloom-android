@@ -135,7 +135,7 @@ class AdvancedScreenTest {
         Prefs(ctx).proWidgetsEnabled = true
         show()
         click("Anleitung Pro Widgets")
-        assertEquals(Screen.Tutorial(kind = TutorialKind.AGENT), nav.current)
+        assertEquals(Screen.Tutorial(kind = TutorialKind.PRO_WIDGETS), nav.current)
     }
 
     @Test fun serverMikrofonUndOffenerAuftragStehenNichtMehrHier() {

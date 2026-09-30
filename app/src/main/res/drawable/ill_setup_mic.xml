@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Einrichtungs-Illustration Mikrofon: Android-Dialog mit Mikrofon im Kreis und zwei Buttons, der
+     obere (erlauben) in primary.
+     Flach und schematisch im Stil der uebrigen Tutorial-Bilder; nur @color/loom_*-Farben,
+     kein Text (Bildbeschreibung: img_setup_mic in strings.xml).
+     Erzeugt mit gen_setup.py. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:width="320dp"
+    android:height="240dp"
+    android:viewportWidth="320"
+    android:viewportHeight="240"
+    tools:ignore="VectorRaster">
+    <path
+        android:fillColor="@color/loom_surfaceContainerHigh"
+        android:pathData="M112,12 h96 a22,22 0 0 1 22,22 v172 a22,22 0 0 1 -22,22 h-96 a22,22 0 0 1 -22,-22 v-172 a22,22 0 0 1 22,-22 z" />
+    <path
+        android:fillColor="@color/loom_surfaceContainerLow"
+        android:pathData="M112,18 h96 a16,16 0 0 1 16,16 v172 a16,16 0 0 1 -16,16 h-96 a16,16 0 0 1 -16,-16 v-172 a16,16 0 0 1 16,-16 z" />
+    <path
+        android:fillColor="@color/loom_surfaceContainer"
+        android:pathData="M99.51,24 a16,16 0 0 0 -3.51,10 v10 h128 v-10 a16,16 0 0 0 -3.51,-10 z" />
+    <path
+        android:fillColor="@color/loom_onSurfaceVariant"
+        android:pathData="M109,31 h46 a3,3 0 0 1 3,3 v0 a3,3 0 0 1 -3,3 h-46 a3,3 0 0 1 -3,-3 v0 a3,3 0 0 1 3,-3 z" />
+    <path
+        android:fillColor="@color/loom_outlineVariant"
+        android:pathData="M110.5,54 h91 a2.5,2.5 0 0 1 2.5,2.5 v0 a2.5,2.5 0 0 1 -2.5,2.5 h-91 a2.5,2.5 0 0 1 -2.5,-2.5 v0 a2.5,2.5 0 0 1 2.5,-2.5 z" />
+    <path
+        android:fillColor="@color/loom_outlineVariant"
+        android:pathData="M110.5,64 h59 a2.5,2.5 0 0 1 2.5,2.5 v0 a2.5,2.5 0 0 1 -2.5,2.5 h-59 a2.5,2.5 0 0 1 -2.5,-2.5 v0 a2.5,2.5 0 0 1 2.5,-2.5 z" />
+    <path
+        android:fillColor="@color/loom_scrim"
+        android:fillAlpha="0.55"
+        android:pathData="M112,18 h96 a16,16 0 0 1 16,16 v172 a16,16 0 0 1 -16,16 h-96 a16,16 0 0 1 -16,-16 v-172 a16,16 0 0 1 16,-16 z" />
+    <path
+        android:fillColor="@color/loom_surfaceContainerHigh"
+        android:pathData="M122,102 h76 a18,18 0 0 1 18,18 v70 a18,18 0 0 1 -18,18 h-76 a18,18 0 0 1 -18,-18 v-70 a18,18 0 0 1 18,-18 z" />
+    <path
+        android:fillColor="@color/loom_surfaceContainerLow"
+        android:pathData="M135,102 a25,25 0 1 0 50,0 a25,25 0 1 0 -50,0 z" />
+    <path
+        android:fillColor="@color/loom_primary"
+        android:pathData="M139,102 a21,21 0 1 0 42,0 a21,21 0 1 0 -42,0 z" />
+    <group
+        android:translateX="145.6"
+        android:translateY="87.6"
+        android:scaleX="0.03"
+        android:scaleY="0.03">
+        <path
+            android:fillColor="@color/loom_onPrimary"
+            android:pathData="M480,560Q430,560 395,525Q360,490 360,440L360,200Q360,150 395,115Q430,80 480,80Q530,80 565,115Q600,150 600,200L600,440Q600,490 565,525Q530,560 480,560ZM480,320Q480,320 480,320Q480,320 480,320L480,320Q480,320 480,320Q480,320 480,320Q480,320 480,320Q480,320 480,320L480,320Q480,320 480,320Q480,320 480,320ZM440,800L440,717Q348,704 282.5,639Q217,574 203,481Q201,464 212,452Q223,440 240,440Q257,440 268.5,451.5Q280,463 284,480Q298,550 353.5,595Q409,640 480,640Q552,640 607,594.5Q662,549 676,480Q680,463 691.5,451.5Q703,440 720,440Q737,440 748,452Q759,464 757,481Q743,572 678,638Q613,704 520,717L520,800Q520,817 508.5,828.5Q497,840 480,840Q463,840 451.5,828.5Q440,817 440,800ZM480,480Q497,480 508.5,468.5Q520,457 520,440L520,200Q520,183 508.5,171.5Q497,160 480,160Q463,160 451.5,171.5Q440,183 440,200L440,440Q440,457 451.5,468.5Q463,480 480,480Z" />
+    </group>
+    <path
+        android:fillColor="@color/loom_onSurface"
+        android:pathData="M127,132 h66 a3,3 0 0 1 3,3 v0 a3,3 0 0 1 -3,3 h-66 a3,3 0 0 1 -3,-3 v0 a3,3 0 0 1 3,-3 z" />
+    <path
+        android:fillColor="@color/loom_onSurfaceVariant"
+        android:pathData="M136.5,143 h47 a2.5,2.5 0 0 1 2.5,2.5 v0 a2.5,2.5 0 0 1 -2.5,2.5 h-47 a2.5,2.5 0 0 1 -2.5,-2.5 v0 a2.5,2.5 0 0 1 2.5,-2.5 z" />
+    <path
+        android:fillColor="@color/loom_primary"
+        android:pathData="M123,157 h74 a9,9 0 0 1 9,9 v0 a9,9 0 0 1 -9,9 h-74 a9,9 0 0 1 -9,-9 v0 a9,9 0 0 1 9,-9 z" />
+    <path
+        android:fillColor="@color/loom_onPrimary"
+        android:pathData="M138.5,163.5 h43 a2.5,2.5 0 0 1 2.5,2.5 v0 a2.5,2.5 0 0 1 -2.5,2.5 h-43 a2.5,2.5 0 0 1 -2.5,-2.5 v0 a2.5,2.5 0 0 1 2.5,-2.5 z" />
+    <path
+        android:fillColor="@color/loom_surfaceContainerHighest"
+        android:pathData="M123,181 h74 a9,9 0 0 1 9,9 v0 a9,9 0 0 1 -9,9 h-74 a9,9 0 0 1 -9,-9 v0 a9,9 0 0 1 9,-9 z" />
+    <path
+        android:fillColor="@color/loom_onSurfaceVariant"
+        android:pathData="M144.5,187.5 h31 a2.5,2.5 0 0 1 2.5,2.5 v0 a2.5,2.5 0 0 1 -2.5,2.5 h-31 a2.5,2.5 0 0 1 -2.5,-2.5 v0 a2.5,2.5 0 0 1 2.5,-2.5 z" />
+</vector>

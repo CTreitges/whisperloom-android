@@ -47,8 +47,7 @@ fun AdvancedScreen(nav: NavState) {
 
     DetailScaffold(title = stringResource(R.string.settings_group_advanced), onBack = { nav.pop() }, snack = snack) { padding ->
         ScrollColumn(padding) {
-            // Platzhalter-Bild, bis ill_pro_features gezeichnet ist; der Bildtext beschreibt schon das neue Motiv.
-            GuideHeader(R.drawable.ill_agent_server, R.string.img_pro_features, text = stringResource(R.string.advanced_intro))
+            GuideHeader(R.drawable.ill_pro_features, R.string.img_pro_features, text = stringResource(R.string.advanced_intro))
 
             SectionCard(title = stringResource(R.string.advanced_card_features), gap = 4.dp) {
                 ProFeature.entries.forEach { f ->
@@ -67,7 +66,7 @@ fun AdvancedScreen(nav: NavState) {
                         nav.push(Screen.Widgets(WidgetTab.PRO))
                     }
                     NavRow(R.drawable.ic_help, stringResource(R.string.advanced_tutorial)) {
-                        nav.push(Screen.Tutorial(kind = TutorialKind.AGENT))
+                        nav.push(Screen.Tutorial(kind = TutorialKind.PRO_WIDGETS))
                     }
                 }
             }

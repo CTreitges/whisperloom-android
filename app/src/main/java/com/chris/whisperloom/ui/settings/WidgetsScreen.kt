@@ -156,8 +156,7 @@ fun WidgetsScreen(nav: NavState, tab: WidgetTab? = null, edit: String? = null) {
 /** Tab "Widgets": Platzhalter, bis es normale Widgets gibt; ohne Pro Widgets mit dem Weg zum Freischalten. */
 @Composable
 private fun NormalTab(nav: NavState, proOff: Boolean) {
-    // Platzhalter-Bild, bis ill_widgets_normal gezeichnet ist; der Bildtext beschreibt schon das neue Motiv.
-    GuideHeader(R.drawable.ill_tutorial_button, R.string.img_widgets_normal, text = stringResource(R.string.widgets_normal_soon))
+    GuideHeader(R.drawable.ill_widgets_normal, R.string.img_widgets_normal, text = stringResource(R.string.widgets_normal_soon))
     if (proOff) {
         InfoCard(
             text = stringResource(R.string.widgets_pro_unlock),
@@ -194,8 +193,7 @@ private fun ProTab(
     // Ohne Mikrofon zeigen die Widgets "nicht erlaubt" — nach dem Erlauben neu zeichnen.
     LaunchedEffect(hasMic) { widgets.redraw() }
 
-    // Platzhalter-Bild, bis ill_pro_widgets gezeichnet ist; der Bildtext beschreibt schon das neue Motiv.
-    GuideHeader(R.drawable.ill_agent_widget, R.string.img_pro_widgets, text = stringResource(R.string.widgets_pro_intro))
+    GuideHeader(R.drawable.ill_pro_widgets, R.string.img_pro_widgets, text = stringResource(R.string.widgets_pro_intro))
 
     if (!hasMic) {
         SectionCard(title = stringResource(R.string.agent_card_mic), gap = 4.dp) {
@@ -268,7 +266,7 @@ private fun ProTab(
             headline = stringResource(R.string.agent_tutorial),
             supporting = stringResource(R.string.agent_tutorial_sub),
             leading = { LoomIcon(R.drawable.ic_help, null, Modifier.size(24.dp), dim) },
-            onClick = { nav.push(Screen.Tutorial(kind = TutorialKind.AGENT)) },
+            onClick = { nav.push(Screen.Tutorial(kind = TutorialKind.PRO_WIDGETS)) },
         )
         listOf(R.string.agent_widget_hint, R.string.widgets_help_size, R.string.widgets_help_shared).forEach {
             Text(stringResource(it), style = MaterialTheme.typography.bodyMedium, color = dim)

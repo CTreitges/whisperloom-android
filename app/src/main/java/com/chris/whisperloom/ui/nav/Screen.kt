@@ -37,11 +37,11 @@ sealed class Screen(val key: String) {
      */
     data class Widgets(val tab: WidgetTab? = null, val edit: String? = null) : Screen("widgets")
 
-    /** [section] 1..7 = initial geoeffneter Hilfe-Abschnitt. */
+    /** [section] 1..8 = initial geoeffneter Hilfe-Abschnitt (6 = Widgets & Pro Widgets). */
     data class Help(val section: Int = 1) : Screen("help")
 
     /**
-     * Tutorial (T); [startPage] 0..3 = zuerst gezeigte Seite, [PAGE_SHARE] = Sprachnachrichten abtippen.
+     * Tutorial (T); [startPage] = zuerst gezeigte Seite des Heftes [kind], [PAGE_SHARE] = Sprachnachrichten abtippen.
      * [startBubbleAfter]: W9 "Knopf starten & los" — der schwebende Knopf startet erst beim Beenden des
      * Tutorials (sonst schwebt er darueber).
      */

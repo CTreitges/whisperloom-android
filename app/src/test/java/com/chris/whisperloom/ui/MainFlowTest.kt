@@ -4,6 +4,9 @@ import android.app.Application
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
@@ -32,13 +35,16 @@ import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.BuildConfig
 import com.chris.whisperloom.Engine
 import com.chris.whisperloom.Prefs
+import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.overlay.FloatingMicService
 import com.chris.whisperloom.ui.home.HomeScreen
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.RouteRequest
 import com.chris.whisperloom.ui.nav.Screen
+import com.chris.whisperloom.ui.nav.SetupRouter
 import com.chris.whisperloom.ui.nav.SystemStatus
+import com.chris.whisperloom.ui.settings.ButtonKeyboardScreen
 import com.chris.whisperloom.ui.settings.HUB_DIVIDER_TAG
 import com.chris.whisperloom.ui.settings.HelpScreen
 import com.chris.whisperloom.ui.settings.ModelsScreen
@@ -56,6 +62,7 @@ import com.chris.whisperloom.ui.state.AppEnv
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.PrefsState
 import com.chris.whisperloom.ui.theme.WhisperLoomTheme
+import com.chris.whisperloom.ui.tutorial.TutorialKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -69,7 +76,7 @@ import org.robolectric.annotation.Config
 
 /**
  * Compose-Semantik-Tests der Hauptscreens (Robolectric, kein Bitmap-Rendering): Router,
- * Assistent-Schritte 1/2a, E2, E4, B3, E5, Hub. Hohes Fenster, damit scrollende Spalten und
+ * Assistent-Schritte 1/2a und ihre Illustrationen, E2, E3, E4, B3, E5, Hub. Hohes Fenster, damit scrollende Spalten und
  * LazyColumns alles komponieren.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -100,13 +107,17 @@ class MainFlowTest {
         compose.waitForIdle()
     }
 
-    private fun screen(env: AppEnv, content: @Composable (NavState) -> Unit) {
+    private fun screen(env: AppEnv, content: @Composable (NavState) -> Unit): NavState {
         val nav = NavState(listOf(Screen.Home, Screen.SettingsHub))
         compose.setContent {
             WhisperLoomTheme { CompositionLocalProvider(LocalAppEnv provides env) { content(nav) } }
         }
         compose.waitForIdle()
+        return nav
     }
+
+    /** Bildtext (TalkBack) einer Illustration. */
+    private fun bild(res: Int) = compose.onNodeWithContentDescription(ctx.getString(res))
 
     // --- Router ----------------------------------------------------------------
 
@@ -121,6 +132,7 @@ class MainFlowTest {
         app(env())
         compose.onNodeWithText("Wie soll WhisperLoom Sprache erkennen?").assertIsDisplayed()
         compose.onNodeWithText("Weiter").assertIsNotEnabled()
+        bild(R.string.img_setup_engine).assertIsDisplayed()
     }
 
     @Test fun routerZeigtHomeMitHeroWennEingerichtet() {
@@ -239,6 +251,39 @@ class MainFlowTest {
     }
 
     // --- Assistent ---------------------------------------------------------------
+
+    @Test fun jederEinrichtungsschrittZeigtSeineIllustration() {
+        // Spec §8.2: Illustration statt Icon-Kreis; Zugang (online) = Schluessel, Tastatur = Tutorial-Bild.
+        prefs.welcomeSeen = true
+        prefs.engine = Engine.ONLINE
+        var step by mutableIntStateOf(SetupRouter.STEP_ENGINE)
+        val nav = NavState(listOf(Screen.Setup(step)))
+        compose.setContent {
+            WhisperLoomTheme { CompositionLocalProvider(LocalAppEnv provides env()) { SetupScreen(step, nav) } }
+        }
+        mapOf(
+            SetupRouter.STEP_ENGINE to R.string.img_setup_engine,
+            SetupRouter.STEP_ACCESS to R.string.img_help_key,
+            SetupRouter.STEP_MIC to R.string.img_setup_mic,
+            SetupRouter.STEP_OVERLAY to R.string.img_setup_overlay,
+            SetupRouter.STEP_A11Y to R.string.img_setup_a11y,
+            SetupRouter.STEP_NOTIF to R.string.img_setup_notif,
+            SetupRouter.STEP_KEYBOARD to R.string.tutorial_img_keyboard,
+        ).forEach { (s, res) ->
+            step = s
+            compose.waitForIdle()
+            bild(res).assertIsDisplayed()
+        }
+    }
+
+    @Test fun offlineZeigtBeimModellSchrittDieOfflineIllustration() {
+        prefs.welcomeSeen = true
+        prefs.engine = Engine.OFFLINE
+        screen(env()) { SetupScreen(SetupRouter.STEP_ACCESS, it) }
+        compose.onNodeWithText("Offline-Modell laden").assertIsDisplayed()
+        bild(R.string.img_help_offline).assertIsDisplayed()
+        bild(R.string.img_help_key).assertDoesNotExist()
+    }
 
     @Test fun schritt1AuswahlSchreibtEngine() {
         prefs.welcomeSeen = true
@@ -506,12 +551,80 @@ class MainFlowTest {
 
     // --- E5 Hilfe, Hub -------------------------------------------------------------
 
-    @Test fun hilfeHatSiebenAbschnitte() {
+    @Test fun hilfeHatAchtAbschnitteInDieserReihenfolge() {
         screen(env()) { HelpScreen(1, it) }
-        listOf(
+        val reihenfolge = listOf(
             "So funktioniert's", "Einrichtung Schritt für Schritt", "API-Key bekommen", "Eigener Server",
-            "Offline-Modus", "Datenschutz", "Wenn etwas nicht klappt",
-        ).forEach { compose.onNodeWithText(it).assertExists() }
+            "Offline-Modus", "Widgets & Pro Widgets", "Datenschutz", "Wenn etwas nicht klappt",
+        )
+        val oben = reihenfolge.map { compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
+        assertEquals("Von oben nach unten: $reihenfolge", oben.sorted(), oben)
+    }
+
+    @Test fun jederHilfeAbschnittBeginntMitSeinerIllustration() {
+        screen(env()) { HelpScreen(1, it) }
+        val bilder = listOf(
+            "So funktioniert's" to R.string.tutorial_img_button,
+            "Einrichtung Schritt für Schritt" to R.string.img_help_setup,
+            "API-Key bekommen" to R.string.img_help_key,
+            "Eigener Server" to R.string.img_agent_server,
+            "Offline-Modus" to R.string.img_help_offline,
+            "Widgets & Pro Widgets" to R.string.img_pro_widgets,
+            "Datenschutz" to R.string.img_help_privacy,
+            "Wenn etwas nicht klappt" to R.string.img_help_trouble,
+        )
+        // Abschnitt 1 ist offen, alle anderen zu: nur sein Bild ist da.
+        bild(bilder.first().second).assertExists()
+        bilder.drop(1).forEach { (_, res) -> bild(res).assertDoesNotExist() }
+        bilder.drop(1).forEach { (titel, res) ->
+            compose.onNodeWithText(titel).performClick()
+            compose.waitForIdle()
+            bild(res).assertExists()
+            // Wieder zu, sonst faellt der Rest aus dem Sichtbereich der LazyColumn.
+            compose.onNodeWithText(titel).performClick()
+            compose.waitForIdle()
+        }
+    }
+
+    @Test fun abschnitt6SindDieWidgetsMitWegZurAnleitung() {
+        val nav = screen(env()) { HelpScreen(6, it) }
+        bild(R.string.img_pro_widgets).assertExists()
+        bild(R.string.img_help_offline).assertDoesNotExist()
+        bild(R.string.img_help_privacy).assertDoesNotExist()
+        compose.onNodeWithText("Freischalten: Einstellungen → Erweitert → Pro Widgets.").assertExists()
+        compose.onNodeWithText("Anleitung Pro Widgets").performClick()
+        compose.waitForIdle()
+        assertEquals(Screen.Tutorial(kind = TutorialKind.PRO_WIDGETS), nav.current)
+    }
+
+    @Test fun abschnitt6FuehrtZuDenWidgets() {
+        val nav = screen(env()) { HelpScreen(6, it) }
+        compose.onNodeWithText("Zu den Widgets").performClick()
+        compose.waitForIdle()
+        assertEquals(Screen.Widgets(), nav.current)
+    }
+
+    @Test fun abschnitt7IstDerDatenschutz() {
+        screen(env()) { HelpScreen(7, it) }
+        bild(R.string.img_help_privacy).assertExists()
+        bild(R.string.img_pro_widgets).assertDoesNotExist()
+    }
+
+    @Test fun einZuHoherAbschnittOeffnetDenLetzten() {
+        // Bis 3.7.0 war 7 der letzte Abschnitt; jetzt ist es 8 "Wenn etwas nicht klappt".
+        screen(env()) { HelpScreen(99, it) }
+        bild(R.string.img_help_trouble).assertExists()
+        compose.onNodeWithText("Knopf erscheint nicht").assertExists()
+        bild(R.string.img_help_privacy).assertDoesNotExist()
+    }
+
+    @Test fun knopfUndTastaturBeginntMitDerKurzanleitung() {
+        screen(env()) { ButtonKeyboardScreen(it) }
+        bild(R.string.tutorial_img_button).assertExists()
+        val kurzanleitung = compose.onNodeWithText("Kurzanleitung").fetchSemanticsNode().boundsInRoot.top
+        val knopf = compose.onNodeWithText("Schwebender Knopf").fetchSemanticsNode().boundsInRoot.top
+        assertTrue("Kurzanleitung steht oben", kurzanleitung < knopf)
+        compose.onNodeWithText("Knopf antippen = Aufnahme").assertExists()
     }
 
     @Test fun hubZeigtAchtZeilenInVierGruppen() {

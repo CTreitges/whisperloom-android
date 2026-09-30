@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.Prefs
+import com.chris.whisperloom.R
 import com.chris.whisperloom.ui.nav.SystemStatus
 import com.chris.whisperloom.ui.state.AppEnv
 import com.chris.whisperloom.ui.state.LocalAppEnv
@@ -25,7 +26,10 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/** Tutorial (T): vier Seiten, Blaettern per "Weiter", Beenden setzt tutorialSeen und ruft onFinish. */
+/**
+ * Tutorial (T): Einsteiger vier Seiten, Pro Widgets sechs; Blaettern per "Weiter", Beenden setzt
+ * das Flag des Heftes und ruft onFinish.
+ */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w411dp-h2400dp-xxhdpi")
 class TutorialScreenTest {
@@ -122,16 +126,35 @@ class TutorialScreenTest {
         assertEquals(1, finished)
     }
 
-    // --- Zweites Heft: Sprachauftrag ----------------------------------------
+    // --- Zweites Heft: Pro Widgets ------------------------------------------
 
-    @Test fun dasSprachauftragHeftZeigtSeineEigenenSeiten() {
-        show(kind = TutorialKind.AGENT)
-        compose.onNodeWithText("Das Widget auf den Startbildschirm").assertIsDisplayed()
-        compose.onNodeWithContentDescription("Seite 1 von 4").assertIsDisplayed()
+    @Test fun dasProWidgetsHeftHatSechsSeitenMitEigenemBild() {
+        show(kind = TutorialKind.PRO_WIDGETS)
+        // Titel und Bildtext (TalkBack) je Seite, in dieser Reihenfolge.
+        val seiten = listOf(
+            "Pro Widgets freischalten" to R.string.img_pro_features,
+            "Widget anlegen" to R.string.img_pro_widgets,
+            "Server eintragen" to R.string.img_agent_server,
+            "Auf den Startbildschirm" to R.string.img_agent_widget,
+            "Tippen, sprechen, tippen" to R.string.img_agent_record,
+            "Die Antwort kommt im Chat" to R.string.img_agent_answer,
+        )
+        seiten.forEachIndexed { i, (titel, bild) ->
+            compose.onNodeWithText(titel).assertIsDisplayed()
+            compose.onNodeWithContentDescription(ctx.getString(bild)).assertIsDisplayed()
+            compose.onNodeWithContentDescription("Seite ${i + 1} von 6").assertIsDisplayed()
+            if (i < seiten.lastIndex) {
+                compose.onNodeWithText("Weiter").performClick()
+                compose.waitForIdle()
+            }
+        }
+        compose.onNodeWithText("Los geht's").assertIsDisplayed()
+        compose.onNodeWithText("Überspringen").assertDoesNotExist()
+        assertEquals(0, finished)
     }
 
-    @Test fun dasSprachauftragHeftSetztNurSeinEigenesFlag() {
-        show(kind = TutorialKind.AGENT)
+    @Test fun dasProWidgetsHeftSetztNurSeinEigenesFlag() {
+        show(kind = TutorialKind.PRO_WIDGETS)
         compose.onNodeWithText("Überspringen").performClick()
         compose.waitForIdle()
         val prefs = Prefs(ctx)
@@ -142,7 +165,28 @@ class TutorialScreenTest {
         assertEquals(1, finished)
     }
 
-    @Test fun dasEinsteigerHeftSetztNichtDasSprachauftragFlag() {
+    @Test fun losGehtsAufDerLetztenProSeiteSetztNurDasProFlag() {
+        show(startPage = 5, kind = TutorialKind.PRO_WIDGETS)
+        compose.onNodeWithText("Die Antwort kommt im Chat").assertIsDisplayed()
+        compose.onNodeWithText("Los geht's").performClick()
+        compose.waitForIdle()
+        assertTrue(Prefs(ctx).agentTutorialSeen)
+        assertFalse(Prefs(ctx).tutorialSeen)
+        assertEquals(1, finished)
+    }
+
+    @Test fun derSchluesselAgentUndSeinFlagBleibenAus370() {
+        // Gespeicherte Back-Stacks ("tutorial:0:0:agent") und das Gesehen-Flag stammen aus 3.7.0.
+        assertEquals("agent", TutorialKind.PRO_WIDGETS.key)
+        assertEquals(TutorialKind.PRO_WIDGETS, TutorialKind.fromKey("agent"))
+        val prefs = Prefs(ctx)
+        assertFalse(TutorialKind.PRO_WIDGETS.seen(prefs))
+        prefs.agentTutorialSeen = true
+        assertTrue(TutorialKind.PRO_WIDGETS.seen(prefs))
+        assertFalse(TutorialKind.BASICS.seen(prefs))
+    }
+
+    @Test fun dasEinsteigerHeftSetztNichtDasProWidgetsFlag() {
         show()
         compose.onNodeWithText("Überspringen").performClick()
         compose.waitForIdle()
