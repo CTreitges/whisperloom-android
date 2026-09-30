@@ -120,6 +120,8 @@ fun WidgetsScreen(nav: NavState, tab: WidgetTab? = null, edit: String? = null) {
         } else {
             // Die Tabs stehen fest ueber dem scrollenden Inhalt; die grosse App-Bar klappt trotzdem
             // ein (nestedScroll im DetailScaffold). Context7: material3 PrimaryTabRow/Tab.
+            // Tab (material3 1.4): unselectedContentColor faellt sonst auf selectedContentColor zurueck —
+            // der inaktive Tab saehe aus wie der aktive.
             Column(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding)) {
                 PrimaryTabRow(selectedTabIndex = shown.ordinal, containerColor = MaterialTheme.colorScheme.background) {
                     WidgetTab.entries.forEach { t ->
@@ -127,6 +129,8 @@ fun WidgetsScreen(nav: NavState, tab: WidgetTab? = null, edit: String? = null) {
                             selected = t == shown,
                             onClick = { if (nav.current is Screen.Widgets) nav.replaceTop(Screen.Widgets(t)) },
                             text = { Text(stringResource(if (t == WidgetTab.PRO) R.string.widgets_tab_pro else R.string.widgets_tab_normal)) },
+                            selectedContentColor = MaterialTheme.colorScheme.primary,
+                            unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
