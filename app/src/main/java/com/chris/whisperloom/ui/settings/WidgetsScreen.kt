@@ -43,8 +43,6 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.chris.whisperloom.R
 import com.chris.whisperloom.agent.ProfileIcon
 import com.chris.whisperloom.agent.Tier
-import com.chris.whisperloom.agent.VoiceTaskStore
-import com.chris.whisperloom.agent.VoiceTaskWork
 import com.chris.whisperloom.agent.WidgetIcons
 import com.chris.whisperloom.agent.WidgetKind
 import com.chris.whisperloom.agent.WidgetPhoto
@@ -190,7 +188,6 @@ private fun ProTab(
     // Ueber den Status, nicht per checkSelfPermission: den liest die Activity in onResume neu,
     // und nur so verschwindet die Warnkarte, nachdem der Nutzer das Mikrofon gerade erlaubt hat.
     val hasMic = env.status.micGranted
-    var offenerAuftrag by remember { mutableStateOf(VoiceTaskStore(ctx).hasWork) }
     val verworfen = stringResource(R.string.agent_discard_done)
     val dim = MaterialTheme.colorScheme.onSurfaceVariant
 
@@ -211,17 +208,16 @@ private fun ProTab(
         }
     }
 
-    if (offenerAuftrag) {
+    // Aus dem Zustand, nicht einmal beim Anzeigen gelesen: Loeschen im Editor nimmt den Auftrag
+    // seines Widgets mit, die Karte muss dann mit verschwinden.
+    if (widgets.hasWork) {
         SectionCard(title = stringResource(R.string.agent_card_pending), gap = 4.dp) {
             LoomRow(
                 headline = stringResource(R.string.agent_discard),
                 supporting = stringResource(R.string.agent_discard_sub),
                 leading = { LoomIcon(R.drawable.ic_delete, null, Modifier.size(24.dp), dim) },
                 onClick = {
-                    VoiceTaskWork.cancel(ctx)
-                    VoiceTaskStore(ctx).clear()
-                    widgets.redraw()
-                    offenerAuftrag = false
+                    widgets.discardWork()
                     snack.show(verworfen)
                 },
             )

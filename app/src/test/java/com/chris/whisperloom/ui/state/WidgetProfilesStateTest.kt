@@ -170,6 +170,7 @@ class WidgetProfilesStateTest {
         s.delete(p.id)
 
         assertFalse("Sein Server ist weg — an einen anderen darf der Auftrag nicht", VoiceTaskStore(ctx).hasWork)
+        assertFalse("Die Karte \"Offener Auftrag\" geht mit", s.hasWork)
         assertEquals(1, abgebrochen())
     }
 
@@ -182,7 +183,31 @@ class WidgetProfilesStateTest {
         s.delete(WidgetProfile.DEFAULT_ID) // nicht loeschbar — also bleibt auch sein Auftrag
 
         assertTrue(VoiceTaskStore(ctx).hasWork)
+        assertTrue(s.hasWork)
         assertEquals(0, abgebrochen())
+    }
+
+    @Test fun verwerfenBrichtDenAuftragAbUndLeertDenSpiegel() {
+        val abgebrochen = offenerAuftrag(WidgetProfile.DEFAULT_ID)
+        val s = WidgetProfilesState(ctx)
+        assertTrue(s.hasWork)
+
+        s.discardWork()
+
+        assertFalse(VoiceTaskStore(ctx).hasWork)
+        assertFalse(s.hasWork)
+        assertEquals(1, abgebrochen())
+    }
+
+    @Test fun neuLesenSiehtEinenInzwischenGesendetenAuftrag() {
+        offenerAuftrag(WidgetProfile.DEFAULT_ID)
+        val s = WidgetProfilesState(ctx)
+        VoiceTaskStore(ctx).clear() // der Worker hat gesendet, waehrend die App im Hintergrund lag
+        assertTrue("Vorbedingung: noch der alte Stand", s.hasWork)
+
+        s.reload()
+
+        assertFalse(s.hasWork)
     }
 
     @Test fun neuLesenRaeumtFotosAbgebrochenerImporteWeg() {

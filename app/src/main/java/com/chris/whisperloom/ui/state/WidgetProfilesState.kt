@@ -34,6 +34,13 @@ class WidgetProfilesState(context: Context) {
     var placed: List<PlacedWidget> by mutableStateOf(readPlaced())
         private set
 
+    /**
+     * Ob ein Auftrag auf den Versand wartet (Karte "Offener Auftrag"). Ein Spiegel wie die anderen:
+     * Loeschen kann ihn mitnehmen ([delete]), der Worker ihn im Hintergrund senden ([reload]).
+     */
+    var hasWork: Boolean by mutableStateOf(VoiceTaskStore(app).hasWork)
+        private set
+
     /** Nur die Profile dieser Stufe — fuer die Tabs "Widgets" und "Pro Widgets". */
     fun profiles(tier: Tier): List<WidgetProfile> = profiles.filter { it.kind.tier == tier }
 
@@ -92,6 +99,13 @@ class WidgetProfilesState(context: Context) {
         return store.delete(id).also { changed(redraw = true) }
     }
 
+    /** Den offenen Auftrag verwerfen, egal von welchem Widget er kommt. */
+    fun discardWork() {
+        VoiceTaskWork.cancel(app)
+        VoiceTaskStore(app).clear()
+        changed(redraw = true)
+    }
+
     fun bind(widgetId: Int, profileId: String) {
         store.bind(widgetId, profileId)
         changed(redraw = true)
@@ -107,6 +121,7 @@ class WidgetProfilesState(context: Context) {
         store.sweepPhotos()
         profiles = store.all()
         placed = readPlaced()
+        hasWork = VoiceTaskStore(app).hasWork
     }
 
     fun redraw() = VoiceTaskWidget.refresh(app)
@@ -114,6 +129,7 @@ class WidgetProfilesState(context: Context) {
     private fun changed(redraw: Boolean) {
         profiles = store.all()
         placed = readPlaced()
+        hasWork = VoiceTaskStore(app).hasWork
         if (redraw) redraw()
     }
 

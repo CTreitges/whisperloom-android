@@ -11,6 +11,7 @@ import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.result.ActivityResultRegistry
 import androidx.activity.result.ActivityResultRegistryOwner
 import androidx.activity.result.contract.ActivityResultContract
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -115,6 +116,9 @@ class WidgetsScreenTest {
 
     /** Was der Photo Picker zurueckgibt — er antwortet sofort, statt eine echte Auswahl zu oeffnen. */
     private var bild: Uri? = null
+
+    /** Angefragte Berechtigungen: der System-Dialog erscheint nicht, die Anfrage bleibt offen. */
+    private val angefragt = mutableListOf<Any?>()
     private val bildWahl = object : ActivityResultRegistryOwner {
         override val activityResultRegistry = object : ActivityResultRegistry() {
             override fun <I, O> onLaunch(
@@ -123,7 +127,7 @@ class WidgetsScreenTest {
                 input: I,
                 options: ActivityOptionsCompat?,
             ) {
-                dispatchResult(requestCode, bild)
+                if (contract is ActivityResultContracts.RequestPermission) angefragt += input else dispatchResult(requestCode, bild)
             }
         }
     }
@@ -317,6 +321,24 @@ class WidgetsScreenTest {
         compose.onNodeWithText("Für Pro Widgets fehlt die Mikrofon-Berechtigung.").assertDoesNotExist()
     }
 
+    @Test fun derMikrofonHinweisFragtErstNachDemEigenenHinweis() {
+        // Play-Pflicht (Prominent Disclosure): vor dem System-Dialog steht der eigene Hinweis, und
+        // nur "Fortfahren" fragt die Berechtigung an.
+        val titel = ctx.getString(R.string.disclosure_mic_title)
+        show(micGranted = false)
+        click("Für Pro Widgets fehlt die Mikrofon-Berechtigung.")
+        compose.onNodeWithText(titel).assertIsDisplayed()
+        assertTrue("Noch keine Anfrage", angefragt.isEmpty())
+
+        click("Abbrechen")
+        compose.onNodeWithText(titel).assertDoesNotExist()
+        assertTrue("Abbrechen fragt nichts an", angefragt.isEmpty())
+
+        click("Für Pro Widgets fehlt die Mikrofon-Berechtigung.")
+        click(ctx.getString(R.string.disclosure_continue))
+        assertEquals(listOf(android.Manifest.permission.RECORD_AUDIO), angefragt)
+    }
+
     @Test fun ohneOffenenAuftragGibtEsNichtsZuVerwerfen() {
         show()
         compose.onNodeWithText("Offenen Auftrag verwerfen").assertDoesNotExist()
@@ -338,6 +360,27 @@ class WidgetsScreenTest {
         assertEquals(1, abgebrochen)
         assertFalse("Der Auftrag muss wirklich weg sein", VoiceTaskStore(ctx).hasWork)
         compose.onNodeWithText("Offenen Auftrag verwerfen").assertDoesNotExist()
+    }
+
+    @Test fun loeschenImEditorNimmtDieKarteOffenerAuftragMit() {
+        // Editor und Karte liegen im selben Tab: nach dem Loeschen darf keine Karte stehen bleiben,
+        // deren Tipp "Auftrag verworfen" meldet, obwohl nichts mehr da ist.
+        val p = store.create("Einkauf")
+        VoiceTaskStore(ctx).begin(FloatArray(800) { 0.3f }, 4000, "2026-09-21T20:00:00Z", p.id)
+        val echtesCancel = VoiceTaskWork.cancelImpl
+        VoiceTaskWork.cancelImpl = { }
+        try {
+            show()
+            compose.onNodeWithText("Offenen Auftrag verwerfen").assertExists()
+            bearbeiten("Einkauf")
+            click("Widget löschen")
+            click("Löschen")
+        } finally {
+            VoiceTaskWork.cancelImpl = echtesCancel
+        }
+        assertFalse(VoiceTaskStore(ctx).hasWork)
+        compose.onNodeWithText("Offenen Auftrag verwerfen").assertDoesNotExist()
+        compose.onNodeWithText("Offener Auftrag").assertDoesNotExist()
     }
 
     // --- Hilfe -------------------------------------------------------------------------
