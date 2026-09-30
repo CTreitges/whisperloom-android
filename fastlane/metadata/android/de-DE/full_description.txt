@@ -16,8 +16,8 @@ Text nach Bedarf:
 • Für KI-Nutzer, in den erweiterten Optionen einschaltbar: die Stufe „Prompt“ formt ein Diktat zu einem gut gegliederten Prompt für ChatGPT, Claude & Co.
 • Schalter „Automatische Absätze“: Die KI gliedert längere Diktate in Absätze – oder, ausgeschaltet, alles als ein durchgehender Text.
 
-Sprachnachrichten abtippen: In WhatsApp, Telegram oder Signal eine Nachricht teilen → WhisperLoom. Der Text erscheint gut lesbar in Absätzen, wahlweise wortgetreu oder ohne Füllwörter, zum Kopieren und Weitergeben.
+Sprachnachrichten abtippen: In WhatsApp, Telegram oder Signal eine Nachricht teilen → WhisperLoom. Der Text erscheint gut lesbar in Absätzen, wahlweise wortgetreu oder ohne Füllwörter, zum Kopieren und Weitergeben. Auf Wunsch mit eigener KI-Stufe: Glätten, Verschönern oder Zusammenfassen.
 
-Sprachauftrag an deinen eigenen Agenten: Tippen, sprechen, tippen – WhisperLoom schreibt mit und schickt den Auftrag an einen Server, den du selbst betreibst; die Antwort kommt dort an, wo du deinem Agenten sonst schreibst. Übertragung läuft weiter, auch wenn der Bildschirm ausgeht. Braucht einen eigenen Server (die quelloffene Gegenstelle liegt auf GitHub) und ist ohne Einrichtung unsichtbar.
+Sprachauftrag an deinen eigenen Agenten: Tippen, sprechen, tippen – WhisperLoom schreibt mit und schickt den Auftrag an einen Server, den du selbst betreibst; die Antwort kommt dort an, wo du deinem Agenten sonst schreibst. Übertragung läuft weiter, auch wenn der Bildschirm ausgeht. Jedes Widget kann ein eigenes Profil tragen – Name, Symbol oder Galerie-Bild, Auto-Stopp nach einer Sprechpause – und ist frei skalierbar von 1 × 1 bis 4 × 2. Braucht einen eigenen Server (die quelloffene Gegenstelle liegt auf GitHub) und ist ohne Einrichtung unsichtbar.
 
 Datenschutz: Dein API-Key bleibt auf dem Gerät. Online geht nur das Audio an den von dir gewählten Anbieter, offline verlässt nichts das Gerät. Keine Konten, keine Werbung, kein Tracking.

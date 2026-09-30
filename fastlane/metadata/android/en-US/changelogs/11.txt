@@ -1,0 +1,5 @@
+WhisperLoom 3.7.0
+• Shared voice messages (e.g. WhatsApp) can get their own AI level: polish, rephrase or summarise
+• Widget profiles: own name, icon or gallery picture, auto-stop after a pause; widget freely resizable, new "Widgets" submenu
+• Fixed: offline recognition cut long recordings mid-word every 30 s
+• Fixed: voice task widget got stuck on "sending"
