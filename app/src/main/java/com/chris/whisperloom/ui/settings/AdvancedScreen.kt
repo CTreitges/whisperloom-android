@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.chris.whisperloom.ProFeature
 import com.chris.whisperloom.R
 import com.chris.whisperloom.agent.VoiceTaskWidget
@@ -46,8 +47,16 @@ fun AdvancedScreen(nav: NavState) {
     val widgets = remember { WidgetProfilesState(ctx) }
 
     // Die Widgets zeigen "aus", solange Pro Widgets aus sind — nach jedem Umschalten neu zeichnen.
+    // Und den offenen Auftrag neu lesen: er kann entstanden sein, waehrend "Erweitert" offen lag.
     LaunchedEffect(prefs.proWidgetsEnabled) {
         VoiceTaskWidget.refresh(ctx)
+        widgets.reload()
+    }
+
+    // Ein Auftrag entsteht oder endet, waehrend die App im Hintergrund ist (wie im Widget-Menue).
+    LifecycleResumeEffect(widgets) {
+        widgets.reload()
+        onPauseOrDispose { }
     }
 
     DetailScaffold(title = stringResource(R.string.settings_group_advanced), onBack = { nav.pop() }, snack = snack) { padding ->

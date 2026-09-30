@@ -11,6 +11,7 @@ import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.ProFeature
@@ -193,6 +194,32 @@ class AdvancedScreenTest {
 
         compose.onNodeWithText("Offenen Auftrag verwerfen").assertDoesNotExist()
         assertTrue("Einschalten verwirft nichts", VoiceTaskStore(ctx).hasWork)
+    }
+
+    @Test fun einAuftragAusDerZwischenzeitErscheintBeimAusschaltenDerProWidgets() {
+        // "Erweitert" bleibt offen (ein Deep-Link mit gleichem Screen haelt die Composition), der
+        // Auftrag entsteht im Hintergrund — beim Ausschalten muss die Karte trotzdem erscheinen.
+        Prefs(ctx).proWidgetsEnabled = true
+        show()
+        offenerAuftrag()
+
+        click("Pro Widgets")
+
+        compose.onNodeWithText("Offener Auftrag").assertIsDisplayed()
+        compose.onNodeWithText("Offenen Auftrag verwerfen").assertExists()
+    }
+
+    @Test fun einAuftragAusDerZwischenzeitErscheintNachDerRueckkehrInDieApp() {
+        show()
+        compose.onNodeWithText("Offener Auftrag").assertDoesNotExist()
+        offenerAuftrag()
+
+        compose.activityRule.scenario.moveToState(Lifecycle.State.STARTED)
+        compose.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
+        compose.waitForIdle()
+
+        compose.onNodeWithText("Offener Auftrag").assertIsDisplayed()
+        compose.onNodeWithText("Offenen Auftrag verwerfen").assertExists()
     }
 
     @Test fun umschaltenZeichnetDieWidgetsNeu() {
