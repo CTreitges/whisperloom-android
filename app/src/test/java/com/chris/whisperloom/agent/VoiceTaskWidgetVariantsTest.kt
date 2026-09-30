@@ -12,7 +12,6 @@ import android.widget.ImageView
 import android.widget.RemoteViews
 import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
-import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -40,7 +39,11 @@ class VoiceTaskWidgetVariantsTest {
     private val ctx: Context = ApplicationProvider.getApplicationContext()
     private val manager: AppWidgetManager get() = AppWidgetManager.getInstance(ctx)
 
-    private val einkauf = WidgetProfile(id = "p1", name = "Einkauf", icon = ProfileIcon.BuiltIn("shopping_cart"))
+    // Mit Server: ohne waere ein Widget im Ruhezustand "Server fehlt" statt bereit.
+    private val einkauf = WidgetProfile(
+        id = "p1", name = "Einkauf", icon = ProfileIcon.BuiltIn("shopping_cart"),
+        serverUrl = TEST_SERVER_URL, serverToken = TEST_SERVER_TOKEN,
+    )
     private val mitFoto = einkauf.copy(icon = ProfileIcon.Photo("p1-1.png"))
 
     @Before fun leeren() {
@@ -136,6 +139,14 @@ class VoiceTaskWidgetVariantsTest {
         assertEquals(R.drawable.ic_send, ressource(angewendet(variante(WidgetLayout.STACK, einkauf, state = VoiceTaskState.SENT))))
     }
 
+    @Test fun ohneServerStehtDasServerSymbolStattDesFotos() {
+        WidgetLayout.entries.forEach { layout ->
+            val wurzel = angewendet(variante(layout, mitFoto, foto(), VoiceTaskState.NO_SERVER))
+            assertEquals("$layout", R.drawable.ic_dns, ressource(wurzel))
+            assertEquals(View.GONE, sichtbarkeit(wurzel, R.id.widget_photo))
+        }
+    }
+
     @Test fun einFotoVerdraengtDasSymbolAuchBeimWiederverwenden() {
         // Der Launcher recycelt die View bei gleichem Layout (reapply): jede Sichtbarkeit muss
         // bei jedem Zeichnen neu gesetzt werden, sonst bleibt das vorige Bild stehen.
@@ -182,8 +193,9 @@ class VoiceTaskWidgetVariantsTest {
 
     // --- Echte Widgets mit Profilen -----------------------------------------
 
+    /** Pro Widgets an, Mikrofon erlaubt, das Standardprofil mit Server — alle Widgets bereit. */
     private fun bereitMachen() {
-        Prefs(ctx).proWidgetsEnabled = true
+        serverEinrichten(ctx)
         shadowOf(ctx as android.app.Application).grantPermissions(android.Manifest.permission.RECORD_AUDIO)
     }
 

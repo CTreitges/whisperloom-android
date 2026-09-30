@@ -131,4 +131,18 @@ class VoiceTaskWidgetLifecycleTest {
             shadowOf(manager).getViewFor(id).findViewById<View>(R.id.widget_name),
         )
     }
+
+    @Test @Config(sdk = [30])
+    fun unterAndroid12ZeichnetEineGroessenaenderungMitDemServerDesProfils() {
+        serverEinrichten(ctx)
+        shadowOf(ctx as android.app.Application).grantPermissions(android.Manifest.permission.RECORD_AUDIO)
+        val ohne = store.create("Ohne Server")
+        val id = widget()
+        store.bind(id, ohne.id)
+
+        manager.updateAppWidgetOptions(id, einsZuEins())
+
+        val zeile = shadowOf(manager).getViewFor(id).findViewById<TextView>(R.id.widget_status).text.toString()
+        assertEquals("Das Standardprofil hat einen Server, dieses Widget nicht", ctx.getString(R.string.widget_no_server), zeile)
+    }
 }

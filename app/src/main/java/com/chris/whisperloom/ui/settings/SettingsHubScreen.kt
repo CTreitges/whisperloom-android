@@ -96,10 +96,10 @@ fun SettingsHubScreen(nav: NavState) {
             item { HubRow(R.drawable.ic_graphic_eq, stringResource(R.string.settings_group_recognition), recognition) { nav.push(Screen.Recognition) } }
             item { HubRow(R.drawable.ic_auto_fix_high, stringResource(R.string.settings_group_text), text) { nav.push(Screen.TextSettings) } }
             item { HubRow(R.drawable.ic_touch_app, stringResource(R.string.settings_group_button), button) { nav.push(Screen.ButtonKeyboard) } }
-            item { HubRow(R.drawable.ic_layers, stringResource(R.string.settings_group_widgets), widgets) { nav.push(Screen.Widgets) } }
+            item { HubRow(R.drawable.ic_layers, stringResource(R.string.settings_group_widgets), widgets) { nav.push(Screen.Widgets()) } }
             item { HubRow(R.drawable.ic_download_for_offline, stringResource(R.string.settings_group_models), models) { nav.push(Screen.Models) } }
             item { HubRow(R.drawable.ic_help, stringResource(R.string.settings_group_help), stringResource(R.string.settings_help_sub)) { nav.push(Screen.Help(1)) } }
-            item { HubRow(R.drawable.ic_build, stringResource(R.string.settings_group_agent), agent) { nav.push(Screen.Agent) } }
+            item { HubRow(R.drawable.ic_build, stringResource(R.string.settings_group_agent), agent) { nav.push(Screen.Advanced) } }
             item {
                 HubRow(
                     R.drawable.ic_info, stringResource(R.string.settings_group_about),

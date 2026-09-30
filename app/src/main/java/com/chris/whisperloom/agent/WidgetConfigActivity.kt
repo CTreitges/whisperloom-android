@@ -77,10 +77,11 @@ class WidgetConfigActivity : ComponentActivity() {
             AppWidgetManager.getInstance(this).getAppWidgetInfo(id)?.provider ==
             ComponentName(this, VoiceTaskWidget::class.java)
 
-    /** Binden, diese Instanz selbst zeichnen, OK melden. */
+    /** Binden, diese Instanz mit ihrem Profil selbst zeichnen (ohne Server: "Server fehlt"), OK melden. */
     private fun pick(profileId: String) {
-        WidgetProfileStore(this).bind(widgetId, profileId)
-        val (state, message) = VoiceTaskWidget.resolve(this)
+        val store = WidgetProfileStore(this)
+        store.bind(widgetId, profileId)
+        val (state, message) = VoiceTaskWidget.resolve(this, store.forWidget(widgetId))
         VoiceTaskWidgetView.pushTo(this, AppWidgetManager.getInstance(this), intArrayOf(widgetId), state, message = message)
         setResult(RESULT_OK, result())
         finish()

@@ -19,8 +19,14 @@ enum class VoiceTaskState {
     ERROR,
     NO_MIC,
 
-    /** Sprachauftrag ist nicht eingeschaltet oder nicht eingerichtet — Tipp fuehrt in die Einstellungen. */
+    /** Pro Widgets sind aus — Tipp fuehrt nach "Erweitert". */
     OFF,
+
+    /**
+     * Das Profil dieses Widgets hat keinen gueltigen Server — Tipp oeffnet seinen Editor. Ein
+     * Ruhezustand je Widget: laeuft ein Auftrag, zeigen alle Widgets ihn ([VoiceTaskWidget.idle]).
+     */
+    NO_SERVER,
 }
 
 /** Was ein Tipp auf das Widget bedeutet. Absichten, kein Umschalter (ein Doppelklick darf nichts kippen). */
@@ -146,7 +152,7 @@ object VoiceTaskUi {
         VoiceTaskState.READY, VoiceTaskState.SENT -> TapIntent.START
         VoiceTaskState.RECORDING -> TapIntent.STOP
         VoiceTaskState.ERROR -> TapIntent.RETRY
-        VoiceTaskState.NO_MIC, VoiceTaskState.OFF -> TapIntent.SETUP
+        VoiceTaskState.NO_MIC, VoiceTaskState.OFF, VoiceTaskState.NO_SERVER -> TapIntent.SETUP
         // Keine neue Aufnahme: der Tipp stoesst den wartenden Auftrag an (siehe [nudge]). Ohne
         // diesen Weg bliebe ein haengendes "arbeitet" fuer immer stehen, ohne jede Tippflaeche.
         VoiceTaskState.WORKING -> TapIntent.REFRESH

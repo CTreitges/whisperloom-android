@@ -13,6 +13,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -46,6 +47,7 @@ import com.chris.whisperloom.ui.components.SectionCard
 import com.chris.whisperloom.ui.components.rememberSnack
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
+import com.chris.whisperloom.ui.nav.WidgetTab
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.WidgetProfilesState
 import kotlinx.coroutines.Dispatchers
@@ -53,17 +55,26 @@ import kotlinx.coroutines.withContext
 
 /**
  * Untermenue "Widgets": Profile anlegen und bearbeiten ([WidgetProfileSheet]), jedem Widget auf
- * dem Startbildschirm ein Profil zuordnen, kurze Hilfe. Immer im Hub erreichbar; ist der
- * Sprachauftrag nicht eingerichtet, steht oben ein Hinweis mit dem Weg dorthin.
+ * dem Startbildschirm ein Profil zuordnen, kurze Hilfe. Immer im Hub erreichbar; sind Pro Widgets
+ * aus, steht oben ein Hinweis mit dem Weg dorthin.
+ *
+ * [tab] = gewuenschter Starttab (die Tabs selbst folgen). [edit] = Profil-Id, deren Editor sich
+ * beim ersten Anzeigen oeffnet (Widget-Tipp ohne Server).
  */
 @Composable
-fun WidgetsScreen(nav: NavState) {
+fun WidgetsScreen(nav: NavState, tab: WidgetTab? = null, edit: String? = null) {
     val ctx = LocalContext.current
     val prefs = LocalAppEnv.current.prefs
     val snack = rememberSnack()
     val widgets = remember { WidgetProfilesState(ctx) }
-    var editing by rememberSaveable { mutableStateOf<String?>(null) }
+    var editing by rememberSaveable { mutableStateOf(edit) }
     var picking by rememberSaveable { mutableStateOf<Int?>(null) }
+
+    // Der Editor-Wunsch gilt einmal: aus dem Back-Stack nehmen, sonst oeffnete jedes Zurueck
+    // von einem anderen Screen (und jede Wiederherstellung) den Editor erneut.
+    LaunchedEffect(Unit) {
+        if (edit != null && nav.current is Screen.Widgets) nav.replaceTop(Screen.Widgets(tab))
+    }
 
     // Widgets kommen auf dem Startbildschirm dazu oder verschwinden, waehrend die App im Hintergrund ist.
     LifecycleResumeEffect(widgets) {
@@ -77,7 +88,7 @@ fun WidgetsScreen(nav: NavState) {
                 InfoCard(
                     text = stringResource(R.string.widgets_agent_off),
                     action = {
-                        TextButton(onClick = { nav.push(Screen.Agent) }) { Text(stringResource(R.string.settings_group_agent)) }
+                        TextButton(onClick = { nav.push(Screen.Advanced) }) { Text(stringResource(R.string.settings_group_agent)) }
                     },
                 )
             }

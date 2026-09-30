@@ -566,7 +566,8 @@
     <string name="widget_sent">Gesendet</string>
     <string name="widget_sent_raw">Gesendet — ohne Textverbesserung</string>
     <string name="widget_no_mic">Mikrofon nicht erlaubt — tippen</string>
-    <string name="widget_off">Sprachauftrag ist aus — tippen</string>
+    <string name="widget_off">Pro Widgets aus — tippen</string>
+    <string name="widget_no_server">Server fehlt — tippen</string>
     <string name="widget_fgs_failed">Aufnahme ließ sich nicht starten — App öffnen und erneut versuchen</string>
     <!-- Nur der Grund: angezeigt über widget_error_retry, das den Tipp-Hinweis selbst anhängt. -->
     <string name="widget_silent">Kein Ton aufgenommen</string>
@@ -582,6 +583,7 @@
     <string name="cd_widget_sent_raw">Auftrag gesendet, aber ohne Textverbesserung: %1$s</string>
     <string name="cd_widget_error">%1$s — antippen für erneuten Versuch</string>
     <string name="cd_widget_no_mic">Mikrofon nicht erlaubt — antippen, um es zu erlauben</string>
+    <string name="cd_widget_no_server">Server fehlt. Tippen, um ihn einzutragen.</string>
     <!-- Widget mit eigenem Profilnamen: %1$s = Name, %2$s = Zustandstext wie oben -->
     <string name="cd_widget_named">%1$s: %2$s</string>
     <string name="agent_channel">Sprachauftrag</string>

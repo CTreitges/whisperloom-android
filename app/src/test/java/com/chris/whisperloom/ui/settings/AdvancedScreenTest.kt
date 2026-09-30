@@ -17,6 +17,7 @@ import com.chris.whisperloom.agent.WidgetProfile
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SystemStatus
+import com.chris.whisperloom.ui.nav.WidgetTab
 import com.chris.whisperloom.ui.state.AppEnv
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.PrefsState
@@ -34,12 +35,12 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
- * E7 — Erweiterte Optionen: Schalter, Mikrofon, offener Auftrag, Anleitung. Adresse, Token und
+ * E7 — "Erweitert": Schalter, Mikrofon, offener Auftrag, Anleitung. Adresse, Token und
  * "Verbindung pruefen" stehen seit 3.7.1 je Widget im Profil-Editor.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w411dp-h2400dp-xxhdpi")
-class AgentScreenTest {
+class AdvancedScreenTest {
 
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()
@@ -58,11 +59,11 @@ class AgentScreenTest {
 
     private fun show(micGranted: Boolean = true) {
         gelesenerStatus = SystemStatus(micGranted = micGranted)
-        nav = NavState(listOf(Screen.SettingsHub, Screen.Agent))
+        nav = NavState(listOf(Screen.SettingsHub, Screen.Advanced))
         env = AppEnv(PrefsState(Prefs(ctx)), gelesenerStatus) { gelesenerStatus }
         compose.setContent {
             WhisperLoomTheme {
-                CompositionLocalProvider(LocalAppEnv provides env) { AgentScreen(nav) }
+                CompositionLocalProvider(LocalAppEnv provides env) { AdvancedScreen(nav) }
             }
         }
         compose.waitForIdle()
@@ -95,11 +96,11 @@ class AgentScreenTest {
         assertEquals(Screen.Tutorial(kind = TutorialKind.AGENT), nav.current)
     }
 
-    @Test fun derWidgetHinweisFuehrtInsUntermenueWidgets() {
+    @Test fun derWidgetHinweisFuehrtZuDenProWidgets() {
         show()
         compose.onNodeWithText("Profile, Symbole und Auto-Stopp einstellen").performClick()
         compose.waitForIdle()
-        assertEquals(Screen.Widgets, nav.current)
+        assertEquals(Screen.Widgets(WidgetTab.PRO), nav.current)
     }
 
     @Test fun ohneMikrofonErscheintDerHinweisNurWennEingeschaltet() {

@@ -50,8 +50,33 @@ class AppNavTest {
         assertTrue(newTask(i))
     }
 
+    @Test fun erweitertZieltAufMainActivityMitRouteAdvanced() {
+        val i = AppNav.advanced(ctx)
+        assertEquals(MainActivity::class.java.name, i.component?.className)
+        assertEquals("advanced", i.getStringExtra(AppNav.EXTRA_ROUTE))
+        assertTrue(newTask(i))
+    }
+
+    @Test fun proWidgetsZieltAufDieWidgetsOhneProfil() {
+        val i = AppNav.proWidgets(ctx)
+        assertEquals(MainActivity::class.java.name, i.component?.className)
+        assertEquals("widgets", i.getStringExtra(AppNav.EXTRA_ROUTE))
+        assertFalse(i.hasExtra(AppNav.EXTRA_PROFILE))
+        assertTrue(newTask(i))
+    }
+
+    @Test fun widgetProfileTraegtDasProfil() {
+        val i = AppNav.widgetProfile(ctx, "p1")
+        assertEquals("widgets", i.getStringExtra(AppNav.EXTRA_ROUTE))
+        assertEquals("p1", i.getStringExtra(AppNav.EXTRA_PROFILE))
+        assertTrue(newTask(i))
+    }
+
     @Test fun extraNamenSindStabil() {
         assertEquals("route", AppNav.EXTRA_ROUTE)
         assertEquals("step", AppNav.EXTRA_STEP)
+        assertEquals("profile", AppNav.EXTRA_PROFILE)
+        // "agent" steht in Intents von 3.7.0 und bleibt als Alias fuer "Erweitert".
+        assertEquals("agent", AppNav.ROUTE_AGENT)
     }
 }

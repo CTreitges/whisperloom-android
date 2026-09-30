@@ -15,7 +15,6 @@ import com.chris.whisperloom.R
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -85,6 +84,12 @@ class VoiceTaskTrampolineTest {
 
     private fun gestarteterDienst(): Intent? = shadowOf(app).nextStartedService
 
+    /** Wohin die App aufging: Route und (bei "widgets") das Profil, dessen Editor sich oeffnet. */
+    private fun appZiel(): Pair<String?, String?> =
+        shadowOf(app).nextStartedActivity.let { it?.getStringExtra(AppNav.EXTRA_ROUTE) to it?.getStringExtra(AppNav.EXTRA_PROFILE) }
+
+    private val proTab = AppNav.ROUTE_WIDGETS to null
+
     @Test fun tippenAufBereitStartetDenAufnahmeDienst() {
         tippen(TapIntent.START)
         assertEquals(VoiceTaskService.ACTION_START, gestarteterDienst()?.action)
@@ -102,23 +107,38 @@ class VoiceTaskTrampolineTest {
         shadowOf(app).denyPermissions(Manifest.permission.RECORD_AUDIO)
         tippen(TapIntent.START)
         assertNull("Ohne Berechtigung darf kein Dienst starten", gestarteterDienst())
-        val ziel = shadowOf(app).nextStartedActivity
-        assertNotNull("Der Tipp darf nicht ins Leere laufen", ziel)
-        assertEquals(AppNav.ROUTE_AGENT, ziel?.getStringExtra(AppNav.EXTRA_ROUTE))
+        // Pro-Tab: dort steht die Mikrofon-Karte.
+        assertEquals("Der Tipp darf nicht ins Leere laufen", proTab, appZiel())
     }
 
-    @Test fun ohneEingerichtetenServerFuehrtDerTippInDieApp() {
+    @Test fun ohneEingerichtetenServerOeffnetDerTippDenEditorDesWidgets() {
         serverEinrichten(app, token = "")
         tippen(TapIntent.START)
         assertNull(gestarteterDienst())
-        assertEquals(AppNav.ROUTE_AGENT, shadowOf(app).nextStartedActivity?.getStringExtra(AppNav.EXTRA_ROUTE))
+        assertEquals(AppNav.ROUTE_WIDGETS to WidgetProfile.DEFAULT_ID, appZiel())
     }
 
-    @Test fun ohneProWidgetsFuehrtDerTippInDieApp() {
+    @Test fun ohneProWidgetsFuehrtDerTippNachErweitert() {
         Prefs(app).proWidgetsEnabled = false
         tippen(TapIntent.START)
         assertNull("Aus heisst aus — auch mit eingerichtetem Server", gestarteterDienst())
-        assertEquals(AppNav.ROUTE_AGENT, shadowOf(app).nextStartedActivity?.getStringExtra(AppNav.EXTRA_ROUTE))
+        assertEquals(AppNav.ROUTE_ADVANCED to null, appZiel())
+    }
+
+    @Test fun proAusGehtVorMikrofonUndServer() {
+        serverEinrichten(app, token = "")
+        Prefs(app).proWidgetsEnabled = false
+        shadowOf(app).denyPermissions(Manifest.permission.RECORD_AUDIO)
+        tippen(TapIntent.SETUP)
+        assertEquals(AppNav.ROUTE_ADVANCED to null, appZiel())
+    }
+
+    @Test fun dasMikrofonGehtVorDemServer() {
+        // Ohne Mikrofon nuetzt auch ein Server nichts — die Karte dafuer steht im Pro-Tab.
+        serverEinrichten(app, token = "")
+        shadowOf(app).denyPermissions(Manifest.permission.RECORD_AUDIO)
+        tippen(TapIntent.SETUP)
+        assertEquals(proTab, appZiel())
     }
 
     @Test fun erneutSendenBrauchtKeinMikrofonUndKeinenDienst() {
@@ -164,8 +184,9 @@ class VoiceTaskTrampolineTest {
     }
 
     @Test fun derTippInDieEinstellungenOeffnetDieApp() {
+        // Nichts fehlt (z. B. ein alter Tipp von "aus"): dann eben der Pro-Tab.
         tippen(TapIntent.SETUP)
-        assertEquals(AppNav.ROUTE_AGENT, shadowOf(app).nextStartedActivity?.getStringExtra(AppNav.EXTRA_ROUTE))
+        assertEquals(proTab, appZiel())
         assertNull(gestarteterDienst())
     }
 
@@ -203,13 +224,23 @@ class VoiceTaskTrampolineTest {
         profiles.bind(42, ohne.id)
         tippen(TapIntent.START, 42)
         assertNull(gestarteterDienst())
-        assertEquals(AppNav.ROUTE_AGENT, shadowOf(app).nextStartedActivity?.getStringExtra(AppNav.EXTRA_ROUTE))
+        assertEquals("Der Editor genau dieses Widgets", AppNav.ROUTE_WIDGETS to ohne.id, appZiel())
 
         serverEinrichten(app, token = "")
         val mit = serverEinrichten(app, profiles.create("Mit Server").id)
         profiles.bind(43, mit.id)
         tippen(TapIntent.START, 43)
         assertEquals("Auch wenn das Standardprofil keinen Server hat", 43, widgetIdIm(gestarteterDienst()))
+    }
+
+    @Test fun derSetupTippEinesWidgetsOhneServerOeffnetDessenEditor() {
+        // So tippt das Widget im Zustand "Server fehlt": SETUP mit seiner Instanz.
+        val profiles = WidgetProfileStore(app)
+        val ohne = profiles.create("Ohne Server")
+        profiles.bind(42, ohne.id)
+        tippen(TapIntent.SETUP, 42)
+        assertEquals(AppNav.ROUTE_WIDGETS to ohne.id, appZiel())
+        assertNull(gestarteterDienst())
     }
 
     @Test fun ohneWidgetStartetDerDienstWieBisher() {

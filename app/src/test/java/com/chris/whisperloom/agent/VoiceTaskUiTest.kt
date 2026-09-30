@@ -66,6 +66,7 @@ class VoiceTaskUiTest {
         assertEquals(TapIntent.RETRY, VoiceTaskUi.tap(VoiceTaskState.ERROR))
         assertEquals(TapIntent.SETUP, VoiceTaskUi.tap(VoiceTaskState.NO_MIC))
         assertEquals(TapIntent.SETUP, VoiceTaskUi.tap(VoiceTaskState.OFF))
+        assertEquals(TapIntent.SETUP, VoiceTaskUi.tap(VoiceTaskState.NO_SERVER))
         assertEquals(TapIntent.REFRESH, VoiceTaskUi.tap(VoiceTaskState.WORKING))
     }
 

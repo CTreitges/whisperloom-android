@@ -36,6 +36,7 @@ import com.chris.whisperloom.agent.serverEinrichten
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SystemStatus
+import com.chris.whisperloom.ui.nav.WidgetTab
 import com.chris.whisperloom.ui.state.AppEnv
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.PrefsState
@@ -87,15 +88,16 @@ class WidgetsScreenTest {
         }
     }
 
-    private fun show(screen: Screen = Screen.Widgets) {
+    private fun show(screen: Screen = Screen.Widgets()) {
         nav = NavState(listOf(Screen.SettingsHub, screen).distinct())
         val env = AppEnv(PrefsState(Prefs(ctx)), SystemStatus(micGranted = true)) { SystemStatus(micGranted = true) }
         compose.setContent {
             WhisperLoomTheme {
                 CompositionLocalProvider(LocalAppEnv provides env, LocalActivityResultRegistryOwner provides bildWahl) {
-                    when (nav.current) {
+                    when (val s = nav.current) {
                         Screen.SettingsHub -> SettingsHubScreen(nav)
-                        else -> WidgetsScreen(nav)
+                        is Screen.Widgets -> WidgetsScreen(nav, s.tab, s.edit)
+                        else -> Unit
                     }
                 }
             }
@@ -118,7 +120,7 @@ class WidgetsScreenTest {
         compose.onNodeWithText("Widgets").assertExists()
         compose.onNodeWithText("1 Profil · noch keins auf dem Startbildschirm").assertExists()
         click("Widgets")
-        assertEquals(Screen.Widgets, nav.current)
+        assertEquals(Screen.Widgets(), nav.current)
     }
 
     @Test fun hubZaehltProfileUndPlatzierteWidgets() {
@@ -135,13 +137,44 @@ class WidgetsScreenTest {
         compose.onNodeWithText("Der Sprachauftrag ist aus. Die Widgets nehmen erst auf, wenn er unter „Erweiterte Optionen“ eingerichtet ist.")
             .assertIsDisplayed()
         click("Erweiterte Optionen")
-        assertEquals(Screen.Agent, nav.current)
+        assertEquals(Screen.Advanced, nav.current)
     }
 
     @Test fun mitProWidgetsKeinHinweis() {
         serverEinrichten(ctx)
         show()
         compose.onNodeWithText("Erweiterte Optionen").assertDoesNotExist()
+    }
+
+    // --- Editor per Deep-Link (Widget-Tipp ohne Server) ------------------------------
+
+    @Test fun einProfilAusDemDeepLinkOeffnetSeinenEditor() {
+        val p = store.create("Einkauf")
+        show(Screen.Widgets(WidgetTab.PRO, p.id))
+        compose.onNodeWithText("Profil bearbeiten").assertExists()
+        compose.onNode(hasSetTextAction() and hasText("Einkauf")).assertExists()
+    }
+
+    @Test fun derEditorAusDemDeepLinkOeffnetSichNurEinmal() {
+        val p = store.create("Einkauf")
+        show(Screen.Widgets(WidgetTab.PRO, p.id))
+        assertEquals("Der Wunsch ist verbraucht, der Tab bleibt", Screen.Widgets(WidgetTab.PRO), nav.current)
+        click("Fertig")
+
+        // Weg und zurueck: der Screen entsteht neu — der Editor darf nicht wieder aufgehen.
+        compose.runOnIdle { nav.push(Screen.Advanced) }
+        compose.waitForIdle()
+        compose.runOnIdle { nav.pop() }
+        compose.waitForIdle()
+
+        compose.onNodeWithText("Einkauf").assertExists()
+        compose.onNodeWithText("Profil bearbeiten").assertDoesNotExist()
+    }
+
+    @Test fun einGeloeschtesProfilAusDemDeepLinkOeffnetNichts() {
+        show(Screen.Widgets(WidgetTab.PRO, "weg"))
+        compose.onNodeWithText("Profil bearbeiten").assertDoesNotExist()
+        compose.onNodeWithText("Neues Profil").assertExists()
     }
 
     // --- Profile -------------------------------------------------------------------

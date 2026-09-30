@@ -103,7 +103,14 @@ class VoiceTaskWidgetViewTest {
     }
 
     @Test fun ausgeschaltetFuehrtInDieEinstellungen() {
-        assertEquals(ctx.getString(R.string.widget_off), status(VoiceTaskState.OFF))
+        assertEquals("Pro Widgets aus — tippen", status(VoiceTaskState.OFF))
+        assertEquals(TapIntent.SETUP, VoiceTaskUi.tap(VoiceTaskState.OFF))
+    }
+
+    @Test fun ohneServerSagtDasWidgetWasFehlt() {
+        assertEquals("Server fehlt — tippen", status(VoiceTaskState.NO_SERVER))
+        assertEquals("Server fehlt. Tippen, um ihn einzutragen.", cd(VoiceTaskState.NO_SERVER))
+        assertEquals("Der Tipp fuehrt zum Server-Feld, nicht in eine Aufnahme", TapIntent.SETUP, VoiceTaskUi.tap(VoiceTaskState.NO_SERVER))
     }
 
     @Test fun jederZustandHatEinenEigenenBildschirmleserText() {
@@ -173,5 +180,110 @@ class VoiceTaskWidgetViewTest {
         serverEinrichten(ctx)
         shadowOf(ctx as android.app.Application).denyPermissions(android.Manifest.permission.RECORD_AUDIO)
         assertEquals(ctx.getString(R.string.widget_no_mic), zeileEinesEchtenWidgets())
+    }
+
+    @Test fun einNeuesWidgetOhneServerSagtDas() {
+        Prefs(ctx).proWidgetsEnabled = true
+        shadowOf(ctx as android.app.Application).grantPermissions(android.Manifest.permission.RECORD_AUDIO)
+        assertEquals(ctx.getString(R.string.widget_no_server), zeileEinesEchtenWidgets())
+    }
+
+    // --- Zustand je Widget ---------------------------------------------------
+
+    private val manager: AppWidgetManager get() = AppWidgetManager.getInstance(ctx)
+
+    private val ohneServer = WidgetProfile(id = "ohne", name = "Ohne Server")
+    private val mitServer = WidgetProfile(id = "mit", name = "Mit Server", serverUrl = TEST_SERVER_URL, serverToken = TEST_SERVER_TOKEN)
+
+    private fun mikrofon(erlaubt: Boolean) {
+        val app = shadowOf(ctx as android.app.Application)
+        if (erlaubt) app.grantPermissions(android.Manifest.permission.RECORD_AUDIO)
+        else app.denyPermissions(android.Manifest.permission.RECORD_AUDIO)
+    }
+
+    private fun zeile(id: Int): String =
+        shadowOf(manager).getViewFor(id).findViewById<TextView>(R.id.widget_status).text.toString()
+
+    /** Zwei Widgets: [first] zeigt das Standardprofil (mit Server), [second] ein Profil ohne Server. */
+    private fun zweiWidgets(): Pair<Int, Int> {
+        serverEinrichten(ctx)
+        mikrofon(true)
+        val store = WidgetProfileStore(ctx)
+        val ohne = store.create("Ohne Server")
+        val mit = shadowOf(manager).createWidget(VoiceTaskWidget::class.java, R.layout.widget_task)
+        val leer = shadowOf(manager).createWidget(VoiceTaskWidget::class.java, R.layout.widget_task)
+        store.bind(leer, ohne.id)
+        return mit to leer
+    }
+
+    @Test fun derZustandEinesWidgetsFolgtEinerFestenReihenfolge() {
+        Prefs(ctx).proWidgetsEnabled = true
+        mikrofon(true)
+        assertEquals(VoiceTaskState.READY to "", VoiceTaskWidget.resolve(ctx, mitServer))
+        assertEquals(VoiceTaskState.NO_SERVER to "", VoiceTaskWidget.resolve(ctx, ohneServer))
+
+        // Ein offener Auftrag zeigen alle Widgets — auch eines ohne Server.
+        val auftrag = VoiceTaskStore(ctx)
+        auftrag.begin(FloatArray(800) { 0.3f }, 4000, "2026-09-30T12:00:00Z", WidgetProfile.DEFAULT_ID)
+        auftrag.state = VoiceTaskState.ERROR
+        auftrag.message = "Server nicht erreichbar"
+        assertEquals(VoiceTaskState.ERROR to "Server nicht erreichbar", VoiceTaskWidget.resolve(ctx, ohneServer))
+
+        mikrofon(false)
+        assertEquals(VoiceTaskState.NO_MIC to "", VoiceTaskWidget.resolve(ctx, ohneServer))
+
+        Prefs(ctx).proWidgetsEnabled = false
+        assertEquals("Aus schlaegt alles", VoiceTaskState.OFF to "", VoiceTaskWidget.resolve(ctx, mitServer))
+    }
+
+    @Test fun nurDerRuhezustandHaengtAmServerDesProfils() {
+        assertEquals(VoiceTaskState.NO_SERVER, VoiceTaskWidget.idle(VoiceTaskState.READY, ohneServer))
+        assertEquals(VoiceTaskState.READY, VoiceTaskWidget.idle(VoiceTaskState.NO_SERVER, mitServer))
+        VoiceTaskState.entries.filter { it != VoiceTaskState.READY && it != VoiceTaskState.NO_SERVER }.forEach {
+            assertEquals("$it gilt fuer alle Widgets", it, VoiceTaskWidget.idle(it, ohneServer))
+        }
+    }
+
+    @Test fun jedesWidgetZeichnetSeinenEigenenRuhezustand() {
+        val (mit, leer) = zweiWidgets()
+
+        VoiceTaskWidget().onUpdate(ctx, manager, intArrayOf(mit, leer))
+
+        assertEquals(ctx.getString(R.string.widget_ready), zeile(mit))
+        assertEquals(ctx.getString(R.string.widget_no_server), zeile(leer))
+    }
+
+    @Test fun nachEinerAenderungZeichnetJedesWidgetSeinenRuhezustand() {
+        // Der Weg aller Einstellungs-Screens: refresh() rechnet einmal und zeichnet je Instanz.
+        val (mit, leer) = zweiWidgets()
+        VoiceTaskWidgetView.push(ctx, VoiceTaskState.ERROR, message = "Merkzeichen")
+
+        VoiceTaskWidget.refresh(ctx)
+
+        assertEquals(ctx.getString(R.string.widget_ready), zeile(mit))
+        assertEquals(ctx.getString(R.string.widget_no_server), zeile(leer))
+    }
+
+    @Test fun einLaufenderAuftragStehtAufAllenWidgets() {
+        // "Alle Widgets zeigen dieselbe Aufnahme" — auch eines ohne eigenen Server.
+        val (mit, leer) = zweiWidgets()
+
+        VoiceTaskWidgetView.push(ctx, VoiceTaskState.RECORDING, 7_000)
+        assertEquals("0:07", zeile(mit))
+        assertEquals("0:07", zeile(leer))
+
+        VoiceTaskWidgetView.push(ctx, VoiceTaskState.SENT)
+        assertEquals(ctx.getString(R.string.widget_sent), zeile(mit))
+        assertEquals(ctx.getString(R.string.widget_sent), zeile(leer))
+    }
+
+    @Test fun ausgeschaltetSindAlleWidgetsAus() {
+        val (mit, leer) = zweiWidgets()
+        Prefs(ctx).proWidgetsEnabled = false
+
+        VoiceTaskWidget.refresh(ctx)
+
+        assertEquals(ctx.getString(R.string.widget_off), zeile(mit))
+        assertEquals(ctx.getString(R.string.widget_off), zeile(leer))
     }
 }

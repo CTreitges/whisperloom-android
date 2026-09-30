@@ -31,18 +31,19 @@ import com.chris.whisperloom.ui.components.rememberPermissionRequest
 import com.chris.whisperloom.ui.components.rememberSnack
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
+import com.chris.whisperloom.ui.nav.WidgetTab
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.tutorial.TutorialKind
 
 /**
- * E7 — Erweiterte Optionen: Sprachauftrag an einen eigenen Agenten und die Stufe "Prompt".
+ * E7 — "Erweitert": schaltet die Pro-/Entwickler-Funktionen frei (Pro Widgets, Stufe "Prompt").
  *
- * Bewusst der einzige Ort, an dem der Sprachauftrag auftaucht: Startbildschirm, Assistent und
- * Home-Status bleiben unangetastet. Wer ihn nicht nutzt, soll ihn nicht bemerken. Dasselbe gilt
- * fuer "Prompt": die Stufe erscheint in Tastatur und Einstellungen erst mit dem Schalter hier.
+ * Bewusst der einzige Ort, an dem sie sich einschalten lassen: Startbildschirm, Assistent und
+ * Home-Status bleiben unangetastet. Wer sie nicht nutzt, soll sie nicht bemerken. "Prompt"
+ * erscheint in Tastatur und Einstellungen erst mit dem Schalter hier.
  */
 @Composable
-fun AgentScreen(nav: NavState) {
+fun AdvancedScreen(nav: NavState) {
     val ctx = LocalContext.current
     val env = LocalAppEnv.current
     val prefs = env.prefs
@@ -123,7 +124,7 @@ fun AgentScreen(nav: NavState) {
                     supporting = stringResource(R.string.agent_widget_manage),
                     leading = { LoomIcon(R.drawable.ic_touch_app, null, Modifier.size(24.dp), MaterialTheme.colorScheme.onSurfaceVariant) },
                     trailing = { LoomIcon(R.drawable.ic_chevron_right, null, Modifier.size(24.dp), MaterialTheme.colorScheme.onSurfaceVariant) },
-                    onClick = { nav.push(Screen.Widgets) },
+                    onClick = { nav.push(Screen.Widgets(WidgetTab.PRO)) },
                 )
             }
         }

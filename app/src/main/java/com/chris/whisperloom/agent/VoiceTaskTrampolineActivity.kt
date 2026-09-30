@@ -103,9 +103,21 @@ class VoiceTaskTrampolineActivity : Activity() {
         }
     }
 
-    /** Einstellungen der App — dort wird das Mikrofon erlaubt bzw. der Server eingetragen. */
+    /**
+     * Die App dort oeffnen, wo sich das Hindernis dieses Widgets beheben laesst: Pro Widgets aus
+     * → "Erweitert"; kein Mikrofon → Tab "Pro Widgets" (Mikrofon-Karte); Profil ohne Server →
+     * dessen Editor; sonst der Tab "Pro Widgets".
+     */
     private fun openApp() {
-        startActivity(AppNav.agent(this))
+        val widgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
+        val profile = WidgetProfileStore(this).forWidget(widgetId)
+        val target = when {
+            !Prefs(this).proWidgetsEnabled -> AppNav.advanced(this)
+            !VoiceTaskWidget.hasMicPermission(this) -> AppNav.proWidgets(this)
+            !profile.serverReady -> AppNav.widgetProfile(this, profile.id)
+            else -> AppNav.proWidgets(this)
+        }
+        startActivity(target)
     }
 
     companion object {

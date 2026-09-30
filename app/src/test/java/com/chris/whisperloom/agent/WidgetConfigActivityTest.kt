@@ -142,6 +142,29 @@ class WidgetConfigActivityTest {
         assertTrue(shadowOf(manager).getViewFor(id).contentDescription.startsWith("Einkauf"))
     }
 
+    @Test fun dieWahlZeichnetDasWidgetMitDemServerSeinesProfils() {
+        serverEinrichten(ctx)
+        shadowOf(ctx as android.app.Application).grantPermissions(android.Manifest.permission.RECORD_AUDIO)
+        store.create("Einkauf")
+        val id = unseres()
+        oeffnen(id)
+
+        compose.onNode(hasText("Einkauf") and isSelectable()).performClick()
+        compose.waitForIdle()
+
+        assertEquals("Nur das Standardprofil hat einen Server", ctx.getString(R.string.widget_no_server), zeile(id))
+    }
+
+    @Test fun stillGebundenIstEinWidgetMitServerBereit() {
+        serverEinrichten(ctx)
+        shadowOf(ctx as android.app.Application).grantPermissions(android.Manifest.permission.RECORD_AUDIO)
+        val id = unseres()
+
+        erzeugen(id)
+
+        assertEquals(ctx.getString(R.string.widget_ready), zeile(id))
+    }
+
     // --- Neu konfigurieren ------------------------------------------------------------------
 
     @Test fun neuKonfigurierenFragtAuchBeiNurEinemProfil() {
