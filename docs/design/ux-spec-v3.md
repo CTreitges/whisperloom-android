@@ -1427,7 +1427,9 @@ je Widget abschaltbar (`showName`). Idealgrößen ICON 40 × 58, ROW 120 × 48, 
 Zustand **NO_SERVER**: Hintergrund wie bereit, `ic_dns` in `loom_outline`, `widget_no_server`. Ruhezustand
 je Widget (aus → kein Mikrofon → laufender Auftrag → kein Server → bereit); aktive Zustände zeigen alle.
 Tipp-Ziele: Pro aus → E7, kein Mikrofon → E8 Tab Pro, kein Server → Editor dieses Widgets, sonst E8 Tab Pro
-(auch die Aufnahme-Notification). Routen `AppNav.ROUTE_ADVANCED = "advanced"` (Alias `agent`),
+(auch die Aufnahme-Notification). Erneut senden (Fehler mit offenem Auftrag, egal auf welchem Widget)
+prüft das Widget des Auftrags wie der Worker: gelöscht → verwerfen und neu aufnehmen, Pro aus → E7, ohne
+Server → dessen Editor, sonst senden. Routen `AppNav.ROUTE_ADVANCED = "advanced"` (Alias `agent`),
 `ROUTE_WIDGETS = "widgets"` mit Extra `profile`.
 
 **Daten.** `WidgetProfile` neu `kind`, `showName` (true), `serverUrl`, `serverToken` in

@@ -42,6 +42,8 @@ class VoiceTaskTrampolineTest {
     private var phase = JobPhase.NONE
     private val echterEnqueue = VoiceTaskWork.enqueueImpl
     private val echtePhase = VoiceTaskWork.phaseImpl
+    private val echtesCancel = VoiceTaskWork.cancelImpl
+    private var abgebrochen = 0
 
     @Before fun aufbauen() {
         app.getSharedPreferences("whisperloom", Context.MODE_PRIVATE).edit().clear().commit()
@@ -57,11 +59,13 @@ class VoiceTaskTrampolineTest {
             aufrufe += ohneNetzBedingung(request)
         }
         VoiceTaskWork.phaseImpl = { phase }
+        VoiceTaskWork.cancelImpl = { abgebrochen++ }
     }
 
     @After fun abbauen() {
         VoiceTaskWork.enqueueImpl = echterEnqueue
         VoiceTaskWork.phaseImpl = echtePhase
+        VoiceTaskWork.cancelImpl = echtesCancel
         ShadowAudioRecord.clearSource()
     }
 
@@ -289,6 +293,82 @@ class VoiceTaskTrampolineTest {
     @Test fun eineIntentOhneAbsichtIstHarmlos() {
         assertEquals(TapIntent.NONE, VoiceTaskTrampolineActivity.intentOf(Intent()))
         assertEquals(TapIntent.NONE, VoiceTaskTrampolineActivity.intentOf(null))
+    }
+
+    // --- Erneut senden nur, was das Widget des Auftrags senden kann ------------
+
+    /** Ein roter Auftrag des Widgets [name]; [server] = false: dessen Server ist ungueltig. */
+    private fun auftragVon(name: String, server: Boolean = true): WidgetProfile {
+        val created = WidgetProfileStore(app).create(name)
+        val p = if (server) serverEinrichten(app, created.id) else created
+        store.begin(FloatArray(800) { 0.3f }, 4000, "2026-09-21T20:00:00Z", p.id)
+        store.state = VoiceTaskState.ERROR
+        return p
+    }
+
+    /** Widget [widgetId] zeigt ein Profil mit eigenem, gueltigem Server. */
+    private fun widgetMitServer(widgetId: Int, name: String = "Mit Server"): WidgetProfile {
+        val p = serverEinrichten(app, WidgetProfileStore(app).create(name).id)
+        WidgetProfileStore(app).bind(widgetId, p.id)
+        return p
+    }
+
+    @Test fun mitProWidgetsAusFuehrtErneutSendenNachErweitert() {
+        // Frueher lief jeder Tipp erneut in "Pro Widgets sind aus" — und nie dorthin, wo man es aendert.
+        auftrag()
+        store.state = VoiceTaskState.ERROR
+        store.message = app.getString(R.string.widget_task_pro_off)
+        Prefs(app).proWidgetsEnabled = false
+
+        tippen(TapIntent.RETRY, 42)
+
+        assertEquals("Nichts senden", emptyList<Boolean>(), aufrufe)
+        assertEquals(AppNav.ROUTE_ADVANCED to null, appZiel())
+        assertTrue("Der Auftrag bleibt fuer nach dem Einschalten", store.hasWork)
+        assertNull(gestarteterDienst())
+    }
+
+    @Test fun ohneServerImWidgetDesAuftragsOeffnetErneutSendenDessenEditor() {
+        // Getippt wird Widget B mit gueltigem Server, der Auftrag gehoert aber A ohne Server. Frueher
+        // schickte jeder Tipp auf B den Auftrag von A erneut ins Leere, und B konnte nie aufnehmen.
+        val a = auftragVon("A", server = false)
+        widgetMitServer(43, "B")
+
+        tippen(TapIntent.RETRY, 43)
+
+        assertEquals("Nichts senden", emptyList<Boolean>(), aufrufe)
+        assertEquals("Der Editor von A, nicht von B", AppNav.ROUTE_WIDGETS to a.id, appZiel())
+        assertTrue("Nach dem Eintragen reicht ein Tipp", store.hasWork)
+        assertNull(gestarteterDienst())
+    }
+
+    @Test fun istDasWidgetDesAuftragsGeloeschtWirdVerworfenUndNeuAufgenommen() {
+        // Den Auftrag kann niemand mehr senden (nie an einen fremden Server) — wie im Worker verwerfen.
+        val w = widget()
+        val a = auftragVon("A")
+        WidgetProfileStore(app).delete(a.id)
+
+        tippen(TapIntent.RETRY, w)
+
+        assertEquals(1, abgebrochen)
+        assertFalse(store.hasWork)
+        assertEquals("Nichts senden", emptyList<Boolean>(), aufrufe)
+        assertEquals("Das Widget zeigt wieder seinen Ruhezustand", app.getString(R.string.widget_ready), zeile(w))
+        assertEquals("Und der Tipp nimmt neu auf", w, widgetIdIm(gestarteterDienst()))
+    }
+
+    @Test fun einSendbarerAuftragGehtAuchVomAnderenWidgetRaus() {
+        // Unveraendert: hat das Widget des Auftrags einen Server, sendet jeder Tipp ihn erneut.
+        auftragVon("A")
+        widgetMitServer(43, "B")
+
+        tippen(TapIntent.RETRY, 43)
+
+        assertEquals(listOf(true), aufrufe)
+        assertEquals(0, abgebrochen)
+        assertTrue(store.hasWork)
+        assertNull(gestarteterDienst())
+        assertNull("Die App bleibt zu", shadowOf(app).nextStartedActivity)
     }
 
     // --- Tipp auf "Wird gesendet …" (#10) -----------------------------------

@@ -815,7 +815,7 @@ Alle Widgets zeigen dieselbe Aufnahme: startest du mit einem, zeigen alle „nim
 | rot, laufende Zeit | nimmt auf | beendet die Aufnahme und schickt den Auftrag los (mit Auto-Stopp passiert das auch von selbst nach der Sprechpause) |
 | blau, „Wird gesendet …“ | schreibt mit und überträgt | sendet sofort, wenn der Auftrag nur wartet. Läuft gerade ein Versuch, passiert erst nach drei Minuten etwas (bei der Offline-Erkennung erst, wenn sie fertig gerechnet hat) — ein ungeduldiger zweiter Tipp soll nichts doppelt bezahlen |
 | grün, „Gesendet“ | der Auftrag ist draußen | startet eine neue Aufnahme |
-| rot mit Fehlergrund | etwas hat nicht geklappt | schickt **denselben** Auftrag noch einmal, ohne neu aufzunehmen |
+| rot mit Fehlergrund | etwas hat nicht geklappt | schickt **denselben** Auftrag noch einmal, ohne neu aufzunehmen. Kann er so nicht raus (Pro Widgets aus, seinem Widget fehlt der Server), öffnet der Tipp stattdessen die Stelle, an der du es behebst |
 | grau mit Server-Symbol, „Server fehlt — tippen“ | diesem Widget fehlen Adresse oder Token | öffnet **Widget bearbeiten** für genau dieses Widget |
 | grau mit durchgestrichenem Mikrofon, „Pro Widgets aus — tippen“ | der Schalter „Pro Widgets“ ist aus | öffnet **Erweitert** |
 | rot, „Mikrofon nicht erlaubt — tippen“ | WhisperLoom darf das Mikrofon nicht nutzen | öffnet den Tab „Pro Widgets“ mit der Karte **Mikrofon** |
@@ -840,10 +840,10 @@ Der Schalter unter Erweitert ist aus. Der Tipp führt direkt dorthin.
 Diesem Widget fehlen Server-Adresse oder Token, oder die Adresse ist ungültig. Der Tipp öffnet **Widget bearbeiten** für genau dieses Widget; sobald Adresse und Token stimmen, ist es bereit.
 
 **„Server fehlt im Widget „…“ — tippen für erneuten Versuch“**
-Ein Auftrag wartet, aber sein Widget hat inzwischen keinen gültigen Server mehr. Der Auftrag bleibt gespeichert: Server im Editor eintragen, dann aufs Widget tippen — er geht los, ohne neu aufzunehmen.
+Ein Auftrag wartet, aber sein Widget hat inzwischen keinen gültigen Server mehr. Der Auftrag bleibt gespeichert. Der Tipp — auf dieses oder ein anderes Widget — öffnet **Widget bearbeiten** für das Widget des Auftrags: Server eintragen, dann aufs Widget tippen — er geht los, ohne neu aufzunehmen.
 
 **„Pro Widgets sind aus — tippen für erneuten Versuch“**
-Du hast Pro Widgets ausgeschaltet, während ein Auftrag wartete. Er bleibt gespeichert: unter Erweitert wieder einschalten, dann aufs Widget tippen.
+Du hast Pro Widgets ausgeschaltet, während ein Auftrag wartete. Er bleibt gespeichert. Der Tipp führt nach **Erweitert**: wieder einschalten, dann aufs Widget tippen.
 
 **„Widget gelöscht — Auftrag verworfen“**
 Das Widget, mit dem du aufgenommen hast, wurde gelöscht, bevor sein Auftrag draußen war. Der Auftrag ist weg — WhisperLoom schickt ihn nie an den Server eines anderen Widgets. Ein Tipp startet eine neue Aufnahme.

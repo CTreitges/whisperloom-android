@@ -58,15 +58,34 @@ class VoiceTaskTrampolineActivity : Activity() {
      * kein Dienst, sondern direkt der Auftrag; das spart einen Foreground-Service, der nur
      * Warten wuerde. Ueber [anstossen], damit ein Doppeltipp einen gerade gestarteten Job
      * nicht wieder abbricht.
+     *
+     * Angestossen wird nur, was das Widget DES AUFTRAGS auch senden kann — egal welches Widget
+     * getippt wurde. Sonst liefe jeder Tipp in denselben Fehler, und ein unsendbarer Auftrag von
+     * Widget A blockierte auch B. Reihenfolge wie im Worker: Widget geloescht → verwerfen (wie
+     * dort) und neu anfangen; Pro Widgets aus → "Erweitert"; kein gueltiger Server → Editor
+     * genau dieses Widgets. Der Auftrag bleibt in den beiden letzten Faellen liegen.
      */
     private fun retry() {
+        val store = VoiceTaskStore(this)
         // Nichts zu wiederholen (z. B. nach "Kein Ton aufgenommen") — dann ist der Tipp
         // als neuer Anlauf gemeint, nicht als Wiederholung.
-        if (!VoiceTaskStore(this).hasWork) {
+        if (!store.hasWork) {
             start()
             return
         }
-        anstossen()
+        // Ein Auftrag von vor 3.7.1 kennt kein Profil — wie im Worker das Standardprofil.
+        val profile = WidgetProfileStore(this).get(store.profileId.ifEmpty { WidgetProfile.DEFAULT_ID })
+        when {
+            profile == null -> {
+                VoiceTaskWork.cancel(this)
+                store.clear()
+                VoiceTaskWidget.refresh(this)
+                start()
+            }
+            !Prefs(this).proWidgetsEnabled -> startActivity(AppNav.advanced(this))
+            !profile.serverReady -> startActivity(AppNav.widgetProfile(this, profile.id))
+            else -> anstossen()
+        }
     }
 
     /**
