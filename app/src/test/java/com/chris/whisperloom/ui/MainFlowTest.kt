@@ -2,12 +2,15 @@ package com.chris.whisperloom.ui
 
 import android.app.Application
 import android.content.Context
+import androidx.activity.OnBackPressedDispatcher
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
@@ -256,6 +259,82 @@ class MainFlowTest {
         compose.waitForIdle()
         compose.onNodeWithText("Sprachnachrichten abtippen").assertIsDisplayed()
         compose.onNodeWithContentDescription("Seite 3 von 4").assertIsDisplayed()
+    }
+
+    /** Ein Tab der Widget-Leiste — "Widgets" steht auch als Titel da. */
+    private fun widgetTab(name: String) = hasText(name) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab)
+
+    /**
+     * Echte App-Wurzel im Pro-Tab (Deep-Link widgets: Home -> Hub -> Widgets(PRO)); liefert den
+     * Back-Dispatcher fuer "Zurueck".
+     */
+    private fun appImProTab(): OnBackPressedDispatcher {
+        prefs.engine = Engine.ONLINE
+        prefs.apiKey = "sk-test"
+        prefs.tutorialSeen = true
+        prefs.proWidgetsEnabled = true
+        lateinit var back: OnBackPressedDispatcher
+        compose.setContent {
+            back = LocalOnBackPressedDispatcherOwner.current!!.onBackPressedDispatcher
+            WhisperLoomTheme { WhisperLoomApp(env(readyStatus), route = RouteRequest(AppNav.ROUTE_WIDGETS)) }
+        }
+        compose.waitForIdle()
+        compose.onNode(widgetTab("Pro Widgets")).assertIsSelected()
+        return back
+    }
+
+    private fun proAnleitungOeffnen() {
+        compose.onNodeWithText("Anleitung ansehen").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Pro Widgets freischalten").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Seite 1 von 6").assertIsDisplayed()
+    }
+
+    /** Wieder im Pro-Tab, nicht in Home. */
+    private fun wiederImProTab() {
+        compose.onNode(widgetTab("Pro Widgets")).assertIsSelected()
+        compose.onNodeWithText("Neues Pro Widget").assertExists()
+        compose.onNodeWithText("Mikro-Knopf starten").assertDoesNotExist()
+    }
+
+    @Test fun proWidgetsTutorialAusDemProTabFuehrtNachUeberspringenUndLosGehtsDorthinZurueck() {
+        appImProTab()
+        proAnleitungOeffnen()
+        compose.onNodeWithText("Überspringen").performClick()
+        compose.waitForIdle()
+        wiederImProTab()
+        assertTrue(Prefs(ctx).agentTutorialSeen)
+
+        proAnleitungOeffnen()
+        repeat(5) {
+            compose.onNodeWithText("Weiter").performClick()
+            compose.waitForIdle()
+        }
+        compose.onNodeWithText("Los geht's").performClick()
+        compose.waitForIdle()
+        wiederImProTab()
+    }
+
+    @Test fun proWidgetsTutorialZurueckAufSeite1FuehrtZumProTab() {
+        val back = appImProTab()
+        proAnleitungOeffnen()
+        compose.runOnIdle { back.onBackPressed() }
+        compose.waitForIdle()
+        wiederImProTab()
+        // Zurueck auf Seite 1 = ueberspringen: das Heft gilt als gesehen.
+        assertTrue(Prefs(ctx).agentTutorialSeen)
+    }
+
+    @Test fun proWidgetsTutorialOhneVorigenScreenFuehrtNachHome() {
+        val nav = NavState(listOf(Screen.Tutorial(kind = TutorialKind.PRO_WIDGETS)))
+        finishTutorial(nav, TutorialKind.PRO_WIDGETS)
+        assertEquals(listOf(Screen.Home), nav.snapshot())
+    }
+
+    @Test fun einsteigerTutorialFuehrtWeiterNachHomeAuchAusDerHilfe() {
+        val nav = NavState(listOf(Screen.Home, Screen.SettingsHub, Screen.Help(), Screen.Tutorial()))
+        finishTutorial(nav, TutorialKind.BASICS)
+        assertEquals(listOf(Screen.Home), nav.snapshot())
     }
 
     // --- Assistent ---------------------------------------------------------------

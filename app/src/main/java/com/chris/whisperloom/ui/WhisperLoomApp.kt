@@ -33,6 +33,7 @@ import com.chris.whisperloom.ui.settings.WidgetsScreen
 import com.chris.whisperloom.ui.setup.SetupScreen
 import com.chris.whisperloom.ui.state.AppEnv
 import com.chris.whisperloom.ui.state.LocalAppEnv
+import com.chris.whisperloom.ui.tutorial.TutorialKind
 import com.chris.whisperloom.ui.tutorial.TutorialScreen
 
 /**
@@ -83,7 +84,7 @@ fun WhisperLoomApp(env: AppEnv, route: RouteRequest? = null, onRouteConsumed: ()
                     onFinish = {
                         // W9 "Knopf starten & los": der Knopf startet erst jetzt, nicht ueber dem Tutorial.
                         if (screen.startBubbleAfter) FloatingMicService.start(ctx)
-                        nav.replaceAll(Screen.Home)
+                        finishTutorial(nav, screen.kind)
                     },
                 )
             }
@@ -105,6 +106,15 @@ fun startScreen(facts: SetupFacts): Screen = when (val start = SetupRouter.start
 fun startStack(facts: SetupFacts, tutorialSeen: Boolean): List<Screen> {
     val start = startScreen(facts)
     return if (start == Screen.Home && !tutorialSeen) listOf(Screen.Home, Screen.Tutorial()) else listOf(start)
+}
+
+/**
+ * Tutorial beendet ("Los geht's", "Ueberspringen", Zurueck auf Seite 1): das Einsteiger-Heft fuehrt
+ * nach Home (Auto-Start, W9). Pro Widgets fuehrt dorthin zurueck, wo es geoeffnet wurde
+ * (Widgets-Tab, Hilfe, Erweitert) — nur ohne vorigen Screen nach Home.
+ */
+fun finishTutorial(nav: NavState, kind: TutorialKind) {
+    if (kind == TutorialKind.PRO_WIDGETS && nav.canPop) nav.pop() else nav.replaceAll(Screen.Home)
 }
 
 /**
