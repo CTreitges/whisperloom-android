@@ -155,6 +155,36 @@ class ProviderCatalogTest {
         assertTrue(e.sttModel("scribe_v2")!!.note.contains("\$0.22/h"))
     }
 
+    /** Katalog-Pflege 2026-09-30: aktuelle Defaults, auslaufende Empfehlungen raus. */
+    @Test fun katalogStand20260930() {
+        assertEquals("2026-09-30", ProviderCatalog.CATALOG_DATE)
+        val deepseek = ProviderCatalog.byId("deepseek")
+        assertEquals("deepseek-flash", deepseek.defaultLlmModel)
+        // Der alte Name wird noch angenommen und bleibt fuer gespeicherte Auswahlen waehlbar.
+        assertTrue(deepseek.llmModel("deepseek-v4-flash")!!.label.contains("alter Name"))
+        val gemini = ProviderCatalog.byId("gemini")
+        assertEquals(
+            listOf("gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-2.5-flash-lite", "gemini-2.5-flash"),
+            gemini.llmModels.map { it.id },
+        )
+        // Reasoning ist ab Gemini 3 nicht abschaltbar -> kein reasoning_effort=none.
+        assertNull(gemini.llmModel("gemini-3.5-flash-lite")!!.reasoningEffort)
+        // OpenRouter nimmt google/gemini-2.5-* am 2026-10-20 aus dem Angebot.
+        val openrouter = ProviderCatalog.byId("openrouter").llmModels.map { it.id }
+        assertTrue(openrouter.toString(), openrouter.none { it.startsWith("google/gemini-2.5-") })
+        assertTrue(openrouter.contains("google/gemini-3.8-flash"))
+    }
+
+    @Test fun gespeicherteModellIdsBleibenUnveraendert() {
+        val stt = AccessResolver.resolveStt("groq", "", "gsk", "")
+        assertEquals("gemini-2.5-flash-lite", AccessResolver.resolveLlm(stt, "gemini", "", "k", "gemini-2.5-flash-lite").model)
+        assertEquals("deepseek-v4-flash", AccessResolver.resolveLlm(stt, "deepseek", "", "k", "deepseek-v4-flash").model)
+        assertEquals("google/gemini-2.5-flash-lite", AccessResolver.resolveLlm(stt, "openrouter", "", "k", "google/gemini-2.5-flash-lite").model)
+        // Nur wer nie ein Modell gewaehlt hat, bekommt den neuen Default.
+        assertEquals("gemini-3.5-flash-lite", AccessResolver.resolveLlm(stt, "gemini", "", "k", "").model)
+        assertEquals("deepseek-flash", AccessResolver.resolveLlm(stt, "deepseek", "", "k", "").model)
+    }
+
     @Test fun unbekannteIdFaelltAufOpenAiZurueck() {
         assertEquals("openai", ProviderCatalog.byId("").id)
         assertEquals("openai", ProviderCatalog.byId("gibtsnicht").id)

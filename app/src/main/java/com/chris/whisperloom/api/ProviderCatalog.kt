@@ -78,14 +78,14 @@ data class Provider(
 }
 
 /**
- * Anbieter- und Modell-Katalog (Stand 2026-09-06, Recherche gegen die offizielle Doku).
+ * Anbieter- und Modell-Katalog (Stand 2026-09-30, Recherche gegen die offizielle Doku).
  * Als Kotlin-Objekte statt JSON, damit nichts zur Laufzeit geparst werden muss.
  *
  * Reihenfolge = Reihenfolge im Dropdown; das erste Modell je Liste ist der Default.
  */
 object ProviderCatalog {
 
-    const val CATALOG_DATE = "2026-09-06"
+    const val CATALOG_DATE = "2026-09-30"
     const val CUSTOM_ID = "custom"
     const val OPENAI_ID = "openai"
     const val OLLAMA_ID = "ollama"
@@ -260,7 +260,11 @@ object ProviderCatalog {
             ),
             llmModels = listOf(
                 ModelOption("openai/gpt-4o-mini", "GPT-4o mini", "\$0.15/\$0.60 je 1M."),
-                ModelOption("google/gemini-2.5-flash-lite", "Gemini 2.5 Flash-Lite", "\$0.10/\$0.40 je 1M."),
+                // google/gemini-2.5-* laeuft bei OpenRouter am 2026-10-20 aus (live expiration_date).
+                ModelOption(
+                    "google/gemini-3.8-flash", "Gemini 3.8 Flash",
+                    "Nachfolger von Gemini 2.5. Reasoning nicht abschaltbar -> langsamer.",
+                ),
                 ModelOption("anthropic/claude-haiku-4.5", "Claude Haiku 4.5", "\$1/\$5 je 1M."),
                 ModelOption("mistralai/mistral-small-2603", "Mistral Small 4", "günstig, EU-Provider wählbar."),
             ),
@@ -282,20 +286,26 @@ object ProviderCatalog {
             name = "Google Gemini",
             baseUrl = "https://generativelanguage.googleapis.com/v1beta/openai",
             keyUrl = "https://aistudio.google.com/apikey",
+            // Google gibt 2.5 nur noch an Konten, die es schon genutzt haben; fuer neue Projekte
+            // empfiehlt es 3.5 Flash-Lite oder 3.8 Flash. Reasoning ist ab 3 nicht abschaltbar.
             llmModels = listOf(
                 ModelOption(
-                    "gemini-2.5-flash-lite", "Gemini 2.5 Flash-Lite",
-                    "\$0.10/\$0.40 je 1M, Free-Tier. reasoning_effort=none möglich.",
-                    reasoningEffort = "none",
-                ),
-                ModelOption(
-                    "gemini-2.5-flash", "Gemini 2.5 Flash",
-                    "\$0.30/\$2.50 je 1M, Free-Tier. reasoning_effort=none möglich.",
-                    reasoningEffort = "none",
+                    "gemini-3.5-flash-lite", "Gemini 3.5 Flash-Lite",
+                    "Googles Empfehlung für neue Projekte. Reasoning nicht abschaltbar.",
                 ),
                 ModelOption(
                     "gemini-3.8-flash", "Gemini 3.8 Flash",
                     "\$0.75/\$3.75 je 1M. Reasoning nicht abschaltbar -> langsamer.",
+                ),
+                ModelOption(
+                    "gemini-2.5-flash-lite", "Gemini 2.5 Flash-Lite (nur Bestandskonten)",
+                    "\$0.10/\$0.40 je 1M, Free-Tier. reasoning_effort=none möglich.",
+                    reasoningEffort = "none",
+                ),
+                ModelOption(
+                    "gemini-2.5-flash", "Gemini 2.5 Flash (nur Bestandskonten)",
+                    "\$0.30/\$2.50 je 1M, Free-Tier. reasoning_effort=none möglich.",
+                    reasoningEffort = "none",
                 ),
             ),
             notes = "Nur Textverbesserung. Free-Tier: Inhalte werden zum Training genutzt -> Warnhinweis in der App.",
@@ -307,8 +317,13 @@ object ProviderCatalog {
             keyUrl = "https://platform.deepseek.com/api_keys",
             llmModels = listOf(
                 ModelOption(
-                    "deepseek-v4-flash", "DeepSeek V4 Flash",
-                    "Peak/Off-Peak-Preise (~\$0.14-0.44 / \$0.28-1.32 je 1M, unsicher). Alias deepseek-chat abgeschaltet.",
+                    "deepseek-flash", "DeepSeek Flash (V4.1)",
+                    "Aktueller Name laut /models. Peak/Off-Peak-Preise (unsicher). Alias deepseek-chat abgeschaltet.",
+                ),
+                // Alter Name: wird noch angenommen und landet bei V4.1-Flash — bleibt fuer gespeicherte Auswahlen.
+                ModelOption(
+                    "deepseek-v4-flash", "DeepSeek V4 Flash (alter Name)",
+                    "Wird noch angenommen, das Modell dahinter ist aber abgelöst (V4.1-Flash).",
                 ),
             ),
             notes = "Nur Textverbesserung. Kein Free-Tier. Server in China -> Datenschutz-Hinweis.",
