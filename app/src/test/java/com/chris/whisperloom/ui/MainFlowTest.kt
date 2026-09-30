@@ -166,6 +166,38 @@ class MainFlowTest {
         compose.onNodeWithText("Pflicht-Berechtigung fehlt").assertExists()
     }
 
+    /** Emulator-Befund 3.8.0: ElevenLabs + "wie Erkennung" zeigte "Glätten · " mit leerem Modell. */
+    @Test fun homeTextZeileSagtKeineTextverbesserungStattLeeremModell() {
+        prefs.engine = Engine.ONLINE
+        prefs.sttProviderId = "elevenlabs"
+        prefs.apiKey = "xi"
+        prefs.refineMode = RefineMode.POLISH
+        prefs.tutorialSeen = true
+        screen(env(readyStatus)) { HomeScreen(it) }
+        compose.onNodeWithText("Glätten · ElevenLabs bietet keine Textverbesserung").assertExists()
+        compose.onNodeWithText("Glätten · ").assertDoesNotExist()
+    }
+
+    private fun homeMitTogether(model: String) {
+        prefs.engine = Engine.ONLINE
+        prefs.sttProviderId = "together"
+        prefs.apiKey = "tg"
+        prefs.llmModel = model
+        prefs.refineMode = RefineMode.POLISH
+        prefs.tutorialSeen = true
+        screen(env(readyStatus)) { HomeScreen(it) }
+    }
+
+    @Test fun homeTextZeileBeiTogetherOhneModell() {
+        homeMitTogether("")
+        compose.onNodeWithText("Glätten · kein Textmodell eingetragen").assertExists()
+    }
+
+    @Test fun homeTextZeileBeiTogetherMitEingetipptemModell() {
+        homeMitTogether("meta-llama/Llama-3.3-70B-Instruct-Turbo")
+        compose.onNodeWithText("Glätten · meta-llama/Llama-3.3-70B-Instruct-Turbo").assertExists()
+    }
+
     // --- Tutorial (T) ------------------------------------------------------------
 
     @Test fun routerZeigtTutorialEinmalWennEingerichtet() {
@@ -401,6 +433,21 @@ class MainFlowTest {
         compose.onNodeWithTag("dropdown:Modell").assertTextContains("Whisper Large v3 Turbo")
     }
 
+    @Test fun schritt2aElevenLabsZeigtScribeUndDatenschutz() {
+        prefs.welcomeSeen = true
+        prefs.engine = Engine.ONLINE
+        app(env())
+        compose.onNodeWithTag("dropdown:Anbieter").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("ElevenLabs (Scribe)").performClick()
+        compose.waitForIdle()
+        assertEquals("elevenlabs", Prefs(ctx).sttProviderId)
+        assertEquals("", Prefs(ctx).apiModel)
+        compose.onNodeWithText("https://api.elevenlabs.io/v1").assertExists()
+        compose.onNodeWithTag("dropdown:Modell").assertTextContains("Scribe v2")
+        compose.onNodeWithText("Audio wird zur Erkennung an ElevenLabs gesendet.").assertExists()
+    }
+
     @Test fun eigenesModellUebernimmtFreieId() {
         prefs.welcomeSeen = true
         prefs.engine = Engine.ONLINE
@@ -414,6 +461,20 @@ class MainFlowTest {
         compose.waitForIdle()
         assertEquals("mein-modell", Prefs(ctx).apiModel)
         compose.onNodeWithTag("dropdown:Modell").assertTextContains("mein-modell")
+    }
+
+    /** Eine eigene ID mit abgeleiteten Flags (Snapshot von gpt-transcribe) bleibt zum Bearbeiten vorbelegt. */
+    @Test fun eigenesModellMitAbgeleitetenFlagsBleibtVorbelegt() {
+        prefs.welcomeSeen = true
+        prefs.engine = Engine.ONLINE
+        prefs.apiModel = "gpt-transcribe-2026-08-01"
+        app(env())
+        compose.onNodeWithTag("dropdown:Modell").assertTextContains("gpt-transcribe-2026-08-01")
+        compose.onNodeWithTag("dropdown:Modell").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Eigenes Modell …").performClick()
+        compose.waitForIdle()
+        compose.onNode(hasSetTextAction() and hasText("Modell-ID")).assertTextContains("gpt-transcribe-2026-08-01")
     }
 
     // --- E2 Text -----------------------------------------------------------------
@@ -537,6 +598,52 @@ class MainFlowTest {
         assertEquals("kimi-k2.6", Prefs(ctx).llmModel)
     }
 
+    /** Reiner Erkennungs-Anbieter: "wie Erkennung" hiesse keine Textverbesserung — das klar sagen. */
+    @Test fun textZugangBeiElevenLabsSagtKeineTextverbesserung() {
+        prefs.engine = Engine.ONLINE
+        prefs.sttProviderId = "elevenlabs"
+        prefs.apiKey = "xi-stt"
+        prefs.refineMode = RefineMode.POLISH
+        screen(env()) { TextSettingsScreen(it) }
+        compose.onNodeWithText("ElevenLabs erkennt nur Sprache und bietet keine Textverbesserung.").assertExists()
+        // Kein Modellfeld fuer einen Anbieter ohne Textmodelle, keine Pruefung ins Leere.
+        compose.onNode(hasSetTextAction() and hasText("Modell")).assertDoesNotExist()
+        compose.onNodeWithText("Zugang prüfen").assertIsNotEnabled()
+        compose.onNodeWithText("Eigenen Zugang eintragen").performClick()
+        compose.waitForIdle()
+        val p = Prefs(ctx)
+        assertEquals("openai", p.llmProviderId)
+        assertEquals("", p.llmAccess().apiKey) // der ElevenLabs-Key geht nie an OpenAI
+    }
+
+    /** Together/DeepInfra "wie Erkennung": Chat geht mit eingetipptem Modell — freies Feld wie auf main. */
+    @Test fun textZugangBeiTogetherWieErkennungZeigtFreiesModellfeld() {
+        prefs.engine = Engine.ONLINE
+        prefs.sttProviderId = "together"
+        prefs.apiKey = "tg"
+        prefs.refineMode = RefineMode.POLISH
+        screen(env()) { TextSettingsScreen(it) }
+        compose.onNodeWithText("bietet keine Textverbesserung", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Zugang prüfen").assertIsNotEnabled() // ohne Modell ginge die Pruefung ins Leere
+        compose.onNode(hasSetTextAction() and hasText("Modell")).performTextInput("meta-llama/Llama-3.3-70B-Instruct-Turbo")
+        compose.waitForIdle()
+        assertEquals("meta-llama/Llama-3.3-70B-Instruct-Turbo", Prefs(ctx).llmModel)
+        assertEquals("same", Prefs(ctx).llmProviderId)
+        compose.onNodeWithText("Zugang prüfen").assertIsEnabled()
+    }
+
+    @Test fun textZugangBeiTogetherWieErkennungMitProOhnePicker() {
+        // Die Together-Liste taugt nur fuer die Erkennung: kein Picker, kein Nachladen, freies Feld.
+        prefs.engine = Engine.ONLINE
+        prefs.sttProviderId = "together"
+        prefs.serverModelsEnabled = true
+        prefs.refineMode = RefineMode.POLISH
+        screen(env()) { TextSettingsScreen(it) }
+        compose.onNodeWithTag("picker:Modell").assertDoesNotExist()
+        compose.onNodeWithText("Modelle aktualisieren").assertDoesNotExist()
+        compose.onNode(hasSetTextAction() and hasText("Modell")).assertExists()
+    }
+
     // --- Vokabular -------------------------------------------------------------------
 
     @Test fun vokabularAlsListeImSheet() {
@@ -626,6 +733,16 @@ class MainFlowTest {
         compose.onNodeWithText("Kontext-Wörter (kommagetrennt)").assertDoesNotExist()
     }
 
+    @Test fun kontextFeldNenntBeiElevenLabsKeytermsUndAufpreis() {
+        prefs.engine = Engine.ONLINE
+        prefs.sttProviderId = "elevenlabs"
+        prefs.apiKey = "k"
+        screen(env()) { RecognitionScreen(it) }
+        compose.onNodeWithText("etwa 20 % Aufpreis", substring = true).assertExists()
+        compose.onNodeWithText("Dieser Anbieter nimmt kein Vokabular entgegen", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Kostet nichts extra", substring = true).assertDoesNotExist()
+    }
+
     @Test fun eigenerServerMarkiertLeeresModellAlsFehler() {
         // Review API-7: kein Modell-Default beim eigenen Server -> Pflichtfeld.
         prefs.engine = Engine.ONLINE
@@ -701,9 +818,19 @@ class MainFlowTest {
             compose.onNodeWithText(ctx.getString(it)).assertExists()
         }
         compose.onNodeWithText("Server je Widget", substring = true).assertExists()
+        // 3.8.0: die zweite Freischalt-Funktion unter "Erweitert" steht dort, wo "Erweitert" erklaert wird.
+        compose.onNodeWithText(ctx.getString(R.string.help_widgets_models)).assertExists()
+        assertTrue(ctx.getString(R.string.help_widgets_models).contains("„${ctx.getString(R.string.pro_server_models)}“"))
         compose.onNodeWithText("Anleitung Pro Widgets").performClick()
         compose.waitForIdle()
         assertEquals(Screen.Tutorial(kind = TutorialKind.PRO_WIDGETS), nav.current)
+    }
+
+    @Test fun abschnitt3NenntElevenLabsMitBerechtigungSpeechToText() {
+        screen(env()) { HelpScreen(3, it) }
+        compose.onNodeWithText("ElevenLabs (Scribe)").assertExists()
+        compose.onNodeWithText(ctx.getString(R.string.help_key_elevenlabs)).assertExists()
+        assertTrue(ctx.getString(R.string.help_key_elevenlabs).contains("„Speech to Text“"))
     }
 
     @Test fun abschnitt6FuehrtZuDenWidgets() {
@@ -799,5 +926,13 @@ class MainFlowTest {
         prefs.promptLevelEnabled = true
         screen(env()) { SettingsHubScreen(it) }
         compose.onNodeWithText("Pro Widgets · Stufe „Prompt“").assertExists()
+    }
+
+    @Test fun modelleVomServerStehenUnterErweitert() {
+        prefs.engine = Engine.ONLINE
+        prefs.promptLevelEnabled = true
+        prefs.serverModelsEnabled = true
+        screen(env()) { SettingsHubScreen(it) }
+        compose.onNodeWithText("Stufe „Prompt“ · Modelle vom Server").assertExists()
     }
 }

@@ -40,4 +40,13 @@ class ManifestBackupTest {
         assertTrue(rules.substringAfter("<cloud-backup").substringBefore("</cloud-backup>").contains(exclude))
         assertTrue(rules.substringAfter("<device-transfer").substringBefore("</device-transfer>").contains(exclude))
     }
+
+    @Test fun backupRegelnSchliessenDenModellCacheAus() {
+        // Kein Key darin (ModelCacheTest), aber Anbieter-Adressen — konsequent wie die anderen Dateien.
+        val exclude = "<exclude domain=\"sharedpref\" path=\"${ModelCache.FILE}.xml\" />"
+        assertTrue(xml("backup_rules").readText().contains(exclude))
+        val rules = xml("data_extraction_rules").readText()
+        assertTrue(rules.substringAfter("<cloud-backup").substringBefore("</cloud-backup>").contains(exclude))
+        assertTrue(rules.substringAfter("<device-transfer").substringBefore("</device-transfer>").contains(exclude))
+    }
 }

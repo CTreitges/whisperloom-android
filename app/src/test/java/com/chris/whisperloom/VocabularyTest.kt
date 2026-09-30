@@ -93,7 +93,8 @@ class VocabularyTest {
         val legacy = List(300) { "wort" }.joinToString(" ")
         val p = Vocabulary.prompt(listOf(legacy))
         assertTrue(p.text.length <= Vocabulary.MAX_PROMPT_CHARS)
-        assertTrue(p.text.endsWith("wort"))
+        // Am Wortende geschnitten, der Schnitt mit "…" markiert.
+        assertTrue(p.text.endsWith(" wort…"))
         assertEquals(1, p.used)
         assertEquals(1, p.total)
         assertTrue(p.truncated)

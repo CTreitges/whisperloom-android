@@ -21,12 +21,15 @@ import kotlinx.coroutines.launch
 /**
  * ModalBottomSheet mit Titel (titleLarge) und Layout-Regeln §1.3. [content] bekommt eine
  * `dismiss`-Funktion, die das Sheet animiert schliesst und dann [onDismiss] ruft.
+ *
+ * @param scroll false, wenn [content] selbst scrollt (LazyColumn mit `Modifier.weight(1f, fill = false)`).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoomSheet(
     title: String,
     onDismiss: () -> Unit,
+    scroll: Boolean = true,
     content: @Composable ColumnScope.(dismiss: () -> Unit) -> Unit,
 ) {
     val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -42,7 +45,7 @@ fun LoomSheet(
         Column(
             Modifier
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
+                .then(if (scroll) Modifier.verticalScroll(rememberScrollState()) else Modifier)
                 .padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {

@@ -479,9 +479,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
      * zurueck (plus Hinweis) — ein Fehlgriff in der Leiste zerstoert also nichts, aber ins
      * Leere fuehren soll sie trotzdem nicht.
      */
-    private fun hasLlmAccess(): Boolean = prefs.llmAccess().let {
-        SetupState.llmComplete(it.baseUrl, it.apiKey, it.provider.needsKey, it.model)
-    }
+    private fun hasLlmAccess(): Boolean = SetupState.llmReady(prefs.llmAccess())
 
     // --- Diktat -------------------------------------------------------------
 

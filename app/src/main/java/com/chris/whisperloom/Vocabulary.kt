@@ -25,6 +25,9 @@ object Vocabulary {
 
     private const val BOM = "\uFEFF"
 
+    /** Ende eines gekuerzten Eintrags (siehe [prompt]). */
+    const val CUT_MARK = "…"
+
     private val SEPARATORS = Regex("[,;\\n]")
 
     private val HEADING = Regex("^#{1,6}\\s")
@@ -101,8 +104,10 @@ object Vocabulary {
         val last = ordered.last()
         if (last.length > maxChars) {
             // Ein einzelner langer Eintrag (z. B. Freitext aus v3.4): lieber gekuerzt als gar nicht.
-            val head = last.take(maxChars).substringBeforeLast(' ').ifEmpty { last.take(maxChars) }
-            return Prompt(head, 1, ordered.size, cut = true)
+            // Das "…" markiert den Schnitt; ElevenLabs verwirft daran das angeschnittene Stueck.
+            val room = maxChars - CUT_MARK.length
+            val head = last.take(room).substringBeforeLast(' ').ifEmpty { last.take(room) }.trimEnd()
+            return Prompt(head + CUT_MARK, 1, ordered.size, cut = true)
         }
         // Von hinten auffuellen, solange es passt.
         val kept = ArrayDeque<String>()

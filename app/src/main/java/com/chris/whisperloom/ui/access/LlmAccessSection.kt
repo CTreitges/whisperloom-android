@@ -14,24 +14,22 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.chris.whisperloom.Engine
+import com.chris.whisperloom.ModelCache
 import com.chris.whisperloom.R
 import com.chris.whisperloom.api.AccessResolver
-import com.chris.whisperloom.api.OllamaApi
+import com.chris.whisperloom.api.ModelKind
 import com.chris.whisperloom.api.Provider
 import com.chris.whisperloom.api.ProviderCatalog
+import com.chris.whisperloom.api.RefineBlock
 import com.chris.whisperloom.api.ServerUrlCheck
 import com.chris.whisperloom.ui.components.ApiKeyField
 import com.chris.whisperloom.ui.components.InfoCard
@@ -39,17 +37,18 @@ import com.chris.whisperloom.ui.components.SnackController
 import com.chris.whisperloom.ui.components.SwitchRow
 import com.chris.whisperloom.ui.components.LoomDropdown
 import com.chris.whisperloom.ui.components.LoomIcon
+import com.chris.whisperloom.ui.components.LoomPickerField
 import com.chris.whisperloom.ui.components.modelLabel
 import com.chris.whisperloom.ui.components.providerLabel
 import com.chris.whisperloom.ui.components.providerShortName
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.theme.loom
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
-/** Karte "Zugang fuer die Textverbesserung" (E2, Spec §2.5): Schalter, eigener Anbieter, Modell, Test. */
+/**
+ * Karte "Zugang fuer die Textverbesserung" (E2, Spec §2.5): Schalter, eigener Anbieter, Modell, Test.
+ * Ollama laedt seine Modelle immer vom Server; mit Pro "Modelle vom Server" jeder Anbieter
+ * ([ModelPickerSheet]).
+ */
 @Composable
 fun LlmAccessSection(snack: SnackController) {
     val prefs = LocalAppEnv.current.prefs
@@ -58,30 +57,39 @@ fun LlmAccessSection(snack: SnackController) {
     val provider = llm.provider
     val useOwn = prefs.llmUseOwn
     val offlineWithoutOwn = prefs.engine == Engine.OFFLINE && !useOwn
+    // ElevenLabs hat keinen Chat — "wie Erkennung" hiesse dort: keine Textverbesserung. Together
+    // und DeepInfra koennen Chat, nur ohne Katalog-Modell: dort bleibt das freie Modellfeld.
+    val noChatWithoutOwn = !useOwn && llm.refineBlock == RefineBlock.NO_CHAT
+    val noLlmWithoutOwn = offlineWithoutOwn || noChatWithoutOwn
     val providers = ProviderCatalog.llmProviders
     val labels = providers.associate { it.id to providerLabel(it) }
     var showKeySheet by rememberSaveable { mutableStateOf(false) }
     var showCustomModel by rememberSaveable { mutableStateOf(false) }
-    // Modelle, die der Ollama-Server gemeldet hat; bei Anbieter- oder Adresswechsel verworfen.
-    var serverModels by remember(provider.id, llm.baseUrl) { mutableStateOf(emptyList<String>()) }
-    var loadingModels by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
-    val res = LocalResources.current
+    var showPicker by rememberSaveable { mutableStateOf(false) }
+    val pro = prefs.serverModelsEnabled
+    // Modelle vom Server (Cache je Anbieter und Adresse); Anbieter- oder Adresswechsel = andere Liste.
+    val server = rememberServerModels(llm, ModelKind.LLM)
+    // Together/DeepInfra "wie Erkennung": ihre Liste taugt nur fuer die Erkennung (ModelLists) —
+    // also kein Picker, sondern das freie Feld wie ohne Pro.
+    val pickable = pro && provider.hasLlm
+    val loadable = !noLlmWithoutOwn && (pickable || provider.isOllama)
 
-    // Ollama verbunden (Adresse da, bei der Cloud auch der Key): Modell-Liste still im Hintergrund
-    // holen, damit das Auswahlfeld sofort die Server-Modelle zeigt. Die Pause entprellt das
-    // Tippen in Adress-/Key-Feld; ein Fehler bleibt hier stumm (der Knopf meldet ihn).
-    val ollamaConnected = useOwn && provider.isOllama && llm.baseUrl.isNotBlank() &&
-        (!provider.needsKey || llm.apiKey.isNotBlank())
-    LaunchedEffect(ollamaConnected, llm.baseUrl, llm.apiKey) {
-        if (!ollamaConnected) return@LaunchedEffect
-        delay(OLLAMA_AUTOLOAD_DELAY_MS)
-        val names = withContext(Dispatchers.IO) { runCatching { OllamaApi.listModels(prefs.llmAccess()) }.getOrNull() }
-        if (!names.isNullOrEmpty()) {
-            serverModels = names
-            if (prefs.llmModel.isBlank() && provider.llmModels.isEmpty()) prefs.llmModel = names.first()
+    // Lokal gibt es kein Default-Modell: das erste gefundene uebernehmen.
+    val takeFirst: (ModelCache.Entry) -> Unit = { e ->
+        if (provider.isOllama && e.models.isNotEmpty() && prefs.llmModel.isBlank() && provider.llmModels.isEmpty()) {
+            prefs.llmModel = e.models.first().id
         }
     }
+    // Zugang steht (Adresse da, bei Bedarf der Key): Liste still nachladen — Ollama bei jedem
+    // Oeffnen wie bisher, damit das Auswahlfeld sofort die Server-Modelle zeigt; mit Pro jeder
+    // andere Anbieter, wenn die Liste fehlt oder aelter als ein Tag ist.
+    AutoLoadModels(
+        server,
+        ready = loadable && llm.baseUrl.isNotBlank() && (!provider.needsKey || llm.apiKey.isNotBlank()),
+        apiKey = llm.apiKey,
+        always = provider.isOllama,
+        onLoaded = takeFirst,
+    ) { prefs.llmAccess() }
 
     // Eigener Zugang: den Erkennungs-Anbieter uebernehmen, wenn er Textmodelle hat, sonst OpenAI.
     // Alte Felder leeren wie beim Anbieterwechsel: sonst ginge nach aus/an z. B. die Ollama-Adresse
@@ -154,8 +162,9 @@ fun LlmAccessSection(snack: SnackController) {
         }
 
         when {
-            offlineWithoutOwn -> InfoCard(
-                text = stringResource(R.string.text_needs_online),
+            noLlmWithoutOwn -> InfoCard(
+                text = if (offlineWithoutOwn) stringResource(R.string.text_needs_online)
+                else stringResource(R.string.text_no_llm, providerShortName(stt.provider)),
                 icon = R.drawable.ic_warning,
                 container = MaterialTheme.loom.warningContainer,
                 onContainer = MaterialTheme.loom.onWarningContainer,
@@ -163,10 +172,17 @@ fun LlmAccessSection(snack: SnackController) {
                     FilledTonalButton(onClick = { switchToOwn() }) { Text(stringResource(R.string.text_add_access)) }
                 },
             )
-            provider.isOllama && (serverModels.isNotEmpty() || provider.llmModels.isNotEmpty()) -> LoomDropdown(
+            pickable -> LoomPickerField(
+                label = stringResource(R.string.text_llm_model),
+                value = modelLabel(llm),
+                onClick = { showPicker = true },
+                isError = llm.model.isBlank(),
+                supportingText = if (provider.llmModels.isEmpty()) ({ Text(stringResource(R.string.model_custom_info)) }) else null,
+            )
+            provider.isOllama && (server.ids.isNotEmpty() || provider.llmModels.isNotEmpty()) -> LoomDropdown(
                 label = stringResource(R.string.text_llm_model),
                 value = if (llm.model.isBlank()) "" else modelLabel(llm),
-                options = (provider.llmModels.map { it.id } + serverModels).distinct(),
+                options = (provider.llmModels.map { it.id } + server.ids).distinct(),
                 optionLabel = { id -> provider.llmModel(id)?.label ?: id },
                 onSelect = { prefs.llmModel = it },
                 extraOption = stringResource(R.string.text_model_custom),
@@ -193,57 +209,48 @@ fun LlmAccessSection(snack: SnackController) {
             )
         }
 
-        if (provider.isOllama && useOwn) {
-            TextButton(
-                enabled = !loadingModels && llm.baseUrl.isNotBlank(),
-                onClick = {
-                    loadingModels = true
-                    val startedFor = prefs.llmProviderId to prefs.llmUrl
-                    scope.launch {
-                        val result = withContext(Dispatchers.IO) { runCatching { OllamaApi.listModels(prefs.llmAccess()) } }
-                        loadingModels = false
-                        // Inzwischen anderer Anbieter oder andere Adresse: Ergebnis gehoert nicht mehr hierher.
-                        if (prefs.llmProviderId to prefs.llmUrl != startedFor) return@launch
-                        result.onSuccess { names ->
-                            serverModels = names
-                            // Lokal gibt es kein Default-Modell: das erste gefundene uebernehmen.
-                            if (names.isNotEmpty() && prefs.llmModel.isBlank() && provider.llmModels.isEmpty()) {
-                                prefs.llmModel = names.first()
-                            }
-                            snack.show(
-                                if (names.isEmpty()) res.getString(R.string.text_ollama_no_models)
-                                else res.getQuantityString(R.plurals.text_ollama_models_found, names.size, names.size),
-                            )
-                        }.onFailure { e ->
-                            snack.show(res.getString(R.string.text_ollama_models_failed, e.message ?: e.javaClass.simpleName))
-                        }
-                    }
-                },
-            ) {
-                LoomIcon(R.drawable.ic_download_for_offline, null, Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(if (loadingModels) R.string.text_ollama_loading else R.string.text_ollama_load_models))
-            }
+        if (loadable) {
+            // Ohne Pro nur Ollama, mit Knopftext wie bisher.
+            LoadModelsButton(
+                server,
+                enabled = llm.baseUrl.isNotBlank(),
+                snack = snack,
+                label = if (pro) R.string.models_refresh else R.string.text_ollama_load_models,
+                icon = if (pro) R.drawable.ic_refresh else R.drawable.ic_download_for_offline,
+                noneText = if (provider.isOllama) R.string.text_ollama_no_models else R.string.models_none,
+                onLoaded = takeFirst,
+            ) { prefs.llmAccess() }
         }
 
-        TestAccessRow(label = stringResource(R.string.text_test), enabled = !offlineWithoutOwn) {
+        // Ohne Modell (Together/DeepInfra "wie Erkennung") ginge die Pruefung ins Leere.
+        TestAccessRow(label = stringResource(R.string.text_test), enabled = !noLlmWithoutOwn && llm.refineBlock == null) {
             AccessTest.llm(prefs.llmAccess(), prefs.language)
         }
     }
 
     if (showKeySheet) KeySheet(providers, snack) { showKeySheet = false }
+    if (showPicker) {
+        ModelPickerSheet(
+            recommended = provider.llmModels,
+            server = server.entry,
+            selected = llm.model,
+            onSelect = { prefs.llmModel = it },
+            onCustom = {
+                showPicker = false
+                showCustomModel = true
+            },
+            onDismiss = { showPicker = false },
+        )
+    }
     if (showCustomModel) {
         CustomModelSheet(
             placeholder = stringResource(R.string.text_llm_model_placeholder),
-            initial = if (llm.modelOption == null) llm.model else "",
+            initial = if (provider.llmModel(llm.model) == null) llm.model else "",
             onApply = { prefs.llmModel = it },
             onDismiss = { showCustomModel = false },
         )
     }
 }
-
-/** Wartezeit nach der letzten Eingabe, bevor die Ollama-Modelle automatisch geladen werden. */
-private const val OLLAMA_AUTOLOAD_DELAY_MS = 700L
 
 /** Hinweis-Chips zu Gemini (Training), DeepSeek (China), Anthropic (Kompatibilitaetsschicht). */
 @Composable

@@ -6,7 +6,8 @@ Three ways to dictate:
 • Pro Widgets for developers: voice command widgets on the home screen send voice tasks to your own server (see below). Off by default.
 
 Recognition your way:
-• Online with your own account at OpenAI, Groq (free tier), Mistral, Together, DeepInfra, OpenRouter, or any OpenAI-compatible server you host yourself (speaches, whisper.cpp server).
+• Online with your own account at OpenAI, Groq (free tier), Mistral, ElevenLabs (Scribe), Together, DeepInfra, OpenRouter, or any OpenAI-compatible server you host yourself (speaches, whisper.cpp server).
+• For tinkerers, switchable under Settings → Advanced ("Erweitert"): "Models from the server" ("Modelle vom Server") loads each provider's current model list – pick new models without waiting for an update.
 • Offline on the device with whisper.cpp. Models (Tiny to Large v3 Turbo) are downloaded on demand – none is bundled.
 • Vocabulary for names and technical terms: as a list in the app or as a linked .md/.txt file that is re-read with every dictation – edits to the file take effect right away.
 

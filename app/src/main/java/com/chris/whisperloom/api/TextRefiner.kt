@@ -20,7 +20,8 @@ class TextRefiner(private val access: ApiAccess) {
      * auf den Rohtext zurueck: die Veredelung darf ein Diktat niemals verschlucken.
      *
      * @throws ApiNotConfiguredException wenn die Base-URL leer ist (eigener Server ohne URL) —
-     *   sonst ginge die Anfrage an "/chat/completions" ohne Host.
+     *   sonst ginge die Anfrage an "/chat/completions" ohne Host — oder der Zugang keinen Text
+     *   verbessern kann ([ApiAccess.refineBlock]: [MSG_NO_LLM], [MSG_NO_MODEL]).
      * @throws RefineRejectedException wenn die Stufe "Prompt" eine Antwort statt eines Prompts liefert
      *   oder das Modell an seiner Laengengrenze abgebrochen hat ([MSG_TRUNCATED]).
      */
@@ -32,6 +33,13 @@ class TextRefiner(private val access: ApiAccess) {
         paragraphs: Boolean = true,
     ): String {
         if (raw.isBlank() || mode == RefineMode.OFF) return raw
+        // "Wie Erkennung" ohne Chat (ElevenLabs) bzw. ohne Modell (Together, DeepInfra): klarer
+        // Hinweis statt 404/400 und ohne Anfrage. Mit eingetipptem Modell geht es wie bisher raus.
+        when (access.refineBlock) {
+            RefineBlock.NO_CHAT -> throw ApiNotConfiguredException(MSG_NO_LLM)
+            RefineBlock.NO_MODEL -> throw ApiNotConfiguredException(MSG_NO_MODEL)
+            null -> Unit
+        }
         if (access.baseUrl.isBlank()) throw ApiNotConfiguredException()
 
         val german = language == "de"
@@ -46,18 +54,34 @@ class TextRefiner(private val access: ApiAccess) {
         return if (text.isNullOrBlank()) raw else text
     }
 
-    /** OpenAI-kompatibel: POST {baseUrl}/chat/completions. */
+    /**
+     * OpenAI-kompatibel: POST {baseUrl}/chat/completions.
+     *
+     * Sicherheitsnetz fuer Modelle, deren Flags niemand kennt (vom Server, frei getippt): lehnt der
+     * Server `temperature` mit 400 ab, folgt genau ein zweiter Versuch ohne — wie bei
+     * Reasoning-Modellen mit `max_completion_tokens`.
+     */
     private fun openAi(systemPrompt: String, raw: String): String? {
+        val body = try {
+            chat(access, systemPrompt, raw)
+        } catch (e: ApiHttpException) {
+            if (!rejectsTemperature(e) || ChatPayload.sampling(access).temperature == null) throw e
+            val option = access.modelOption ?: ModelOption(access.model, access.model)
+            chat(access.copy(modelOption = option.copy(temperatureSupported = false)), systemPrompt, raw)
+        }
+        val choice = JSONObject(body).optJSONArray("choices")?.optJSONObject(0)
+        if (choice?.optString("finish_reason") == LENGTH) throw RefineRejectedException(MSG_TRUNCATED)
+        return choice?.optJSONObject("message")?.optString("content")
+    }
+
+    private fun chat(access: ApiAccess, systemPrompt: String, raw: String): String {
         val payload = ChatPayload.build(access = access, systemPrompt = systemPrompt, userText = raw)
-        val body = Http.post(
+        return Http.post(
             url = Http.endpoint(access.baseUrl, "/chat/completions"),
             apiKey = access.apiKey,
             contentType = "application/json",
             readTimeoutMs = access.readTimeoutMs,
         ) { os -> os.write(payload.toByteArray(Charsets.UTF_8)) }
-        val choice = JSONObject(body).optJSONArray("choices")?.optJSONObject(0)
-        if (choice?.optString("finish_reason") == LENGTH) throw RefineRejectedException(MSG_TRUNCATED)
-        return choice?.optJSONObject("message")?.optString("content")
     }
 
     /** Ollama (lokal oder ollama.com): POST {Wurzel}/api/chat, siehe [OllamaApi]. */
@@ -80,7 +104,17 @@ class TextRefiner(private val access: ApiAccess) {
          * des Texts — sie einzufuegen hiesse, den Rest still zu verschlucken.
          */
         const val MSG_TRUNCATED = "Antwort des Modells abgeschnitten (Längengrenze)"
+
+        /** Der Erkennungs-Anbieter hat keinen Chat (ElevenLabs), und es ist kein eigener Zugang eingetragen. */
+        const val MSG_NO_LLM = "Der Erkennungs-Anbieter kann keinen Text verbessern — unter „Text“ einen eigenen Zugang eintragen"
+
+        /** "Wie Erkennung" bei Together/DeepInfra: der Katalog kennt dort kein Textmodell, eingetragen ist keins. */
+        const val MSG_NO_MODEL = "Kein Textmodell eingetragen — unter „Text“ ein Modell eintragen"
         private const val LENGTH = "length"
+
+        /** OpenAI: "Unsupported parameter: 'temperature' is not supported with this model." */
+        private fun rejectsTemperature(e: ApiHttpException): Boolean =
+            e.code == 400 && e.detail.contains("temperature", ignoreCase = true)
 
         // Qwen3 & Co. schreiben ihr Nachdenken als <think>…</think> in den Text, wenn
         // der Server reasoning_effort ignoriert. Das gehoert nie ins Diktat.

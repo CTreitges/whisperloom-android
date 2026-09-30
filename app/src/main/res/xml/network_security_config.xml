@@ -15,6 +15,7 @@
         <domain includeSubdomains="true">openai.com</domain>
         <domain includeSubdomains="true">groq.com</domain>
         <domain includeSubdomains="true">mistral.ai</domain>
+        <domain includeSubdomains="true">elevenlabs.io</domain>
         <domain includeSubdomains="true">together.ai</domain>
         <domain includeSubdomains="true">together.xyz</domain>
         <domain includeSubdomains="true">deepinfra.com</domain>

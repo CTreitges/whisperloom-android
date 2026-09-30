@@ -1,6 +1,6 @@
 # WhisperLoom — Anleitung
 
-Version 3.7.1 · Stand 2026-09-30 · Für Android 8.0 (API 26) und neuer
+Version 3.8.0 · Stand 2026-09-30 · Für Android 8.0 (API 26) und neuer
 
 Diese Anleitung richtet sich an Anwender, die WhisperLoom installieren, einrichten und im Alltag nutzen wollen. Entwickler finden Bau- und Architektur-Hinweise in der [README](../README.md); was sich von Version zu Version geändert hat, steht im [CHANGELOG](../CHANGELOG.md).
 
@@ -41,7 +41,7 @@ Dafür gibt es drei Wege:
 
 Die Spracherkennung selbst läuft wahlweise
 
-- **online** über einen Dienst deiner Wahl (OpenAI, Groq, Mistral, Together AI, DeepInfra, OpenRouter oder ein eigener Server). Du brauchst dafür einmalig einen API-Key des Anbieters; bei Groq ist das kostenlos. Beste Qualität, schnell.
+- **online** über einen Dienst deiner Wahl (OpenAI, Groq, Mistral, ElevenLabs, Together AI, DeepInfra, OpenRouter oder ein eigener Server). Du brauchst dafür einmalig einen API-Key des Anbieters; bei Groq ist das kostenlos. Beste Qualität, schnell.
 - **offline** direkt auf dem Gerät mit einem einmalig heruntergeladenen Whisper-Modell (32–574 MB). Nichts verlässt das Telefon, die Erkennung dauert dafür einige Sekunden.
 
 Dazu kommt eine optionale **Textverbesserung**: Ein Sprachmodell (KI) glättet Zeichensetzung und Groß-/Kleinschreibung, formuliert verständlicher oder fasst zusammen — in vier Stufen von „Aus" bis „Zusammenfassen". Das Sprachmodell kann bei einem Online-Anbieter laufen, bei **Ollama Cloud** oder auf deinem eigenen **Ollama** zu Hause (lokal / Homeserver). Ein **Vokabular** mit Namen und Fachbegriffen — als Liste in der App oder als verknüpfte Textdatei — hilft der Erkennung bei Eigennamen. Unabhängig davon räumt WhisperLoom lokal auf: Füllwörter („ähm", „äh") entfernen, Satzanfänge groß schreiben, ein Leerzeichen anhängen.
@@ -71,7 +71,7 @@ WhisperLoom liegt in einem eigenen F-Droid-Repository. Damit bekommst du Updates
 
 ### 2.3 APK installieren
 
-1. Auf der Releases-Seite des Projekts das neueste Release (aktuell **3.7.1**) öffnen und die APK-Datei auf das Telefon laden (direkt im Browser des Telefons ist am einfachsten).
+1. Auf der Releases-Seite des Projekts das neueste Release (aktuell **3.8.0**) öffnen und die APK-Datei auf das Telefon laden (direkt im Browser des Telefons ist am einfachsten).
 2. Die heruntergeladene Datei antippen. Android fragt beim ersten Mal, ob der Browser (bzw. der Dateimanager) **unbekannte Apps installieren** darf — das Wording heißt je nach Hersteller „Unbekannte Apps installieren", „Aus dieser Quelle zulassen" oder „Unbekannte Quellen". Erlauben, zurück, erneut „Installieren" antippen.
 3. Google Play Protect prüft die App ggf. beim Installieren. Das ist normal für Apps außerhalb des Play Stores.
 4. Nach der Installation **WhisperLoom** öffnen — der Einrichtungs-Assistent startet ([Kapitel 3](#3-erste-einrichtung--der-assistent-schritt-für-schritt)).
@@ -108,11 +108,11 @@ Der Inhalt hängt von Schritt 1 ab.
 
 **2a · Zugang zum Dienst** (bei Online-Dienst):
 
-1. **Anbieter** wählen: OpenAI · Groq (kostenlos) · Mistral · Together AI · DeepInfra · OpenRouter · Eigener Server. Unter dem Feld steht die Base-URL des Anbieters. Nur bei „Eigener Server" gibst du die **Base-URL** selbst ein ([Kapitel 10](#10-eigener-server)).
+1. **Anbieter** wählen: OpenAI · Groq (kostenlos) · Mistral · ElevenLabs (Scribe) · Together AI · DeepInfra · OpenRouter · Eigener Server. Unter dem Feld steht die Base-URL des Anbieters. Nur bei „Eigener Server" gibst du die **Base-URL** selbst ein ([Kapitel 10](#10-eigener-server)).
 2. **API-Key** einfügen. Das Feld ist maskiert; das Auge-Symbol zeigt den Key an, das Einfügen-Symbol holt ihn aus der Zwischenablage. „Wird nur auf diesem Gerät gespeichert." Beim Eigenen Server heißt das Feld „API-Key (optional)".
-3. **Modell** wählen. Die Liste zeigt die Modelle des Anbieters mit dem empfohlenen Modell an erster Stelle; der letzte Eintrag **Eigenes Modell …** öffnet ein Feld für eine beliebige Modell-ID („Genau so, wie der Anbieter die ID nennt.").
+3. **Modell** wählen. Die Liste zeigt die Modelle des Anbieters mit dem empfohlenen Modell an erster Stelle; der letzte Eintrag **Eigenes Modell …** öffnet ein Feld für eine beliebige Modell-ID („Genau so, wie der Anbieter die ID nennt."). Mit der Pro-Funktion **Modelle vom Server** öffnet das Feld stattdessen eine Auswahl mit Suche und der aktuellen Liste des Anbieters ([7.6](#76-modelle-vom-server-pro-funktion)).
 4. Du hast noch keinen Key? **Wo bekomme ich einen Key?** öffnet die Kurzanleitung je Anbieter mit Link zur Key-Seite (ausführlich in [Kapitel 7](#7-anbieter-und-api-keys)).
-5. Optional **Zugang prüfen**: WhisperLoom schickt eine Sekunde Stille an den Anbieter. Erfolg zeigt „Verbunden · x s", ein Fehler nennt den Grund („Key ungültig (401)", „Limit erreicht (429) — später erneut", „Keine Verbindung", „Server antwortet nicht (Zeitüberschreitung)" …).
+5. Optional **Zugang prüfen**: WhisperLoom schickt eine Sekunde Stille an den Anbieter. Erfolg zeigt „Verbunden · x s", ein Fehler nennt den Grund („Key ungültig (401)", „Guthaben aufgebraucht (402) — beim Anbieter aufladen", „Limit erreicht (429) — später erneut", „Keine Verbindung", „Server antwortet nicht (Zeitüberschreitung)" …).
 
 Darunter steht der Datenschutz-Hinweis „Audio wird zur Erkennung an {Anbieter} gesendet." Sobald Key (bzw. beim Eigenen Server eine gültige URL) vorliegt, wird der Chip **Erledigt** und **Weiter** aktiv.
 
@@ -185,7 +185,7 @@ Die **Einstellungen** sind in vier Gruppen mit Überschrift geteilt:
 |---|---|
 | **GRUNDLAGEN** | **Erkennung** · **Offline-Modelle** · **Text** |
 | **BEDIENUNG** | **Knopf & Tastatur** · **Widgets** |
-| **PRO** | **Erweitert** — Pro-Funktionen für Entwickler und Bastler ([Kapitel 13](#13-pro-widgets-sprach-command-widgets), [Stufe „Prompt“](#81-textverbesserung-ki--vier-stufen)); für das normale Diktieren brauchst du hier nichts |
+| **PRO** | **Erweitert** — Pro-Funktionen für Entwickler und Bastler ([Pro Widgets](#13-pro-widgets-sprach-command-widgets), [Stufe „Prompt“](#81-textverbesserung-ki--vier-stufen), [Modelle vom Server](#76-modelle-vom-server-pro-funktion)); für das normale Diktieren brauchst du hier nichts |
 | **INFO** | **Anleitung & Hilfe** · **Über WhisperLoom** |
 
 Änderungen werden sofort gespeichert; es gibt keinen „Speichern"-Button.
@@ -321,7 +321,7 @@ Geteilte Nachrichten werden ab Werk **nicht** durch die KI-Textverbesserung gesc
 
 ## 7. Anbieter und API-Keys
 
-WhisperLoom spricht die **OpenAI-kompatible API**, die inzwischen viele Anbieter anbieten. Du brauchst ein Konto beim Anbieter deiner Wahl und einen **API-Key** — einen persönlichen Zugangsschlüssel, mit dem der Anbieter die Nutzung abrechnet. Du bezahlst nur, was du nutzt; ein Diktat kostet meist unter einem Cent.
+WhisperLoom spricht die **OpenAI-kompatible API**, die inzwischen viele Anbieter anbieten; ElevenLabs und Ollama spricht es über deren eigene Schnittstelle. Du brauchst ein Konto beim Anbieter deiner Wahl und einen **API-Key** — einen persönlichen Zugangsschlüssel, mit dem der Anbieter die Nutzung abrechnet. Du bezahlst nur, was du nutzt; ein Diktat kostet meist unter einem Cent.
 
 Alle Angaben in diesem Kapitel: **Stand 09/2026, ohne Gewähr.** Preise in US-Dollar, wie von den Anbietern ausgewiesen.
 
@@ -332,17 +332,20 @@ Die Spalte „Modelle" nennt die Einträge, wie sie in WhisperLoom im Dropdown s
 | Anbieter (Dropdown) | Für | Modelle (Erkennung) | Modelle (Textverbesserung) | Preis Erkennung | Kostenlos? | Key holen |
 |---|---|---|---|---|---|---|
 | **OpenAI** | Erkennung + Text | GPT Transcribe (empfohlen) · GPT-4o Transcribe (Auslauf 02/2027) · GPT-4o mini Transcribe (Auslauf 02/2027) · Whisper v2 (Legacy, Auslauf 02/2027) | GPT-4o mini · GPT-4.1 mini · GPT-5.6 Luna · GPT-5.4 nano · GPT-5 mini (Auslauf 12/2026) · GPT-5 nano (Auslauf 12/2026) | GPT Transcribe $0,0045/min · GPT-4o Transcribe $0,006/min · GPT-4o mini Transcribe $0,003/min · Whisper $0,006/min | nein — Guthaben ab $5 | https://platform.openai.com/api-keys |
-| **Groq (kostenlos)** | Erkennung + Text | Whisper Large v3 Turbo · Whisper Large v3 | GPT-OSS 20B · GPT-OSS 120B · Qwen 3.6 27B (Preview) | Turbo $0,04/h (≈ $0,00067/min) · Large v3 $0,111/h | **ja** — Free-Plan ohne Zahlungsmittel: 2 h Audio/Stunde, 8 h/Tag; LLM 30 Anfragen/min, 1.000/Tag | https://console.groq.com/keys |
+| **Groq (kostenlos)** | Erkennung + Text | Whisper Large v3 Turbo · Whisper Large v3 | GPT-OSS 20B · GPT-OSS 120B · Qwen 3.8 27B (Preview) | Turbo $0,04/h (≈ $0,00067/min) · Large v3 $0,111/h | **ja** — Free-Plan ohne Zahlungsmittel: 2 h Audio/Stunde, 8 h/Tag; LLM 30 Anfragen/min, 1.000/Tag | https://console.groq.com/keys |
 | **Mistral** | Erkennung + Text | Voxtral Mini Transcribe 2 | Mistral Small 4 · Ministral 3 8B | $0,003/min | Experiment-Plan gratis (Telefon-Verifizierung; ob Audio enthalten ist, ist nicht belegt) | https://console.mistral.ai/api-keys |
+| **ElevenLabs (Scribe)** | nur Erkennung | Scribe v2 · Scribe v2 Medical | — (keine Textverbesserung) | $0,22/h (≈ $0,0037/min); Vokabular kostet etwa 20 % Aufpreis | Free-Plan mit 4 h 30 min Scribe | https://elevenlabs.io/app/settings/api-keys — Key mit Berechtigung **„Speech to Text“** |
 | **Together AI** | Erkennung | Whisper Large v3 | — (Modell frei eintippen) | $0,0015/min | Startguthaben für neue Konten | https://api.together.ai/settings/api-keys |
 | **DeepInfra** | Erkennung | Whisper Large v3 Turbo · Whisper Large v3 | — (Modell frei eintippen) | Turbo $0,0002/min · Large v3 $0,00045/min | nein | https://deepinfra.com/dash/api_keys |
-| **OpenRouter** | Erkennung + Text | Voxtral Mini Transcribe (via OpenRouter) · GPT-4o mini Transcribe (via OpenRouter) · Whisper Large v3 Turbo (via OpenRouter) | GPT-4o mini · Gemini 2.5 Flash-Lite · Claude Haiku 4.5 · Mistral Small 4 | ab $0,003/min | „:free"-Textmodelle mit Limits (20/min; 50 bzw. 1.000/Tag) | https://openrouter.ai/settings/keys |
+| **OpenRouter** | Erkennung + Text | Voxtral Mini Transcribe (via OpenRouter) · GPT-4o mini Transcribe (via OpenRouter) · Whisper Large v3 Turbo (via OpenRouter) | GPT-4o mini · Gemini 3.8 Flash · Claude Haiku 4.5 · Mistral Small 4 | ab $0,003/min | „:free"-Textmodelle mit Limits (20/min; 50 bzw. 1.000/Tag) | https://openrouter.ai/settings/keys |
 | **Anthropic (Claude)** | nur Text | — | Claude Haiku 4.5 · Claude Sonnet 5 | — | kleines Startguthaben | https://platform.claude.com/settings/keys |
-| **Google Gemini** | nur Text | — | Gemini 2.5 Flash-Lite · Gemini 2.5 Flash · Gemini 3.8 Flash | — | **ja**, aber Free-Tier-Inhalte dürfen zum Training genutzt werden | https://aistudio.google.com/apikey |
-| **DeepSeek** | nur Text | — | DeepSeek V4 Flash | — | nein | https://platform.deepseek.com/api_keys |
+| **Google Gemini** | nur Text | — | Gemini 3.5 Flash-Lite · Gemini 3.8 Flash · Gemini 2.5 Flash-Lite und Gemini 2.5 Flash (nur Bestandskonten) | — | **ja**, aber Free-Tier-Inhalte dürfen zum Training genutzt werden | https://aistudio.google.com/apikey |
+| **DeepSeek** | nur Text | — | DeepSeek Flash (V4.1) · DeepSeek V4 Flash (alter Name) | — | nein | https://platform.deepseek.com/api_keys |
 | **Ollama (lokal / Homeserver)** | nur Text | — | frei — die Liste kommt automatisch von deinem Server (z. B. `qwen3:8b`) | — | deine Hardware | kein Key nötig (Feld optional) |
-| **Ollama Cloud** | nur Text | — | Gemma 4 31B (empfohlen) · GLM 5.3 Flash · GPT-OSS 20B · GPT-OSS 120B; weitere per **Modelle vom Server laden** | — | — | https://ollama.com/settings/keys |
+| **Ollama Cloud** | nur Text | — | Gemma 4 31B (empfohlen) · GLM 5.3 Flash · GPT-OSS 20B · GPT-OSS 120B; weitere per Knopf unter dem Feld „Modell" ([8.2](#82-zugang-für-die-textverbesserung)) | — | — | https://ollama.com/settings/keys |
 | **Eigener Server** | Erkennung + Text | frei (z. B. `Systran/faster-whisper-medium`, `whisper-1`) | frei (z. B. `qwen3:8b`) | deine Hardware | — | kein Key nötig, außer dein Server verlangt einen |
+
+Mit der Pro-Funktion **Modelle vom Server** wählst du zusätzlich aus der aktuellen Liste des Anbieters ([7.6](#76-modelle-vom-server-pro-funktion)).
 
 Textverbesserung kostet zusätzlich, aber deutlich weniger als die Erkennung — bei GPT-4o mini etwa $0,0002 pro Diktat-Minute, bei Groqs GPT-OSS 20B etwa $0,0001. Der Preisvergleich entscheidet sich bei der Erkennung.
 
@@ -351,6 +354,7 @@ Textverbesserung kostet zusätzlich, aber deutlich weniger als die Erkennung —
 - **Kostenlos anfangen: Groq.** Free-Plan ohne Kreditkarte, 8 Stunden Audio pro Tag, „Whisper Large v3 Turbo" ist für Deutsch gut und sehr schnell. Mit demselben Key läuft auch die Textverbesserung (GPT-OSS 20B) — ein Konto, alles gratis.
 - **Beste Qualität: OpenAI „GPT Transcribe".** Das aktuelle Modell mit den besten dokumentierten Erkennungsraten; $0,0045 pro Minute, dafür ist eine Mindestaufladung von $5 nötig. Das Standardmodell in WhisperLoom.
 - **Europäischer Anbieter: Mistral „Voxtral Mini Transcribe 2".** Server in der EU, Deutsch als Kernsprache, $0,003/min.
+- **Viele Sprachen, Fachbegriffe: ElevenLabs „Scribe v2".** Über 90 Sprachen, $0,22 pro Stunde; das Vokabular geht als Schlüsselbegriffe mit (etwa 20 % Aufpreis). Für medizinische Diktate gibt es „Scribe v2 Medical". Keine Textverbesserung — dafür einen eigenen Zugang eintragen ([8.2](#82-zugang-für-die-textverbesserung)).
 - **Sehr günstig:** DeepInfra ab $0,0002/min oder Together AI $0,0015/min — beide mit Whisper Large v3.
 - **Ein Key für alles:** OpenRouter bündelt viele Modelle unter einem Konto; für lange Aufnahmen ungünstig (60-Sekunden-Limit je Anfrage beim Anbieter).
 
@@ -368,6 +372,8 @@ Dieselben Schritte zeigt WhisperLoom unter **Wo bekomme ich einen Key?** (im Ass
 
 **Mistral** — 1) https://console.mistral.ai registrieren, Studio aktivieren. 2) Plan wählen: *Experiment* (gratis, Telefonnummer verifizieren) oder *Pay-as-you-go* (Karte). 3) *API Keys* → *Create new key*.
 
+**ElevenLabs** (nur Erkennung) — 1) https://elevenlabs.io registrieren (Free-Plan mit 4 h 30 min Scribe). 2) *Settings → API Keys* → *Create API Key* (direkt: https://elevenlabs.io/app/settings/api-keys) und bei den Berechtigungen **„Speech to Text"** erlauben — ohne sie lehnt ElevenLabs jede Erkennung ab, WhisperLoom meldet dann „Key oder Berechtigung „Speech to Text" prüfen". Für **Modelle vom Server** ([7.6](#76-modelle-vom-server-pro-funktion)) zusätzlich **„Models: Lesen"**. 3) In WhisperLoom: Anbieter „ElevenLabs (Scribe)", Key einfügen. Für die Textverbesserung brauchst du einen zweiten Zugang, etwa Groq ([8.2](#82-zugang-für-die-textverbesserung)).
+
 **Together AI** — 1) https://api.together.ai registrieren (Startguthaben). 2) *Settings → API Keys* → *Create key*.
 
 **DeepInfra** — 1) https://deepinfra.com anmelden (GitHub/Google). 2) *Dashboard → API Keys* → *New API Key*. 3) Guthaben aufladen.
@@ -384,8 +390,23 @@ Dieselben Schritte zeigt WhisperLoom unter **Wo bekomme ich einen Key?** (im Ass
 
 ### 7.5 Eigenes Modell und Zugang prüfen
 
-- **Eigenes Modell …** (letzter Eintrag im Modell-Dropdown): Für Modell-IDs, die nicht in der Liste stehen — etwa ein neues Modell des Anbieters oder ein Modell auf dem eigenen Server. Die ID genau so eintragen, wie der Anbieter sie nennt. Achtung bei OpenAI: Frei eingetippte Reasoning-Modelle (z. B. `gpt-5.6-terra`) lehnen den Standard-Parameter der Textverbesserung ab; für die Textverbesserung deshalb möglichst ein Modell **aus der Liste** wählen.
+- **Eigenes Modell …** (letzter Eintrag im Modell-Dropdown, mit „Modelle vom Server" unten in der Auswahl): Für Modell-IDs, die nicht in der Liste stehen — etwa ein neues Modell des Anbieters oder ein Modell auf dem eigenen Server. Die ID genau so eintragen, wie der Anbieter sie nennt. Für unbekannte IDs setzt WhisperLoom die Parameter selbst: OpenAI-Reasoning-Modelle (z. B. `gpt-5.6-terra`, `o4-mini`) bekommen kein `temperature` und die Denk-Stufe „low", Gemini-3-Modelle kein `temperature` (so rät es Google), Groqs Qwen 3 und GPT-OSS die passende Denk-Stufe, ein Snapshot wie `gpt-5-mini-2025-08-07` erbt vom Listen-Modell. Lehnt ein Server `temperature` trotzdem ab, versucht WhisperLoom es genau einmal ohne.
 - **Zugang prüfen** (unter Erkennung bzw. Text): Schickt eine kurze Testanfrage an den eingetragenen Zugang und meldet „Verbunden · x s" oder den Fehlergrund. Praktisch nach jedem Key- oder Anbieterwechsel.
+
+### 7.6 Modelle vom Server (Pro-Funktion)
+
+Die Modelle in WhisperLoom sind **Empfehlungen** mit Stand 09/2026 — die Anbieter bringen laufend neue und schalten alte ab. Wer das aktuelle Angebot sehen will, schaltet unter Einstellungen → Gruppe PRO → **Erweitert** → Karte **Pro-Funktionen** den Schalter **Modelle vom Server** ein („Lädt bei jedem Anbieter die aktuelle Modell-Liste – für Erkennung und Textverbesserung."). Ab Werk ist er aus; dann bleibt alles wie in 7.1 beschrieben (Ollama lädt seine Liste trotzdem, siehe [8.2](#82-zugang-für-die-textverbesserung)).
+
+Eingeschaltet wird das Feld **Modell** unter Erkennung und unter Text (auch bei „wie Erkennung") zu einer Auswahl, bei jedem Anbieter einschließlich Eigener Server — nur bei Together AI und DeepInfra bleibt das Textmodell ein Freitext:
+
+- Antippen öffnet **Modell wählen**: oben das Suchfeld **Modell suchen**, darunter **Empfohlen** (die eingebauten Modelle mit ihren Notizen) und **Vom Server · Stand …** mit der geladenen Liste — alphabetisch, bei Anthropic neueste zuerst. Unten **Eigenes Modell …** und **Schließen**.
+- Eine Empfehlung, die der Anbieter nicht mehr listet, trägt den Zusatz **nicht mehr gelistet**; ein datierter Snapshot (z. B. `claude-haiku-4-5-20251001`) zählt als gelistet. Dein gewähltes Modell bleibt trotzdem gültig; steht es in keiner Liste, erscheint es markiert ganz oben.
+- Der Knopf **Modelle aktualisieren** unter dem Feld lädt die Liste neu und meldet „n Modelle gefunden", „Keine passenden Modelle gefunden." oder „Modelle nicht geladen: …" mit dem Grund. Bei einem Fehler bleibt die bisherige Liste.
+- Beim Öffnen von Erkennung bzw. Text lädt WhisperLoom die Liste still nach, wenn sie fehlt oder älter als einen Tag ist und der Key (falls nötig) eingetragen ist. Ein Fehler dabei bleibt stumm; nach einem Fehlschlag versucht es WhisperLoom still erst am nächsten Tag wieder — sofort, wenn du den Key änderst oder den Knopf drückst.
+
+WhisperLoom zeigt nur, was passt: unter Erkennung Spracherkennungs-Modelle, unter Text Chat-Modelle — ohne Einbettungs-, Bild- oder Sprachausgabe-Modelle. Abgeschaltete Modelle fallen weg, soweit der Anbieter ein Datum nennt; ein künftiges Abschaltdatum steht als „Auslauf JJJJ-MM-TT" dabei. Für Modelle ohne eingebauten Eintrag setzt WhisperLoom die Parameter selbst ([7.5](#75-eigenes-modell-und-zugang-prüfen)).
+
+**ElevenLabs** listet Scribe womöglich gar nicht — dann bleibt nur „Empfohlen", und „nicht mehr gelistet" erscheint dort nie. Scheitert „Modelle aktualisieren" bei ElevenLabs mit „Key oder Berechtigung „Models: Lesen" prüfen", fehlt dem Key diese Berechtigung; fürs Diktieren braucht er sie nicht. **Ollama** lädt seine Liste wie bisher bei jedem Öffnen. Die Listen speichert WhisperLoom auf dem Gerät, ohne Key ([Kapitel 11](#11-datenschutz)).
 
 ---
 
@@ -425,17 +446,18 @@ Standardmäßig nutzt die Textverbesserung **Anbieter und Key der Erkennung** (S
 **Eigenen Zugang verwenden** einschalten, wenn
 
 - die Erkennung offline läuft (Offline-Modelle können keine Textverbesserung — die Karte zeigt dann „Textverbesserung braucht einen Online-Zugang." mit **Eigenen Zugang eintragen**),
-- dein Erkennungs-Anbieter keine Textmodelle hat (Together AI, DeepInfra), oder
+- dein Erkennungs-Anbieter nur Sprache erkennt (ElevenLabs) — „wie Erkennung" gibt es dort nicht: Die Karte zeigt „ElevenLabs erkennt nur Sprache und bietet keine Textverbesserung." mit **Eigenen Zugang eintragen**, **Zugang prüfen** ist gesperrt. Ist trotzdem eine Stufe gewählt, kommt der Text ohne KI an, mit dem Hinweis „Der Erkennungs-Anbieter kann keinen Text verbessern — unter „Text" einen eigenen Zugang eintragen", oder
+- dein Erkennungs-Anbieter keine eingebauten Textmodelle hat (Together AI, DeepInfra) und du kein Modell eintippen willst — „wie Erkennung" geht dort nur mit selbst eingetipptem Modell (**Zugang prüfen** erst dann); ohne kommt der Text ohne KI an, Hinweis „Kein Textmodell eingetragen — unter „Text" ein Modell eintragen", oder
 - du ein anderes Sprachmodell willst als beim Erkennungs-Anbieter.
 
-Dann erscheinen eigene Felder: **Anbieter** (OpenAI · Groq · Mistral · OpenRouter · Anthropic (Claude) · Google Gemini · DeepSeek · Ollama (lokal / Homeserver) · Ollama Cloud · Eigener Server), bei Eigener Server die **Base-URL**, der **API-Key** und das **Modell**. Der Key der Erkennung wird dabei nie an den anderen Anbieter geschickt. Beim Eigenen Server und bei Together/DeepInfra ist das Modellfeld ein Freitext („z. B. qwen3:8b").
+Dann erscheinen eigene Felder: **Anbieter** (OpenAI · Groq · Mistral · OpenRouter · Anthropic (Claude) · Google Gemini · DeepSeek · Ollama (lokal / Homeserver) · Ollama Cloud · Eigener Server), bei Eigener Server die **Base-URL**, der **API-Key** und das **Modell**. Der Key der Erkennung wird dabei nie an den anderen Anbieter geschickt. Beim Eigenen Server ist das Modellfeld ein Freitext („z. B. qwen3:8b"), mit **Modelle vom Server** eine Auswahl aus der Liste deines Servers ([7.6](#76-modelle-vom-server-pro-funktion)).
 
 **Ollama** gibt es in zwei Varianten, beide nur für die Textverbesserung (Ollama kann keine Spracherkennung — die Erkennung läuft weiter über einen anderen Anbieter oder offline):
 
 - **Ollama (lokal / Homeserver)** — dein eigenes Ollama, z. B. auf einem Rechner zu Hause. Feld **Server-Adresse**: die Adresse mit Port, meist `:11434`, z. B. `http://homeserver:11434` oder `http://192.168.1.10:11434`. Ein angehängtes `/v1` oder `/api` entfernt WhisperLoom selbst. **Kein Key nötig** (das Key-Feld ist optional), Zeitüberschreitung 600 s. `http://` nur im eigenen Netz (LAN/VPN) — sonst warnt das Feld. Hinweis in der App: auf dem Server `OLLAMA_HOST=0.0.0.0` setzen, sonst hört Ollama nur auf sich selbst; das Handy muss den Server erreichen (gleiches WLAN oder VPN wie Tailscale). Der Text verlässt dein Netz nicht. Einrichtung des Servers: [Kapitel 10, Schritt 2](#schritt-2--textverbesserung-starten-optional-ollama).
 - **Ollama Cloud** — Modelle laufen auf ollama.com (fest `https://ollama.com`), **API-Key nötig** ([7.4](#74-key-besorgen--schritt-für-schritt)). Voreinstellung ist **Gemma 4 31B (empfohlen)** — schnell und ohne „Nachdenken"; zur Auswahl stehen außerdem GLM 5.3 Flash, GPT-OSS 20B und GPT-OSS 120B.
 
-**Modell-Liste vom Server:** Sobald Ollama verbunden ist (Adresse eingetragen, bei der Cloud auch der Key), lädt WhisperLoom die Modelle, die auf dem Server liegen, automatisch ins Auswahlfeld **Modell**. Der Knopf **Modelle vom Server laden** holt die Liste erneut und meldet „n Modelle gefunden" oder den Grund, warum es nicht geklappt hat (z. B. „Der Server hat keine Modelle …"). Beim lokalen Ollama übernimmt WhisperLoom das erste gefundene Modell, solange noch keins gewählt ist. Ein Modell, das nicht in der Liste steht, trägst du über den letzten Eintrag **Eigenes Modell …** per Name ein; beim lokalen Ollama ohne geladene Liste ist das Feld „Modell" ohnehin ein freies Textfeld.
+**Modell-Liste vom Server:** Sobald Ollama verbunden ist (Adresse eingetragen, bei der Cloud auch der Key), lädt WhisperLoom die Modelle, die auf dem Server liegen, automatisch ins Auswahlfeld **Modell**. Der Knopf **Modelle vom Server laden** holt die Liste erneut und meldet „n Modelle gefunden" oder den Grund, warum es nicht geklappt hat (z. B. „Der Server hat keine Modelle …"). Beim lokalen Ollama übernimmt WhisperLoom das erste gefundene Modell, solange noch keins gewählt ist. Ein Modell, das nicht in der Liste steht, trägst du über den letzten Eintrag **Eigenes Modell …** per Name ein; beim lokalen Ollama ohne geladene Liste ist das Feld „Modell" ohnehin ein freies Textfeld. Mit der Pro-Funktion **Modelle vom Server** ([7.6](#76-modelle-vom-server-pro-funktion)) öffnet das Feld die Auswahl mit Suche und der Knopf heißt **Modelle aktualisieren**; geladen wird bei Ollama trotzdem bei jedem Öffnen.
 
 **Anbieter nur für Text** — mit Hinweisen, die WhisperLoom direkt an der Auswahl zeigt:
 
@@ -459,7 +481,7 @@ Immer aktiv, lokal, kostenlos:
 Unter Einstellungen → **Erkennung** → Karte **Sprache & Kontext**:
 
 - **Sprache**: Automatisch erkennen · Deutsch (Voreinstellung) · Englisch · Spanisch · Französisch · Italienisch. Eine feste Sprache ist schneller und genauer als „Automatisch erkennen" — vor allem bei kurzen Diktaten; sie bestimmt auch, welche Füllwort-Liste gilt. Bei „Automatisch erkennen" nimmt WhisperLoom die vom Modell erkannte Sprache für die Nachbearbeitung.
-- **Vokabular** — Namen, Fachbegriffe und Schreibweisen, die die Erkennung kennen soll. Die Zeile zeigt, was hinterlegt ist (z. B. „3 Begriffe · Datei: namen.md"); **Bearbeiten** öffnet das Blatt **Vokabular**. Die Begriffe gehen als Prompt an den Anbieter und helfen bei Eigennamen und Fachwörtern. Kostet nichts extra. Das Vokabular wirkt online **und** offline (dort als Start-Prompt des Modells).
+- **Vokabular** — Namen, Fachbegriffe und Schreibweisen, die die Erkennung kennen soll. Die Zeile zeigt, was hinterlegt ist (z. B. „3 Begriffe · Datei: namen.md"); **Bearbeiten** öffnet das Blatt **Vokabular**. Die Begriffe gehen als Prompt an den Anbieter und helfen bei Eigennamen und Fachwörtern. Kostet nichts extra — außer bei ElevenLabs (etwa 20 % Aufpreis, siehe unten). Das Vokabular wirkt online **und** offline (dort als Start-Prompt des Modells).
 
 **Eigene Begriffe:** Im Feld **Begriff hinzufügen** einen Begriff eintippen und mit Enter oder Plus übernehmen; mehrere auf einmal mit Komma trennen („Christof Treitges, WhisperLoom, SvelteKit"). Die Liste **Eigene Begriffe (n)** zeigt alle Einträge; ✕ löscht einen einzelnen, **Eigene löschen** alle eigenen. **Fertig** schließt das Blatt. Hattest du in einer älteren Version Text im früheren Feld „Kontext: Namen, Fachbegriffe, Schreibweisen", bleibt er erhalten: Jede seiner Zeilen erscheint als ein Eintrag (ein einzeiliger Text also als genau einer) und wird mitgeschickt.
 
@@ -481,6 +503,8 @@ Ergibt fünf Begriffe: Christof Treitges, WhisperLoom, SvelteKit, FastAPI, Tails
 **Wie viel mitgeht:** Whisper beachtet nur rund 200 Wörter Kontext. Und zwar die am **Ende** des Kontexts. WhisperLoom stellt deshalb die Begriffe aus der Datei nach vorn und die eigenen ans Ende, mit Komma verbunden und auf **800 Zeichen** gekappt — nie mitten in einem Begriff. Wird es zu lang, fallen zuerst die vorderen Datei-Begriffe weg. Das Blatt sagt, was ankommt: „Alle n Begriffe werden mitgeschickt." bzw. „x von y Begriffen werden mitgeschickt: Whisper beachtet nur rund 200 Wörter Kontext. Eigene Begriffe haben Vorrang vor der Datei." Wichtige Namen gehören also in die eigene Liste oder ans Ende der Datei.
 
 Mistral und OpenRouter nehmen kein Vokabular entgegen — dort wird es nicht mitgeschickt, und unter der Zeile steht der Hinweis „Dieser Anbieter nimmt kein Vokabular entgegen — es wirkt nur bei anderen Anbietern und offline."
+
+**ElevenLabs** bekommt das Vokabular als Schlüsselbegriffe: jeden mitgeschickten Begriff einzeln (nach der Kappung auf 800 Zeichen), höchstens 100 — ab 101 rechnet ElevenLabs jede Anfrage mit mindestens 20 Sekunden ab; es bleiben die letzten, also die eigenen. Begriffe mit mehr als fünf Wörtern, ab 50 Zeichen, mit `< > { } [ ] \` oder mit einem Satzzeichen am Ende (Satzstücke aus altem Freitext, auch das bei der Kappung angeschnittene Stück) lässt WhisperLoom dort weg. Unter der Zeile steht „Geht als Schlüsselbegriffe an ElevenLabs und hilft bei Eigennamen und Fachwörtern. Vokabular kostet bei ElevenLabs etwa 20 % Aufpreis."
 
 ---
 
@@ -660,7 +684,7 @@ Bei Fehler: `docker logs speaches` bzw. `journalctl -u ollama`.
 
 Dann **Zugang prüfen**.
 
-**Textverbesserung** (Einstellungen → Text): Läuft Ollama auf einem eigenen Port (Variante ohne Caddy), Schalter **Eigenen Zugang verwenden** ein → Anbieter **Ollama (lokal / Homeserver)** (empfohlen) → **Server-Adresse** `http://SERVER:11434` (ohne `/v1`), Key leer. Die Modelle deines Servers lädt WhisperLoom dann automatisch ins Auswahlfeld **Modell** (sonst **Modelle vom Server laden**); `qwen3:8b` auswählen. Der bisherige Weg funktioniert weiter: Anbieter **Eigener Server** → Base-URL `http://SERVER:11434/v1`, Key leer, Modell `qwen3:8b`. Hinter Caddy mit einer gemeinsamen URL bleibt der Schalter aus.
+**Textverbesserung** (Einstellungen → Text): Läuft Ollama auf einem eigenen Port (Variante ohne Caddy), Schalter **Eigenen Zugang verwenden** ein → Anbieter **Ollama (lokal / Homeserver)** (empfohlen) → **Server-Adresse** `http://SERVER:11434` (ohne `/v1`), Key leer. Die Modelle deines Servers lädt WhisperLoom dann automatisch ins Auswahlfeld **Modell** (sonst per Knopf **Modelle vom Server laden**, mit Pro **Modelle aktualisieren**); `qwen3:8b` auswählen. Der bisherige Weg funktioniert weiter: Anbieter **Eigener Server** → Base-URL `http://SERVER:11434/v1`, Key leer, Modell `qwen3:8b`. Hinter Caddy mit einer gemeinsamen URL bleibt der Schalter aus.
 
 **http oder https?** Unverschlüsseltes `http://` akzeptiert WhisperLoom ohne Warnung nur zu privaten Adressen (192.168.x.x, 10.x.x.x, 172.16–31.x.x, 100.64–127.x.x/Tailscale, `localhost`, `*.local`, `*.lan`, `*.home.arpa`, `*.internal`). Bei einer öffentlichen Adresse warnt das Feld „Unverschlüsselt über das Internet — https:// oder VPN (Tailscale) verwenden". Über das Internet immer `https://` oder VPN. Die Cloud-Anbieter aus der Liste sind fest auf https eingestellt.
 
@@ -672,6 +696,10 @@ WhisperLoom hat keinen eigenen Server, kein Konto, keine Telemetrie. Was mit dei
 
 **Online:** Audio und Vokabular gehen an den gewählten Anbieter. Bei Textverbesserung geht der erkannte Text an das Sprachmodell (denselben oder einen anderen Anbieter). Dein Key bleibt auf dem Gerät. WhisperLoom speichert keine Aufnahmen. Unter Erkennung steht immer, an wen gesendet wird („Audio wird zur Erkennung an OpenAI gesendet."). Was der Anbieter mit den Daten macht, regeln dessen Bedingungen — bei Google Gemini im Free-Tier ausdrücklich Trainingsnutzung, bei DeepSeek Server in China; WhisperLoom weist an der Auswahl darauf hin.
 
+**ElevenLabs:** Das Audio geht an ElevenLabs, das Vokabular als Schlüsselbegriffe. ElevenLabs bewahrt Anfragen laut eigener Datenschutzerklärung auf; ohne Speicherung („Zero Retention") arbeitet es nur für Enterprise-Kunden.
+
+**Modelle vom Server (Pro):** Ist die Funktion an, fragt WhisperLoom beim Anbieter zusätzlich die Modell-Liste ab (mit deinem Key, ohne Audio oder Text). Auf dem Gerät gespeichert wird nur die Liste.
+
 **Offline:** Nichts verlässt das Gerät — nur der Modell-Download geht ins Netz (zu huggingface.co).
 
 **Eigener Server:** Audio und Text gehen nur an deinen Server.
@@ -682,7 +710,7 @@ WhisperLoom hat keinen eigenen Server, kein Konto, keine Telemetrie. Was mit dei
 
 **Bedienungshilfe:** Die Bedienungshilfe „WhisperLoom Text-Einfügen" liest nichts mit und speichert nichts; sie fügt nur den diktierten Text in das fokussierte Feld ein. Android zeigt beim Aktivieren die übliche Warnung für Bedienungshilfen („kann Bildschirminhalte lesen") — WhisperLoom nutzt davon ausschließlich das Einfügen.
 
-**Auf dem Gerät gespeichert:** Deine Einstellungen inklusive API-Key (im privaten App-Speicher, für andere Apps unzugänglich), die heruntergeladenen Modelle und die Position des Knopfs. Keine Aufnahmen, keine Texte, keine Verläufe. Ein fehlgeschlagenes Diktat bleibt nur so lange im Arbeitsspeicher gepuffert, bis du es erneut sendest oder verwirfst. WhisperLoom ist vom Android-System-Backup ausgenommen (`allowBackup=false`): die Einstellungen inklusive Key landen weder im Google-Backup noch im Geräte-zu-Gerät-Transfer — nach einem Gerätewechsel richtest du den Zugang neu ein.
+**Auf dem Gerät gespeichert:** Deine Einstellungen inklusive API-Key (im privaten App-Speicher, für andere Apps unzugänglich), die heruntergeladenen Modelle, die zuletzt geladenen Modell-Listen der Anbieter (ohne Key) und die Position des Knopfs. Keine Aufnahmen, keine Texte, keine Verläufe. Ein fehlgeschlagenes Diktat bleibt nur so lange im Arbeitsspeicher gepuffert, bis du es erneut sendest oder verwirfst. WhisperLoom ist vom Android-System-Backup ausgenommen (`allowBackup=false`): die Einstellungen inklusive Key landen weder im Google-Backup noch im Geräte-zu-Gerät-Transfer — nach einem Gerätewechsel richtest du den Zugang neu ein.
 
 **Berechtigungen:** Mikrofon (Aufnahme), Internet (Online-Dienst und Modell-Download), Über anderen Apps anzeigen (Knopf), Benachrichtigungen (Beenden-Aktion und Download-Fortschritt), Netzwerkstatus (Nachfrage vor Downloads über mobile Daten), Vordergrund-Dienste (Knopf und Modell-Download).
 
@@ -702,7 +730,10 @@ Die Bedienungshilfe „WhisperLoom" ist aus. Aktivieren (Einstellungen → Knopf
 Bei manuell installierten Apps: App-Info → ⋮ → **Eingeschränkte Einstellungen zulassen**, dann die Bedienungshilfe erneut aktivieren (siehe [Schritt 5](#schritt-5--text-automatisch-einfügen-empfohlen)).
 
 **„Key ungültig (401)" oder „Server verlangt einen (anderen) API-Key".**
-Key beim Anbieter neu erzeugen und einfügen (Zwischenablage-Symbol im Key-Feld, keine Leerzeichen). Prüfen, ob der Key zum gewählten Anbieter gehört — ein OpenAI-Key funktioniert nicht bei Groq. Dann **Zugang prüfen**.
+Key beim Anbieter neu erzeugen und einfügen (Zwischenablage-Symbol im Key-Feld, keine Leerzeichen). Prüfen, ob der Key zum gewählten Anbieter gehört — ein OpenAI-Key funktioniert nicht bei Groq. Bei ElevenLabs braucht der Key die Berechtigung „Speech to Text" (Meldung „Key oder Berechtigung „Speech to Text" prüfen"). Dann **Zugang prüfen**.
+
+**„Guthaben aufgebraucht (402) — beim Anbieter aufladen".**
+Das Guthaben bzw. die Inklusiv-Stunden beim Anbieter sind verbraucht (z. B. ElevenLabs, OpenRouter). Im Konto des Anbieters aufladen oder den Tarif wechseln. Das Diktat bleibt gepuffert.
 
 **„Limit erreicht (429) — später erneut".**
 Bei Groq das Tages-/Minutenlimit des Free-Plans, bei OpenAI meist leeres Guthaben oder das Tier-Limit. Guthaben bzw. Limits im Konto des Anbieters prüfen. Das Diktat bleibt gepuffert — einfach später nochmal antippen.
@@ -720,7 +751,7 @@ Beim Eigenen Server (Limit 600 s): ein kleineres Modell auf dem Server verwenden
 Nur beim Eigenen Server: Läuft der Container? Stimmt der Port (speaches 8000, whisper-server 8080, Ollama 11434)? Sind Handy und Server im selben Netz bzw. Tailnet? Test mit `curl` von einem Rechner aus (Kapitel 10, Schritt 4).
 
 **Ollama: keine Modelle im Auswahlfeld / Server nicht erreichbar.**
-Beim Anbieter „Ollama (lokal / Homeserver)": Auf dem Server muss `OLLAMA_HOST=0.0.0.0` gesetzt sein, sonst hört Ollama nur auf sich selbst und das Handy kommt nicht durch ([Kapitel 10, Schritt 2](#schritt-2--textverbesserung-starten-optional-ollama)). Handy und Server müssen im selben WLAN bzw. VPN (Tailscale) sein; die Server-Adresse braucht den Port, meist `:11434`. Meldet **Modelle vom Server laden** „Der Server hat keine Modelle …", ist Ollama erreichbar, hat aber noch kein Modell — auf dem Server z. B. `ollama pull qwen3:8b` ausführen und die Liste erneut laden. Bei „Ollama Cloud" prüfen, ob der Key eingetragen ist.
+Beim Anbieter „Ollama (lokal / Homeserver)": Auf dem Server muss `OLLAMA_HOST=0.0.0.0` gesetzt sein, sonst hört Ollama nur auf sich selbst und das Handy kommt nicht durch ([Kapitel 10, Schritt 2](#schritt-2--textverbesserung-starten-optional-ollama)). Handy und Server müssen im selben WLAN bzw. VPN (Tailscale) sein; die Server-Adresse braucht den Port, meist `:11434`. Meldet der Knopf **Modelle vom Server laden** (mit Pro: **Modelle aktualisieren**) „Der Server hat keine Modelle …", ist Ollama erreichbar, hat aber noch kein Modell — auf dem Server z. B. `ollama pull qwen3:8b` ausführen und die Liste erneut laden. Bei „Ollama Cloud" prüfen, ob der Key eingetragen ist.
 
 **Offline ist zu langsam.**
 Ein kleineres Modell wählen (Base oder Small) oder auf den Online-Dienst wechseln. Auch andere gleichzeitig laufende Apps bremsen — die Erkennung nutzt alle Performance-Kerne.
@@ -903,7 +934,7 @@ Die Online-Anbieter rechnen auf Grafikkarten-Servern; auf dem Telefon läuft das
 Nein — weder Audio noch Text. Siehe [Kapitel 11](#11-datenschutz).
 
 **Kann ich Namen und Fachbegriffe hinterlegen?**
-Ja: Erkennung → Sprache & Kontext → **Vokabular** — als Liste in der App oder als verknüpfte .md-/.txt-Datei, die bei jedem Diktat neu gelesen wird ([8.4](#84-sprache--kontext)). Wirkt online und offline, kostet nichts extra.
+Ja: Erkennung → Sprache & Kontext → **Vokabular** — als Liste in der App oder als verknüpfte .md-/.txt-Datei, die bei jedem Diktat neu gelesen wird ([8.4](#84-sprache--kontext)). Wirkt online und offline, kostet nichts extra — außer bei ElevenLabs (etwa 20 % Aufpreis).
 
 **Was passiert beim Update von 2.x auf 3.0.0?**
 Deine Einstellungen werden automatisch übernommen: Base-URL, Key, Modell und Kontext-Prompt landen unter Erkennung (Anbieter „OpenAI" bzw. „Eigener Server", je nach URL), die Option „Text von der KI glätten lassen" wird zur Stufe **Glätten**, die Füllwort-/Groß-Schreib-/Leerzeichen-Regeln bleiben. Dein bisheriges Modell bleibt eingetragen (GPT-4o Transcribe wird als Auslauf-Modell gekennzeichnet); neue Installationen starten mit **GPT Transcribe**. Da 3.0.0 mehr Berechtigungen kennt (Benachrichtigungen ab Android 13), kann der Assistent einmalig die noch offenen Schritte zeigen.

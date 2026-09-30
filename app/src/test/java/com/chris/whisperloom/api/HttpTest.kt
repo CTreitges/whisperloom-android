@@ -23,6 +23,7 @@ class HttpTest {
 
     private lateinit var server: HttpServer
     private var lastAuth: String? = "unset"
+    private var lastXiKey: String? = "unset"
     private var lastAgent: String? = null
     private var lastBody = ""
 
@@ -30,6 +31,7 @@ class HttpTest {
         server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
         server.createContext("/ok") { ex ->
             lastAuth = ex.requestHeaders.getFirst("Authorization")
+            lastXiKey = ex.requestHeaders.getFirst("xi-api-key")
             lastAgent = ex.requestHeaders.getFirst("User-Agent")
             lastBody = ex.requestBody.readBytes().toString(Charsets.UTF_8)
             val out = """{"text":"hi"}""".toByteArray()
@@ -77,6 +79,25 @@ class HttpTest {
         assertEquals("Bearer sk-test", lastAuth)
     }
 
+    /** ElevenLabs: Key roh im eigenen Header, kein Bearer — bei POST und GET. */
+    @Test fun eigenerKeyHeaderStattBearer() {
+        Http.post(url("/ok"), apiKey = "xi-test", contentType = "text/plain", authHeader = "xi-api-key") {
+            it.write("x".toByteArray())
+        }
+        assertEquals("xi-test", lastXiKey)
+        assertNull(lastAuth)
+
+        lastXiKey = null
+        lastAuth = "unset"
+        Http.get(url("/ok"), apiKey = "xi-get", authHeader = "xi-api-key")
+        assertEquals("xi-get", lastXiKey)
+        assertNull(lastAuth)
+
+        // Ohne Key auch kein leerer eigener Header.
+        Http.post(url("/ok"), apiKey = "", contentType = "text/plain", authHeader = "xi-api-key") { it.write("x".toByteArray()) }
+        assertNull(lastXiKey)
+    }
+
     @Test fun leerzeichenKeyZaehltAlsKeinKey() {
         Http.post(url("/ok"), apiKey = "   ", contentType = "text/plain") { it.write("x".toByteArray()) }
         assertNull(lastAuth)
@@ -95,6 +116,24 @@ class HttpTest {
         assertEquals("Unauthorized", Http.errorDetail("""{"error":"Unauthorized"}"""))
         assertEquals("invalid api key", Http.errorDetail("""{"error":{"message":"invalid api key"}}"""))
         assertEquals("keine Antwort", Http.errorDetail(""))
+    }
+
+    @Test fun elevenLabsFehlerformenWerdenLesbar() {
+        // Objekt (live gemessen: 401 ohne gueltigen Key)
+        assertEquals(
+            "Invalid API key",
+            Http.errorDetail("""{"detail":{"type":"authentication_error","code":"unauthorized","message":"Invalid API key","status":"invalid_api_key"}}"""),
+        )
+        // Array (422-Validierung, FastAPI-Form)
+        assertEquals(
+            "field required; value is not a valid enumeration member",
+            Http.errorDetail("""{"detail":[{"loc":["body","model_id"],"msg":"field required","type":"missing"},{"msg":"value is not a valid enumeration member"}]}"""),
+        )
+        // String
+        assertEquals("Not Found", Http.errorDetail("""{"detail":"Not Found"}"""))
+        // Leeres detail -> Rohtext statt leerer Meldung
+        assertEquals("""{"detail":{}}""", Http.errorDetail("""{"detail":{}}"""))
+        assertEquals("""{"detail":[]}""", Http.errorDetail("""{"detail":[]}"""))
     }
 
     @Test fun fehlerstatusWirdLesbar() {

@@ -98,10 +98,10 @@ class AccessResolverTest {
     }
 
     @Test fun andererAnbieterMitEigenenFeldern() {
-        val l = AccessResolver.resolveLlm(stt, "groq", " https://proxy/v1 ", " gsk ", " qwen/qwen3.6-27b ")
+        val l = AccessResolver.resolveLlm(stt, "groq", " https://proxy/v1 ", " gsk ", " qwen/qwen3.8-27b ")
         assertEquals("https://proxy/v1", l.baseUrl)
         assertEquals("gsk", l.apiKey)
-        assertEquals("qwen/qwen3.6-27b", l.model)
+        assertEquals("qwen/qwen3.8-27b", l.model)
         assertEquals("none", l.modelOption!!.reasoningEffort)
     }
 
@@ -148,5 +148,74 @@ class AccessResolverTest {
         assertEquals("", l.apiKey)
         assertEquals(600_000, l.readTimeoutMs)
         assertTrue(l.provider.isCustom)
+    }
+
+    // --- Server-Modelle (Flags aus dem Cache bzw. Heuristik) ----------------------------
+
+    /** Merkt sich die Anfragen; liefert fuer jede ID ein Modell mit den gegebenen Flags. */
+    private class FakeLookup(private val model: (String) -> RemoteModel?) : ServerModelLookup {
+        val asked = mutableListOf<String>()
+        override fun find(providerId: String, kind: ModelKind, baseUrl: String, id: String): RemoteModel? {
+            asked += "$providerId|${kind.key}|$baseUrl|$id"
+            return model(id)
+        }
+    }
+
+    @Test fun gespeichertesServerModellBekommtFlagsAusDemCache() {
+        val lookup = FakeLookup { RemoteModel(it, label = "OpenAI: GPT-6.1 Sol", temperatureSupported = false) }
+        val l = AccessResolver.resolveLlm(stt, "openrouter", "", "or-key", "openai/gpt-6.1-sol", lookup)
+        assertEquals(listOf("openrouter|llm|https://openrouter.ai/api/v1|openai/gpt-6.1-sol"), lookup.asked)
+        assertFalse(l.modelOption!!.temperatureSupported)
+        assertEquals("OpenAI: GPT-6.1 Sol", l.modelOption!!.label)
+        assertNull(ChatPayload.sampling(l).temperature)
+    }
+
+    @Test fun sameFragtDenCacheMitDemErkennungsZugang() {
+        val lookup = FakeLookup { null }
+        AccessResolver.resolveLlm(stt, "same", "", "", "gpt-6-astra", lookup)
+        assertEquals(listOf("openai|llm|https://api.openai.com/v1|gpt-6-astra"), lookup.asked)
+    }
+
+    @Test fun katalogTrefferFragtDenCacheNicht() {
+        val lookup = FakeLookup { error("darf nicht gefragt werden") }
+        AccessResolver.resolveStt("openai", "", "k", "gpt-transcribe", 0, lookup)
+        AccessResolver.resolveLlm(stt, "same", "", "", "gpt-4o-mini", lookup)
+        AccessResolver.resolveStt("custom", "http://h/v1", "", "", 0, lookup)
+        assertTrue(lookup.asked.isEmpty())
+    }
+
+    @Test fun erkennungsModellVomServerMitHeuristik() {
+        val lookup = FakeLookup { RemoteModel(it) }
+        val a = AccessResolver.resolveStt("openai", "", "k", "gpt-transcribe-2026-08-01", 0, lookup)
+        assertEquals(listOf("openai|stt|https://api.openai.com/v1|gpt-transcribe-2026-08-01"), lookup.asked)
+        assertEquals("languages[]", a.modelOption!!.languageField)
+        // Ohne Cache (frei getippt) greift dieselbe Ableitung.
+        assertEquals("languages[]", AccessResolver.resolveStt("openai", "", "k", "gpt-transcribe-2026-08-01").modelOption!!.languageField)
+    }
+
+    // --- "wie Erkennung" bei reinen Erkennungs-Anbietern (Review 3.8.0) ---------------------
+
+    @Test fun elevenLabsWieErkennungKannKeinenTextVerbessernAuchMitAltemModell() {
+        val stt = AccessResolver.resolveStt("elevenlabs", "", "xi", "", 0)
+        assertEquals(RefineBlock.NO_CHAT, AccessResolver.resolveLlm(stt, "same", "", "", "").refineBlock)
+        // Ein von frueher gespeichertes llm_model aendert daran nichts: ElevenLabs hat keinen Chat.
+        assertEquals(RefineBlock.NO_CHAT, AccessResolver.resolveLlm(stt, "same", "", "", "gpt-4o-mini").refineBlock)
+    }
+
+    @Test fun togetherUndDeepInfraWieErkennungBrauchenNurEinModell() {
+        for (id in listOf("together", "deepinfra")) {
+            val stt = AccessResolver.resolveStt(id, "", "k", "", 0)
+            assertEquals(id, RefineBlock.NO_MODEL, AccessResolver.resolveLlm(stt, "same", "", "", " ").refineBlock)
+            val typed = AccessResolver.resolveLlm(stt, "same", "", "", "meta-llama/Llama-3.3-70B-Instruct-Turbo")
+            assertNull(id, typed.refineBlock)
+        }
+    }
+
+    @Test fun anbieterMitTextmodellenSindNieGesperrt() {
+        val stt = AccessResolver.resolveStt("groq", "", "gsk", "", 0)
+        assertNull(AccessResolver.resolveLlm(stt, "same", "", "", "").refineBlock)
+        // Eigener Server / Ollama ohne Modell: kein Sperrgrund hier (das Modellfeld zeigt den Fehler).
+        assertNull(AccessResolver.resolveLlm(stt, "custom", "http://h:1/v1", "", "").refineBlock)
+        assertNull(AccessResolver.resolveLlm(stt, "ollama", "http://h:11434", "", "").refineBlock)
     }
 }

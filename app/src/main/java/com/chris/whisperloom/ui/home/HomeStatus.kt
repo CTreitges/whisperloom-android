@@ -1,6 +1,8 @@
 package com.chris.whisperloom.ui.home
 
 import com.chris.whisperloom.Engine
+import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.api.RefineBlock
 import com.chris.whisperloom.ui.components.Tone
 
 /** Reine Entscheidungslogik der Home-Statusanzeige (Spec §2.1) — JVM-unit-testbar. */
@@ -50,6 +52,10 @@ object HomeStatus {
         imeEnabled -> Keyboard.ENABLED
         else -> Keyboard.OFF
     }
+
+    /** KI-Stufe gewaehlt, aber der Zugang kann keinen Text verbessern ([RefineBlock]): warnen statt leerem Modell. */
+    fun refineTone(mode: RefineMode, block: RefineBlock?): Tone =
+        if (mode != RefineMode.OFF && block != null) Tone.WARNING else Tone.NEUTRAL
 
     /** Modelle-Zeile nur, wenn etwas installiert ist oder offline gewaehlt wurde. */
     fun showModelsRow(installedCount: Int, engine: Engine?): Boolean = installedCount > 0 || engine == Engine.OFFLINE

@@ -6,7 +6,8 @@ Drei Wege zum Diktat:
 • Pro Widgets für Entwickler: Sprach-Command-Widgets auf dem Startbildschirm schicken Sprachaufträge an deinen eigenen Server (siehe unten). Ab Werk aus.
 
 Erkennung nach Wahl:
-• Online über deinen eigenen Zugang bei OpenAI, Groq (kostenlos), Mistral, Together, DeepInfra, OpenRouter oder einem eigenen OpenAI-kompatiblen Server (z. B. speaches, whisper.cpp-Server).
+• Online über deinen eigenen Zugang bei OpenAI, Groq (kostenlos), Mistral, ElevenLabs (Scribe), Together, DeepInfra, OpenRouter oder einem eigenen OpenAI-kompatiblen Server (z. B. speaches, whisper.cpp-Server).
+• Für Bastler, unter „Erweitert“ einschaltbar: „Modelle vom Server“ lädt bei jedem Anbieter die aktuelle Modell-Liste – neue Modelle wählen, ohne auf ein Update zu warten.
 • Offline direkt auf dem Gerät mit whisper.cpp. Die Modelle (Tiny bis Large v3 Turbo) lädst du einmalig nach – nichts davon steckt in der App.
 • Vokabular für Namen und Fachbegriffe: als Liste in der App oder als verknüpfte .md-/.txt-Datei, die bei jedem Diktat neu gelesen wird – Änderungen an der Datei wirken sofort.
 

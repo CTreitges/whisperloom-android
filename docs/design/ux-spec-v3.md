@@ -910,6 +910,8 @@ Regeln: bestehende Keys bleiben gültig (mit „(bestehend)" markiert; Text ggf.
 
 ### 6.5 Erkennung (E1) und Zugangs-Felder (auch Schritt 2a)
 
+> **3.8.0:** Anbieter ElevenLabs (Scribe), Modellwahl mit Pro „Modelle vom Server“ — siehe [§6.16](#616-nachtrag-380-elevenlabs-und-modelle-vom-server).
+
 | Key | Text |
 |---|---|
 | `rec_title` | Erkennung |
@@ -1473,6 +1475,52 @@ Entfallen: `settings_group_agent`, `settings_agent_sub`, `agent_card_task` / `_c
 `agent_enable` / `_sub`, `widgets_agent_off`, `widgets_card_profiles`, `agent_widget_manage`, `prompt_card`,
 `tutorial_agent_*`. Kein UI-Text trägt mehr den alten Namen „Sprachauftrag“.
 
+### 6.16 Nachtrag 3.8.0: ElevenLabs und Modelle vom Server
+
+Ergänzt §6.5, §6.6, §6.9, §6.15 (E7) und §8.1/§8.2; wo sie widersprechen, gilt dieser Abschnitt.
+Nutzer-Sicht: `docs/ANLEITUNG.md` 7.1, 7.4, 7.6, 8.2, 8.4.
+
+**ElevenLabs (Scribe).** Katalog-Eintrag `elevenlabs` direkt nach Mistral, nur Erkennung (`ApiStyle.ELEVENLABS`,
+Baustein `api/ElevenLabsStt.kt`), Modelle `scribe_v2` (Voreinstellung) und `scribe_v2_medical`. E1: Vokabular-
+Hinweis `rec_context_keyterms` statt `pref_api_prompt_info`. E2: Ist der Erkennungs-Anbieter ein reiner
+Erkennungs-Anbieter (ElevenLabs, Together, DeepInfra) und „Eigenen Zugang verwenden“ aus, zeigt die Zugangs-Karte
+InfoCard `text_no_llm` (Warnfarben) mit Button `text_add_access`, kein Modellfeld, `text_test` gesperrt.
+Test-Chip neu `err_402`. Hilfe E5 Abschnitt 3 listet ElevenLabs automatisch über `keyUrl` (`help_key_elevenlabs`).
+
+**Modelle vom Server (Pro).** `ProFeature.SERVER_MODELS` (Pref `pro_server_models`, ab Werk aus) als dritter
+Schalter in E7; Hub-Label = Titel. An: Das Modellfeld in E1/Schritt 2a und E2 (auch bei „wie Erkennung“, jeder
+Anbieter inkl. Eigener Server und Ollama) wird `LoomPickerField` (Optik `LoomDropdown`, Tag `picker:<Label>`) und
+öffnet `ModelPickerSheet` (`LoomSheet(scroll = false)`, eigene LazyColumn): Suchfeld `models_search` · gewähltes
+Modell ohne Listenplatz markiert ganz oben · „Empfohlen“ (`models_recommended`, Katalog mit Notiz; nicht mehr
+gelistete Empfehlung in Warnfarbe mit `models_stale` — nicht bei ElevenLabs, nicht bei leerer Liste) · „Vom
+Server · Stand <Datum>“ (`models_server`, `DateFormat.SHORT`; leere Liste → `models_none`) · Fußzeile
+`rec_model_custom` / `common_close`. Darunter `LoadModelsButton` `models_refresh` (ic_refresh, beim Laden
+`models_loading`) mit Snackbar `models_count` / `models_none` / `models_load_failed`. Beim Öffnen stilles
+Nachladen (700 ms, nur wenn die Liste fehlt oder älter als 24 h ist und der Key, falls nötig, da ist; Fehler
+stumm). Aus: Dropdown wie bisher; Ollama lädt weiter bei jedem Öffnen, Knopf `text_ollama_load_models`
+(ic_download_for_offline), leere Liste → `text_ollama_no_models`. Hilfe E5 Abschnitt 6 nennt die Funktion mit
+`help_widgets_models` (ic_refresh), weil dort „Erweitert“ erklärt wird.
+
+**Daten.** Geladene Listen in eigener Prefs-Datei `whisperloom_models` (`ModelCache`, backup-ausgeschlossen),
+Schlüssel `<providerId>|<stt|llm>|<baseUrl>`, Wert `{fetchedAt, models[]}` — nie Keys.
+
+| Key | Text |
+|---|---|
+| `provider_elevenlabs` | ElevenLabs (Scribe) |
+| `help_key_elevenlabs` | elevenlabs.io registrieren → Settings → API Keys → Create API Key, Berechtigung „Speech to Text“ erlauben. Scribe v2 ≈ 0,22 $/h. |
+| `rec_context_keyterms` | Geht als Schlüsselbegriffe an ElevenLabs und hilft bei Eigennamen und Fachwörtern. Vokabular kostet bei ElevenLabs etwa 20 % Aufpreis. |
+| `text_no_llm` | %1$s erkennt nur Sprache und bietet keine Textverbesserung. |
+| `err_402` | Guthaben aufgebraucht (402) — beim Anbieter aufladen |
+| `pro_server_models` / `pro_server_models_sub` | Modelle vom Server / Lädt bei jedem Anbieter die aktuelle Modell-Liste – für Erkennung und Textverbesserung. |
+| `models_pick` / `models_search` / `models_server` / `models_stale` | Modell wählen / Modell suchen / Vom Server · Stand %1$s / nicht mehr gelistet |
+| `models_refresh` / `models_loading` / `models_none` / `models_load_failed` | Modelle aktualisieren / Lade Modelle … / Keine passenden Modelle gefunden. / Modelle nicht geladen: %1$s |
+| `models_count` (Plural) | %d Modell gefunden / %d Modelle gefunden |
+| `text_ollama_cloud_note` | Modelle laufen auf ollama.com. Den Key legst du unter ollama.com/settings/keys an. Weitere Modelle lädt der Knopf unter dem Feld „Modell“ vom Server. (stimmt mit und ohne Pro) |
+| `help_widgets_models` | Auch unter Erweitert: „Modelle vom Server“ – das Modell wählst du dann aus der aktuellen Liste des Anbieters, nicht nur aus den Empfehlungen. |
+
+Entfallen: `text_ollama_loading`, `text_ollama_models_found`, `text_ollama_models_failed` (gleicher Text jetzt
+`models_loading`, `models_count`, `models_load_failed`).
+
 ---
 
 ## 7. Akzeptanzkriterien (prüfbar, je Screen)
@@ -1563,6 +1611,8 @@ Entfallen: `settings_group_agent`, `settings_agent_sub`, `agent_card_task` / `_c
 
 ### 8.1 Neue/geänderte Prefs (`Prefs.kt`; bestehende Keys bleiben)
 
+> **3.8.0:** `serverModelsEnabled` (Key `pro_server_models`); Modell-Listen in eigener Datei `whisperloom_models` — siehe [§6.16](#616-nachtrag-380-elevenlabs-und-modelle-vom-server).
+
 > **3.7.1:** `agentEnabled` heißt `proWidgetsEnabled` (Key `agent_enabled` bleibt); `agent_url`/`agent_token` wandern in die Widget-Profile — siehe [§6.15](#615-nachtrag-371-pro-widgets).
 
 | Property | Key | Typ / Default | Zweck |
@@ -1593,6 +1643,8 @@ Datei `whisperloom_agent.xml` (Zustand, `request_id`, erkannter Text, Meldung) p
 `filesDir/voice_task.pcm`. Beides ist von Cloud-Backup und Geräte-Transfer ausgenommen.
 
 ### 8.2 Provider-Katalog für die Dropdowns (Auszug aus `api-providers.md §8`, Stand 2026-09-06 — Labels sind die Dropdown-Texte)
+
+> **3.8.0:** Katalog-Stand 2026-09-30 mit ElevenLabs (Scribe) nach Mistral; aktuelle Einträge in `api/ProviderCatalog.kt` — siehe [§6.16](#616-nachtrag-380-elevenlabs-und-modelle-vom-server).
 
 | Provider (ID) | Base-URL | STT-Modelle (Label → ID; erstes = Default) | LLM-Modelle (Label → ID; erstes = Default) | Flags |
 |---|---|---|---|---|

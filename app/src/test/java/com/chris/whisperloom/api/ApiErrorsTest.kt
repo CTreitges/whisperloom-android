@@ -95,4 +95,29 @@ class ApiErrorsTest {
         assertEquals("API-Fehler 500: boom", ApiHttpException(500, "boom").message)
         assertEquals(401, ApiHttpException(401, "x").code)
     }
+
+    @Test fun guthabenLeerBekommtEinenHinweis() {
+        assertTrue(ApiHttpException(402, "insufficient credits").message!!.contains("Guthaben"))
+        assertFalse(ApiHttpException(402, "x").isRetryable())
+    }
+
+    @Test fun elevenLabsHinweiseNennenDieBerechtigungStattV1() {
+        val el = ApiStyle.ELEVENLABS
+        assertTrue(ApiHttpException(401, "Invalid API key", el).message!!.contains("„Speech to Text“"))
+        assertTrue(ApiHttpException(403, "missing permission", el).message!!.contains("Berechtigung"))
+        assertTrue(ApiHttpException(402, "x", el).message!!.contains("Guthaben"))
+        // Der /v1-Hinweis gilt fuer eigene OpenAI-kompatible Server, nicht fuer ElevenLabs.
+        assertNull(ApiHttpException.hint(404, "Not Found", el))
+        assertEquals("API-Fehler 404: Not Found", ApiHttpException(404, "Not Found", el).message)
+        // Ohne Stil bleibt alles wie bisher.
+        assertTrue(ApiHttpException(401, "x").message!!.contains("API-Key"))
+        assertTrue(ApiHttpException(404, "x").message!!.contains("/v1"))
+    }
+
+    @Test fun aufruferKannDenHinweisErsetzen() {
+        assertEquals("API-Fehler 401: nope — Eigener Hinweis", ApiHttpException(401, "nope", hint = "Eigener Hinweis").message)
+        assertEquals("API-Fehler 401: nope", ApiHttpException(401, "nope", hint = null).message)
+        // Ohne Angabe wie bisher der Hinweis zum Status.
+        assertTrue(ApiHttpException(401, "nope").message!!.contains("Server verlangt"))
+    }
 }

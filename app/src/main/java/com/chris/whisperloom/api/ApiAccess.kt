@@ -2,8 +2,8 @@ package com.chris.whisperloom.api
 
 /**
  * Aufgeloester Zugang zu einem OpenAI-kompatiblen Endpunkt — alles, was ein Aufruf
- * braucht. [modelOption] ist null bei frei eingetippten Modell-IDs (eigener Server,
- * "Eigenes Modell…"); dann gelten die konservativen Defaults.
+ * braucht. [modelOption] kommt aus dem Katalog; fuer IDs ohne Katalog-Treffer (vom Server
+ * geladen, "Eigenes Modell…") aus [ModelLists.optionFor]. Null = die konservativen Defaults.
  */
 data class ApiAccess(
     val baseUrl: String,
@@ -12,7 +12,28 @@ data class ApiAccess(
     val readTimeoutMs: Int,
     val provider: Provider,
     val modelOption: ModelOption?,
-)
+) {
+    /**
+     * Warum dieser Zugang keinen Text verbessern kann; null = er kann es (soweit bekannt). Betrifft
+     * "wie Erkennung": ElevenLabs hat gar keinen Chat-Endpunkt. Together und DeepInfra sprechen
+     * /chat/completions, nur kennt der Katalog dort kein Textmodell — mit eingetipptem geht es.
+     */
+    val refineBlock: RefineBlock?
+        get() = when {
+            provider.api == ApiStyle.ELEVENLABS -> RefineBlock.NO_CHAT
+            !provider.hasLlm && model.isBlank() -> RefineBlock.NO_MODEL
+            else -> null
+        }
+}
+
+/** Siehe [ApiAccess.refineBlock]. */
+enum class RefineBlock {
+    /** Der Anbieter hat keinen Chat-Endpunkt (ElevenLabs). */
+    NO_CHAT,
+
+    /** Reiner Erkennungs-Anbieter ohne eingetragenes Textmodell (Together, DeepInfra). */
+    NO_MODEL,
+}
 
 /**
  * Leitet aus den rohen Einstellungswerten den Zugang ab. Rein (ohne Android), damit
@@ -26,6 +47,7 @@ object AccessResolver {
 
     /**
      * @param readTimeoutSec 0 = Anbieter-Default (90 s, eigener Server 600 s).
+     * @param serverModels geladene Modell-Listen (ModelCache) — liefern die Flags fuer Server-Modelle.
      */
     fun resolveStt(
         providerId: String,
@@ -33,16 +55,18 @@ object AccessResolver {
         apiKey: String,
         model: String,
         readTimeoutSec: Int = 0,
+        serverModels: ServerModelLookup = ServerModelLookup.NONE,
     ): ApiAccess {
         val provider = ProviderCatalog.byId(providerId)
         val modelId = model.trim().ifBlank { provider.defaultSttModel }
+        val url = baseUrl.trim().ifBlank { provider.baseUrl }
         return ApiAccess(
-            baseUrl = baseUrl.trim().ifBlank { provider.baseUrl },
+            baseUrl = url,
             apiKey = apiKey.trim(),
             model = modelId,
             readTimeoutMs = timeoutMs(readTimeoutSec, provider),
             provider = provider,
-            modelOption = provider.sttModel(modelId),
+            modelOption = option(provider, ModelKind.STT, url, modelId, serverModels),
         )
     }
 
@@ -58,6 +82,7 @@ object AccessResolver {
         baseUrl: String,
         apiKey: String,
         model: String,
+        serverModels: ServerModelLookup = ServerModelLookup.NONE,
     ): ApiAccess {
         val same = providerId.isBlank() || providerId == LLM_SAME
         val provider = if (same) stt.provider else ProviderCatalog.byId(providerId)
@@ -82,8 +107,21 @@ object AccessResolver {
             model = modelId,
             readTimeoutMs = if (sameProvider) stt.readTimeoutMs else timeoutMs(0, provider),
             provider = provider,
-            modelOption = provider.llmModel(modelId),
+            modelOption = option(provider, ModelKind.LLM, url, modelId, serverModels),
         )
+    }
+
+    /** Katalog zuerst; nur ohne Treffer den Cache fragen (der liest JSON) und Flags ableiten. */
+    private fun option(
+        provider: Provider,
+        kind: ModelKind,
+        url: String,
+        id: String,
+        serverModels: ServerModelLookup,
+    ): ModelOption? {
+        val catalog = if (kind == ModelKind.STT) provider.sttModel(id) else provider.llmModel(id)
+        if (catalog != null || id.isBlank()) return catalog
+        return ModelLists.optionFor(provider, kind, id, serverModels.find(provider.id, kind, url, id))
     }
 
     private fun timeoutMs(seconds: Int, provider: Provider): Int =

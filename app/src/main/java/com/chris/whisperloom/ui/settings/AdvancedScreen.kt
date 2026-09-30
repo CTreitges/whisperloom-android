@@ -31,7 +31,7 @@ import com.chris.whisperloom.ui.tutorial.TutorialKind
 
 /**
  * E7 — "Erweitert": schaltet die Pro-/Entwickler-Funktionen frei ([ProFeature]: Pro Widgets,
- * Stufe "Prompt").
+ * Stufe "Prompt", Modelle vom Server).
  *
  * Bewusst der einzige Ort, an dem sie sich einschalten lassen: Startbildschirm, Assistent und
  * Home-Status bleiben unangetastet. Wer sie nicht nutzt, soll sie nicht bemerken. Alles zu den

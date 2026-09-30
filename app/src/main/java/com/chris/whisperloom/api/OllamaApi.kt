@@ -5,8 +5,8 @@ import org.json.JSONObject
 
 /**
  * Native Ollama-API (lokal und ollama.com): POST /api/chat fuer die Textverbesserung,
- * GET /api/tags fuer die Modell-Liste. Payload und Parser sind rein (JVM-unit-testbar);
- * nur [listModels] spricht ueber [Http] mit dem Server.
+ * GET /api/tags fuer die Modell-Liste. Alles hier ist rein (JVM-unit-testbar); die Anfragen
+ * schicken [TextRefiner] (Chat) und [ModelLists.load] (Liste).
  *
  * Warum nicht /v1/chat/completions? Ollama Cloud dokumentiert nur /api, und ueber die native
  * Schnittstelle trennt Ollama das Nachdenken zuverlaessig in `message.thinking` ab.
@@ -64,17 +64,5 @@ object OllamaApi {
             }
             .distinct()
             .sortedBy { it.lowercase() }
-    }
-
-    /**
-     * Holt die Modelle, die der Server anbietet (lokal: installierte, Cloud: verfuegbare).
-     * Blockierend — aus einem Hintergrund-Thread aufrufen.
-     *
-     * @throws ApiNotConfiguredException wenn keine Server-Adresse eingetragen ist.
-     * @throws ApiNetworkException / [ApiHttpException] wie [Http.get].
-     */
-    fun listModels(access: ApiAccess): List<String> {
-        if (access.baseUrl.isBlank()) throw ApiNotConfiguredException()
-        return parseTags(Http.get(tagsUrl(access.baseUrl), access.apiKey, readTimeoutMs = Http.CONNECT_TIMEOUT_MS))
     }
 }

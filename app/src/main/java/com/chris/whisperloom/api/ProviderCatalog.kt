@@ -21,8 +21,10 @@ data class ModelOption(
 /**
  * Welches Protokoll ein Anbieter spricht. [OLLAMA] = native Ollama-API (POST /api/chat,
  * GET /api/tags) — lokal und auf ollama.com gleich, deshalb dieselbe Code-Strecke.
+ * [ELEVENLABS] = ElevenLabs Speech-to-Text (POST /speech-to-text, Header xi-api-key, Feld
+ * model_id, siehe [ElevenLabsStt]) — nur Erkennung, keine Textverbesserung.
  */
-enum class ApiStyle { OPENAI, OLLAMA }
+enum class ApiStyle { OPENAI, OLLAMA, ELEVENLABS }
 
 /**
  * Ein Anbieter mit OpenAI-kompatibler API (oder nativer Ollama-API, siehe [api]).
@@ -30,7 +32,8 @@ enum class ApiStyle { OPENAI, OLLAMA }
  *
  * @param allowsHttp Unverschluesseltes http:// nur fuer den eigenen Server (LAN/VPN).
  * @param sttSendsPrompt / [sttSendsResponseFormat] Extra-Felder, die nicht jeder Anbieter
- *   kennt (Mistral validiert streng, OpenRouter dokumentiert `prompt` nicht).
+ *   kennt (Mistral validiert streng, OpenRouter dokumentiert `prompt` nicht). [sttSendsPrompt]
+ *   heisst zugleich "Vokabular kommt an" — bei ElevenLabs als keyterms statt als `prompt`.
  * @param sttPathOverride Kompletter Transkriptions-Endpunkt, wenn er nicht unter
  *   `baseUrl + /audio/transcriptions` liegt (DeepInfra).
  * @param sttMaxBytes Dokumentiertes Upload-Limit (null = unbekannt).
@@ -75,18 +78,19 @@ data class Provider(
 }
 
 /**
- * Anbieter- und Modell-Katalog (Stand 2026-09-06, Recherche gegen die offizielle Doku).
+ * Anbieter- und Modell-Katalog (Stand 2026-09-30, Recherche gegen die offizielle Doku).
  * Als Kotlin-Objekte statt JSON, damit nichts zur Laufzeit geparst werden muss.
  *
  * Reihenfolge = Reihenfolge im Dropdown; das erste Modell je Liste ist der Default.
  */
 object ProviderCatalog {
 
-    const val CATALOG_DATE = "2026-09-06"
+    const val CATALOG_DATE = "2026-09-30"
     const val CUSTOM_ID = "custom"
     const val OPENAI_ID = "openai"
     const val OLLAMA_ID = "ollama"
     const val OLLAMA_CLOUD_ID = "ollama-cloud"
+    const val ELEVENLABS_ID = "elevenlabs"
 
     private const val MB_25 = 26_214_400
     private const val MB_80 = 83_886_080
@@ -168,7 +172,7 @@ object ProviderCatalog {
                     reasoningEffort = "low",
                 ),
                 ModelOption(
-                    "qwen/qwen3.6-27b", "Qwen 3.6 27B (Preview)",
+                    "qwen/qwen3.8-27b", "Qwen 3.8 27B (Preview)",
                     "Preview. reasoning_effort=none senden, sonst <think>-Tags im Text.",
                     reasoningEffort = "none",
                 ),
@@ -193,6 +197,19 @@ object ProviderCatalog {
                 ModelOption("ministral-8b-latest", "Ministral 3 8B", "Sehr günstig, klein."),
             ),
             notes = "EU-Anbieter. Experiment-Plan gratis (Telefonverifizierung, 1 req/s). Kompatibilität der Extra-Felder live testen.",
+        ),
+        Provider(
+            id = ELEVENLABS_ID,
+            name = "ElevenLabs (Scribe)",
+            baseUrl = "https://api.elevenlabs.io/v1",
+            keyUrl = "https://elevenlabs.io/app/settings/api-keys",
+            api = ApiStyle.ELEVENLABS,
+            // Nie scribe_v2_realtime (nur WebSocket) oder scribe_v1 (abgekuendigt).
+            sttModels = listOf(
+                ModelOption("scribe_v2", "Scribe v2", "\$0.22/h, 90+ Sprachen."),
+                ModelOption("scribe_v2_medical", "Scribe v2 Medical", "\$0.22/h. Für medizinische Diktate."),
+            ),
+            notes = "Eigenes Protokoll (xi-api-key, model_id), nur Erkennung. Vokabular geht als keyterms (ca. +20 % Kosten).",
         ),
         Provider(
             id = "together",
@@ -243,7 +260,12 @@ object ProviderCatalog {
             ),
             llmModels = listOf(
                 ModelOption("openai/gpt-4o-mini", "GPT-4o mini", "\$0.15/\$0.60 je 1M."),
-                ModelOption("google/gemini-2.5-flash-lite", "Gemini 2.5 Flash-Lite", "\$0.10/\$0.40 je 1M."),
+                // google/gemini-2.5-* laeuft bei OpenRouter am 2026-10-20 aus (live expiration_date).
+                ModelOption(
+                    "google/gemini-3.8-flash", "Gemini 3.8 Flash",
+                    "Nachfolger von Gemini 2.5. Reasoning nicht abschaltbar -> langsamer. Kein temperature.",
+                    temperatureSupported = false,
+                ),
                 ModelOption("anthropic/claude-haiku-4.5", "Claude Haiku 4.5", "\$1/\$5 je 1M."),
                 ModelOption("mistralai/mistral-small-2603", "Mistral Small 4", "günstig, EU-Provider wählbar."),
             ),
@@ -265,20 +287,29 @@ object ProviderCatalog {
             name = "Google Gemini",
             baseUrl = "https://generativelanguage.googleapis.com/v1beta/openai",
             keyUrl = "https://aistudio.google.com/apikey",
+            // Google gibt 2.5 nur noch an Konten, die es schon genutzt haben; fuer neue Projekte
+            // empfiehlt es 3.5 Flash-Lite oder 3.8 Flash. Reasoning ist ab 3 nicht abschaltbar, und
+            // Google raet bei Gemini 3 von temperature < 1 ab (Schleifen) -> Feld weglassen.
             llmModels = listOf(
                 ModelOption(
-                    "gemini-2.5-flash-lite", "Gemini 2.5 Flash-Lite",
+                    "gemini-3.5-flash-lite", "Gemini 3.5 Flash-Lite",
+                    "Googles Empfehlung für neue Projekte. Reasoning nicht abschaltbar, kein temperature.",
+                    temperatureSupported = false,
+                ),
+                ModelOption(
+                    "gemini-3.8-flash", "Gemini 3.8 Flash",
+                    "\$0.75/\$3.75 je 1M. Reasoning nicht abschaltbar -> langsamer. Kein temperature.",
+                    temperatureSupported = false,
+                ),
+                ModelOption(
+                    "gemini-2.5-flash-lite", "Gemini 2.5 Flash-Lite (nur Bestandskonten)",
                     "\$0.10/\$0.40 je 1M, Free-Tier. reasoning_effort=none möglich.",
                     reasoningEffort = "none",
                 ),
                 ModelOption(
-                    "gemini-2.5-flash", "Gemini 2.5 Flash",
+                    "gemini-2.5-flash", "Gemini 2.5 Flash (nur Bestandskonten)",
                     "\$0.30/\$2.50 je 1M, Free-Tier. reasoning_effort=none möglich.",
                     reasoningEffort = "none",
-                ),
-                ModelOption(
-                    "gemini-3.8-flash", "Gemini 3.8 Flash",
-                    "\$0.75/\$3.75 je 1M. Reasoning nicht abschaltbar -> langsamer.",
                 ),
             ),
             notes = "Nur Textverbesserung. Free-Tier: Inhalte werden zum Training genutzt -> Warnhinweis in der App.",
@@ -290,8 +321,13 @@ object ProviderCatalog {
             keyUrl = "https://platform.deepseek.com/api_keys",
             llmModels = listOf(
                 ModelOption(
-                    "deepseek-v4-flash", "DeepSeek V4 Flash",
-                    "Peak/Off-Peak-Preise (~\$0.14-0.44 / \$0.28-1.32 je 1M, unsicher). Alias deepseek-chat abgeschaltet.",
+                    "deepseek-flash", "DeepSeek Flash (V4.1)",
+                    "Aktueller Name laut /models. Peak/Off-Peak-Preise (unsicher). Alias deepseek-chat abgeschaltet.",
+                ),
+                // Alter Name: wird noch angenommen und landet bei V4.1-Flash — bleibt fuer gespeicherte Auswahlen.
+                ModelOption(
+                    "deepseek-v4-flash", "DeepSeek V4 Flash (alter Name)",
+                    "Wird noch angenommen, das Modell dahinter ist aber abgelöst (V4.1-Flash).",
                 ),
             ),
             notes = "Nur Textverbesserung. Kein Free-Tier. Server in China -> Datenschutz-Hinweis.",

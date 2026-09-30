@@ -16,8 +16,9 @@ import org.robolectric.annotation.Config
 import java.net.InetSocketAddress
 
 /**
- * Native Ollama-API: Adress-Normalisierung, Payload, Parser und Modell-Liste gegen einen
- * lokalen JDK-HttpServer. Robolectric wegen org.json.
+ * Native Ollama-API: Adress-Normalisierung, Payload, Parser und die Modell-Liste so, wie die App
+ * sie holt ([ModelLists.load] ueber /api/tags), gegen einen lokalen JDK-HttpServer.
+ * Robolectric wegen org.json.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -90,31 +91,36 @@ class OllamaApiTest {
         assertEquals(emptyList<String>(), OllamaApi.parseTags("""{}"""))
     }
 
+    /** Modell-Liste wie in der App: [ModelLists.load] mit /api/tags (Textverbesserung). */
+    private fun listModels(access: ApiAccess): List<String> = ModelLists.load(access, ModelKind.LLM).map { it.id }
+
     @Test fun modellListeVomLokalenServerOhneKey() {
-        val names = OllamaApi.listModels(access("ollama", "http://127.0.0.1:${server.address.port}/v1"))
+        // /v1 am Ende wird abgeschnitten; sortiert, ohne Duplikate, "model" als Ersatz fuer "name".
+        val names = listModels(access("ollama", "http://127.0.0.1:${server.address.port}/v1"))
         assertEquals(listOf("Gemma4:31b", "llama3.2", "qwen3:8b"), names)
         assertNull(tagsAuth)
     }
 
     @Test fun modellListeDerCloudMitKey() {
-        OllamaApi.listModels(access("ollama-cloud", "http://127.0.0.1:${server.address.port}", "ok-key"))
+        listModels(access("ollama-cloud", "http://127.0.0.1:${server.address.port}", "ok-key"))
         assertEquals("Bearer ok-key", tagsAuth)
     }
 
     @Test fun ohneAdresseKeineAnfrage() {
         try {
-            OllamaApi.listModels(access("ollama", ""))
+            listModels(access("ollama", ""))
             fail("ApiNotConfiguredException erwartet")
         } catch (e: ApiNotConfiguredException) {
             // erwartet
         }
+        assertEquals("unset", tagsAuth)
     }
 
     @Test fun fehlerDerOllamaFormWirdLesbar() {
         tagsStatus = 401
         tagsResponse = """{"error":"Unauthorized"}"""
         try {
-            OllamaApi.listModels(access("ollama-cloud", "http://127.0.0.1:${server.address.port}", "falsch"))
+            listModels(access("ollama-cloud", "http://127.0.0.1:${server.address.port}", "falsch"))
             fail("401 erwartet")
         } catch (e: ApiHttpException) {
             assertEquals(401, e.code)

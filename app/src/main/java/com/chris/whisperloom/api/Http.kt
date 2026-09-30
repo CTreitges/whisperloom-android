@@ -1,14 +1,15 @@
 package com.chris.whisperloom.api
 
 import com.chris.whisperloom.BuildConfig
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * Minimaler HTTP-Helfer fuer die beiden OpenAI-kompatiblen Aufrufe der App
- * (Transkription + optionale Textveredelung). Bewusst auf HttpURLConnection statt
+ * Minimaler HTTP-Helfer fuer die Aufrufe der App (Transkription + optionale Textveredelung,
+ * OpenAI-kompatibel, Ollama oder ElevenLabs). Bewusst auf HttpURLConnection statt
  * einer HTTP-Bibliothek — die App haelt sich frei von Dritt-Abhaengigkeiten.
  */
 internal object Http {
@@ -34,6 +35,9 @@ internal object Http {
      * @param readTimeoutMs CPU-Server brauchen fuer lange Stuecke Minuten (eigener Server: 600 s).
      * @param followRedirects false laesst den Authorization-Header nicht auf einen anderen Host
      *   wandern — sinnvoll ueberall dort, wo der Endpunkt keine Weiterleitungen kennt.
+     * @param authHeader Name eines eigenen Key-Headers, der den Key ohne "Bearer " traegt
+     *   (ElevenLabs: xi-api-key); null = `Authorization: Bearer …`. Einen eigenen Header streift
+     *   die JVM bei einer Weiterleitung nicht ab — dafuer immer [followRedirects] = false.
      * @param write schreibt den Request-Body.
      * @throws ApiNetworkException wenn die Verbindung scheitert.
      * @throws ApiHttpException bei Status != 2xx.
@@ -44,21 +48,28 @@ internal object Http {
         contentType: String,
         readTimeoutMs: Int = DEFAULT_READ_TIMEOUT_MS,
         followRedirects: Boolean = true,
+        authHeader: String? = null,
         write: (java.io.OutputStream) -> Unit,
-    ): String = execute(url, "POST", apiKey, readTimeoutMs, followRedirects) { conn ->
+    ): String = execute(url, "POST", apiKey, readTimeoutMs, followRedirects, authHeader, emptyMap()) { conn ->
         conn.doOutput = true
         conn.setRequestProperty("Content-Type", contentType)
         conn.outputStream.use(write)
     }
 
     /**
-     * GET ohne Body (Ollama: GET /api/tags fuer die Modell-Liste). Fehler wie [post].
+     * GET ohne Body (Modell-Listen, siehe [ModelLists]). Parameter und Fehler wie [post].
+     *
+     * @param headers weitere Header (Anthropic: anthropic-version). Sie wandern bei einer
+     *   Weiterleitung mit wie ein eigener Key-Header — dann [followRedirects] = false.
      */
     fun get(
         url: String,
         apiKey: String,
         readTimeoutMs: Int = DEFAULT_READ_TIMEOUT_MS,
-    ): String = execute(url, "GET", apiKey, readTimeoutMs, followRedirects = true) {}
+        followRedirects: Boolean = true,
+        authHeader: String? = null,
+        headers: Map<String, String> = emptyMap(),
+    ): String = execute(url, "GET", apiKey, readTimeoutMs, followRedirects, authHeader, headers) {}
 
     private fun execute(
         url: String,
@@ -66,6 +77,8 @@ internal object Http {
         apiKey: String,
         readTimeoutMs: Int,
         followRedirects: Boolean,
+        authHeader: String?,
+        headers: Map<String, String>,
         send: (HttpURLConnection) -> Unit,
     ): String {
         val conn = try {
@@ -76,7 +89,11 @@ internal object Http {
                 readTimeout = readTimeoutMs
                 instanceFollowRedirects = followRedirects
                 setRequestProperty("User-Agent", USER_AGENT)
-                if (apiKey.isNotBlank()) setRequestProperty("Authorization", "Bearer $apiKey")
+                if (apiKey.isNotBlank()) {
+                    if (authHeader == null) setRequestProperty("Authorization", "Bearer $apiKey")
+                    else setRequestProperty(authHeader, apiKey)
+                }
+                headers.forEach { (name, value) -> setRequestProperty(name, value) }
             }
         } catch (e: IOException) {
             throw ApiNetworkException(e)
@@ -98,7 +115,8 @@ internal object Http {
 
     /**
      * Zieht die lesbare Meldung aus einer Fehlerantwort, damit im UI nicht roher JSON landet:
-     * OpenAI-Form {"error":{"message":…}} oder Ollama-Form {"error":"…"}.
+     * OpenAI-Form {"error":{"message":…}}, Ollama-Form {"error":"…"} oder ElevenLabs-Form
+     * {"detail":{"message":…}} / {"detail":[{"msg":…}]} (Validierung) / {"detail":"…"}.
      */
     internal fun errorDetail(body: String): String {
         val fallback = body.take(200)
@@ -107,9 +125,19 @@ internal object Http {
             val json = JSONObject(body)
             json.optJSONObject("error")?.optString("message")?.takeIf { it.isNotBlank() }
                 ?: (json.opt("error") as? String)?.takeIf { it.isNotBlank() }
+                ?: detailMessage(json.opt("detail"))
                 ?: fallback
         } catch (e: org.json.JSONException) {
             fallback
         }
     }
+
+    private fun detailMessage(detail: Any?): String? = when (detail) {
+        is JSONObject -> detail.optString("message")
+        is JSONArray -> (0 until detail.length())
+            .mapNotNull { detail.optJSONObject(it)?.optString("msg")?.takeIf { msg -> msg.isNotBlank() } }
+            .joinToString("; ")
+        is String -> detail
+        else -> null
+    }?.takeIf { it.isNotBlank() }
 }
