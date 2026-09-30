@@ -8,6 +8,7 @@ import android.content.Intent
 import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.ExistingWorkPolicy
+import androidx.work.testing.TestListenableWorkerBuilder
 import com.chris.whisperloom.R
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -46,6 +47,7 @@ class VoiceTaskServiceTest {
     private val policies = mutableListOf<ExistingWorkPolicy>()
     private val echterEnqueue = VoiceTaskWork.enqueueImpl
     private val echteFabrik = VoiceTaskService.detectorFactory
+    private val echtePipeline = VoiceTaskWorker.pipelineFactory
     private var controller: ServiceController<VoiceTaskService>? = null
     private lateinit var gelesen: CountDownLatch
     private lateinit var ausgelesen: CountDownLatch
@@ -70,6 +72,7 @@ class VoiceTaskServiceTest {
     @After fun abbauen() {
         VoiceTaskWork.enqueueImpl = echterEnqueue
         VoiceTaskService.detectorFactory = echteFabrik
+        VoiceTaskWorker.pipelineFactory = echtePipeline
         ShadowAudioRecord.clearSource()
         controller?.destroy()
     }
@@ -217,6 +220,42 @@ class VoiceTaskServiceTest {
 
         assertTrue(store.hasWork)
         assertEquals(p.id, store.profileId)
+    }
+
+    @Test fun einWaehrendDerAufnahmeGeloeschtesWidgetWirdWederErkanntNochGesendet() {
+        // Das Loeschen fand noch keinen Auftrag dieses Widgets — der entsteht erst beim Stopp.
+        // Frueher lief danach die bezahlte Erkennung, und erst der Versand verwarf den Text.
+        var erkannt = 0
+        val gesendet = mutableListOf<String>()
+        VoiceTaskWorker.pipelineFactory = { _, s, aktuell ->
+            VoiceTaskPipeline(
+                samples = { s.loadSamples() },
+                transcribe = { erkannt++; "Kauf Milch" },
+                send = { gesendet += it },
+                stillCurrent = aktuell,
+            )
+        }
+        // Eingereiht heisst hier: der Worker laeuft sofort — so fiele jede Erkennung auf.
+        VoiceTaskWork.enqueueImpl = { _, _, _ ->
+            eingereiht++
+            TestListenableWorkerBuilder<VoiceTaskWorker>(app).build().startWork().get()
+        }
+        val p = profil(autoStop = false)
+        tonQuelle()
+        val s = dienst()
+        senden(s, VoiceTaskService.ACTION_START, WIDGET)
+        assertTrue("Der Aufnahme-Thread hat nichts gelesen", gelesen.await(5, TimeUnit.SECONDS))
+        WidgetProfileStore(app).delete(p.id)
+        ShadowSystemClock.advanceBy(Duration.ofSeconds(4))
+        senden(s, VoiceTaskService.ACTION_STOP)
+
+        assertEquals("Keine Erkennung", 0, erkannt)
+        assertTrue("Nichts gesendet", gesendet.isEmpty())
+        assertEquals(0, eingereiht)
+        assertFalse("Kein Auftrag, kein Audio auf der Platte", store.hasWork)
+        assertFalse(store.audioFile.isFile)
+        assertEquals(VoiceTaskState.ERROR, store.state)
+        assertEquals(app.getString(R.string.widget_task_profile_gone), store.message)
     }
 
     @Test fun ohneWidgetGehtDerAuftragAnsStandardprofil() {

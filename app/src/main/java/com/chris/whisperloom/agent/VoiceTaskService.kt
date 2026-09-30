@@ -232,8 +232,16 @@ class VoiceTaskService : Service() {
     /**
      * Auftrag auf die Platte legen und dem WorkManager uebergeben; ab hier lebt der Dienst nicht
      * mehr. Automatischer Weg: mit Netz-Bedingung, ein noch laufender alter Job wird ersetzt.
+     *
+     * Wurde das Widget waehrend der Aufnahme geloescht, fand das Loeschen noch keinen Auftrag
+     * dieses Widgets — er entsteht erst hier. Dann gar nicht erst ablegen: der Text ginge nie
+     * raus (nie an einen fremden Server), die Erkennung waere umsonst bezahlt.
      */
     private fun hand(samples: FloatArray, duration: Long) {
+        if (profileId != WidgetProfile.DEFAULT_ID && WidgetProfileStore(this).get(profileId) == null) {
+            fail(getString(R.string.widget_task_profile_gone))
+            return
+        }
         store.begin(samples, duration, recordedAt, profileId)
         store.message = ""
         store.state = VoiceTaskState.WORKING
