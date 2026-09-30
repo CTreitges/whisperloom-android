@@ -11,6 +11,7 @@ import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
+import com.chris.whisperloom.ui.components.hasIllustration
 import com.chris.whisperloom.ui.nav.SystemStatus
 import com.chris.whisperloom.ui.state.AppEnv
 import com.chris.whisperloom.ui.state.LocalAppEnv
@@ -108,9 +109,12 @@ class TutorialScreenTest {
         show(startPage = 2)
         compose.onNodeWithText("Sprachnachrichten abtippen").assertIsDisplayed()
         compose.onNodeWithContentDescription("Seite 3 von 4").assertIsDisplayed()
-        // Bildtext der Illustration (TalkBack)
-        compose.onNodeWithContentDescription(
-            "Chat mit einer Sprachnachricht, die lange gedrückt wird; darüber der Menüpunkt „Teilen“ und daneben ein Teilen-Blatt, in dem die WhisperLoom-Kachel hervorgehoben ist.",
+        // Illustration mit Bildtext (TalkBack)
+        compose.onNode(
+            hasIllustration(
+                R.drawable.ill_tutorial_share,
+                "Chat mit einer Sprachnachricht, die lange gedrückt wird; darüber der Menüpunkt „Teilen“ und daneben ein Teilen-Blatt, in dem die WhisperLoom-Kachel hervorgehoben ist.",
+            ),
         ).assertExists()
     }
 
@@ -130,18 +134,18 @@ class TutorialScreenTest {
 
     @Test fun dasProWidgetsHeftHatSechsSeitenMitEigenemBild() {
         show(kind = TutorialKind.PRO_WIDGETS)
-        // Titel und Bildtext (TalkBack) je Seite, in dieser Reihenfolge.
+        // Titel, Illustration und Bildtext (TalkBack) je Seite, in dieser Reihenfolge.
         val seiten = listOf(
-            "Pro Widgets freischalten" to R.string.img_pro_features,
-            "Widget anlegen" to R.string.img_pro_widgets,
-            "Server eintragen" to R.string.img_agent_server,
-            "Auf den Startbildschirm" to R.string.img_agent_widget,
-            "Tippen, sprechen, tippen" to R.string.img_agent_record,
-            "Die Antwort kommt im Chat" to R.string.img_agent_answer,
+            Triple("Pro Widgets freischalten", R.drawable.ill_pro_features, R.string.img_pro_features),
+            Triple("Widget anlegen", R.drawable.ill_pro_widgets, R.string.img_pro_widgets),
+            Triple("Server eintragen", R.drawable.ill_agent_server, R.string.img_agent_server),
+            Triple("Auf den Startbildschirm", R.drawable.ill_agent_widget, R.string.img_agent_widget),
+            Triple("Tippen, sprechen, tippen", R.drawable.ill_agent_record, R.string.img_agent_record),
+            Triple("Die Antwort kommt im Chat", R.drawable.ill_agent_answer, R.string.img_agent_answer),
         )
-        seiten.forEachIndexed { i, (titel, bild) ->
+        seiten.forEachIndexed { i, (titel, bild, bildtext) ->
             compose.onNodeWithText(titel).assertIsDisplayed()
-            compose.onNodeWithContentDescription(ctx.getString(bild)).assertIsDisplayed()
+            compose.onNode(hasIllustration(bild, ctx.getString(bildtext))).assertIsDisplayed()
             compose.onNodeWithContentDescription("Seite ${i + 1} von 6").assertIsDisplayed()
             if (i < seiten.lastIndex) {
                 compose.onNodeWithText("Weiter").performClick()

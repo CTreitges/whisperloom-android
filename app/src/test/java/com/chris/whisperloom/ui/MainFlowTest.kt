@@ -38,6 +38,7 @@ import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.overlay.FloatingMicService
+import com.chris.whisperloom.ui.components.hasIllustration
 import com.chris.whisperloom.ui.home.HomeScreen
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.RouteRequest
@@ -117,7 +118,11 @@ class MainFlowTest {
     }
 
     /** Bildtext (TalkBack) einer Illustration. */
-    private fun bild(res: Int) = compose.onNodeWithContentDescription(ctx.getString(res))
+    /** Illustration an Drawable UND Bildtext — nur der Text liesse ein vertauschtes Bild durch. */
+    private fun bild(image: Int, text: Int) = compose.onNode(hasIllustration(image, ctx.getString(text)))
+
+    /** Fuer "nicht da" genuegt der Bildtext. */
+    private fun bildtext(text: Int) = compose.onNodeWithContentDescription(ctx.getString(text))
 
     // --- Router ----------------------------------------------------------------
 
@@ -132,7 +137,7 @@ class MainFlowTest {
         app(env())
         compose.onNodeWithText("Wie soll WhisperLoom Sprache erkennen?").assertIsDisplayed()
         compose.onNodeWithText("Weiter").assertIsNotEnabled()
-        bild(R.string.img_setup_engine).assertIsDisplayed()
+        bild(R.drawable.ill_setup_engine, R.string.img_setup_engine).assertIsDisplayed()
     }
 
     @Test fun routerZeigtHomeMitHeroWennEingerichtet() {
@@ -262,17 +267,17 @@ class MainFlowTest {
             WhisperLoomTheme { CompositionLocalProvider(LocalAppEnv provides env()) { SetupScreen(step, nav) } }
         }
         mapOf(
-            SetupRouter.STEP_ENGINE to R.string.img_setup_engine,
-            SetupRouter.STEP_ACCESS to R.string.img_help_key,
-            SetupRouter.STEP_MIC to R.string.img_setup_mic,
-            SetupRouter.STEP_OVERLAY to R.string.img_setup_overlay,
-            SetupRouter.STEP_A11Y to R.string.img_setup_a11y,
-            SetupRouter.STEP_NOTIF to R.string.img_setup_notif,
-            SetupRouter.STEP_KEYBOARD to R.string.tutorial_img_keyboard,
-        ).forEach { (s, res) ->
+            SetupRouter.STEP_ENGINE to (R.drawable.ill_setup_engine to R.string.img_setup_engine),
+            SetupRouter.STEP_ACCESS to (R.drawable.ill_help_key to R.string.img_help_key),
+            SetupRouter.STEP_MIC to (R.drawable.ill_setup_mic to R.string.img_setup_mic),
+            SetupRouter.STEP_OVERLAY to (R.drawable.ill_setup_overlay to R.string.img_setup_overlay),
+            SetupRouter.STEP_A11Y to (R.drawable.ill_setup_a11y to R.string.img_setup_a11y),
+            SetupRouter.STEP_NOTIF to (R.drawable.ill_setup_notif to R.string.img_setup_notif),
+            SetupRouter.STEP_KEYBOARD to (R.drawable.ill_tutorial_keyboard to R.string.tutorial_img_keyboard),
+        ).forEach { (s, illustration) ->
             step = s
             compose.waitForIdle()
-            bild(res).assertIsDisplayed()
+            bild(illustration.first, illustration.second).assertIsDisplayed()
         }
     }
 
@@ -281,8 +286,8 @@ class MainFlowTest {
         prefs.engine = Engine.OFFLINE
         screen(env()) { SetupScreen(SetupRouter.STEP_ACCESS, it) }
         compose.onNodeWithText("Offline-Modell laden").assertIsDisplayed()
-        bild(R.string.img_help_offline).assertIsDisplayed()
-        bild(R.string.img_help_key).assertDoesNotExist()
+        bild(R.drawable.ill_help_offline, R.string.img_help_offline).assertIsDisplayed()
+        bildtext(R.string.img_help_key).assertDoesNotExist()
     }
 
     @Test fun schritt1AuswahlSchreibtEngine() {
@@ -564,22 +569,22 @@ class MainFlowTest {
     @Test fun jederHilfeAbschnittBeginntMitSeinerIllustration() {
         screen(env()) { HelpScreen(1, it) }
         val bilder = listOf(
-            "So funktioniert's" to R.string.tutorial_img_button,
-            "Einrichtung Schritt für Schritt" to R.string.img_help_setup,
-            "API-Key bekommen" to R.string.img_help_key,
-            "Eigener Server" to R.string.img_agent_server,
-            "Offline-Modus" to R.string.img_help_offline,
-            "Widgets & Pro Widgets" to R.string.img_pro_widgets,
-            "Datenschutz" to R.string.img_help_privacy,
-            "Wenn etwas nicht klappt" to R.string.img_help_trouble,
+            Triple("So funktioniert's", R.drawable.ill_tutorial_button, R.string.tutorial_img_button),
+            Triple("Einrichtung Schritt für Schritt", R.drawable.ill_help_setup, R.string.img_help_setup),
+            Triple("API-Key bekommen", R.drawable.ill_help_key, R.string.img_help_key),
+            Triple("Eigener Server", R.drawable.ill_agent_server, R.string.img_agent_server),
+            Triple("Offline-Modus", R.drawable.ill_help_offline, R.string.img_help_offline),
+            Triple("Widgets & Pro Widgets", R.drawable.ill_pro_widgets, R.string.img_pro_widgets),
+            Triple("Datenschutz", R.drawable.ill_help_privacy, R.string.img_help_privacy),
+            Triple("Wenn etwas nicht klappt", R.drawable.ill_help_trouble, R.string.img_help_trouble),
         )
         // Abschnitt 1 ist offen, alle anderen zu: nur sein Bild ist da.
-        bild(bilder.first().second).assertExists()
-        bilder.drop(1).forEach { (_, res) -> bild(res).assertDoesNotExist() }
-        bilder.drop(1).forEach { (titel, res) ->
+        bilder.first().let { (_, image, text) -> bild(image, text).assertExists() }
+        bilder.drop(1).forEach { (_, _, text) -> bildtext(text).assertDoesNotExist() }
+        bilder.drop(1).forEach { (titel, image, text) ->
             compose.onNodeWithText(titel).performClick()
             compose.waitForIdle()
-            bild(res).assertExists()
+            bild(image, text).assertExists()
             // Wieder zu, sonst faellt der Rest aus dem Sichtbereich der LazyColumn.
             compose.onNodeWithText(titel).performClick()
             compose.waitForIdle()
@@ -588,9 +593,9 @@ class MainFlowTest {
 
     @Test fun abschnitt6SindDieWidgetsMitWegZurAnleitung() {
         val nav = screen(env()) { HelpScreen(6, it) }
-        bild(R.string.img_pro_widgets).assertExists()
-        bild(R.string.img_help_offline).assertDoesNotExist()
-        bild(R.string.img_help_privacy).assertDoesNotExist()
+        bild(R.drawable.ill_pro_widgets, R.string.img_pro_widgets).assertExists()
+        bildtext(R.string.img_help_offline).assertDoesNotExist()
+        bildtext(R.string.img_help_privacy).assertDoesNotExist()
         compose.onNodeWithText("Freischalten: Einstellungen → Erweitert → Pro Widgets.").assertExists()
         compose.onNodeWithText("Anleitung Pro Widgets").performClick()
         compose.waitForIdle()
@@ -606,21 +611,21 @@ class MainFlowTest {
 
     @Test fun abschnitt7IstDerDatenschutz() {
         screen(env()) { HelpScreen(7, it) }
-        bild(R.string.img_help_privacy).assertExists()
-        bild(R.string.img_pro_widgets).assertDoesNotExist()
+        bild(R.drawable.ill_help_privacy, R.string.img_help_privacy).assertExists()
+        bildtext(R.string.img_pro_widgets).assertDoesNotExist()
     }
 
     @Test fun einZuHoherAbschnittOeffnetDenLetzten() {
         // Bis 3.7.0 war 7 der letzte Abschnitt; jetzt ist es 8 "Wenn etwas nicht klappt".
         screen(env()) { HelpScreen(99, it) }
-        bild(R.string.img_help_trouble).assertExists()
+        bild(R.drawable.ill_help_trouble, R.string.img_help_trouble).assertExists()
         compose.onNodeWithText("Knopf erscheint nicht").assertExists()
-        bild(R.string.img_help_privacy).assertDoesNotExist()
+        bildtext(R.string.img_help_privacy).assertDoesNotExist()
     }
 
     @Test fun knopfUndTastaturBeginntMitDerKurzanleitung() {
         screen(env()) { ButtonKeyboardScreen(it) }
-        bild(R.string.tutorial_img_button).assertExists()
+        bild(R.drawable.ill_tutorial_button, R.string.tutorial_img_button).assertExists()
         val kurzanleitung = compose.onNodeWithText("Kurzanleitung").fetchSemanticsNode().boundsInRoot.top
         val knopf = compose.onNodeWithText("Schwebender Knopf").fetchSemanticsNode().boundsInRoot.top
         assertTrue("Kurzanleitung steht oben", kurzanleitung < knopf)

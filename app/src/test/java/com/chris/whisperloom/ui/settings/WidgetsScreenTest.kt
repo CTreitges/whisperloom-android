@@ -48,6 +48,7 @@ import com.chris.whisperloom.agent.ProfileIcon
 import com.chris.whisperloom.agent.SpeechPause
 import com.chris.whisperloom.agent.TEST_SERVER_TOKEN
 import com.chris.whisperloom.agent.TEST_SERVER_URL
+import com.chris.whisperloom.ui.components.hasIllustration
 import com.chris.whisperloom.agent.VoiceTaskState
 import com.chris.whisperloom.agent.VoiceTaskStore
 import com.chris.whisperloom.agent.VoiceTaskWidget
@@ -196,7 +197,7 @@ class WidgetsScreenTest {
         compose.onAllNodes(tab("Pro Widgets")).assertCountEquals(0)
         compose.onAllNodes(tab("Widgets")).assertCountEquals(0)
         compose.onNodeWithText("Normale Widgets für den Startbildschirm kommen mit einem späteren Update.").assertIsDisplayed()
-        compose.onNodeWithContentDescription(ctx.getString(R.string.img_widgets_normal)).assertExists()
+        compose.onNode(hasIllustration(R.drawable.ill_widgets_normal, ctx.getString(R.string.img_widgets_normal))).assertExists()
         compose.onNodeWithText("Neues Pro Widget").assertDoesNotExist()
     }
 
@@ -217,7 +218,7 @@ class WidgetsScreenTest {
         compose.onNodeWithText(
             "Sprach-Command-Widgets nehmen auf und schicken den Text an deinen eigenen Server. Jedes Widget hat seinen eigenen Namen und Server.",
         ).assertIsDisplayed()
-        compose.onNodeWithContentDescription(ctx.getString(R.string.img_pro_widgets)).assertExists()
+        compose.onNode(hasIllustration(R.drawable.ill_pro_widgets, ctx.getString(R.string.img_pro_widgets))).assertExists()
         compose.onNodeWithText("Neues Pro Widget").assertExists()
         compose.onNodeWithText("Deine Pro Widgets").assertExists()
         compose.onNodeWithText("Für Entwickler: Pro Widgets lassen sich unter „Erweitert“ freischalten.").assertDoesNotExist()

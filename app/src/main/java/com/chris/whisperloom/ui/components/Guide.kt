@@ -14,7 +14,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.SemanticsPropertyKey
+import androidx.compose.ui.semantics.SemanticsPropertyReceiver
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+
+/**
+ * Welches Drawable eine Anleitungs-Illustration zeigt (nur fuer Tests, TalkBack liest es nicht).
+ * Bild und Bildtext werden getrennt uebergeben; der Bildtext allein beweist nicht das richtige Bild.
+ */
+val IllustrationRes = SemanticsPropertyKey<Int>("IllustrationRes")
+var SemanticsPropertyReceiver.illustrationRes by IllustrationRes
 
 /**
  * Anleitungs-Kopf: Illustration (ill_*.xml) oben, optional ein kurzer Text darunter. Das Bild
@@ -31,7 +41,7 @@ fun GuideHeader(
         Image(
             painterResource(image),
             contentDescription = stringResource(imageText),
-            modifier = Modifier.fillMaxWidth().heightIn(max = 168.dp),
+            modifier = Modifier.fillMaxWidth().heightIn(max = 168.dp).semantics { illustrationRes = image },
             contentScale = ContentScale.Fit,
         )
         if (text != null) {

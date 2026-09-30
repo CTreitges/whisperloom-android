@@ -40,6 +40,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.chris.whisperloom.R
 import com.chris.whisperloom.ui.components.PrimaryButton
+import com.chris.whisperloom.ui.components.illustrationRes
 import com.chris.whisperloom.ui.share.rememberReduceMotion
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import kotlinx.coroutines.launch
@@ -122,7 +123,8 @@ private fun TutorialPageContent(page: TutorialPage) {
         Image(
             painter = painterResource(page.image),
             contentDescription = stringResource(page.imageText),
-            modifier = Modifier.fillMaxWidth().weight(0.45f).padding(top = 16.dp, bottom = 8.dp),
+            modifier = Modifier.fillMaxWidth().weight(0.45f).padding(top = 16.dp, bottom = 8.dp)
+                .semantics { illustrationRes = page.image },
             contentScale = ContentScale.Fit,
         )
         Column(

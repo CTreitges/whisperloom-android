@@ -9,7 +9,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
@@ -21,6 +20,7 @@ import com.chris.whisperloom.agent.VoiceTaskStore
 import com.chris.whisperloom.agent.VoiceTaskWidget
 import com.chris.whisperloom.agent.WidgetProfile
 import com.chris.whisperloom.agent.WidgetProfileStore
+import com.chris.whisperloom.ui.components.hasIllustration
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SystemStatus
@@ -84,7 +84,7 @@ class AdvancedScreenTest {
         compose.onNodeWithText("Erweitert").assertExists()
         compose.onNodeWithText("Pro-Funktionen für Entwickler und Bastler. Für das normale Diktieren brauchst du hier nichts.")
             .assertIsDisplayed()
-        compose.onNodeWithContentDescription(ctx.getString(R.string.img_pro_features)).assertExists()
+        compose.onNode(hasIllustration(R.drawable.ill_pro_features, ctx.getString(R.string.img_pro_features))).assertExists()
     }
 
     @Test fun jedeProFunktionHatIhrenSchalterUndIstZuerstAus() {
