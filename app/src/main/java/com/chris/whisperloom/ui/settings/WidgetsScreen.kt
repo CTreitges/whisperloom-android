@@ -187,7 +187,6 @@ private fun ProTab(
     // Ueber den Status, nicht per checkSelfPermission: den liest die Activity in onResume neu,
     // und nur so verschwindet die Warnkarte, nachdem der Nutzer das Mikrofon gerade erlaubt hat.
     val hasMic = env.status.micGranted
-    val verworfen = stringResource(R.string.agent_discard_done)
     val dim = MaterialTheme.colorScheme.onSurfaceVariant
 
     // Ohne Mikrofon zeigen die Widgets "nicht erlaubt" — nach dem Erlauben neu zeichnen.
@@ -208,19 +207,7 @@ private fun ProTab(
 
     // Aus dem Zustand, nicht einmal beim Anzeigen gelesen: Loeschen im Editor nimmt den Auftrag
     // seines Widgets mit, die Karte muss dann mit verschwinden.
-    if (widgets.hasWork) {
-        SectionCard(title = stringResource(R.string.agent_card_pending), gap = 4.dp) {
-            LoomRow(
-                headline = stringResource(R.string.agent_discard),
-                supporting = stringResource(R.string.agent_discard_sub),
-                leading = { LoomIcon(R.drawable.ic_delete, null, Modifier.size(24.dp), dim) },
-                onClick = {
-                    widgets.discardWork()
-                    snack.show(verworfen)
-                },
-            )
-        }
-    }
+    if (widgets.hasWork) PendingTaskCard(widgets, snack)
 
     SectionCard(title = stringResource(R.string.widgets_card_new_pro), gap = 4.dp) {
         WidgetKind.of(Tier.PRO).forEach { kind ->
@@ -271,6 +258,26 @@ private fun ProTab(
         listOf(R.string.agent_widget_hint, R.string.widgets_help_size, R.string.widgets_help_shared).forEach {
             Text(stringResource(it), style = MaterialTheme.typography.bodyMedium, color = dim)
         }
+    }
+}
+
+/**
+ * Karte "Offener Auftrag": verwirft den wartenden Auftrag, egal von welchem Widget. Im Tab
+ * "Pro Widgets" und — sind Pro Widgets aus — in "Erweitert", damit er sich immer verwerfen laesst.
+ */
+@Composable
+fun PendingTaskCard(widgets: WidgetProfilesState, snack: SnackController) {
+    val verworfen = stringResource(R.string.agent_discard_done)
+    SectionCard(title = stringResource(R.string.agent_card_pending), gap = 4.dp) {
+        LoomRow(
+            headline = stringResource(R.string.agent_discard),
+            supporting = stringResource(R.string.agent_discard_sub),
+            leading = { LoomIcon(R.drawable.ic_delete, null, Modifier.size(24.dp), MaterialTheme.colorScheme.onSurfaceVariant) },
+            onClick = {
+                widgets.discardWork()
+                snack.show(verworfen)
+            },
+        )
     }
 }
 

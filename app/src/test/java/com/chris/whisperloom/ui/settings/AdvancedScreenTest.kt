@@ -18,6 +18,7 @@ import com.chris.whisperloom.R
 import com.chris.whisperloom.agent.VoiceTaskState
 import com.chris.whisperloom.agent.VoiceTaskStore
 import com.chris.whisperloom.agent.VoiceTaskWidget
+import com.chris.whisperloom.agent.VoiceTaskWork
 import com.chris.whisperloom.agent.WidgetProfile
 import com.chris.whisperloom.agent.WidgetProfileStore
 import com.chris.whisperloom.ui.components.hasIllustration
@@ -43,7 +44,8 @@ import org.robolectric.annotation.Config
 
 /**
  * E7 — "Erweitert": je Pro-Funktion ein Schalter, mit Pro Widgets die Wege ins Widget-Menue und
- * zur Anleitung. Server, Mikrofon und offener Auftrag stehen seit 3.7.1 im Tab "Pro Widgets".
+ * zur Anleitung. Server, Mikrofon und offener Auftrag stehen seit 3.7.1 im Tab "Pro Widgets" —
+ * nur mit ausgeschalteten Pro Widgets laesst sich ein wartender Auftrag hier verwerfen.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w411dp-h2400dp-xxhdpi")
@@ -77,6 +79,11 @@ class AdvancedScreenTest {
     private fun click(text: String) {
         compose.onNodeWithText(text).performClick()
         compose.waitForIdle()
+    }
+
+    private fun offenerAuftrag() = VoiceTaskStore(ctx).apply {
+        begin(FloatArray(800) { 0.3f }, 4000, "2026-09-21T20:00:00Z", WidgetProfile.DEFAULT_ID)
+        state = VoiceTaskState.ERROR
     }
 
     @Test fun derScreenHeisstErweitertUndErklaertSichKurz() {
@@ -151,6 +158,41 @@ class AdvancedScreenTest {
             "Server-Adresse", "Token", "Verbindung prüfen",
             "Für Pro Widgets fehlt die Mikrofon-Berechtigung.", "Offenen Auftrag verwerfen",
         ).forEach { compose.onNodeWithText(it).assertDoesNotExist() }
+    }
+
+    @Test fun mitProWidgetsAusLaesstSichEinOffenerAuftragHierVerwerfen() {
+        // Ohne Pro Widgets fehlt der Tab "Pro Widgets" — bis 3.7.0 ging das Verwerfen immer.
+        offenerAuftrag()
+        var abgebrochen = 0
+        val echtesCancel = VoiceTaskWork.cancelImpl
+        VoiceTaskWork.cancelImpl = { abgebrochen++ }
+        try {
+            show()
+            compose.onNodeWithText("Offener Auftrag").assertIsDisplayed()
+            click("Offenen Auftrag verwerfen")
+        } finally {
+            VoiceTaskWork.cancelImpl = echtesCancel
+        }
+        assertEquals(1, abgebrochen)
+        assertFalse("Der Auftrag muss wirklich weg sein", VoiceTaskStore(ctx).hasWork)
+        compose.onNodeWithText("Offenen Auftrag verwerfen").assertDoesNotExist()
+    }
+
+    @Test fun ohneOffenenAuftragGibtEsHierNichtsZuVerwerfen() {
+        show()
+        compose.onNodeWithText("Offener Auftrag").assertDoesNotExist()
+        compose.onNodeWithText("Offenen Auftrag verwerfen").assertDoesNotExist()
+    }
+
+    @Test fun mitProWidgetsAnStehtDerOffeneAuftragWiederNurImTab() {
+        offenerAuftrag()
+        show()
+        compose.onNodeWithText("Offenen Auftrag verwerfen").assertExists()
+
+        click("Pro Widgets")
+
+        compose.onNodeWithText("Offenen Auftrag verwerfen").assertDoesNotExist()
+        assertTrue("Einschalten verwirft nichts", VoiceTaskStore(ctx).hasWork)
     }
 
     @Test fun umschaltenZeichnetDieWidgetsNeu() {

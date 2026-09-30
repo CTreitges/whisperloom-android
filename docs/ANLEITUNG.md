@@ -843,7 +843,7 @@ Diesem Widget fehlen Server-Adresse oder Token, oder die Adresse ist ungültig. 
 Ein Auftrag wartet, aber sein Widget hat inzwischen keinen gültigen Server mehr. Der Auftrag bleibt gespeichert. Der Tipp — auf dieses oder ein anderes Widget — öffnet **Widget bearbeiten** für das Widget des Auftrags: Server eintragen, dann aufs Widget tippen — er geht los, ohne neu aufzunehmen.
 
 **„Pro Widgets sind aus — tippen für erneuten Versuch“**
-Du hast Pro Widgets ausgeschaltet, während ein Auftrag wartete. Er bleibt gespeichert. Der Tipp führt nach **Erweitert**: wieder einschalten, dann aufs Widget tippen.
+Du hast Pro Widgets ausgeschaltet, während ein Auftrag wartete. Er bleibt gespeichert. Der Tipp führt nach **Erweitert**: wieder einschalten, dann aufs Widget tippen — oder den Auftrag dort unter **Offener Auftrag** verwerfen.
 
 **„Widget gelöscht — Auftrag verworfen“**
 Das Widget, mit dem du aufgenommen hast, wurde gelöscht, bevor sein Auftrag draußen war. Der Auftrag ist weg — WhisperLoom schickt ihn nie an den Server eines anderen Widgets. Ein Tipp startet eine neue Aufnahme.
@@ -865,7 +865,7 @@ Ein Versuch ist gescheitert, meist am Netz oder an einem Server, der gerade erst
 
 Hängt es trotzdem immer wieder: Einstellungen des Telefons → Apps → WhisperLoom → Akku → **Nicht eingeschränkt**. Manche Hersteller halten Hintergrundaufträge sonst lange zurück. Für die Fehlersuche am Rechner zeigt `adb shell dumpsys jobscheduler com.chris.whisperloom`, worauf der Auftrag wartet, und `adb shell am get-standby-bucket com.chris.whisperloom` die Standby-Stufe der App.
 
-Willst du den Auftrag loswerden: Einstellungen → Widgets → Tab „Pro Widgets“ → Karte **Offener Auftrag** → **Offenen Auftrag verwerfen**. Die Karte steht nur dort, solange ein Auftrag wartet.
+Willst du den Auftrag loswerden: Einstellungen → Widgets → Tab „Pro Widgets“ → Karte **Offener Auftrag** → **Offenen Auftrag verwerfen**. Sind Pro Widgets aus, steht die Karte unter Einstellungen → **Erweitert**. Sie erscheint nur, solange ein Auftrag wartet.
 
 **Ein Fehler mit Zahl (z. B. 401 oder 503)**
 401 heißt: Token stimmt nicht — korrigier es im Editor des Widgets (Einstellungen → Widgets → Pro Widgets → Widget antippen) und tippe dann auf das Widget, der Auftrag ist noch da. 503 heißt: die Bridge erreicht deinen Agenten gerade nicht; WhisperLoom versucht es von allein mehrmals erneut (das Widget nennt dabei den Grund), erst danach wird das Widget rot.

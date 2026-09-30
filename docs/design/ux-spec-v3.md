@@ -1395,8 +1395,9 @@ description, icon)` mit `VOICE_COMMAND("voice_command", PRO)`; gespeichert wird 
   `ProFeature.hubLabel`s mit „ · “ oder `settings_agent_off`.
 - **E7 „Erweitert“** (`AdvancedScreen`, `Screen.Advanced`, Key `advanced`, `agent` bleibt Alias):
   `GuideHeader(ill_pro_features)` + Karte `advanced_card_features` mit je `ProFeature` einer `SwitchRow`;
-  bei Pro Widgets an: `advanced_manage_widgets` → E8 Tab Pro, `advanced_tutorial` → T2. Keine Server-,
-  Mikrofon- oder Auftrags-Karte mehr.
+  bei Pro Widgets an: `advanced_manage_widgets` → E8 Tab Pro, `advanced_tutorial` → T2. Keine Server-
+  oder Mikrofon-Karte mehr; die Karte „Offener Auftrag“ (`agent_card_pending`, wie im Pro-Tab) nur bei
+  Pro Widgets aus mit wartendem Auftrag — sonst ließe er sich nirgends verwerfen.
 - **E8 Widgets** (`Screen.Widgets(tab, edit)`, Encoding `widgets:<tab>:<edit>`, `WidgetTab { NORMAL, PRO }`):
   Pro Widgets aus → keine Tabs, nur Normal-Inhalt (`GuideHeader(ill_widgets_normal)`, InfoCard
   `widgets_pro_unlock` mit Button → E7). Pro an → `PrimaryTabRow` „Widgets“ | „Pro Widgets“ (Start: Pro;

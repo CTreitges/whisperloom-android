@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -24,6 +25,7 @@ import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.WidgetTab
 import com.chris.whisperloom.ui.state.LocalAppEnv
+import com.chris.whisperloom.ui.state.WidgetProfilesState
 import com.chris.whisperloom.ui.tutorial.TutorialKind
 
 /**
@@ -33,12 +35,15 @@ import com.chris.whisperloom.ui.tutorial.TutorialKind
  * Bewusst der einzige Ort, an dem sie sich einschalten lassen: Startbildschirm, Assistent und
  * Home-Status bleiben unangetastet. Wer sie nicht nutzt, soll sie nicht bemerken. Alles zu den
  * Pro Widgets selbst (Server, Mikrofon, offener Auftrag) steht im Widget-Menue, Tab "Pro Widgets".
+ * Einzige Ausnahme: sind Pro Widgets aus, fehlt der Tab — ein wartender Auftrag laesst sich dann
+ * hier verwerfen (wie bis 3.7.0).
  */
 @Composable
 fun AdvancedScreen(nav: NavState) {
     val ctx = LocalContext.current
     val prefs = LocalAppEnv.current.prefs
     val snack = rememberSnack()
+    val widgets = remember { WidgetProfilesState(ctx) }
 
     // Die Widgets zeigen "aus", solange Pro Widgets aus sind — nach jedem Umschalten neu zeichnen.
     LaunchedEffect(prefs.proWidgetsEnabled) {
@@ -59,6 +64,8 @@ fun AdvancedScreen(nav: NavState) {
                     )
                 }
             }
+
+            if (!prefs.proWidgetsEnabled && widgets.hasWork) PendingTaskCard(widgets, snack)
 
             if (prefs.proWidgetsEnabled) {
                 SectionCard(gap = 4.dp) {
