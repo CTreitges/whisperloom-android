@@ -22,6 +22,13 @@ class ApiNotConfiguredException(
 class RefineRejectedException(message: String) : RuntimeException(message)
 
 /**
+ * Die Modell-Liste des Anbieters liess sich nicht lesen (kein JSON, keine Liste) — meist steht hinter
+ * der Adresse kein passender Server. Der Aufrufer behaelt die eingebauten Empfehlungen.
+ */
+class ModelListException(cause: Throwable? = null) :
+    RuntimeException("Antwort des Servers ist keine Modell-Liste", cause)
+
+/**
  * Der Server hat mit einem Fehlerstatus geantwortet. Bei den typischen Stolperfallen
  * eines eigenen Servers haengt ein Hinweis an der Meldung.
  *

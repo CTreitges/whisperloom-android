@@ -50,14 +50,17 @@ internal object Http {
         followRedirects: Boolean = true,
         authHeader: String? = null,
         write: (java.io.OutputStream) -> Unit,
-    ): String = execute(url, "POST", apiKey, readTimeoutMs, followRedirects, authHeader) { conn ->
+    ): String = execute(url, "POST", apiKey, readTimeoutMs, followRedirects, authHeader, emptyMap()) { conn ->
         conn.doOutput = true
         conn.setRequestProperty("Content-Type", contentType)
         conn.outputStream.use(write)
     }
 
     /**
-     * GET ohne Body (Ollama: GET /api/tags fuer die Modell-Liste). Parameter und Fehler wie [post].
+     * GET ohne Body (Modell-Listen, siehe [ModelLists]). Parameter und Fehler wie [post].
+     *
+     * @param headers weitere Header (Anthropic: anthropic-version). Sie wandern bei einer
+     *   Weiterleitung mit wie ein eigener Key-Header — dann [followRedirects] = false.
      */
     fun get(
         url: String,
@@ -65,7 +68,8 @@ internal object Http {
         readTimeoutMs: Int = DEFAULT_READ_TIMEOUT_MS,
         followRedirects: Boolean = true,
         authHeader: String? = null,
-    ): String = execute(url, "GET", apiKey, readTimeoutMs, followRedirects, authHeader) {}
+        headers: Map<String, String> = emptyMap(),
+    ): String = execute(url, "GET", apiKey, readTimeoutMs, followRedirects, authHeader, headers) {}
 
     private fun execute(
         url: String,
@@ -74,6 +78,7 @@ internal object Http {
         readTimeoutMs: Int,
         followRedirects: Boolean,
         authHeader: String?,
+        headers: Map<String, String>,
         send: (HttpURLConnection) -> Unit,
     ): String {
         val conn = try {
@@ -88,6 +93,7 @@ internal object Http {
                     if (authHeader == null) setRequestProperty("Authorization", "Bearer $apiKey")
                     else setRequestProperty(authHeader, apiKey)
                 }
+                headers.forEach { (name, value) -> setRequestProperty(name, value) }
             }
         } catch (e: IOException) {
             throw ApiNetworkException(e)
