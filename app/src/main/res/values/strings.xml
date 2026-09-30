@@ -347,6 +347,7 @@
     </plurals>
     <string name="text_ollama_models_failed">Modelle nicht geladen: %1$s</string>
     <string name="text_needs_online">Textverbesserung braucht einen Online-Zugang.</string>
+    <string name="text_no_llm">%1$s erkennt nur Sprache und bietet keine Textverbesserung.</string>
     <string name="text_add_access">Eigenen Zugang eintragen</string>
     <string name="text_test">Zugang prüfen</string>
     <string name="text_card_rules">Regeln ohne KI</string>

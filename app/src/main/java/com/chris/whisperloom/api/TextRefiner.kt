@@ -20,7 +20,8 @@ class TextRefiner(private val access: ApiAccess) {
      * auf den Rohtext zurueck: die Veredelung darf ein Diktat niemals verschlucken.
      *
      * @throws ApiNotConfiguredException wenn die Base-URL leer ist (eigener Server ohne URL) —
-     *   sonst ginge die Anfrage an "/chat/completions" ohne Host.
+     *   sonst ginge die Anfrage an "/chat/completions" ohne Host — oder der Anbieter keine
+     *   Textmodelle hat ([MSG_NO_LLM]).
      * @throws RefineRejectedException wenn die Stufe "Prompt" eine Antwort statt eines Prompts liefert
      *   oder das Modell an seiner Laengengrenze abgebrochen hat ([MSG_TRUNCATED]).
      */
@@ -32,6 +33,9 @@ class TextRefiner(private val access: ApiAccess) {
         paragraphs: Boolean = true,
     ): String {
         if (raw.isBlank() || mode == RefineMode.OFF) return raw
+        // "Wie Erkennung" bei einem reinen Erkennungs-Anbieter (Together, DeepInfra, ElevenLabs):
+        // dort gibt es keinen Chat-Endpunkt — klarer Hinweis statt 404 und ohne Anfrage.
+        if (!access.provider.hasLlm) throw ApiNotConfiguredException(MSG_NO_LLM)
         if (access.baseUrl.isBlank()) throw ApiNotConfiguredException()
 
         val german = language == "de"
@@ -80,6 +84,9 @@ class TextRefiner(private val access: ApiAccess) {
          * des Texts — sie einzufuegen hiesse, den Rest still zu verschlucken.
          */
         const val MSG_TRUNCATED = "Antwort des Modells abgeschnitten (Längengrenze)"
+
+        /** Der Erkennungs-Anbieter hat keine Textmodelle, und es ist kein eigener Zugang eingetragen. */
+        const val MSG_NO_LLM = "Der Erkennungs-Anbieter kann keinen Text verbessern — unter „Text“ einen eigenen Zugang eintragen"
         private const val LENGTH = "length"
 
         // Qwen3 & Co. schreiben ihr Nachdenken als <think>…</think> in den Text, wenn

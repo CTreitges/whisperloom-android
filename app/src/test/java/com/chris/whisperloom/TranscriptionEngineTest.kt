@@ -487,6 +487,15 @@ class TranscriptionEngineTest {
         assertTrue(elevenBody.contains("name=\"language_code\"\r\n\r\nde\r\n"))
     }
 
+    @Test fun elevenLabsOhneEigenenTextZugangUeberspringtDieVerbesserung() {
+        useElevenLabs()
+        prefs.refineMode = RefineMode.POLISH
+        var hint: String? = null
+        assertEquals("Also hallo welt", TranscriptionEngine.transcribe(ctx, speech) { hint = it })
+        assertEquals(com.chris.whisperloom.api.TextRefiner.MSG_NO_LLM, hint)
+        assertNull(chatBody) // keine Anfrage an einen Chat-Endpunkt, den es bei ElevenLabs nicht gibt
+    }
+
     @Test fun elevenLabsMitEigenemTextZugangVerbessertAufDeutsch() {
         useElevenLabs()
         prefs.refineMode = RefineMode.POLISH

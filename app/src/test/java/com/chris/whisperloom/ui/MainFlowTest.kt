@@ -552,6 +552,24 @@ class MainFlowTest {
         assertEquals("kimi-k2.6", Prefs(ctx).llmModel)
     }
 
+    /** Reiner Erkennungs-Anbieter: "wie Erkennung" hiesse keine Textverbesserung — das klar sagen. */
+    @Test fun textZugangBeiElevenLabsSagtKeineTextverbesserung() {
+        prefs.engine = Engine.ONLINE
+        prefs.sttProviderId = "elevenlabs"
+        prefs.apiKey = "xi-stt"
+        prefs.refineMode = RefineMode.POLISH
+        screen(env()) { TextSettingsScreen(it) }
+        compose.onNodeWithText("ElevenLabs erkennt nur Sprache und bietet keine Textverbesserung.").assertExists()
+        // Kein Modellfeld fuer einen Anbieter ohne Textmodelle, keine Pruefung ins Leere.
+        compose.onNode(hasSetTextAction() and hasText("Modell")).assertDoesNotExist()
+        compose.onNodeWithText("Zugang prüfen").assertIsNotEnabled()
+        compose.onNodeWithText("Eigenen Zugang eintragen").performClick()
+        compose.waitForIdle()
+        val p = Prefs(ctx)
+        assertEquals("openai", p.llmProviderId)
+        assertEquals("", p.llmAccess().apiKey) // der ElevenLabs-Key geht nie an OpenAI
+    }
+
     // --- Vokabular -------------------------------------------------------------------
 
     @Test fun vokabularAlsListeImSheet() {

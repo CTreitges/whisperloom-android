@@ -58,6 +58,10 @@ fun LlmAccessSection(snack: SnackController) {
     val provider = llm.provider
     val useOwn = prefs.llmUseOwn
     val offlineWithoutOwn = prefs.engine == Engine.OFFLINE && !useOwn
+    // Reine Erkennungs-Anbieter (Together, DeepInfra, ElevenLabs) haben keine Textmodelle —
+    // "wie Erkennung" hiesse dort: keine Textverbesserung.
+    val sttOnlyWithoutOwn = !useOwn && !stt.provider.hasLlm
+    val noLlmWithoutOwn = offlineWithoutOwn || sttOnlyWithoutOwn
     val providers = ProviderCatalog.llmProviders
     val labels = providers.associate { it.id to providerLabel(it) }
     var showKeySheet by rememberSaveable { mutableStateOf(false) }
@@ -154,8 +158,9 @@ fun LlmAccessSection(snack: SnackController) {
         }
 
         when {
-            offlineWithoutOwn -> InfoCard(
-                text = stringResource(R.string.text_needs_online),
+            noLlmWithoutOwn -> InfoCard(
+                text = if (offlineWithoutOwn) stringResource(R.string.text_needs_online)
+                else stringResource(R.string.text_no_llm, providerShortName(stt.provider)),
                 icon = R.drawable.ic_warning,
                 container = MaterialTheme.loom.warningContainer,
                 onContainer = MaterialTheme.loom.onWarningContainer,
@@ -226,7 +231,7 @@ fun LlmAccessSection(snack: SnackController) {
             }
         }
 
-        TestAccessRow(label = stringResource(R.string.text_test), enabled = !offlineWithoutOwn) {
+        TestAccessRow(label = stringResource(R.string.text_test), enabled = !noLlmWithoutOwn) {
             AccessTest.llm(prefs.llmAccess(), prefs.language)
         }
     }

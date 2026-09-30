@@ -7,9 +7,13 @@ import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import javax.net.ssl.SSLException
 
-/** Zugang unvollstaendig (Base-URL leer oder Key fehlt, obwohl der Anbieter einen braucht). */
-class ApiNotConfiguredException :
-    RuntimeException("Anbieter nicht eingerichtet — Base-URL und API-Key in den Einstellungen prüfen")
+/**
+ * Zugang unvollstaendig (Base-URL leer oder Key fehlt, obwohl der Anbieter einen braucht) —
+ * oder der Anbieter kann die verlangte Aufgabe gar nicht (siehe [TextRefiner.MSG_NO_LLM]).
+ */
+class ApiNotConfiguredException(
+    message: String = "Anbieter nicht eingerichtet — Base-URL und API-Key in den Einstellungen prüfen",
+) : RuntimeException(message)
 
 /**
  * Das Sprachmodell hat geantwortet, aber offensichtlich nicht das Verlangte getan — etwa die
