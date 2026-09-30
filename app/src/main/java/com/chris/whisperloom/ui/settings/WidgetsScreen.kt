@@ -1,7 +1,6 @@
 package com.chris.whisperloom.ui.settings
 
 import android.Manifest
-import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -74,6 +73,7 @@ import com.chris.whisperloom.ui.theme.loom
 import com.chris.whisperloom.ui.tutorial.TutorialKind
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.net.URI
 
 /**
  * Widget-Menue mit den Tabs "Widgets" (normale Widgets — folgen, bis dahin ein Platzhalter) und
@@ -281,7 +281,7 @@ private fun ProTab(
 }
 
 /** "bridge.example.de" aus "https://bridge.example.de" — kurz genug fuer die Unterzeile. */
-private fun serverHost(url: String): String = Uri.parse(url.trim()).host ?: url
+private fun serverHost(url: String): String = runCatching { URI(url.trim()).host }.getOrNull() ?: url
 
 /** "Tippen startet und stoppt" oder "Stoppt nach Sprechpause · Normal". */
 @Composable
