@@ -1,0 +1,5 @@
+WhisperLoom 3.7.0
+• Geteilte Sprachnachrichten (z. B. WhatsApp) auf Wunsch mit eigener KI-Stufe: Glätten, Verschönern oder Zusammenfassen
+• Widget-Profile: eigener Name, Symbol oder Galerie-Bild, Auto-Stopp nach Sprechpause; Widget frei skalierbar, neues Untermenü „Widgets“
+• Behoben: Offline-Erkennung schnitt lange Aufnahmen alle 30 s mitten im Wort
+• Behoben: Sprachauftrag-Widget hing auf „Wird gesendet …“
