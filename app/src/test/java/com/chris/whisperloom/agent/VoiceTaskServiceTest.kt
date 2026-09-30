@@ -333,7 +333,8 @@ class VoiceTaskServiceTest {
     @Test fun nichtsGehoertVerwirftUndSendetNichts() {
         profil(autoStop = true)
         schnellerDetektor(noSpeechMs = 0)
-        quelle(20) { 0.toShort() }
+        // Leises Raumrauschen (Effektivwert ~0,005): das Mikrofon liefert, aber niemand spricht.
+        quelle(20) { 150.toShort() }
         val s = dienst()
         starten(s)
         shadowOf(Looper.getMainLooper()).idle()
@@ -348,6 +349,21 @@ class VoiceTaskServiceTest {
         senden(s, VoiceTaskService.ACTION_START, WIDGET)
         assertTrue(gelesen.await(5, TimeUnit.SECONDS))
         assertEquals(VoiceTaskState.RECORDING, store.state)
+    }
+
+    @Test fun einStummesMikrofonIstMitAutoStoppKeinNichtsGehoert() {
+        // Mikrofon belegt (Telefonat) oder still entzogen: exakt Nullen. Der Detektor meldet
+        // "keine Sprache" — gezeigt wird trotzdem der wahre Grund, nicht "sprich naeher".
+        profil(autoStop = true)
+        schnellerDetektor(noSpeechMs = 0)
+        quelle(20) { 0.toShort() }
+        starten(dienst())
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertEquals(VoiceTaskState.ERROR, store.state)
+        assertEquals(app.getString(R.string.widget_silent), store.message)
+        assertFalse("Auch hier wird nichts gesendet", store.hasWork)
+        assertEquals(0, eingereiht)
     }
 
     @Test fun einTippImAutoModusBeendetGenauEinmal() {

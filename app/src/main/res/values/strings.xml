@@ -562,7 +562,8 @@
     <string name="widget_no_mic">Mikrofon nicht erlaubt — tippen</string>
     <string name="widget_off">Sprachauftrag ist aus — tippen</string>
     <string name="widget_fgs_failed">Aufnahme ließ sich nicht starten — App öffnen und erneut versuchen</string>
-    <string name="widget_silent">Kein Ton aufgenommen — tippen für erneuten Versuch</string>
+    <!-- Nur der Grund: angezeigt über widget_error_retry, das den Tipp-Hinweis selbst anhängt. -->
+    <string name="widget_silent">Kein Ton aufgenommen</string>
     <string name="widget_too_short">Zu kurz — länger sprechen</string>
     <!-- Auto-Stopp: 8 s keine Sprache erkannt, Aufnahme verworfen. Angezeigt über widget_error_retry. -->
     <string name="widget_no_speech">Nichts gehört</string>

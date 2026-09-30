@@ -14,6 +14,7 @@ Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](ht
 
 ### Behoben
 
+- **Widget-Meldung „Kein Ton aufgenommen“** stand mit doppeltem „— tippen für erneuten Versuch“ da; auch der Bildschirmleser las den Hinweis zweimal vor.
 - **Sprachauftrag-Widget blieb auf „Wird gesendet …“ hängen, nur ein Force-Stop half** ([#10](https://github.com/CTreitges/whisperloom-android/issues/10)). Scheiterte der erste Versuch (etwa weil der Server gerade erst startete), wartete der Auftrag still auf den nächsten Termin, und ein Tipp auf das Widget tat nichts.
   - Ein gescheiterter Versuch ist jetzt sichtbar: „‹Grund› — neuer Versuch folgt, tippen = jetzt“.
   - Ein Tipp auf „Wird gesendet …“ sendet sofort, statt auf den nächsten geplanten Versuch zu warten, und wartet dabei auch nicht auf eine hängende Netz-Bedingung (VPN, WLAN ohne Internet). Läuft gerade ein Versuch, ersetzt der Tipp ihn erst, wenn er länger als drei Minuten hängt. Ein ungeduldiger Tipp in dieser Zeit kostet so keine zweite Transkription. Eine laufende Offline-Erkennung ersetzt der Tipp gar nicht: sie lässt sich nicht abbrechen, und der Ersatz müsste nur hinter ihr warten.

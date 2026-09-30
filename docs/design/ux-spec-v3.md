@@ -1254,7 +1254,7 @@ und beim Verlassen zurück auf `polite`.
 | `widget_sent` | Gesendet |
 | `widget_no_mic` | Mikrofon nicht erlaubt — tippen |
 | `widget_off` | Sprachauftrag ist aus — tippen |
-| `widget_silent` | Kein Ton aufgenommen — tippen für erneuten Versuch |
+| `widget_silent` | Kein Ton aufgenommen (über `widget_error_retry`: „Kein Ton aufgenommen — tippen für erneuten Versuch“; auch mit Auto-Stopp, wenn nur Nullen ankamen) |
 | `widget_too_short` | Zu kurz — länger sprechen |
 | `widget_error_retry` | %1$s — tippen für erneuten Versuch |
 | `cd_widget_ready` | Sprachauftrag aufnehmen |

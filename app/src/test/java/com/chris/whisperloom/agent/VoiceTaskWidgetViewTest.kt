@@ -54,6 +54,18 @@ class VoiceTaskWidgetViewTest {
         assertTrue(status(VoiceTaskState.ERROR).contains(ctx.getString(R.string.kb_error)))
     }
 
+    @Test fun jederFehlergrundNenntDenTippNurEinmal() {
+        // Die Zeile haengt den Hinweis selbst an; ein Grund, der ihn schon traegt, stuende doppelt da.
+        val hinweis = "für erneuten Versuch"
+        listOf(R.string.widget_silent, R.string.widget_too_short, R.string.widget_no_speech, R.string.widget_fgs_failed)
+            .map { ctx.getString(it) }
+            .forEach { grund ->
+                for (text in listOf(status(VoiceTaskState.ERROR, message = grund), cd(VoiceTaskState.ERROR, message = grund))) {
+                    assertEquals(text, 1, text.split(hinweis).size - 1)
+                }
+            }
+    }
+
     @Test fun gesendetSagtEsWennOhneTextverbesserungGesendetWurde() {
         // Sonst haelt der Nutzer den Rohtext fuer das Ergebnis von "Glaetten" und die
         // Erkennung fuer schlecht — genau die Verwechslung, die es zu vermeiden gilt.

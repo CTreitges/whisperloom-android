@@ -198,6 +198,9 @@ class VoiceTaskService : Service() {
      * Nur solange die Aufnahme noch laeuft: hat ein Tipp sie schon beendet, bleibt es bei genau
      * einem Ende. Sprechpause wirkt wie der Tipp auf "senden". Ohne erkannte Sprache wird
      * verworfen und nichts gesendet — der naechste Tipp (RETRY ohne Auftrag) nimmt neu auf.
+     *
+     * Auch dann zuerst die Pegelpruefung wie in [stop]: lauter Nullen heisst, das Mikrofon war
+     * belegt oder entzogen ("Kein Ton aufgenommen") — nicht, dass niemand gesprochen hat.
      */
     private fun onAutoDecision(decision: AutoStopDetector.Decision) {
         if (!recording) return
@@ -209,8 +212,8 @@ class VoiceTaskService : Service() {
                 main.removeCallbacks(tick)
                 main.removeCallbacks(notbremse)
                 recorder.onAmplitude = null
-                recorder.cancel()
-                fail(getString(R.string.widget_no_speech))
+                val silent = VoiceTaskUi.isSilent(recorder.stop())
+                fail(getString(if (silent) R.string.widget_silent else R.string.widget_no_speech))
                 stopSelf()
             }
             AutoStopDetector.Decision.CONTINUE -> Unit
