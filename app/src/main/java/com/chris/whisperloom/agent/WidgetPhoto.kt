@@ -54,6 +54,23 @@ object WidgetPhoto {
     }
 
     /**
+     * Verwaiste Fotos loeschen: jede Datei im Ordner, die nicht in [keep] steht und aelter als
+     * [SWEEP_GRACE_MS] ist. Verwaist ist ein Foto, wenn das Sheet waehrend des Imports verschwindet
+     * (Fertig, Wegwischen, Drehen) oder der Prozess dazwischen stirbt — dann laeuft das Speichern
+     * ins Profil nie. Die Frist schuetzt einen Import, dessen Datei schon liegt, dessen Profil
+     * aber noch nicht gespeichert ist.
+     */
+    fun sweep(ctx: Context, keep: Set<String>) {
+        val cutoff = System.currentTimeMillis() - SWEEP_GRACE_MS
+        File(ctx.filesDir, DIR).listFiles()
+            ?.filter { it.isFile && it.name !in keep && it.lastModified() < cutoff }
+            ?.forEach { runCatching { it.delete() } }
+    }
+
+    /** Ein Import dauert Sekunden; eine Minute ist sicher vorbei. */
+    const val SWEEP_GRACE_MS = 60_000L
+
+    /**
      * Ein Bild aus dem Photo Picker uebernehmen: mittleres Quadrat, rund, [SIZE] Pixel, als PNG
      * unter `<profileId>-<zeit>.png`. Sofort im Picker-Callback aufrufen — die Leseerlaubnis
      * fuer [uri] gilt nur voruebergehend. Keine Berechtigung, kein FileProvider noetig.

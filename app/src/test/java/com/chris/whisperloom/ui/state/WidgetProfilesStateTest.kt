@@ -5,8 +5,10 @@ import android.content.Context
 import android.content.ContextWrapper
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.R
+import com.chris.whisperloom.agent.ProfileIcon
 import com.chris.whisperloom.agent.SpeechPause
 import com.chris.whisperloom.agent.VoiceTaskWidget
+import com.chris.whisperloom.agent.WidgetPhoto
 import com.chris.whisperloom.agent.WidgetProfile
 import com.chris.whisperloom.agent.WidgetProfileStore
 import org.junit.Assert.assertEquals
@@ -19,6 +21,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import java.io.File
 
 /** Der Compose-Spiegel der Widget-Profile: schreibt sofort durch und liest danach neu. */
 @RunWith(RobolectricTestRunner::class)
@@ -93,6 +96,25 @@ class WidgetProfilesStateTest {
         assertTrue(store.isBound(lebt))
         assertFalse(store.isBound(9999))
         assertEquals(1, s.boundCount(p.id))
+    }
+
+    @Test fun neuLesenRaeumtFotosAbgebrochenerImporteWeg() {
+        val store = WidgetProfileStore(ctx)
+        val ordner = File(ctx.filesDir, WidgetPhoto.DIR).apply { mkdirs() }
+        fun foto(name: String, alterMs: Long) = File(ordner, name).apply {
+            writeText("png")
+            setLastModified(System.currentTimeMillis() - alterMs)
+        }
+        val genutzt = foto("p1-1.png", 10 * 60_000L)
+        store.save(store.create("Einkauf").copy(icon = ProfileIcon.Photo(genutzt.name)))
+        val verwaist = foto("p1-2.png", 10 * 60_000L) // Sheet waehrend des Imports geschlossen
+        val frisch = foto("p1-3.png", 0) // Import laeuft noch, das Profil ist noch nicht gespeichert
+
+        WidgetProfilesState(ctx).reload()
+
+        assertTrue(genutzt.isFile)
+        assertFalse(verwaist.isFile)
+        assertTrue("Ein laufender Import bleibt unberuehrt", frisch.isFile)
     }
 
     @Test fun ohneWidgetDienstStuerztNichtsAb() {

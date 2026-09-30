@@ -15,7 +15,8 @@ import java.util.UUID
  * - [forWidget] liefert fuer eine ungebundene oder verwaiste Instanz das Standardprofil.
  * - Das Standardprofil ist nicht loeschbar; wer an einem geloeschten Profil hing, zeigt danach
  *   das Standardprofil.
- * - Ein Foto, das kein Profil mehr nutzt (Profil geloescht, Symbol gewechselt), wird geloescht.
+ * - Ein Foto, das kein Profil mehr nutzt (Profil geloescht, Symbol gewechselt), wird geloescht;
+ *   Reste abgebrochener Importe raeumt [sweepPhotos] weg.
  */
 class WidgetProfileStore(context: Context) {
 
@@ -118,6 +119,11 @@ class WidgetProfileStore(context: Context) {
         val e = sp.edit()
         dead.forEach { e.remove(bindingKey(it)) }
         e.apply()
+    }
+
+    /** Fotos loeschen, die kein Profil nutzt und die kein laufender Import mehr braucht ([WidgetPhoto.sweep]). */
+    fun sweepPhotos() {
+        WidgetPhoto.sweep(app, all().mapNotNull { (it.icon as? ProfileIcon.Photo)?.fileName }.toSet())
     }
 
     /** Wie viele Widgets ausdruecklich an dieses Profil gebunden sind (ungebundene zaehlen nicht). */

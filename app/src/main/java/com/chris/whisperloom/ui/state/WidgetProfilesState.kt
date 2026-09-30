@@ -56,10 +56,11 @@ class WidgetProfilesState(context: Context) {
     /**
      * Beim Oeffnen und nach jeder Rueckkehr in die App: Widgets koennen inzwischen hinzugekommen
      * oder entfernt worden sein. Bindungen verschwundener Widgets fallen dabei weg — nicht jeder
-     * Launcher meldet `onDeleted`.
+     * Launcher meldet `onDeleted`. Ebenso Fotos, deren Import abgebrochen wurde.
      */
     fun reload() {
         store.retain(widgetIds())
+        store.sweepPhotos()
         profiles = store.all()
         placed = readPlaced()
     }
