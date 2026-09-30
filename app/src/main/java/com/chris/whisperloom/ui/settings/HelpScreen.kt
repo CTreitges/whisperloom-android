@@ -111,7 +111,7 @@ fun HelpScreen(section: Int, nav: NavState) {
             }
             item {
                 ExpandableCard(stringResource(R.string.help_s4_title), isOpen(4), { toggle(4) }, icon = R.drawable.ic_dns) {
-                    GuideHeader(R.drawable.ill_agent_server, R.string.img_agent_server, text = stringResource(R.string.help_s4_intro))
+                    GuideHeader(R.drawable.ill_help_server, R.string.img_help_server, text = stringResource(R.string.help_s4_intro))
                     Text(stringResource(R.string.help_s4_body), style = MaterialTheme.typography.bodyMedium)
                 }
             }

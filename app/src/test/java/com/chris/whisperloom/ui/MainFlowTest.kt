@@ -581,7 +581,8 @@ class MainFlowTest {
             HilfeKarte("So funktioniert's", R.drawable.ill_tutorial_button, R.string.tutorial_img_button, R.string.help_s1_intro),
             HilfeKarte("Einrichtung Schritt für Schritt", R.drawable.ill_help_setup, R.string.img_help_setup, R.string.help_s2_intro),
             HilfeKarte("API-Key bekommen", R.drawable.ill_help_key, R.string.img_help_key, R.string.help_s3_intro),
-            HilfeKarte("Eigener Server", R.drawable.ill_agent_server, R.string.img_agent_server, R.string.help_s4_intro),
+            // Eigenes Bild fuer den Erkennungs-Server — nicht der Editor eines Pro Widgets (ill_agent_server).
+            HilfeKarte("Eigener Server", R.drawable.ill_help_server, R.string.img_help_server, R.string.help_s4_intro),
             HilfeKarte("Offline-Modus", R.drawable.ill_help_offline, R.string.img_help_offline, R.string.help_s5_body),
             HilfeKarte("Widgets & Pro Widgets", R.drawable.ill_pro_widgets, R.string.img_pro_widgets, R.string.help_widgets_intro),
             HilfeKarte("Datenschutz", R.drawable.ill_help_privacy, R.string.img_help_privacy, R.string.help_s6_intro),

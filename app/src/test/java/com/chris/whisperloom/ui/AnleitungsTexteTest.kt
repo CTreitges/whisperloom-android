@@ -51,7 +51,7 @@ class AnleitungsTexteTest {
     @Test fun jedeIllustrationHatEinenKurzenBildtext() {
         // ill_tutorial_x -> tutorial_img_x (Bestand), sonst ill_x -> img_x.
         val illustrationen = R.drawable::class.java.fields.map { it.name }.filter { it.startsWith("ill_") }
-        assertEquals(21, illustrationen.size)
+        assertEquals(22, illustrationen.size)
         val bildtexte = illustrationen.associateWith { ill ->
             val name = if (ill.startsWith("ill_tutorial_")) ill.replace("ill_tutorial_", "tutorial_img_") else ill.replace("ill_", "img_")
             texte[name]

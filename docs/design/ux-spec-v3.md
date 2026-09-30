@@ -1464,7 +1464,7 @@ Widgets; fehlt das Widget, wird er verworfen, nie umgeleitet.
 | `help_widgets_title` / `_intro` / `_unlock` / `_create` / `_server` / `_place` / `_open` | Hilfe-Abschnitt 6 „Widgets & Pro Widgets“ |
 | `help_s1_intro` … `help_s4_intro`, `help_s6_intro`, `help_s7_intro` | Kurztexte unter den Hilfe-Bildern |
 | `tutorial_pro_p1..p6_title` / `_body` | Die sechs Seiten von T2 (ersetzt `tutorial_agent_p1..p4`) |
-| `img_*` | Bildtexte der Illustrationen `ill_*` (ersetzt `tutorial_agent_img_*`) |
+| `img_*` | Bildtexte der Illustrationen `ill_*` (ersetzt `tutorial_agent_img_*`); Hilfe 4 „Eigener Server“ hat `ill_help_server` / `img_help_server`, `ill_agent_server` bleibt im Tutorial T2 |
 
 Entfallen: `settings_group_agent`, `settings_agent_sub`, `agent_card_task` / `_connection` / `_help`,
 `agent_enable` / `_sub`, `widgets_agent_off`, `widgets_card_profiles`, `agent_widget_manage`, `prompt_card`,

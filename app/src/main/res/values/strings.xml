@@ -749,6 +749,7 @@
     <string name="img_agent_answer">Chat-Fenster mit einem Dokument und der Antwort des Agenten</string>
     <string name="img_help_setup">Handy mit einer Checkliste: zwei Schritte mit grünem Haken erledigt, der dritte ist offen und hervorgehoben.</string>
     <string name="img_help_key">Ein Schlüssel in einer Wolke, ein Pfeil führt zu einem Eingabefeld mit verdeckten Punkten.</string>
+    <string name="img_help_server">Handy mit Mikrofon und Wellenform, Pfeil zum eigenen Server; darunter die Server-Adresse und optional ein Schlüssel.</string>
     <string name="img_help_offline">Durchgestrichene Wolke neben einem Handy, das ein Sprachmodell lädt: Download-Pfeil im Kreis, Modell-Karte.</string>
     <string name="img_help_privacy">Handy mit Sprachaufnahme und Text, daneben ein grünes Schild mit Schloss.</string>
     <string name="img_help_trouble">Handy mit gelbem Warn-Dreieck und Schraubenschlüssel, unten ein Knopf zum erneuten Versuchen.</string>
