@@ -46,6 +46,11 @@ class TranscriptionEngineTest {
     private var ollamaAuth: String? = "unset"
     private var ollamaResponse = """{"message":{"role":"assistant","content":"Hallo Welt.","thinking":"nachdenken"},"done":true}"""
     private var ollamaStatus = 200
+    private var elevenBody = ""
+    private var elevenKey: String? = "unset"
+    private var elevenAuth: String? = "unset"
+    private var elevenResponse = """{"language_code":"deu","language_probability":0.98,"text":"also ähm hallo welt"}"""
+    private var elevenStatus = 200
 
     @Before fun setUp() {
         ctx.getSharedPreferences("whisperloom", Context.MODE_PRIVATE).edit().clear().commit()
@@ -62,6 +67,15 @@ class TranscriptionEngineTest {
             chatBody = ex.requestBody.readBytes().toString(Charsets.UTF_8)
             val out = chatResponse.toByteArray()
             ex.sendResponseHeaders(chatStatus, out.size.toLong())
+            ex.responseBody.use { it.write(out) }
+        }
+        // ElevenLabs Speech-to-Text: eigener Pfad, Key im Header xi-api-key
+        server.createContext("/v1/speech-to-text") { ex ->
+            elevenKey = ex.requestHeaders.getFirst("xi-api-key")
+            elevenAuth = ex.requestHeaders.getFirst("Authorization")
+            elevenBody = ex.requestBody.readBytes().toString(Charsets.ISO_8859_1)
+            val out = elevenResponse.toByteArray()
+            ex.sendResponseHeaders(elevenStatus, out.size.toLong())
             ex.responseBody.use { it.write(out) }
         }
         // Native Ollama-API (lokal und ollama.com): POST /api/chat
@@ -428,6 +442,84 @@ class TranscriptionEngineTest {
             fail("ApiHttpException erwartet")
         } catch (e: com.chris.whisperloom.api.ApiHttpException) {
             assertEquals(500, e.code)
+        }
+    }
+
+    // --- ElevenLabs (Scribe) --------------------------------------------------------------
+
+    private fun useElevenLabs() {
+        prefs.engine = Engine.ONLINE
+        prefs.sttProviderId = "elevenlabs"
+        prefs.apiBaseUrl = "http://127.0.0.1:${server.address.port}/v1"
+        prefs.apiKey = "xi-geheim"
+        prefs.language = "auto"
+    }
+
+    @Test fun diktatMitElevenLabsSchicktRohesPcmUndKeyterms() {
+        useElevenLabs()
+        prefs.apiPrompt = "Treitges\nWhisperLoom"
+        val text = TranscriptionEngine.transcribe(ctx, speech)
+
+        // "deu" -> "de": die deutschen Fuellwoerter greifen (mit "deu" bliebe das "ähm" stehen).
+        assertEquals("Also hallo welt", text)
+        assertEquals("xi-geheim", elevenKey)
+        assertNull(elevenAuth) // kein Bearer
+        assertTrue(elevenBody.contains("name=\"model_id\"\r\n\r\nscribe_v2\r\n"))
+        assertTrue(elevenBody.contains("name=\"tag_audio_events\"\r\n\r\nfalse\r\n"))
+        assertTrue(elevenBody.contains("name=\"timestamps_granularity\"\r\n\r\nnone\r\n"))
+        assertTrue(elevenBody.contains("name=\"file_format\"\r\n\r\npcm_s16le_16\r\n"))
+        assertTrue(elevenBody.contains("name=\"keyterms\"\r\n\r\nTreitges\r\n"))
+        assertTrue(elevenBody.contains("name=\"keyterms\"\r\n\r\nWhisperLoom\r\n"))
+        assertFalse(elevenBody.contains("name=\"language_code\"")) // auto
+        assertFalse(elevenBody.contains("name=\"model\""))
+        assertFalse(elevenBody.contains("name=\"prompt\""))
+        assertTrue(elevenBody.contains("filename=\"audio.pcm\""))
+        // Die Datei ist rohes PCM ohne WAV-Kopf: genau 2 Byte je Sample.
+        val file = elevenBody.substringAfter("Content-Type: application/octet-stream\r\n\r\n").substringBeforeLast("\r\n--")
+        assertFalse(file.startsWith("RIFF"))
+        assertEquals(AudioUtils.trimSilence(speech).size * 2, file.length)
+    }
+
+    @Test fun elevenLabsSchicktDieGewaehlteSprache() {
+        useElevenLabs()
+        prefs.language = "de"
+        TranscriptionEngine.transcribe(ctx, speech)
+        assertTrue(elevenBody.contains("name=\"language_code\"\r\n\r\nde\r\n"))
+    }
+
+    @Test fun elevenLabsMitEigenemTextZugangVerbessertAufDeutsch() {
+        useElevenLabs()
+        prefs.refineMode = RefineMode.POLISH
+        prefs.llmProviderId = "custom"
+        prefs.llmUrl = "http://127.0.0.1:${server.address.port}/v1"
+        prefs.llmModel = "qwen3:8b"
+        assertEquals("Hallo Welt.", TranscriptionEngine.transcribe(ctx, speech))
+        // Erkannte Sprache "deu" kam als "de" an: deutscher Prompt.
+        val system = JSONObject(chatBody!!).getJSONArray("messages").getJSONObject(0).getString("content")
+        assertTrue(system, system.contains("Zeichensetzung"))
+    }
+
+    @Test fun elevenLabsFehlerSindLesbarMitHinweis() {
+        useElevenLabs()
+        elevenStatus = 401
+        elevenResponse = """{"detail":{"type":"authentication_error","code":"unauthorized","message":"Invalid API key","status":"invalid_api_key"}}"""
+        try {
+            TranscriptionEngine.transcribe(ctx, speech)
+            fail("ApiHttpException erwartet")
+        } catch (e: com.chris.whisperloom.api.ApiHttpException) {
+            assertEquals(401, e.code)
+            assertEquals("Invalid API key", e.detail)
+            assertTrue(e.message!!, e.message!!.contains("„Speech to Text“"))
+        }
+
+        elevenStatus = 402
+        elevenResponse = """{"detail":{"code":"insufficient_credits","message":"You have run out of credits"}}"""
+        try {
+            TranscriptionEngine.transcribe(ctx, speech)
+            fail("ApiHttpException erwartet")
+        } catch (e: com.chris.whisperloom.api.ApiHttpException) {
+            assertEquals(402, e.code)
+            assertTrue(e.message!!, e.message!!.contains("Guthaben"))
         }
     }
 

@@ -22,6 +22,7 @@ import com.chris.whisperloom.Engine
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import com.chris.whisperloom.Vocabulary
+import com.chris.whisperloom.api.ApiStyle
 import com.chris.whisperloom.ui.access.PrivacyLine
 import com.chris.whisperloom.ui.access.SttAccessSection
 import com.chris.whisperloom.ui.components.DetailScaffold
@@ -99,7 +100,13 @@ fun RecognitionScreen(nav: NavState) {
                 )
                 // Mistral/OpenRouter kennen kein prompt-Feld; eine context_bias-Wortliste ist nicht
                 // umgesetzt (Spec §2.4, offen) — also ehrlich sagen, dass der Kontext dort nicht ankommt.
-                val unsupported = !offline && !stt.provider.sttSendsPrompt
+                // ElevenLabs bekommt das Vokabular als keyterms, aber mit Aufpreis.
+                val contextInfo = when {
+                    offline -> R.string.pref_api_prompt_info
+                    !stt.provider.sttSendsPrompt -> R.string.rec_context_unsupported
+                    stt.provider.api == ApiStyle.ELEVENLABS -> R.string.rec_context_keyterms
+                    else -> R.string.pref_api_prompt_info
+                }
                 val count = Vocabulary.entries(prefs.apiPrompt).size
                 LoomRow(
                     headline = stringResource(R.string.vocab_title),
@@ -113,7 +120,7 @@ fun RecognitionScreen(nav: NavState) {
                     },
                 )
                 Text(
-                    stringResource(if (unsupported) R.string.rec_context_unsupported else R.string.pref_api_prompt_info),
+                    stringResource(contextInfo),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

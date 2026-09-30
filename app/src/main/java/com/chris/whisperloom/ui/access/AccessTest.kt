@@ -19,7 +19,7 @@ import java.util.Locale
  */
 object AccessTest {
 
-    enum class Kind { UNAUTHORIZED, RATE_LIMIT, SERVER, TIMEOUT, NETWORK, UNKNOWN }
+    enum class Kind { UNAUTHORIZED, NO_CREDIT, RATE_LIMIT, SERVER, TIMEOUT, NETWORK, UNKNOWN }
 
     sealed class Outcome {
         data class Ok(val millis: Long) : Outcome()
@@ -31,6 +31,8 @@ object AccessTest {
     fun classify(e: Throwable): Outcome.Failed = when (e) {
         is ApiHttpException -> when {
             e.code == 401 || e.code == 403 -> Outcome.Failed(Kind.UNAUTHORIZED, e.code)
+            // 402 = Guthaben aufgebraucht (ElevenLabs, OpenRouter)
+            e.code == 402 -> Outcome.Failed(Kind.NO_CREDIT, e.code)
             e.code == 429 -> Outcome.Failed(Kind.RATE_LIMIT, e.code)
             e.code >= 500 -> Outcome.Failed(Kind.SERVER, e.code)
             else -> Outcome.Failed(Kind.UNKNOWN, e.code, e.message.orEmpty())

@@ -21,8 +21,10 @@ data class ModelOption(
 /**
  * Welches Protokoll ein Anbieter spricht. [OLLAMA] = native Ollama-API (POST /api/chat,
  * GET /api/tags) — lokal und auf ollama.com gleich, deshalb dieselbe Code-Strecke.
+ * [ELEVENLABS] = ElevenLabs Speech-to-Text (POST /speech-to-text, Header xi-api-key, Feld
+ * model_id, siehe [ElevenLabsStt]) — nur Erkennung, keine Textverbesserung.
  */
-enum class ApiStyle { OPENAI, OLLAMA }
+enum class ApiStyle { OPENAI, OLLAMA, ELEVENLABS }
 
 /**
  * Ein Anbieter mit OpenAI-kompatibler API (oder nativer Ollama-API, siehe [api]).
@@ -30,7 +32,8 @@ enum class ApiStyle { OPENAI, OLLAMA }
  *
  * @param allowsHttp Unverschluesseltes http:// nur fuer den eigenen Server (LAN/VPN).
  * @param sttSendsPrompt / [sttSendsResponseFormat] Extra-Felder, die nicht jeder Anbieter
- *   kennt (Mistral validiert streng, OpenRouter dokumentiert `prompt` nicht).
+ *   kennt (Mistral validiert streng, OpenRouter dokumentiert `prompt` nicht). [sttSendsPrompt]
+ *   heisst zugleich "Vokabular kommt an" — bei ElevenLabs als keyterms statt als `prompt`.
  * @param sttPathOverride Kompletter Transkriptions-Endpunkt, wenn er nicht unter
  *   `baseUrl + /audio/transcriptions` liegt (DeepInfra).
  * @param sttMaxBytes Dokumentiertes Upload-Limit (null = unbekannt).
@@ -87,6 +90,7 @@ object ProviderCatalog {
     const val OPENAI_ID = "openai"
     const val OLLAMA_ID = "ollama"
     const val OLLAMA_CLOUD_ID = "ollama-cloud"
+    const val ELEVENLABS_ID = "elevenlabs"
 
     private const val MB_25 = 26_214_400
     private const val MB_80 = 83_886_080
@@ -193,6 +197,19 @@ object ProviderCatalog {
                 ModelOption("ministral-8b-latest", "Ministral 3 8B", "Sehr günstig, klein."),
             ),
             notes = "EU-Anbieter. Experiment-Plan gratis (Telefonverifizierung, 1 req/s). Kompatibilität der Extra-Felder live testen.",
+        ),
+        Provider(
+            id = ELEVENLABS_ID,
+            name = "ElevenLabs (Scribe)",
+            baseUrl = "https://api.elevenlabs.io/v1",
+            keyUrl = "https://elevenlabs.io/app/settings/api-keys",
+            api = ApiStyle.ELEVENLABS,
+            // Nie scribe_v2_realtime (nur WebSocket) oder scribe_v1 (abgekuendigt).
+            sttModels = listOf(
+                ModelOption("scribe_v2", "Scribe v2", "\$0.22/h, 90+ Sprachen."),
+                ModelOption("scribe_v2_medical", "Scribe v2 Medical", "\$0.22/h. Für medizinische Diktate."),
+            ),
+            notes = "Eigenes Protokoll (xi-api-key, model_id), nur Erkennung. Vokabular geht als keyterms (ca. +20 % Kosten).",
         ),
         Provider(
             id = "together",

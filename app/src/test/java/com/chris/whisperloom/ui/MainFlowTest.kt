@@ -401,6 +401,21 @@ class MainFlowTest {
         compose.onNodeWithTag("dropdown:Modell").assertTextContains("Whisper Large v3 Turbo")
     }
 
+    @Test fun schritt2aElevenLabsZeigtScribeUndDatenschutz() {
+        prefs.welcomeSeen = true
+        prefs.engine = Engine.ONLINE
+        app(env())
+        compose.onNodeWithTag("dropdown:Anbieter").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("ElevenLabs (Scribe)").performClick()
+        compose.waitForIdle()
+        assertEquals("elevenlabs", Prefs(ctx).sttProviderId)
+        assertEquals("", Prefs(ctx).apiModel)
+        compose.onNodeWithText("https://api.elevenlabs.io/v1").assertExists()
+        compose.onNodeWithTag("dropdown:Modell").assertTextContains("Scribe v2")
+        compose.onNodeWithText("Audio wird zur Erkennung an ElevenLabs gesendet.").assertExists()
+    }
+
     @Test fun eigenesModellUebernimmtFreieId() {
         prefs.welcomeSeen = true
         prefs.engine = Engine.ONLINE
@@ -624,6 +639,16 @@ class MainFlowTest {
         compose.onNodeWithText("Dieser Anbieter nimmt kein Vokabular entgegen — es wirkt nur bei anderen Anbietern und offline.")
             .assertExists()
         compose.onNodeWithText("Kontext-Wörter (kommagetrennt)").assertDoesNotExist()
+    }
+
+    @Test fun kontextFeldNenntBeiElevenLabsKeytermsUndAufpreis() {
+        prefs.engine = Engine.ONLINE
+        prefs.sttProviderId = "elevenlabs"
+        prefs.apiKey = "k"
+        screen(env()) { RecognitionScreen(it) }
+        compose.onNodeWithText("etwa 20 % Aufpreis", substring = true).assertExists()
+        compose.onNodeWithText("Dieser Anbieter nimmt kein Vokabular entgegen", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Kostet nichts extra", substring = true).assertDoesNotExist()
     }
 
     @Test fun eigenerServerMarkiertLeeresModellAlsFehler() {

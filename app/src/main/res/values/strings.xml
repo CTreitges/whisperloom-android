@@ -31,6 +31,7 @@
     <string name="err_net">Keine Verbindung</string>
     <string name="err_timeout">Server antwortet nicht (Zeitüberschreitung)</string>
     <string name="err_401">Key ungültig (401)</string>
+    <string name="err_402">Guthaben aufgebraucht (402) — beim Anbieter aufladen</string>
     <string name="err_403">Zugriff verweigert (403) — Key oder Freigabe prüfen</string>
     <string name="err_429">Limit erreicht (429) — später erneut</string>
     <string name="err_server">Server-Fehler %1$d</string>
@@ -47,6 +48,7 @@
     <string name="provider_openai">OpenAI</string>
     <string name="provider_groq">Groq (kostenlos)</string>
     <string name="provider_mistral">Mistral</string>
+    <string name="provider_elevenlabs">ElevenLabs (Scribe)</string>
     <string name="provider_together">Together AI</string>
     <string name="provider_deepinfra">DeepInfra</string>
     <string name="provider_openrouter">OpenRouter</string>
@@ -261,6 +263,7 @@
     <string name="rec_test_fail">Fehler: %1$s</string>
     <string name="rec_privacy_online">Audio wird zur Erkennung an %1$s gesendet.</string>
     <string name="rec_privacy_offline">Alles bleibt auf dem Gerät.</string>
+    <string name="rec_context_keyterms" formatted="false">Geht als Schlüsselbegriffe an ElevenLabs und hilft bei Eigennamen und Fachwörtern. Vokabular kostet bei ElevenLabs etwa 20 % Aufpreis.</string>
     <string name="rec_context_unsupported">Dieser Anbieter nimmt kein Vokabular entgegen — es wirkt nur bei anderen Anbietern und offline.</string>
     <string name="pref_api_prompt_info">Wird als Prompt mitgeschickt und hilft der Erkennung bei Eigennamen und Fachwörtern. Kostet nichts extra.</string>
     <string name="vocab_title">Vokabular</string>
@@ -438,6 +441,7 @@
     <string name="help_key_openai">platform.openai.com registrieren → Billing: Zahlungsmittel + Guthaben (mind. 5 $) → API keys → Create new secret key. GPT Transcribe ≈ 0,0045 $/min.</string>
     <string name="help_key_groq">console.groq.com registrieren → API Keys → Create API Key. Kostenlos ohne Zahlungsmittel (8 h Audio/Tag).</string>
     <string name="help_key_mistral">console.mistral.ai registrieren → Plan „Experiment“ (gratis, Telefon-Verifizierung) oder Pay-as-you-go → API Keys → Create new key. Voxtral ≈ 0,003 $/min.</string>
+    <string name="help_key_elevenlabs">elevenlabs.io registrieren → Settings → API Keys → Create API Key, Berechtigung „Speech to Text“ erlauben. Scribe v2 ≈ 0,22 $/h.</string>
     <string name="help_key_together">api.together.ai registrieren (Startguthaben) → Settings → API Keys → Create key. Whisper Large v3 ≈ 0,0015 $/min.</string>
     <string name="help_key_deepinfra">deepinfra.com anmelden → Dashboard → API Keys → New API Key → Guthaben aufladen. Whisper Turbo ≈ 0,0002 $/min.</string>
     <string name="help_key_openrouter">openrouter.ai anmelden → Credits aufladen → Settings → Keys → Create Key. Ein Key für viele Modelle.</string>

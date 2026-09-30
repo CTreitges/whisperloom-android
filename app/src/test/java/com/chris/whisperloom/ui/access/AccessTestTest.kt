@@ -15,6 +15,8 @@ class AccessTestTest {
         assertEquals(AccessTest.Kind.UNAUTHORIZED, AccessTest.classify(ApiHttpException(401, "bad key")).kind)
         assertEquals(AccessTest.Kind.UNAUTHORIZED, AccessTest.classify(ApiHttpException(403, "forbidden")).kind)
         assertEquals(AccessTest.Kind.RATE_LIMIT, AccessTest.classify(ApiHttpException(429, "slow down")).kind)
+        // 402 = Guthaben aufgebraucht (ElevenLabs, OpenRouter) — eigener Text statt "Unbekannter Fehler".
+        assertEquals(AccessTest.Kind.NO_CREDIT, AccessTest.classify(ApiHttpException(402, "insufficient credits")).kind)
         val server = AccessTest.classify(ApiHttpException(503, "down"))
         assertEquals(AccessTest.Kind.SERVER, server.kind)
         assertEquals(503, server.code)

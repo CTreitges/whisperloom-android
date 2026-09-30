@@ -47,6 +47,7 @@ fun helpKeyText(providerId: String): String? = when (providerId) {
     "openai" -> stringResource(R.string.help_key_openai)
     "groq" -> stringResource(R.string.help_key_groq)
     "mistral" -> stringResource(R.string.help_key_mistral)
+    "elevenlabs" -> stringResource(R.string.help_key_elevenlabs)
     "together" -> stringResource(R.string.help_key_together)
     "deepinfra" -> stringResource(R.string.help_key_deepinfra)
     "openrouter" -> stringResource(R.string.help_key_openrouter)

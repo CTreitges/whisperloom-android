@@ -17,6 +17,7 @@ fun providerLabel(provider: Provider): String = when (provider.id) {
     "openai" -> stringResource(R.string.provider_openai)
     "groq" -> stringResource(R.string.provider_groq)
     "mistral" -> stringResource(R.string.provider_mistral)
+    "elevenlabs" -> stringResource(R.string.provider_elevenlabs)
     "together" -> stringResource(R.string.provider_together)
     "deepinfra" -> stringResource(R.string.provider_deepinfra)
     "openrouter" -> stringResource(R.string.provider_openrouter)

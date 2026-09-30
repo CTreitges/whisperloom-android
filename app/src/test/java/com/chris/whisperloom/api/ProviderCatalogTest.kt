@@ -99,7 +99,7 @@ class ProviderCatalogTest {
 
     @Test fun anzeigeReihenfolgeDerDropdowns() {
         assertEquals(
-            listOf("openai", "groq", "mistral", "together", "deepinfra", "openrouter", "custom"),
+            listOf("openai", "groq", "mistral", "elevenlabs", "together", "deepinfra", "openrouter", "custom"),
             ProviderCatalog.sttProviders.map { it.id },
         )
         assertEquals(
@@ -137,6 +137,22 @@ class ProviderCatalogTest {
             listOf("ollama", "ollama-cloud"),
             ProviderCatalog.providers.filter { it.api == ApiStyle.OLLAMA }.map { it.id },
         )
+    }
+
+    @Test fun elevenLabsIstNurErkennungMitScribe() {
+        val e = ProviderCatalog.byId(ProviderCatalog.ELEVENLABS_ID)
+        assertEquals(ApiStyle.ELEVENLABS, e.api)
+        assertEquals("ElevenLabs (Scribe)", e.name)
+        assertEquals("https://api.elevenlabs.io/v1", e.baseUrl)
+        assertEquals("https://elevenlabs.io/app/settings/api-keys", e.keyUrl)
+        assertTrue(e.hasStt)
+        assertFalse(e.hasLlm)
+        // Vokabular kommt an (als keyterms) — kein "Kontext kommt nicht an"-Hinweis.
+        assertTrue(e.sttSendsPrompt)
+        // Nur Batch-Modelle: scribe_v2_realtime spricht WebSocket, scribe_v1 ist abgekuendigt.
+        assertEquals(listOf("scribe_v2", "scribe_v2_medical"), e.sttModels.map { it.id })
+        assertEquals("scribe_v2", e.defaultSttModel)
+        assertTrue(e.sttModel("scribe_v2")!!.note.contains("\$0.22/h"))
     }
 
     @Test fun unbekannteIdFaelltAufOpenAiZurueck() {

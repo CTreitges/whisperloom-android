@@ -20,25 +20,32 @@ class RefineRejectedException(message: String) : RuntimeException(message)
 /**
  * Der Server hat mit einem Fehlerstatus geantwortet. Bei den typischen Stolperfallen
  * eines eigenen Servers haengt ein Hinweis an der Meldung.
+ *
+ * @param style Protokoll des Anbieters: ElevenLabs bekommt eigene Hinweise (Berechtigung statt /v1).
  */
-class ApiHttpException(val code: Int, val detail: String) :
-    RuntimeException(message(code, detail)) {
+class ApiHttpException(val code: Int, val detail: String, style: ApiStyle = ApiStyle.OPENAI) :
+    RuntimeException(message(code, detail, style)) {
 
     companion object {
-        fun hint(code: Int, detail: String): String? = when {
+        fun hint(code: Int, detail: String, style: ApiStyle = ApiStyle.OPENAI): String? = when {
+            // ElevenLabs-Keys sind auf Endpunkte beschraenkt; fehlt die Freigabe, kommt ebenfalls 401.
+            style == ApiStyle.ELEVENLABS && (code == 401 || code == 403) ->
+                "Key oder Berechtigung „Speech to Text“ prüfen"
             code == 401 || code == 403 -> "Server verlangt einen (anderen) API-Key"
+            code == 402 -> "Guthaben aufgebraucht — beim Anbieter aufladen"
             // OpenAI & Co. antworten auf unbekannte Modell-IDs ebenfalls mit 404 — dann ist die
             // Base-URL (Preset, nicht editierbar) nicht das Problem.
             code == 404 && detail.contains("model", ignoreCase = true) -> "Modell-ID prüfen"
-            code == 404 -> "Endpunkt nicht gefunden — Base-URL muss auf /v1 enden"
+            // Der Pfad-Hinweis gilt fuer OpenAI-kompatible Server, nicht fuer ElevenLabs.
+            code == 404 && style != ApiStyle.ELEVENLABS -> "Endpunkt nicht gefunden — Base-URL muss auf /v1 enden"
             code == 400 && detail.contains("failed to read audio data", ignoreCase = true) ->
                 "Server konnte das WAV nicht lesen"
             else -> null
         }
 
-        private fun message(code: Int, detail: String): String {
+        private fun message(code: Int, detail: String, style: ApiStyle): String {
             val base = "API-Fehler $code: $detail"
-            return hint(code, detail)?.let { "$base — $it" } ?: base
+            return hint(code, detail, style)?.let { "$base — $it" } ?: base
         }
     }
 }
