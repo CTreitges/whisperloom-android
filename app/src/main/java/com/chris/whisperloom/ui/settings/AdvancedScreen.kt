@@ -1,33 +1,24 @@
 package com.chris.whisperloom.ui.settings
 
-import android.Manifest
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.chris.whisperloom.ProFeature
 import com.chris.whisperloom.R
-import com.chris.whisperloom.agent.VoiceTaskStore
 import com.chris.whisperloom.agent.VoiceTaskWidget
-import com.chris.whisperloom.agent.VoiceTaskWork
 import com.chris.whisperloom.ui.components.DetailScaffold
-import com.chris.whisperloom.ui.components.DisclosureKind
+import com.chris.whisperloom.ui.components.GuideHeader
 import com.chris.whisperloom.ui.components.LoomIcon
 import com.chris.whisperloom.ui.components.LoomRow
 import com.chris.whisperloom.ui.components.ScrollColumn
 import com.chris.whisperloom.ui.components.SectionCard
-import com.chris.whisperloom.ui.components.StatusIcon
 import com.chris.whisperloom.ui.components.SwitchRow
-import com.chris.whisperloom.ui.components.Tone
-import com.chris.whisperloom.ui.components.rememberDisclosureGate
-import com.chris.whisperloom.ui.components.rememberPermissionRequest
 import com.chris.whisperloom.ui.components.rememberSnack
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
@@ -36,97 +27,62 @@ import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.tutorial.TutorialKind
 
 /**
- * E7 — "Erweitert": schaltet die Pro-/Entwickler-Funktionen frei (Pro Widgets, Stufe "Prompt").
+ * E7 — "Erweitert": schaltet die Pro-/Entwickler-Funktionen frei ([ProFeature]: Pro Widgets,
+ * Stufe "Prompt").
  *
  * Bewusst der einzige Ort, an dem sie sich einschalten lassen: Startbildschirm, Assistent und
- * Home-Status bleiben unangetastet. Wer sie nicht nutzt, soll sie nicht bemerken. "Prompt"
- * erscheint in Tastatur und Einstellungen erst mit dem Schalter hier.
+ * Home-Status bleiben unangetastet. Wer sie nicht nutzt, soll sie nicht bemerken. Alles zu den
+ * Pro Widgets selbst (Server, Mikrofon, offener Auftrag) steht im Widget-Menue, Tab "Pro Widgets".
  */
 @Composable
 fun AdvancedScreen(nav: NavState) {
     val ctx = LocalContext.current
-    val env = LocalAppEnv.current
-    val prefs = env.prefs
+    val prefs = LocalAppEnv.current.prefs
     val snack = rememberSnack()
-    val mic = rememberPermissionRequest(Manifest.permission.RECORD_AUDIO)
-    // Play-Pflicht: eigener Hinweis VOR dem System-Dialog — der Sprachauftrag ist ein neuer Mikrofon-Einstieg.
-    val micGate = rememberDisclosureGate(DisclosureKind.MICROPHONE, onAccept = mic.request)
-    // Ueber den Status, nicht per checkSelfPermission: den liest die Activity in onResume neu,
-    // und nur so verschwindet die Warnkarte, nachdem der Nutzer das Mikrofon gerade erlaubt hat.
-    val hasMic = env.status.micGranted
-    var offenerAuftrag by remember { mutableStateOf(VoiceTaskStore(ctx).hasWork) }
-    val verworfen = stringResource(R.string.agent_discard_done)
 
-    // Das Widget zeigt "aus", solange Pro Widgets aus sind — nach jeder Aenderung hier neu zeichnen.
-    // Server und Token stehen seit 3.7.1 je Widget im Profil-Editor.
-    LaunchedEffect(prefs.proWidgetsEnabled, hasMic) {
+    // Die Widgets zeigen "aus", solange Pro Widgets aus sind — nach jedem Umschalten neu zeichnen.
+    LaunchedEffect(prefs.proWidgetsEnabled) {
         VoiceTaskWidget.refresh(ctx)
     }
 
-    DetailScaffold(title = stringResource(R.string.settings_group_agent), onBack = { nav.pop() }, snack = snack) { padding ->
+    DetailScaffold(title = stringResource(R.string.settings_group_advanced), onBack = { nav.pop() }, snack = snack) { padding ->
         ScrollColumn(padding) {
-            // Fuer normale Nutzer unsichtbar: die Stufe "Prompt" erscheint erst mit diesem Schalter.
-            SectionCard(title = stringResource(R.string.prompt_card), gap = 4.dp) {
-                SwitchRow(
-                    headline = stringResource(R.string.prompt_enable),
-                    supporting = stringResource(R.string.prompt_enable_sub),
-                    checked = prefs.promptLevelEnabled,
-                    onCheckedChange = { prefs.promptLevelEnabled = it },
-                )
-            }
+            // Platzhalter-Bild, bis ill_pro_features gezeichnet ist; der Bildtext beschreibt schon das neue Motiv.
+            GuideHeader(R.drawable.ill_agent_server, R.string.img_pro_features, text = stringResource(R.string.advanced_intro))
 
-            SectionCard(title = stringResource(R.string.agent_card_task), gap = 4.dp) {
-                SwitchRow(
-                    headline = stringResource(R.string.agent_enable),
-                    supporting = stringResource(R.string.agent_enable_sub),
-                    checked = prefs.proWidgetsEnabled,
-                    onCheckedChange = { prefs.proWidgetsEnabled = it },
-                )
-            }
-
-            if (prefs.proWidgetsEnabled && !hasMic) {
-                SectionCard(title = stringResource(R.string.agent_card_mic), gap = 4.dp) {
-                    LoomRow(
-                        headline = stringResource(R.string.agent_mic_missing),
-                        supporting = stringResource(R.string.agent_mic_allow),
-                        leading = { StatusIcon(Tone.WARNING, R.drawable.ic_mic_off) },
-                        onClick = micGate.request,
+            SectionCard(title = stringResource(R.string.advanced_card_features), gap = 4.dp) {
+                ProFeature.entries.forEach { f ->
+                    SwitchRow(
+                        headline = stringResource(f.title),
+                        supporting = stringResource(f.sub),
+                        checked = prefs.isEnabled(f),
+                        onCheckedChange = { prefs.setEnabled(f, it) },
                     )
                 }
             }
 
-            if (offenerAuftrag) {
-                SectionCard(title = stringResource(R.string.agent_card_pending), gap = 4.dp) {
-                    LoomRow(
-                        headline = stringResource(R.string.agent_discard),
-                        supporting = stringResource(R.string.agent_discard_sub),
-                        leading = { LoomIcon(R.drawable.ic_delete, null, Modifier.size(24.dp), MaterialTheme.colorScheme.onSurfaceVariant) },
-                        onClick = {
-                            VoiceTaskWork.cancel(ctx)
-                            VoiceTaskStore(ctx).clear()
-                            VoiceTaskWidget.refresh(ctx)
-                            offenerAuftrag = false
-                            snack.show(verworfen)
-                        },
-                    )
+            if (prefs.proWidgetsEnabled) {
+                SectionCard(gap = 4.dp) {
+                    NavRow(R.drawable.ic_layers, stringResource(R.string.advanced_manage_widgets)) {
+                        nav.push(Screen.Widgets(WidgetTab.PRO))
+                    }
+                    NavRow(R.drawable.ic_help, stringResource(R.string.advanced_tutorial)) {
+                        nav.push(Screen.Tutorial(kind = TutorialKind.AGENT))
+                    }
                 }
-            }
-
-            SectionCard(title = stringResource(R.string.agent_card_help), gap = 4.dp) {
-                LoomRow(
-                    headline = stringResource(R.string.agent_tutorial),
-                    supporting = stringResource(R.string.agent_tutorial_sub),
-                    leading = { LoomIcon(R.drawable.ic_help, null, Modifier.size(24.dp), MaterialTheme.colorScheme.onSurfaceVariant) },
-                    onClick = { nav.push(Screen.Tutorial(kind = TutorialKind.AGENT)) },
-                )
-                LoomRow(
-                    headline = stringResource(R.string.agent_widget_hint),
-                    supporting = stringResource(R.string.agent_widget_manage),
-                    leading = { LoomIcon(R.drawable.ic_touch_app, null, Modifier.size(24.dp), MaterialTheme.colorScheme.onSurfaceVariant) },
-                    trailing = { LoomIcon(R.drawable.ic_chevron_right, null, Modifier.size(24.dp), MaterialTheme.colorScheme.onSurfaceVariant) },
-                    onClick = { nav.push(Screen.Widgets(WidgetTab.PRO)) },
-                )
             }
         }
     }
+}
+
+/** Zeile mit Symbol und Pfeil, die woandershin fuehrt. */
+@Composable
+private fun NavRow(@DrawableRes icon: Int, headline: String, onClick: () -> Unit) {
+    val tint = MaterialTheme.colorScheme.onSurfaceVariant
+    LoomRow(
+        headline = headline,
+        leading = { LoomIcon(icon, null, Modifier.size(24.dp), tint) },
+        trailing = { LoomIcon(R.drawable.ic_chevron_right, null, Modifier.size(24.dp), tint) },
+        onClick = onClick,
+    )
 }

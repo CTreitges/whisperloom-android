@@ -216,6 +216,11 @@
     <string name="settings_group_models">Offline-Modelle</string>
     <string name="settings_group_help">Anleitung &amp; Hilfe</string>
     <string name="settings_group_about">Über WhisperLoom</string>
+    <!-- Gruppen im Hub (angezeigt in Großbuchstaben) -->
+    <string name="settings_section_basics">Grundlagen</string>
+    <string name="settings_section_controls">Bedienung</string>
+    <string name="settings_section_pro">Pro</string>
+    <string name="settings_section_info">Info</string>
     <string name="settings_help_sub">Anleitung, API-Keys, Datenschutz</string>
     <string name="settings_models_none">Keins geladen</string>
     <string name="settings_val_bubble_on">Knopf läuft</string>
@@ -618,34 +623,44 @@
     <!-- ==== Widget-Profile: Untermenü „Widgets“ und Profil-Editor ================== -->
     <string name="settings_group_widgets">Widgets</string>
     <plurals name="widgets_sub_profiles">
-        <item quantity="one">%d Profil</item>
-        <item quantity="other">%d Profile</item>
+        <item quantity="one">%d Pro Widget</item>
+        <item quantity="other">%d Pro Widgets</item>
     </plurals>
     <plurals name="widgets_sub_placed">
         <item quantity="one">%d auf dem Startbildschirm</item>
         <item quantity="other">%d auf dem Startbildschirm</item>
     </plurals>
     <string name="widgets_sub_none_placed">noch keins auf dem Startbildschirm</string>
-    <string name="widgets_agent_off">Der Sprachauftrag ist aus. Die Widgets nehmen erst auf, wenn er unter „Erweiterte Optionen“ eingerichtet ist.</string>
-    <string name="widgets_card_profiles">Profile</string>
-    <string name="widgets_add_profile">Neues Profil</string>
+    <string name="widgets_sub_normal_soon">Normale Widgets folgen bald</string>
+    <string name="widgets_tab_normal">Widgets</string>
+    <string name="widgets_tab_pro">Pro Widgets</string>
+    <string name="widgets_normal_soon">Normale Widgets für den Startbildschirm kommen mit einem späteren Update.</string>
+    <string name="widgets_pro_unlock">Für Entwickler: Pro Widgets lassen sich unter „Erweitert“ freischalten.</string>
+    <string name="widgets_pro_intro">Sprach-Command-Widgets nehmen auf und schicken den Text an deinen eigenen Server. Jedes Widget hat seinen eigenen Namen und Server.</string>
+    <string name="widgets_card_new_pro">Neues Pro Widget</string>
+    <string name="widgets_card_pro">Deine Pro Widgets</string>
+    <string name="widgets_server_missing">Server fehlt</string>
+    <string name="widgets_add_profile">Neues Widget-Profil</string>
     <string name="widgets_card_placed">Auf dem Startbildschirm</string>
     <!-- %1$d = laufende Nummer, %2$s = Profilname -->
     <string name="widgets_placed_row">Widget %1$d · %2$s</string>
     <string name="widgets_placed_sub">Tippen, um das Profil zu wechseln</string>
-    <string name="widgets_card_help">So geht’s</string>
+    <string name="widgets_card_help">Hilfe</string>
     <string name="widgets_help_size">Größe ändern: Widget lange drücken und an den Rändern ziehen. Ganz klein zeigt es nur das Symbol, breit Symbol und Text, ab 2 × 2 steht beides untereinander.</string>
     <string name="widgets_help_shared">Alle Widgets zeigen dieselbe Aufnahme. Auto-Stopp richtet sich nach dem Widget, mit dem du gestartet hast.</string>
-    <string name="widget_config_title">Welches Profil?</string>
+    <string name="widget_config_title">Welches Widget-Profil?</string>
+    <string name="widget_config_pro_off">Pro Widgets sind aus. In der App unter Einstellungen → Erweitert einschalten.</string>
     <string name="widget_mode_toggle">Tippen startet und stoppt</string>
     <!-- %1$s = Sprechpause (widget_pause_*) -->
     <string name="widget_mode_autostop">Stoppt nach Sprechpause · %1$s</string>
     <!-- Name für ein neues Profil; %d = laufende Nummer -->
     <string name="widget_profile_default_name">Sprach-Command %d</string>
-    <string name="widget_profile_title">Profil bearbeiten</string>
+    <string name="widget_profile_title">Widget bearbeiten</string>
     <string name="widget_profile_name">Name</string>
-    <!-- %1$s = Name des leeren Profils (widget_label) -->
-    <string name="widget_profile_name_sub">Steht auf dem Widget. Leer = „%1$s“.</string>
+    <string name="widget_profile_name_sub">Steht unter dem Widget auf dem Startbildschirm.</string>
+    <string name="widget_profile_name_missing">Jedes Widget braucht einen Namen.</string>
+    <string name="widget_profile_show_name">Name unter dem Widget anzeigen</string>
+    <string name="widget_profile_server">Server</string>
     <string name="widget_profile_icon">Symbol</string>
     <string name="widget_profile_gallery">Aus Galerie</string>
     <string name="widget_profile_remove_photo">Bild entfernen</string>
@@ -659,27 +674,24 @@
     <string name="widget_pause_short_sub">Nach dem letzten Wort 1,2 Sekunden warten, dann senden.</string>
     <string name="widget_pause_normal_sub">Nach dem letzten Wort 2 Sekunden warten, dann senden.</string>
     <string name="widget_pause_long_sub">Nach dem letzten Wort 3,5 Sekunden warten, dann senden — für Denkpausen.</string>
-    <string name="widget_profile_delete">Profil löschen</string>
+    <string name="widget_profile_delete">Widget löschen</string>
     <!-- %1$s = Profilname -->
     <string name="widget_profile_delete_title">„%1$s“ löschen?</string>
     <!-- %1$d = Anzahl Widgets, %2$s = Name des Standardprofils -->
     <plurals name="widget_profile_delete_confirm">
-        <item quantity="one">%1$d Widget zeigt danach „%2$s“.</item>
-        <item quantity="other">%1$d Widgets zeigen danach „%2$s“.</item>
+        <item quantity="one">%1$d Widget auf dem Startbildschirm zeigt danach „%2$s“.</item>
+        <item quantity="other">%1$d Widgets auf dem Startbildschirm zeigen danach „%2$s“.</item>
     </plurals>
-    <string name="widget_profile_delete_unused">Kein Widget nutzt dieses Profil gerade.</string>
-    <string name="agent_widget_manage">Profile, Symbole und Auto-Stopp einstellen</string>
+    <string name="widget_profile_delete_unused">Es liegt gerade nicht auf dem Startbildschirm.</string>
 
-    <!-- ==== Sprachauftrag: Einstellungen und Tutorial (Paket C) ==================== -->
-    <string name="settings_group_agent">Erweiterte Optionen</string>
-    <string name="settings_agent_sub">Sprachauftrag an einen eigenen Agenten</string>
+    <!-- ==== „Erweitert“ (Pro-Funktionen) und Tutorial Pro Widgets ================== -->
+    <string name="settings_group_advanced">Erweitert</string>
     <string name="settings_agent_off">Aus</string>
-    <string name="agent_card_task">Sprachauftrag</string>
-    <string name="agent_card_connection">Verbindung</string>
+    <string name="advanced_intro">Pro-Funktionen für Entwickler und Bastler. Für das normale Diktieren brauchst du hier nichts.</string>
+    <string name="advanced_card_features">Pro-Funktionen</string>
+    <string name="advanced_manage_widgets">Pro Widgets verwalten</string>
+    <string name="advanced_tutorial">Anleitung Pro Widgets</string>
     <string name="agent_card_mic">Mikrofon</string>
-    <string name="agent_card_help">Hilfe</string>
-    <string name="agent_enable">Sprachauftrag aktivieren</string>
-    <string name="agent_enable_sub">Ein Widget auf dem Startbildschirm nimmt auf und schickt den Auftrag an deinen Server.</string>
     <string name="agent_url">Server-Adresse</string>
     <string name="agent_url_hint">Adresse deiner Bridge, z. B. https://hermes-bridge.example.de</string>
     <string name="agent_token">Token</string>
@@ -689,15 +701,14 @@
     <string name="agent_discard_sub">Ein Auftrag wartet noch auf den Versand.</string>
     <string name="agent_discard_done">Auftrag verworfen</string>
     <string name="agent_tutorial">Anleitung ansehen</string>
-    <string name="agent_tutorial_sub">Widget hinzufügen, Server eintragen, Auftrag sprechen</string>
-    <string name="agent_privacy">Transkript und Auftrag gehen an genau den Server, den du hier einträgst — sonst nirgendwohin. Das Aufnehmen selbst läuft wie beim Diktat über die eingestellte Erkennung.</string>
-    <string name="agent_mic_missing">Für den Sprachauftrag fehlt die Mikrofon-Berechtigung.</string>
+    <string name="agent_tutorial_sub">Widget anlegen, Server eintragen, Auftrag sprechen</string>
+    <string name="agent_privacy">Transkript und Auftrag gehen nur an den Server dieses Widgets. Aufgenommen wird wie beim Diktat über die eingestellte Erkennung.</string>
+    <string name="agent_mic_missing">Für Pro Widgets fehlt die Mikrofon-Berechtigung.</string>
     <string name="agent_mic_allow">Mikrofon erlauben</string>
-    <string name="agent_widget_hint">Widget hinzufügen: Startbildschirm lange drücken → Widgets → WhisperLoom → „Sprachauftrag“.</string>
+    <string name="agent_widget_hint">Widget platzieren: Startbildschirm lange drücken → Widgets → WhisperLoom → „Sprach-Command“.</string>
     <string name="settings_prompt_sub">Stufe „Prompt“</string>
-    <string name="prompt_card">Textverbesserung</string>
     <string name="prompt_enable">Stufe „Prompt“ anbieten</string>
-    <string name="prompt_enable_sub">Zusätzliche Stufe der Textverbesserung (Tastatur und Einstellungen → Text): formt ein Diktat zu einem gut gegliederten Prompt für KI-Assistenten wie ChatGPT oder Claude. Gewählt gilt sie wie jede Stufe für alle Diktate.</string>
+    <string name="prompt_enable_sub">Zusätzliche Stufe in Tastatur und Einstellungen → Text: formt ein Diktat zu einem gegliederten Prompt für KI-Assistenten wie ChatGPT oder Claude.</string>
     <string name="tutorial_agent_p1_title">Das Widget auf den Startbildschirm</string>
     <string name="tutorial_agent_p1_body">Drücke lange auf eine freie Stelle deines Startbildschirms, tippe auf „Widgets“, suche WhisperLoom und ziehe „Sprachauftrag“ dorthin, wo du es haben willst.</string>
     <string name="tutorial_agent_p2_title">Server und Token eintragen</string>
@@ -717,6 +728,9 @@
     <string name="pro_widgets_hub">Pro Widgets</string>
     <string name="kind_voice_command">Sprach-Command-Widget</string>
     <string name="kind_voice_command_sub">Sprechen und an deinen Server schicken</string>
+    <string name="img_pro_features">Einstellungsliste mit zwei Schaltern, einer eingeschaltet, dazu ein kleines Pro-Abzeichen</string>
+    <string name="img_pro_widgets">Widget-Menü mit zwei Tabs, der rechte aktiv; darunter zwei Widgets und eine Zeile zum Hinzufügen</string>
+    <string name="img_widgets_normal">Startbildschirm mit einer gestrichelten, noch leeren Widget-Fläche und einem Stern für „kommt bald“</string>
     <!-- Gründe, warum ein Auftrag nicht gesendet wird; angezeigt über widget_error_retry. -->
     <string name="widget_task_profile_gone">Widget gelöscht — Auftrag verworfen</string>
     <string name="widget_task_pro_off">Pro Widgets sind aus</string>

@@ -512,28 +512,54 @@ class MainFlowTest {
         ).forEach { compose.onNodeWithText(it).assertExists() }
     }
 
-    @Test fun hubZeigtAchtZeilen() {
+    @Test fun hubZeigtAchtZeilenInVierGruppen() {
+        // User-Entscheidung U3: Grundlagen, Bedienung, Pro, Info — in genau dieser Reihenfolge.
         prefs.engine = Engine.ONLINE
         screen(env()) { SettingsHubScreen(it) }
-        listOf(
-            "Erkennung", "Text", "Knopf & Tastatur", "Widgets", "Offline-Modelle", "Anleitung & Hilfe",
-            "Erweiterte Optionen", "Über WhisperLoom",
-        ).forEach { compose.onNodeWithText(it).assertExists() }
+        val reihenfolge = listOf(
+            "GRUNDLAGEN", "Erkennung", "Offline-Modelle", "Text",
+            "BEDIENUNG", "Knopf & Tastatur", "Widgets",
+            "PRO", "Erweitert",
+            "INFO", "Anleitung & Hilfe", "Über WhisperLoom",
+        )
+        val oben = reihenfolge.map { compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
+        assertEquals("Von oben nach unten: $reihenfolge", oben.sorted(), oben)
+        assertEquals("Keine zwei auf einer Hoehe", oben.size, oben.toSet().size)
         compose.onNodeWithText("Version ${BuildConfig.VERSION_NAME}").assertExists()
     }
 
-    @Test fun derSprachauftragStehtImHubAufAusSolangeErNichtEingerichtetIst() {
+    @Test fun dieGruppenSindUeberschriftenInNormalerSchreibung() {
+        // Grossbuchstaben nur fuer das Auge; TalkBack liest "Grundlagen" und springt per Ueberschrift.
+        prefs.engine = Engine.ONLINE
+        screen(env()) { SettingsHubScreen(it) }
+        mapOf("GRUNDLAGEN" to "Grundlagen", "BEDIENUNG" to "Bedienung", "PRO" to "Pro", "INFO" to "Info").forEach { (sichtbar, gelesen) ->
+            compose.onNodeWithText(sichtbar)
+                .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
+                .assert(SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf(gelesen)))
+        }
+    }
+
+    @Test fun ohneProFunktionenStehtErweitertAufAus() {
         prefs.engine = Engine.ONLINE
         screen(env()) { SettingsHubScreen(it) }
         // Kein Schalter auf Hub-Ebene (Spec §2.3) — nur der Wert.
         compose.onNodeWithText("Aus").assertExists()
     }
 
-    @Test fun eingeschalteteProWidgetsZeigenIhrenZweck() {
+    @Test fun eingeschalteteProWidgetsStehenUnterErweitert() {
         // Der Server steht seit 3.7.1 je Widget im Profil — im Hub zaehlt nur der Schalter.
         prefs.engine = Engine.ONLINE
         prefs.proWidgetsEnabled = true
         screen(env()) { SettingsHubScreen(it) }
-        compose.onNodeWithText("Sprachauftrag an einen eigenen Agenten").assertExists()
+        compose.onNodeWithText("Pro Widgets").assertExists()
+        compose.onNodeWithText("Aus").assertDoesNotExist()
+    }
+
+    @Test fun beideProFunktionenStehenUnterErweitert() {
+        prefs.engine = Engine.ONLINE
+        prefs.proWidgetsEnabled = true
+        prefs.promptLevelEnabled = true
+        screen(env()) { SettingsHubScreen(it) }
+        compose.onNodeWithText("Pro Widgets · Stufe „Prompt“").assertExists()
     }
 }

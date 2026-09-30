@@ -318,4 +318,21 @@ class PrefsTest {
         assertFalse(state.isEnabled(ProFeature.WIDGETS))
         state.dispose()
     }
+
+    @Test fun derSpiegelSchaltetJedeProFunktionEinzeln() {
+        // Die Schalter in "Erweitert" iterieren ProFeature.entries und schreiben ueber setEnabled.
+        val state = PrefsState(Prefs(ctx))
+        state.setEnabled(ProFeature.PROMPT, true)
+        assertTrue(Prefs(ctx).promptLevelEnabled)
+        assertTrue(state.promptLevelEnabled)
+        assertFalse(Prefs(ctx).proWidgetsEnabled)
+
+        state.setEnabled(ProFeature.WIDGETS, true)
+        state.setEnabled(ProFeature.PROMPT, false)
+        assertTrue(Prefs(ctx).proWidgetsEnabled)
+        assertTrue(state.isEnabled(ProFeature.WIDGETS))
+        assertFalse(Prefs(ctx).promptLevelEnabled)
+        assertFalse(state.isEnabled(ProFeature.PROMPT))
+        state.dispose()
+    }
 }

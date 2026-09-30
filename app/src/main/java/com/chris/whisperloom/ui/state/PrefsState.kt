@@ -73,6 +73,14 @@ class PrefsState(val prefs: Prefs) {
         ProFeature.PROMPT -> promptLevelEnabled
     }
 
+    /** Schalter in "Erweitert": schreibt sofort durch, wie jede Zuweisung hier. */
+    fun setEnabled(feature: ProFeature, on: Boolean) {
+        when (feature) {
+            ProFeature.WIDGETS -> proWidgetsEnabled = on
+            ProFeature.PROMPT -> promptLevelEnabled = on
+        }
+    }
+
     /** Der Nutzer hat einen eigenen LLM-Zugang gewaehlt (sonst gilt der Erkennungs-Zugang). */
     val llmUseOwn: Boolean get() = llmProviderId != AccessResolver.LLM_SAME
 

@@ -33,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -52,13 +53,23 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.chris.whisperloom.R
+import com.chris.whisperloom.agent.AgentBridge
+import com.chris.whisperloom.agent.AgentUrlCheck
 import com.chris.whisperloom.agent.ProfileIcon
 import com.chris.whisperloom.agent.SpeechPause
 import com.chris.whisperloom.agent.WidgetIcons
+import com.chris.whisperloom.agent.WidgetKind
 import com.chris.whisperloom.agent.WidgetPhoto
 import com.chris.whisperloom.agent.WidgetProfile
+import com.chris.whisperloom.api.ServerUrlCheck
+import com.chris.whisperloom.ui.access.AccessTest
+import com.chris.whisperloom.ui.access.PrivacyLine
+import com.chris.whisperloom.ui.access.TestAccessRow
+import com.chris.whisperloom.ui.access.urlProblemText
+import com.chris.whisperloom.ui.components.ApiKeyField
 import com.chris.whisperloom.ui.components.LoomIcon
 import com.chris.whisperloom.ui.components.LoomSheet
 import com.chris.whisperloom.ui.components.SwitchRow
@@ -69,7 +80,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * Ein Profil bearbeiten: Name, Symbol (eingebaut oder aus der Galerie), Auto-Stopp mit
+ * Ein Widget (Profil) bearbeiten: Name (Pflicht) und ob er unter dem Widget steht, Server
+ * (Adresse, Token, Pruefen), Symbol (eingebaut oder aus der Galerie), Auto-Stopp mit
  * Sprechpause, Loeschen. Jede Aenderung wird sofort gespeichert, einen Speichern-Knopf gibt es
  * nicht. Das Standardprofil laesst sich bearbeiten, aber nicht loeschen.
  */
@@ -84,19 +96,29 @@ fun WidgetProfileSheet(widgets: WidgetProfilesState, profileId: String, onDismis
         return
     }
     val scope = rememberCoroutineScope()
-    var name by rememberSaveable(profileId) { mutableStateOf(profile.name) }
-    var nameEdited by remember { mutableStateOf(false) }
+    // Das Feld darf kurz leer sein, gespeichert wird aber nur ein echter Name: der zuletzt
+    // gespeicherte bleibt stehen, bis wieder etwas drinsteht.
+    var name by rememberSaveable(profileId) { mutableStateOf(profile.displayName(ctx)) }
+    val nameMissing = WidgetProfile.cleanName(name).isEmpty()
+    var typed by remember { mutableIntStateOf(0) }
     var confirmDelete by remember { mutableStateOf(false) }
     var deleteOnClose by remember { mutableStateOf(false) }
 
     // Im Sheet selbst, nicht als Snackbar: die laege im Activity-Fenster UNTER dem Sheet.
     var photoFailed by remember { mutableStateOf(false) }
 
-    // Der Name steht sofort im Speicher; neu gezeichnet wird erst, wenn das Tippen kurz ruht.
-    LaunchedEffect(name) {
-        if (!nameEdited) return@LaunchedEffect
-        delay(NAME_REDRAW_MS)
+    // Name, Adresse und Token stehen sofort im Speicher; neu gezeichnet wird erst, wenn das
+    // Tippen kurz ruht — nicht bei jedem Tastendruck alle Widgets.
+    LaunchedEffect(typed) {
+        if (typed == 0) return@LaunchedEffect
+        delay(TYPING_REDRAW_MS)
         widgets.redraw()
+    }
+
+    // Ein Tastendruck in einem der Textfelder: sofort speichern, spaeter neu zeichnen.
+    fun type(change: (WidgetProfile) -> WidgetProfile) {
+        typed++
+        widgets.profile(profileId)?.let { widgets.save(change(it), redraw = false) }
     }
 
     // Die Leseerlaubnis des Pickers gilt nur voruebergehend: sofort kopieren.
@@ -113,7 +135,7 @@ fun WidgetProfileSheet(widgets: WidgetProfilesState, profileId: String, onDismis
 
     // Geloescht wird erst nach dem Zuklappen: so verschwindet das Sheet nicht mitten in der Animation.
     val close = {
-        if (deleteOnClose) widgets.delete(profileId) else if (nameEdited) widgets.redraw()
+        if (deleteOnClose) widgets.delete(profileId) else if (typed > 0) widgets.redraw()
         onDismiss()
     }
 
@@ -122,15 +144,51 @@ fun WidgetProfileSheet(widgets: WidgetProfilesState, profileId: String, onDismis
             value = name,
             onValueChange = {
                 name = WidgetProfile.clip(it)
-                nameEdited = true
-                widgets.profile(profileId)?.let { p -> widgets.save(p.copy(name = name), redraw = false) }
+                val clean = WidgetProfile.cleanName(name)
+                if (clean.isNotEmpty()) type { p -> p.copy(name = clean) }
             },
             modifier = Modifier.fillMaxWidth(),
             label = { Text(stringResource(R.string.widget_profile_name)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
-            supportingText = { Text(stringResource(R.string.widget_profile_name_sub, stringResource(R.string.widget_label))) },
+            isError = nameMissing,
+            supportingText = {
+                Text(stringResource(if (nameMissing) R.string.widget_profile_name_missing else R.string.widget_profile_name_sub))
+            },
         )
+        SwitchRow(
+            headline = stringResource(R.string.widget_profile_show_name),
+            checked = profile.showName,
+            onCheckedChange = { widgets.save(profile.copy(showName = it)) },
+        )
+
+        if (profile.kind == WidgetKind.VOICE_COMMAND) {
+            // Jedes Widget hat seinen eigenen Server (bis 3.7.0 einer fuer alle unter "Erweitert").
+            val urlProblem = if (profile.serverUrl.isBlank()) null else AgentUrlCheck.check(profile.serverUrl)
+            Text(stringResource(R.string.widget_profile_server), style = MaterialTheme.typography.labelLarge)
+            OutlinedTextField(
+                value = profile.serverUrl,
+                onValueChange = { url -> type { it.copy(serverUrl = url) } },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.agent_url)) },
+                placeholder = { Text("https://bridge.example.de") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                isError = urlProblem?.severity == ServerUrlCheck.Severity.ERROR,
+                supportingText = {
+                    Text(if (urlProblem != null) urlProblemText(urlProblem) else stringResource(R.string.agent_url_hint))
+                },
+            )
+            ApiKeyField(
+                value = profile.serverToken,
+                onValueChange = { token -> type { it.copy(serverToken = token) } },
+                label = stringResource(R.string.agent_token),
+            )
+            TestAccessRow(label = stringResource(R.string.agent_check), enabled = profile.serverReady) {
+                AccessTest.bridge(AgentBridge(profile.serverUrl, profile.serverToken))
+            }
+            PrivacyLine(stringResource(R.string.agent_privacy))
+        }
 
         Text(stringResource(R.string.widget_profile_icon), style = MaterialTheme.typography.labelLarge)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -272,4 +330,4 @@ private fun pauseHint(pause: SpeechPause): Int = when (pause) {
     SpeechPause.LONG -> R.string.widget_pause_long_sub
 }
 
-private const val NAME_REDRAW_MS = 400L
+private const val TYPING_REDRAW_MS = 400L
