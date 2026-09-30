@@ -3,6 +3,9 @@ package com.chris.whisperloom.agent
 import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.ColorFilter
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
 import android.os.Bundle
 import android.util.SizeF
 import android.view.View
@@ -72,6 +75,14 @@ class VoiceTaskWidgetVariantsTest {
         ReflectionHelpers.getField(wurzel.findViewById<ImageView>(R.id.widget_icon), "mResource")
 
     private fun sichtbarkeit(wurzel: View, id: Int): Int = wurzel.findViewById<View>(id).visibility
+
+    /** Aus welcher Ressource der Hintergrund stammt (RemoteViews ruft setBackgroundResource). */
+    private fun hintergrund(wurzel: View): Int = shadowOf(wurzel.background).createdFromResId
+
+    /** So faerbt ImageView.setColorFilter(int) — der Weg, den RemoteViews fuer das Symbol nimmt. */
+    private fun faerbung(farbe: Int): ColorFilter = PorterDuffColorFilter(ctx.getColor(farbe), PorterDuff.Mode.SRC_ATOP)
+
+    private fun symbolfarbe(wurzel: View): ColorFilter? = wurzel.findViewById<ImageView>(R.id.widget_icon).colorFilter
 
     // --- Die Varianten ------------------------------------------------------
 
@@ -144,6 +155,17 @@ class VoiceTaskWidgetVariantsTest {
             val wurzel = angewendet(variante(layout, mitFoto, foto(), VoiceTaskState.NO_SERVER))
             assertEquals("$layout", R.drawable.ic_dns, ressource(wurzel))
             assertEquals(View.GONE, sichtbarkeit(wurzel, R.id.widget_photo))
+        }
+    }
+
+    @Test fun ohneServerLiegtDerHintergrundWieBereitUndDasSymbolIstGedaempft() {
+        WidgetLayout.entries.forEach { layout ->
+            val bereit = angewendet(variante(layout, einkauf))
+            val ohneServer = angewendet(variante(layout, einkauf, state = VoiceTaskState.NO_SERVER))
+            assertEquals("$layout", R.drawable.widget_bg_ready, hintergrund(bereit))
+            assertEquals("$layout: kein Fehler-Rot, nur ein Hinweis", hintergrund(bereit), hintergrund(ohneServer))
+            assertEquals("$layout", faerbung(R.color.loom_outline), symbolfarbe(ohneServer))
+            assertEquals("$layout", faerbung(R.color.loom_primary), symbolfarbe(bereit))
         }
     }
 
