@@ -320,6 +320,9 @@
     <string name="pref_smart_fillers">Füllwörter intelligent entfernen</string>
     <string name="pref_smart_fillers_info">Statt fester Wortliste entscheidet die KI selbst, welche Füllwörter, Versprecher und Wiederholungen weg können. Im Zweifel bleibt das Wort.</string>
     <string name="text_smart_needs_level">Braucht eine Stufe über „Aus“.</string>
+    <string name="pref_polish_readable">Lesbarer glätten</string>
+    <string name="pref_polish_readable_info">„Glätten“ repariert auch holprige Sätze: Satzabbrüche, Versprecher, Wiederholungen, Füllwörter. Deine Wörter und dein Ton bleiben.</string>
+    <string name="text_readable_needs_polish">Wirkt mit der Stufe „Glätten“.</string>
     <string name="pref_refine_paragraphs">Automatische Absätze</string>
     <string name="pref_refine_paragraphs_info">Die KI gliedert längere Diktate in Absätze. Ausgeschaltet kommt alles als ein durchgehender Text.</string>
     <string name="text_card_share">Geteilte Sprachnachrichten</string>

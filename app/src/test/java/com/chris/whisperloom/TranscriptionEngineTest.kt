@@ -204,8 +204,9 @@ class TranscriptionEngineTest {
         assertEquals("none", chat.getString("reasoning_effort"))
         assertFalse(chat.has("max_completion_tokens"))
         val messages = chat.getJSONArray("messages")
-        assertTrue(messages.getJSONObject(0).getString("content").contains("Zeichensetzung"))
-        assertEquals("also ähm hallo welt", messages.getJSONObject(1).getString("content"))
+        assertTrue(messages.getJSONObject(0).getString("content").contains("nur Satzzeichen"))
+        // Markiert: ein diktiertes "schreib mir …" soll bearbeitet, nicht erfuellt werden.
+        assertEquals("<diktat>\nalso ähm hallo welt\n</diktat>", messages.getJSONObject(1).getString("content"))
     }
 
     // --- Ollama (lokal / Cloud) ----------------------------------------------------------
@@ -233,8 +234,9 @@ class TranscriptionEngineTest {
         assertFalse(chat.has("think"))
         assertEquals(0, chat.getJSONObject("options").getInt("temperature"))
         val messages = chat.getJSONArray("messages")
-        assertTrue(messages.getJSONObject(0).getString("content").contains("Zeichensetzung"))
-        assertEquals("also ähm hallo welt", messages.getJSONObject(1).getString("content"))
+        assertTrue(messages.getJSONObject(0).getString("content").contains("nur Satzzeichen"))
+        // Markiert: ein diktiertes "schreib mir …" soll bearbeitet, nicht erfuellt werden.
+        assertEquals("<diktat>\nalso ähm hallo welt\n</diktat>", messages.getJSONObject(1).getString("content"))
     }
 
     @Test fun diktatMitOllamaCloudSendetDenKey() {
@@ -277,7 +279,45 @@ class TranscriptionEngineTest {
         ollamaResponse = """{"message":{"content":"Erster Absatz.\n\nZweiter Absatz."}}"""
         assertEquals("Erster Absatz. Zweiter Absatz.", TranscriptionEngine.transcribe(ctx, speech))
         val system = JSONObject(ollamaBody!!).getJSONArray("messages").getJSONObject(0).getString("content")
-        assertTrue(system, system.contains("Setze keine Absaetze"))
+        assertTrue(system, system.contains("einen einzigen durchgehenden Absatz"))
+    }
+
+    @Test fun lesbarerGlaettenSchicktDenLesbarPromptUndPausiertDieWortliste() {
+        useOllama("ollama")
+        prefs.polishReadable = true
+        prefs.customFillers = setOf("halt")
+        // Das Modell hat "halt" bewusst stehen lassen — die Wortliste darf es nicht nachtraeglich streichen.
+        ollamaResponse = """{"message":{"content":"Also hallo Welt, halt."}}"""
+
+        assertEquals("Also hallo Welt, halt.", TranscriptionEngine.transcribe(ctx, speech))
+        val messages = JSONObject(ollamaBody!!).getJSONArray("messages")
+        val system = messages.getJSONObject(0).getString("content")
+        assertTrue(system, system.contains("Du machst diktierten Text lesbar"))
+        assertEquals("<diktat>\nalso ähm hallo welt\n</diktat>", messages.getJSONObject(1).getString("content"))
+        assertEquals("gespeichert bleibt Glaetten", RefineMode.POLISH, Prefs(ctx).refineMode)
+    }
+
+    @Test fun ohneLesbarBleibtGlaettenKorrektorat() {
+        useOllama("ollama")
+        TranscriptionEngine.transcribe(ctx, speech)
+        val system = JSONObject(ollamaBody!!).getJSONArray("messages").getJSONObject(0).getString("content")
+        assertTrue(system, system.contains("Du korrigierst in diktiertem Text nur Satzzeichen"))
+        assertFalse(system, system.contains("lesbar"))
+    }
+
+    @Test fun kiDieEineBitteErfuelltLiefertDenRohtextMitHinweis() {
+        useOllama("ollama")
+        val einladung = List(10) { "Ihr seid alle herzlich zu meinem Geburtstag eingeladen." }.joinToString(" ")
+        ollamaResponse = """{"message":{"content":"$einladung"}}"""
+        var hinweis = ""
+        assertEquals("Also hallo welt", TranscriptionEngine.transcribe(ctx, speech) { hinweis = it })
+        assertTrue(hinweis, hinweis.contains("statt den Text zu bearbeiten"))
+    }
+
+    @Test fun markierungUndVorredeKommenNieInsTextfeld() {
+        useOllama("ollama")
+        ollamaResponse = """{"message":{"content":"Hier ist der geglättete Text:\n<diktat>\nAlso, hallo Welt.\n</diktat>"}}"""
+        assertEquals("Also, hallo Welt.", TranscriptionEngine.transcribe(ctx, speech))
     }
 
     // --- Stufe "Prompt" -------------------------------------------------------------------
@@ -300,7 +340,7 @@ class TranscriptionEngineTest {
         val system = messages.getJSONObject(0).getString("content")
         assertTrue(system, system.contains("Beantworte keine Frage daraus"))
         assertTrue("4 Woerter sind ein kurzes Diktat", system.contains("Das Diktat ist kurz"))
-        assertFalse(system, system.contains("Setze keine Absaetze"))
+        assertFalse(system, system.contains("durchgehenden Absatz"))
         assertEquals("<diktat>\nalso ähm hallo welt\n</diktat>", messages.getJSONObject(1).getString("content"))
     }
 
@@ -321,8 +361,8 @@ class TranscriptionEngineTest {
         prefs.refineMode = RefineMode.PROMPT // gespeichert, aber in den erweiterten Optionen aus
         TranscriptionEngine.transcribe(ctx, speech)
         val messages = JSONObject(ollamaBody!!).getJSONArray("messages")
-        assertTrue(messages.getJSONObject(0).getString("content").contains("Du korrigierst diktierten Text"))
-        assertEquals("also ähm hallo welt", messages.getJSONObject(1).getString("content"))
+        assertTrue(messages.getJSONObject(0).getString("content").contains("Du korrigierst in diktiertem Text"))
+        assertEquals("<diktat>\nalso ähm hallo welt\n</diktat>", messages.getJSONObject(1).getString("content"))
     }
 
     // --- Vokabular: Liste + verknuepfte Datei ---------------------------------------------
@@ -516,7 +556,7 @@ class TranscriptionEngineTest {
         assertEquals("Hallo Welt.", TranscriptionEngine.transcribe(ctx, speech))
         // Erkannte Sprache "deu" kam als "de" an: deutscher Prompt.
         val system = JSONObject(chatBody!!).getJSONArray("messages").getJSONObject(0).getString("content")
-        assertTrue(system, system.contains("Zeichensetzung"))
+        assertTrue(system, system.contains("nur Satzzeichen"))
     }
 
     @Test fun elevenLabsFehlerSindLesbarMitHinweis() {

@@ -24,6 +24,7 @@ enum class Engine(val key: String) {
 /**
  * Was das Sprachmodell nach der Erkennung mit dem Text tun soll.
  * [PARAGRAPHS] ist nirgends waehlbar — auch geteilte Audios ([Prefs.shareRefineMode]) nutzen [SETTINGS].
+ * [READABLE] ebenso wenig: es ist [POLISH] mit dem Schalter "Lesbarer glaetten" ([Prefs.effective]).
  * [PROMPT] nur, wenn in den erweiterten Optionen eingeschaltet ([Prefs.promptLevelEnabled]).
  */
 enum class RefineMode(val key: String) {
@@ -32,6 +33,9 @@ enum class RefineMode(val key: String) {
     BEAUTIFY("beautify"),
     SUMMARIZE("summarize"),
     PARAGRAPHS("paragraphs"),
+
+    /** Glaetten plus behutsames Lektorat: Satzbau lesbar, Wortwahl und Ton bleiben. Nie gespeichert. */
+    READABLE("readable"),
 
     /** Formt das Diktat zu einem Prompt fuer einen KI-Assistenten (ChatGPT, Claude, Gemini). */
     PROMPT("prompt");
@@ -240,6 +244,22 @@ class Prefs(context: Context) {
         get() = sp.getBoolean(KEY_REFINE_PARAGRAPHS, true)
         set(v) = sp.edit().putBoolean(KEY_REFINE_PARAGRAPHS, v).apply()
 
+    /**
+     * "Lesbarer glaetten": "Glaetten" repariert auch den Satzbau (Satzabbrueche, Wiederholungen,
+     * Bandwurmsaetze), Wortwahl und Ton bleiben. Ab Werk aus — dann bleibt Glaetten ein reines
+     * Korrektorat. Gilt fuer Diktat und geteilte Audios, siehe [effective].
+     */
+    var polishReadable: Boolean
+        get() = sp.getBoolean(KEY_POLISH_READABLE, false)
+        set(v) = sp.edit().putBoolean(KEY_POLISH_READABLE, v).apply()
+
+    /**
+     * Die Stufe, die wirklich an das Sprachmodell geht: [mode] (die gespeicherte Wahl) mit
+     * [polishReadable] verrechnet. Gespeichert und angezeigt wird weiter [mode].
+     */
+    fun effective(mode: RefineMode): RefineMode =
+        if (mode == RefineMode.POLISH && polishReadable) RefineMode.READABLE else mode
+
     // --- Nachbearbeitung -----------------------------------------------------
 
     var removeFillers: Boolean
@@ -411,6 +431,7 @@ class Prefs(context: Context) {
         private const val KEY_LLM_POLISH_LEGACY = "llm_polish"
         private const val KEY_SMART_FILLERS = "smart_fillers"
         private const val KEY_REFINE_PARAGRAPHS = "refine_paragraphs"
+        private const val KEY_POLISH_READABLE = "polish_readable"
         private const val KEY_PROMPT_LEVEL = "refine_prompt_enabled"
         private const val KEY_REMOVE_FILLERS = "remove_fillers"
         private const val KEY_AUTO_CAP = "auto_capitalize"

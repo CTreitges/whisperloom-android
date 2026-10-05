@@ -4,8 +4,8 @@ import com.chris.whisperloom.RefineMode
 import org.json.JSONObject
 
 /**
- * Optionale zweite Runde: laesst ein Sprachmodell den Rohtext bearbeiten (glaetten,
- * verschoenern, zusammenfassen, in Absaetze gliedern). Kostet eine zusaetzliche
+ * Optionale zweite Runde: laesst ein Sprachmodell den Rohtext bearbeiten (glaetten, lesbar
+ * glaetten, verschoenern, zusammenfassen, in Absaetze gliedern, zum Prompt formen). Kostet eine zusaetzliche
  * Anfrage und etwas Latenz — deshalb in den Einstellungen abschaltbar.
  *
  * Spricht POST /chat/completions des [ApiAccess] bzw. bei Ollama POST /api/chat — das kann
@@ -22,8 +22,8 @@ class TextRefiner(private val access: ApiAccess) {
      * @throws ApiNotConfiguredException wenn die Base-URL leer ist (eigener Server ohne URL) —
      *   sonst ginge die Anfrage an "/chat/completions" ohne Host — oder der Zugang keinen Text
      *   verbessern kann ([ApiAccess.refineBlock]: [MSG_NO_LLM], [MSG_NO_MODEL]).
-     * @throws RefineRejectedException wenn die Stufe "Prompt" eine Antwort statt eines Prompts liefert
-     *   oder das Modell an seiner Laengengrenze abgebrochen hat ([MSG_TRUNCATED]).
+     * @throws RefineRejectedException wenn das Modell geantwortet hat, statt den Text zu bearbeiten
+     *   (Ausgabe weit laenger als das Diktat), oder an seiner Laengengrenze abgebrochen hat ([MSG_TRUNCATED]).
      */
     fun refine(
         raw: String,
@@ -43,13 +43,12 @@ class TextRefiner(private val access: ApiAccess) {
         if (access.baseUrl.isBlank()) throw ApiNotConfiguredException()
 
         val german = language == "de"
-        val short = mode == RefineMode.PROMPT && RefinePrompt.isShort(raw)
-        val systemPrompt = RefinePrompt.build(mode, german, smartFillers, paragraphs, short)
-        val userText = RefinePrompt.userText(mode, raw, german)
+        val systemPrompt = RefinePrompt.build(mode, german, smartFillers, paragraphs, short = RefinePrompt.isShort(raw))
+        val userText = RefinePrompt.userText(raw, german)
         val text = (if (access.provider.isOllama) ollama(systemPrompt, userText) else openAi(systemPrompt, userText))
             ?.let { stripThinking(it) }
             ?.trim()
-            ?.let { if (mode == RefineMode.PROMPT) cleanPrompt(raw, it) else it }
+            ?.let { if (mode == RefineMode.PROMPT) cleanPrompt(raw, it) else cleanText(raw, it) }
 
         return if (text.isNullOrBlank()) raw else text
     }
@@ -142,10 +141,33 @@ class TextRefiner(private val access: ApiAccess) {
             // unwrap vor UND nach dem Label: "```\nPrompt: …\n```" wie "Prompt: „…“".
             text = unwrap(text)
             text = unwrap(PROMPT_LABEL.replace(text, "").trim())
-            if (RefinePrompt.wordCount(text) > MAX_GROWTH * RefinePrompt.wordCount(raw) + GROWTH_SLACK) {
-                throw RefineRejectedException("Modell hat geantwortet, statt einen Prompt zu formulieren")
-            }
+            requirePlausibleLength(raw, text, "Modell hat geantwortet, statt einen Prompt zu formulieren")
             return text
+        }
+
+        /**
+         * Nacharbeit der uebrigen Stufen — seit das Diktat auch dort zwischen Markierungen steht
+         * ([RefinePrompt.userText]): Markierung, eine Vorrede ("Hier ist der überarbeitete Text:")
+         * und Anfuehrungszeichen oder Codeblock um den GANZEN Text weg. Stand das Diktat selbst
+         * komplett in Anfuehrungszeichen, bleiben sie.
+         *
+         * Dazu dieselbe Plausibilitaet wie bei [cleanPrompt]: weit laenger als das Diktat heisst,
+         * das Modell hat die Bitte im Diktat erfuellt ("schreib mir eine Einladung") — Rohtext.
+         *
+         * @throws RefineRejectedException bei unplausibel langer Ausgabe.
+         */
+        fun cleanText(raw: String, output: String): String {
+            var text = MARKER.replace(output, "").trim()
+            text = stripPreamble(text, TEXT_PREAMBLE)
+            if (QUOTED.matchEntire(raw.trim()) == null) text = unwrap(text)
+            requirePlausibleLength(raw, text, "Modell hat geantwortet, statt den Text zu bearbeiten")
+            return text
+        }
+
+        private fun requirePlausibleLength(raw: String, text: String, message: String) {
+            if (RefinePrompt.wordCount(text) > MAX_GROWTH * RefinePrompt.wordCount(raw) + GROWTH_SLACK) {
+                throw RefineRejectedException(message)
+            }
         }
 
         private const val MAX_GROWTH = 2
@@ -163,13 +185,21 @@ class TextRefiner(private val access: ApiAccess) {
                 "\\b(dein|deine|deines|der|die|ihr|your|the)\\b[^\\n]*\\bprompts?\\s*:[ \\t]*\\r?\\n",
             RegexOption.IGNORE_CASE,
         )
+        // Wie [PREAMBLE], fuer bearbeiteten Text: "Hier ist der geglättete Text:" + Zeilenumbruch.
+        // Ein Diktat hat davor nie einen Umbruch — Whisper liefert eine Zeile.
+        private val TEXT_PREAMBLE = Regex(
+            "^(hier|here|sure|klar|gerne?|natürlich|okay|ok|certainly)\\b[^\\n]*" +
+                "\\b(dein|deine|der|die|das|ihr|your|the)\\b[^\\n]*" +
+                "\\b(text|fassung|version|zusammenfassung|summary|transkript|transcript)\\w*\\s*:[ \\t]*\\r?\\n",
+            RegexOption.IGNORE_CASE,
+        )
         private val PROMPT_LABEL = Regex("^prompt\\s*:\\s*", RegexOption.IGNORE_CASE)
         private val FENCE = Regex("(?s)^```[\\w-]*\\r?\\n(.*)\\r?\\n```$")
         private val QUOTED = Regex("(?s)^[\"„“«»](.*)[\"“”»«]$")
 
         /** Bleibt nach der Vorrede nur Material ("<text>…") uebrig, war sie die Anweisung selbst. */
-        private fun stripPreamble(text: String): String {
-            val match = PREAMBLE.find(text) ?: return text
+        private fun stripPreamble(text: String, preamble: Regex = PREAMBLE): String {
+            val match = preamble.find(text) ?: return text
             val rest = text.substring(match.range.last + 1).trim()
             return if (rest.isEmpty() || rest.startsWith("<")) text else rest
         }

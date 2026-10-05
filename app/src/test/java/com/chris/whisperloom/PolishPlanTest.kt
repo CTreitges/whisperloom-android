@@ -68,6 +68,15 @@ class PolishPlanTest {
         }
     }
 
+    @Test fun lesbarerGlaettenRaeumtFuellwoerterSelbstAuf() {
+        // Der Lesbar-Prompt streicht Fuellwoerter und Versprecher immer — die Wortliste bleibt aussen vor.
+        val o = plan(removeFillers = true, refineMode = RefineMode.READABLE, smartFillers = false)
+        assertFalse(o.removeFillers)
+        assertTrue("Gross-Schreibung wie beim Glaetten", o.autoCapitalize)
+        assertTrue(o.keepLineBreaks)
+        assertFalse(plan(refineMode = RefineMode.READABLE, paragraphs = false).keepLineBreaks)
+    }
+
     @Test fun glaettenAlleinLaesstDieWortlisteAktiv() {
         assertTrue(plan(removeFillers = true, refineMode = RefineMode.POLISH, smartFillers = false).removeFillers)
     }

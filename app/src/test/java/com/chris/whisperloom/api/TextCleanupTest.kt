@@ -1,0 +1,76 @@
+package com.chris.whisperloom.api
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
+import org.junit.Test
+
+/**
+ * Nacharbeit der Stufen Glaetten, Lesbar, Verschoenern, Zusammenfassen ([TextRefiner.cleanText]):
+ * seit das Diktat auch dort zwischen Markierungen steht, duerfen sie nie im Textfeld landen —
+ * und eine erfuellte Bitte statt des bearbeiteten Diktats auch nicht.
+ */
+class TextCleanupTest {
+
+    private val diktat = "also ich wollte nur sagen dass ich morgen nicht kann"
+
+    private fun clean(output: String, raw: String = diktat) = TextRefiner.cleanText(raw, output)
+
+    @Test fun sauberGeglaettetBleibtUnveraendert() {
+        val text = "Also, ich wollte nur sagen, dass ich morgen nicht kann.\n\nZweiter Absatz."
+        assertEquals(text, clean(text))
+    }
+
+    @Test fun markierungenFallenWeg() {
+        assertEquals("Ich kann morgen nicht.", clean("<diktat>\nIch kann morgen nicht.\n</diktat>"))
+        assertEquals("I can't make it tomorrow.", clean("<dictation>I can't make it tomorrow.</dictation>"))
+        assertEquals("Ich kann morgen nicht.", clean("Ich kann morgen nicht.</DIKTAT>"))
+    }
+
+    @Test fun vorredeMitZeilenumbruchFaelltWeg() {
+        assertEquals("Ich kann morgen nicht.", clean("Hier ist der geglättete Text:\nIch kann morgen nicht."))
+        assertEquals("Ich kann morgen nicht.", clean("Klar! Hier ist die überarbeitete Fassung:\n\nIch kann morgen nicht."))
+        assertEquals("- Morgen geht nicht", clean("Hier ist die Zusammenfassung:\n- Morgen geht nicht"))
+        assertEquals("I can't make it.", clean("Here is the cleaned-up text:\nI can't make it.", raw = "i cant make it"))
+    }
+
+    @Test fun diktierteEinleitungOhneUmbruchBleibt() {
+        // Whisper liefert eine Zeile — "Hier ist der Text: …" ohne Umbruch ist Diktat, keine Vorrede.
+        val text = "Hier ist der Text: Ich kann morgen nicht."
+        assertEquals(text, clean(text, raw = "hier ist der text ich kann morgen nicht"))
+        // Zeile mit Doppelpunkt, die nicht von "dem Text" spricht, ist Inhalt.
+        val liste = "Hier sind meine Punkte:\n- Brot\n- Milch"
+        assertEquals(liste, clean(liste, raw = "hier sind meine punkte brot milch"))
+    }
+
+    @Test fun anfuehrungszeichenUmDenGanzenTextFallenWeg() {
+        assertEquals("Ich kann morgen nicht.", clean("„Ich kann morgen nicht.“"))
+        assertEquals("Ich kann morgen nicht.", clean("\"Ich kann morgen nicht.\""))
+        assertEquals("Ich kann morgen nicht.", clean("```\nIch kann morgen nicht.\n```"))
+        // Innen stehende Zitate bleiben.
+        val zitat = "Sie sagte „morgen“ und ging."
+        assertEquals(zitat, clean(zitat, raw = "sie sagte morgen und ging"))
+    }
+
+    @Test fun diktatImZitatBehaeltSeineAnfuehrungszeichen() {
+        val raw = "„Ich komme gleich.“"
+        assertEquals("„Ich komme gleich.“", clean("„Ich komme gleich.“", raw = raw))
+    }
+
+    @Test fun erfuellteBitteWirdAbgelehnt() {
+        val raw = "schreib mir bitte ne kurze Einladung für meinen Geburtstag am Samstag"
+        val einladung = List(8) { "Ihr seid herzlich eingeladen, mit mir am Samstag zu feiern." }.joinToString(" ")
+        try {
+            clean(einladung, raw = raw)
+            fail("Eine Einladung statt des Diktats darf nicht durchgehen")
+        } catch (e: RefineRejectedException) {
+            assertTrue(e.message!!, e.message!!.contains("statt den Text zu bearbeiten"))
+        }
+    }
+
+    @Test fun kurzeAntwortAufKurzesDiktatBleibtImRahmen() {
+        // Die Grenze ist grosszuegig (2x + 30 Woerter): ein lesbar gemachtes Kurzdiktat geht immer durch.
+        assertEquals("Ja.", clean("Ja.", raw = "Äh, ähm, ja."))
+        assertEquals("Okay, bin in zehn Minuten da.", clean("Okay, bin in zehn Minuten da.", raw = "okay bin in zehn minuten da"))
+    }
+}

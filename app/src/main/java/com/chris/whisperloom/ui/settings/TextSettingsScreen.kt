@@ -32,7 +32,7 @@ import com.chris.whisperloom.ui.state.LocalAppEnv
 /** Die Stufen-Auswahl fuer geteilte Audios — ihre Labels gibt es in der Diktat-Karte ein zweites Mal. */
 const val SHARE_REFINE_TAG = "share-refine"
 
-/** E2 — Text (UX-Spec §2.5): Stufe, KI-Fuellwoerter, Stufe fuer geteilte Audios, eigener LLM-Zugang, Regeln ohne KI, Sheet B3. */
+/** E2 — Text (UX-Spec §2.5): Stufe, "Lesbarer glaetten", KI-Fuellwoerter, Stufe fuer geteilte Audios, eigener LLM-Zugang, Regeln ohne KI, Sheet B3. */
 @Composable
 fun TextSettingsScreen(nav: NavState) {
     val prefs = LocalAppEnv.current.prefs
@@ -41,6 +41,8 @@ fun TextSettingsScreen(nav: NavState) {
     val off = prefs.refineMode == RefineMode.OFF
     // "Intelligent entfernen" wirkt auch auf geteilte Audios — bedienbar, sobald irgendeine KI-Stufe gilt.
     val noAi = off && prefs.shareRefineMode == RefineMode.OFF
+    // "Lesbarer glaetten" aendert nur "Glaetten" — fuers Diktat wie fuer geteilte Audios.
+    val polish = prefs.refineMode == RefineMode.POLISH || prefs.shareRefineMode == RefineMode.POLISH
 
     DetailScaffold(title = stringResource(R.string.text_title), onBack = { nav.pop() }, snack = snack) { padding ->
         ScrollColumn(padding) {
@@ -65,6 +67,13 @@ fun TextSettingsScreen(nav: NavState) {
                     stringResource(R.string.text_level_cost),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                SwitchRow(
+                    headline = stringResource(R.string.pref_polish_readable),
+                    supporting = stringResource(if (polish) R.string.pref_polish_readable_info else R.string.text_readable_needs_polish),
+                    checked = prefs.polishReadable,
+                    onCheckedChange = { prefs.polishReadable = it },
+                    enabled = polish,
                 )
                 SwitchRow(
                     headline = stringResource(R.string.pref_smart_fillers),
@@ -145,7 +154,7 @@ fun TextSettingsScreen(nav: NavState) {
 
 private fun levelSubtitle(mode: RefineMode): Int = when (mode) {
     RefineMode.OFF -> R.string.text_level_off_sub
-    RefineMode.POLISH, RefineMode.PARAGRAPHS -> R.string.text_level_smooth_sub
+    RefineMode.POLISH, RefineMode.PARAGRAPHS, RefineMode.READABLE -> R.string.text_level_smooth_sub
     RefineMode.BEAUTIFY -> R.string.text_level_beautify_sub
     RefineMode.SUMMARIZE -> R.string.text_level_summarize_sub
     RefineMode.PROMPT -> R.string.text_level_prompt_sub

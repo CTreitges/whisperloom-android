@@ -62,6 +62,8 @@ object PolishPlan {
      * Ausnahme "Prompt": Fuellwoerter und Gross-Schreibung erledigt dort das Modell (steht im
      * System-Prompt), und diktiertes Material zwischen `<text>`-Tags soll unveraendert bleiben —
      * die Satzanfang-Regel machte sonst aus `</text>` nach einem Punkt `</Text>`.
+     * "Lesbarer glaetten" ([RefineMode.READABLE]) raeumt Fuellwoerter immer selbst auf, wie mit
+     * "Fuellwoerter intelligent entfernen".
      *
      * Ist die Textverbesserung gescheitert, uebergibt der Aufrufer [RefineMode.OFF]: der
      * Rohtext wurde von niemandem bearbeitet und braucht die vollen Regeln.
@@ -78,7 +80,7 @@ object PolishPlan {
     ): PolishOptions {
         val refined = refineMode != RefineMode.OFF
         val prompt = refineMode == RefineMode.PROMPT
-        val aiDecidesFillers = refined && (smartFillers || prompt)
+        val aiDecidesFillers = refined && (smartFillers || prompt || refineMode == RefineMode.READABLE)
         return PolishOptions(
             removeFillers = removeFillers && !aiDecidesFillers,
             autoCapitalize = autoCapitalize && !prompt,

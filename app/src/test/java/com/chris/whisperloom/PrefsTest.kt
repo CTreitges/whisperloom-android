@@ -193,6 +193,35 @@ class PrefsTest {
         assertEquals(RefineMode.PROMPT, Prefs(ctx).refineMode)
     }
 
+    // --- "Lesbarer glaetten" ------------------------------------------------------
+
+    @Test fun lesbarerGlaettenIstAbWerkAus() {
+        val p = Prefs(ctx)
+        assertFalse(p.polishReadable)
+        assertEquals(RefineMode.POLISH, p.effective(RefineMode.POLISH))
+    }
+
+    @Test fun lesbarerGlaettenWirktNurAufGlaetten() {
+        val p = Prefs(ctx)
+        p.polishReadable = true
+        assertTrue(Prefs(ctx).polishReadable)
+        assertEquals(RefineMode.READABLE, p.effective(RefineMode.POLISH))
+        for (mode in RefineMode.entries - RefineMode.POLISH) assertEquals(mode.name, mode, p.effective(mode))
+        // Gespeichert bleibt die Wahl "Glaetten" — READABLE ist nie eine waehlbare Stufe.
+        p.refineMode = RefineMode.POLISH
+        assertEquals("polish", sp.getString("refine_mode", null))
+        assertFalse(RefineMode.READABLE in RefineMode.settings(promptEnabled = true))
+    }
+
+    @Test fun lesbarerGlaettenSpiegeltSichInCompose() {
+        val state = PrefsState(Prefs(ctx))
+        state.polishReadable = true
+        assertTrue(Prefs(ctx).polishReadable)
+        Prefs(ctx).polishReadable = false
+        assertFalse(state.polishReadable)
+        state.dispose()
+    }
+
     // --- Geteilte Sprachnachrichten ---------------------------------------------
 
     @Test fun shareStufeIstAbWerkAusUndUnabhaengigVomDiktat() {
@@ -209,7 +238,7 @@ class PrefsTest {
     @Test fun shareStufeKenntWederPromptNochAltlastNochUnbekanntes() {
         val p = Prefs(ctx)
         p.promptLevelEnabled = true
-        for (key in listOf("prompt", "paragraphs", "quatsch")) {
+        for (key in listOf("prompt", "paragraphs", "readable", "quatsch")) {
             sp.edit().putString("share_refine_mode", key).commit()
             assertEquals(key, RefineMode.OFF, p.shareRefineMode)
         }
