@@ -1,6 +1,7 @@
 package com.chris.whisperloom.api
 
 import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.TextPolisher
 import org.json.JSONObject
 
 /**
@@ -167,6 +168,7 @@ class TextRefiner(private val access: ApiAccess) {
         /**
          * Hat der Sprecher die erste Zeile selbst gesagt ("okay hier ist der neue Text …")? Dann ist
          * sie keine Vorrede, auch wenn das Modell danach einen Umbruch setzt (Review 2026-10-05).
+         * Fuellsilben zaehlen nicht mit: im Rohtext stehen sie noch, in der Ausgabe oft nicht mehr.
          */
         private fun saidFirst(raw: String, text: String): Boolean {
             val first = words(text.lineSequence().first())
@@ -174,7 +176,9 @@ class TextRefiner(private val access: ApiAccess) {
         }
 
         private fun words(s: String): List<String> =
-            s.lowercase().split(NON_WORD).filter { it.isNotEmpty() }
+            s.lowercase().split(NON_WORD).filter { it.isNotEmpty() && it !in FILLER_SYLLABLES }
+
+        private val FILLER_SYLLABLES = (TextPolisher.builtinFillers("de") + TextPolisher.builtinFillers("en")).toSet()
 
         private val NON_WORD = Regex("[^\\p{L}\\p{N}]+")
 

@@ -51,6 +51,8 @@ class TextCleanupTest {
         assertEquals(kuerzen, clean(kuerzen, raw = "hier ist die Zusammenfassung vom Meeting wir schicken das Angebot und der Termin ist am Montag"))
         val en = "Sure, here's the summary:\n- fix login\n- ship Friday"
         assertEquals(en, clean(en, raw = "sure here's the summary we fix login and ship friday"))
+        // Fuellsilben im Rohtext, die das Modell gestrichen hat, zaehlen beim Vergleich nicht.
+        assertEquals(glaetten, clean(glaetten, raw = "ähm okay hier ist der neue Text äh liebe Frau Müller ich komme am Montag"))
         // Sagt der Sprecher etwas anderes, ist dieselbe Zeile weiter eine Vorrede des Modells.
         assertEquals("- Angebot schicken", clean("Hier ist die Zusammenfassung:\n- Angebot schicken", raw = "wir schicken das Angebot"))
     }

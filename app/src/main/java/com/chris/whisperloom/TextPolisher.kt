@@ -63,7 +63,8 @@ object PolishPlan {
      * System-Prompt), und diktiertes Material zwischen `<text>`-Tags soll unveraendert bleiben —
      * die Satzanfang-Regel machte sonst aus `</text>` nach einem Punkt `</Text>`.
      * "Lesbarer glaetten" ([RefineMode.READABLE]) zaehlt nicht dazu: kleine Modelle liessen "ähm"
-     * dort stehen (gemma3:4b, Korpus 2026-10-05), die Liste hat nur eindeutige Fuellsilben.
+     * dort stehen (gemma3:4b, Korpus 2026-10-05). Die Liste laeuft danach wie beim Glaetten — mit den
+     * eingebauten Fuellsilben und den eigenen Woertern des Nutzers; nur smartFillers pausiert sie.
      *
      * Ist die Textverbesserung gescheitert, uebergibt der Aufrufer [RefineMode.OFF]: der
      * Rohtext wurde von niemandem bearbeitet und braucht die vollen Regeln.
