@@ -68,10 +68,12 @@ class PolishPlanTest {
         }
     }
 
-    @Test fun lesbarerGlaettenRaeumtFuellwoerterSelbstAuf() {
-        // Der Lesbar-Prompt streicht Fuellwoerter und Versprecher immer — die Wortliste bleibt aussen vor.
+    @Test fun lesbarerGlaettenBehaeltDieWortlisteAlsNetz() {
+        // Review: gemma3:4b liess bei "Lesbar" ein "ähm" stehen — die Liste (nur eindeutige Fuellsilben) faengt es.
         val o = plan(removeFillers = true, refineMode = RefineMode.READABLE, smartFillers = false)
-        assertFalse(o.removeFillers)
+        assertTrue(o.removeFillers)
+        assertEquals("Also, ich komme morgen.", TextPolisher.polish("Also, ähm, ich komme morgen.", o))
+        assertFalse("mit smartFillers entscheidet die KI", plan(refineMode = RefineMode.READABLE, smartFillers = true).removeFillers)
         assertTrue("Gross-Schreibung wie beim Glaetten", o.autoCapitalize)
         assertTrue(o.keepLineBreaks)
         assertFalse(plan(refineMode = RefineMode.READABLE, paragraphs = false).keepLineBreaks)

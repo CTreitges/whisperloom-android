@@ -282,14 +282,13 @@ class TranscriptionEngineTest {
         assertTrue(system, system.contains("einen einzigen durchgehenden Absatz"))
     }
 
-    @Test fun lesbarerGlaettenSchicktDenLesbarPromptUndPausiertDieWortliste() {
+    @Test fun lesbarerGlaettenSchicktDenLesbarPromptUndDieWortlisteFaengtReste() {
         useOllama("ollama")
         prefs.polishReadable = true
-        prefs.customFillers = setOf("halt")
-        // Das Modell hat "halt" bewusst stehen lassen — die Wortliste darf es nicht nachtraeglich streichen.
-        ollamaResponse = """{"message":{"content":"Also hallo Welt, halt."}}"""
+        // Ein kleines Modell laesst ein "ähm" stehen — die Wortliste raeumt es danach weg.
+        ollamaResponse = """{"message":{"content":"Also, ähm, hallo Welt."}}"""
 
-        assertEquals("Also hallo Welt, halt.", TranscriptionEngine.transcribe(ctx, speech))
+        assertEquals("Also, hallo Welt.", TranscriptionEngine.transcribe(ctx, speech))
         val messages = JSONObject(ollamaBody!!).getJSONArray("messages")
         val system = messages.getJSONObject(0).getString("content")
         assertTrue(system, system.contains("Du machst diktierten Text lesbar"))
