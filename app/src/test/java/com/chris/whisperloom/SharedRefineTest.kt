@@ -63,6 +63,14 @@ class SharedRefineTest {
         assertNull(result.skipped)
     }
 
+    @Test fun lesbarerGlaettenGiltAuchFuerGeteilteAudios() {
+        prefs.shareRefineMode = RefineMode.POLISH
+        prefs.polishReadable = true
+        val result = run(listOf("Hallo."))
+        assertEquals(listOf("Hallo." to RefineMode.READABLE), calls)
+        assertEquals(RefineMode.READABLE, result.mode)
+    }
+
     // --- Was an das Modell geht -------------------------------------------------------------
 
     /** Review HOCH: am Stueck waere eine lange Nachricht an der Laengengrenze abgeschnitten worden. */

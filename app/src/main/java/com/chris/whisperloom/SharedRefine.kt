@@ -35,7 +35,7 @@ object SharedRefine {
             TextRefiner(prefs.llmAccess()).refine(raw, language, mode, prefs.smartFillers)
         },
     ): Result {
-        val mode = prefs.shareRefineMode
+        val mode = prefs.effective(prefs.shareRefineMode)
         if (mode == RefineMode.OFF) return Result(mode, null, null)
         onStart()
         return try {

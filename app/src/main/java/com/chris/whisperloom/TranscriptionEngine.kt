@@ -86,7 +86,7 @@ object TranscriptionEngine {
         if (raw.isBlank()) return ""
 
         val language = effectiveLanguage(prefs.language, result.detectedLanguage)
-        val mode = prefs.refineMode
+        val mode = prefs.effective(prefs.refineMode)
         var refineFailed = false
         val refined = if (mode != RefineMode.OFF) {
             refineOrRaw(raw, language, mode, prefs) {

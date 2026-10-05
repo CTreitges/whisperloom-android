@@ -321,10 +321,11 @@ Column(padding 20, gap 16)
 │    Column(selectableGroup) — 4 ListItem mit RadioButton (Trailing) und Supporting:
 │      level_off        "Aus"            text_level_off_sub       "Nur die Regeln unten, keine zweite Anfrage."
 │      level_smooth     "Glätten"        text_level_smooth_sub    "Zeichensetzung, Groß-/Kleinschreibung, Absätze. Inhalt unverändert."
-│      level_beautify   "Verschönern"    text_level_beautify_sub  "Formuliert verständlicher, zieht Sätze zusammen, bewahrt den Inhalt."
-│      level_summarize  "Zusammenfassen" text_level_summarize_sub "Kürzt auf die Kernaussagen."
+│      level_beautify   "Verschönern"    text_level_beautify_sub  "Formuliert flüssiger und klarer, behält Inhalt, Ton und deine Wörter."
+│      level_summarize  "Zusammenfassen" text_level_summarize_sub "Kürzt auf das Wesentliche. Namen, Zahlen und Termine bleiben genau."
 │    → Prefs.refineLevel (off|smooth|beautify|summarize). Migration: llmPolish==true → smooth.
 │    bodySmall onSurfaceVariant  text_level_cost "Zweite Anfrage · ca. 1–2 s länger · geringe Zusatzkosten"
+│    [Stand 3.8.1] ListItem + Switch pref_polish_readable "Lesbarer glätten" Supporting pref_polish_readable_info; Pref polish_readable (Default aus); enabled = Diktat- oder Share-Stufe „Glätten", sonst Supporting text_readable_needs_polish „Wirkt mit der Stufe „Glätten"." Gespeichert bleibt „Glätten"; an das Modell geht die interne Stufe READABLE (Prefs.effective).
 │    ListItem + Switch  pref_smart_fillers (bestehend "Füllwörter intelligent entfernen") Supporting pref_smart_fillers_info (bestehend); enabled = level != off, sonst Supporting text_smart_needs_level "Braucht eine Stufe über „Aus"."
 │    [Stand 3.5.0] ListItem + Switch pref_refine_paragraphs "Automatische Absätze" Supporting pref_refine_paragraphs_info; Pref refine_paragraphs (Default an); enabled wie pref_smart_fillers.
 ├─ ElevatedCard text_card_access "Zugang für die Textverbesserung"
@@ -957,9 +958,12 @@ Regeln: bestehende Keys bleiben gültig (mit „(bestehend)" markiert; Text ggf.
 | `text_card_refine` | Textverbesserung (KI) |
 | `text_level_off_sub` | Nur die Regeln unten, keine zweite Anfrage. |
 | `text_level_smooth_sub` | Zeichensetzung, Groß-/Kleinschreibung, Absätze. Inhalt unverändert. |
-| `text_level_beautify_sub` | Formuliert verständlicher, zieht Sätze zusammen, bewahrt den Inhalt. |
-| `text_level_summarize_sub` | Kürzt auf die Kernaussagen. |
+| `text_level_beautify_sub` | Formuliert flüssiger und klarer, behält Inhalt, Ton und deine Wörter. |
+| `text_level_summarize_sub` | Kürzt auf das Wesentliche. Namen, Zahlen und Termine bleiben genau. |
 | `text_level_cost` | Zweite Anfrage · ca. 1–2 s länger · geringe Zusatzkosten |
+| `pref_polish_readable` | Lesbarer glätten |
+| `pref_polish_readable_info` | „Glätten“ repariert auch holprige Sätze: Satzabbrüche, Versprecher, Wiederholungen, Füllwörter. Deine Wörter und dein Ton bleiben. |
+| `text_readable_needs_polish` | Wirkt mit der Stufe „Glätten“. |
 | `pref_smart_fillers` (bestehend) | Füllwörter intelligent entfernen |
 | `pref_smart_fillers_info` (bestehend, neu) | Statt fester Wortliste entscheidet die KI selbst, welche Füllwörter, Versprecher und Wiederholungen weg können. Im Zweifel bleibt das Wort. |
 | `text_smart_needs_level` | Braucht eine Stufe über „Aus". |

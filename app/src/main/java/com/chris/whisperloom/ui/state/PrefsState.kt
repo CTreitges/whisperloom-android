@@ -42,6 +42,7 @@ class PrefsState(val prefs: Prefs) {
     var refineMode: RefineMode by pref({ prefs.refineMode }) { prefs.refineMode = it }
     var smartFillers: Boolean by pref({ prefs.smartFillers }) { prefs.smartFillers = it }
     var refineParagraphs: Boolean by pref({ prefs.refineParagraphs }) { prefs.refineParagraphs = it }
+    var polishReadable: Boolean by pref({ prefs.polishReadable }) { prefs.polishReadable = it }
     var promptLevelEnabled: Boolean by pref({ prefs.promptLevelEnabled }) { prefs.promptLevelEnabled = it }
     var shareRefineMode: RefineMode by pref({ prefs.shareRefineMode }) { prefs.shareRefineMode = it }
 

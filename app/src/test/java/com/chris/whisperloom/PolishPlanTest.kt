@@ -68,6 +68,17 @@ class PolishPlanTest {
         }
     }
 
+    @Test fun lesbarerGlaettenBehaeltDieWortlisteAlsNetz() {
+        // Review: gemma3:4b liess bei "Lesbar" ein "ähm" stehen — die Liste faengt es (wie beim Glaetten, samt eigener Woerter).
+        val o = plan(removeFillers = true, refineMode = RefineMode.READABLE, smartFillers = false)
+        assertTrue(o.removeFillers)
+        assertEquals("Also, ich komme morgen.", TextPolisher.polish("Also, ähm, ich komme morgen.", o))
+        assertFalse("mit smartFillers pausiert sie wie in jeder Stufe", plan(refineMode = RefineMode.READABLE, smartFillers = true).removeFillers)
+        assertTrue("Gross-Schreibung wie beim Glaetten", o.autoCapitalize)
+        assertTrue(o.keepLineBreaks)
+        assertFalse(plan(refineMode = RefineMode.READABLE, paragraphs = false).keepLineBreaks)
+    }
+
     @Test fun glaettenAlleinLaesstDieWortlisteAktiv() {
         assertTrue(plan(removeFillers = true, refineMode = RefineMode.POLISH, smartFillers = false).removeFillers)
     }

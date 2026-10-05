@@ -541,6 +541,31 @@ class MainFlowTest {
         assertEquals(false, Prefs(ctx).refineParagraphs)
     }
 
+    @Test fun lesbarerGlaettenIstAusUndWirktNurMitGlaetten() {
+        screen(env()) { TextSettingsScreen(it) }
+        compose.onNodeWithText("Lesbarer glätten").assertIsNotEnabled()
+        compose.onNodeWithText("Wirkt mit der Stufe „Glätten“.").assertExists()
+        compose.onAllNodesWithText("Verschönern").onFirst().performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Lesbarer glätten").assertIsNotEnabled()
+        compose.onAllNodesWithText("Glätten").onFirst().performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Lesbarer glätten").assertIsEnabled().performClick()
+        compose.waitForIdle()
+        assertEquals(true, Prefs(ctx).polishReadable)
+        // Gespeichert bleibt "Glaetten" — erst die Anfrage ans Modell wird zu READABLE.
+        assertEquals(RefineMode.POLISH, Prefs(ctx).refineMode)
+        assertEquals(RefineMode.READABLE, Prefs(ctx).effective(Prefs(ctx).refineMode))
+    }
+
+    @Test fun lesbarerGlaettenMitNurDerShareStufeBedienbar() {
+        screen(env()) { TextSettingsScreen(it) }
+        compose.onNode(hasText("Glätten") and hasAnyAncestor(hasTestTag(SHARE_REFINE_TAG))).performClick()
+        compose.waitForIdle()
+        assertEquals(RefineMode.OFF, Prefs(ctx).refineMode)
+        compose.onNodeWithText("Lesbarer glätten").assertIsEnabled()
+    }
+
     /** Review 3.5.0 HOCH: nach aus/an darf weder die Ollama-Adresse noch der Ollama-Key haengen bleiben. */
     @Test fun eigenerZugangAusUndAnVergisstAlteAdresseUndKey() {
         prefs.engine = Engine.ONLINE
