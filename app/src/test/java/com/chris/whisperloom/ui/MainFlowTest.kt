@@ -24,6 +24,8 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -32,6 +34,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.unit.dp
@@ -959,5 +962,83 @@ class MainFlowTest {
         prefs.serverModelsEnabled = true
         screen(env()) { SettingsHubScreen(it) }
         compose.onNodeWithText("Stufe „Prompt“ · Modelle vom Server").assertExists()
+    }
+
+    // --- Patchnotes (P): "?" neben der Versionsnummer ------------------------------
+
+    /** Echte App-Wurzel, eingerichtet; [route] z. B. Einstellungen. Liefert den Back-Dispatcher. */
+    private fun appMitZurueck(route: RouteRequest? = null): OnBackPressedDispatcher {
+        prefs.engine = Engine.ONLINE
+        prefs.apiKey = "sk-test"
+        prefs.tutorialSeen = true
+        lateinit var back: OnBackPressedDispatcher
+        compose.setContent {
+            back = LocalOnBackPressedDispatcherOwner.current!!.onBackPressedDispatcher
+            WhisperLoomTheme { WhisperLoomApp(env(readyStatus), route = route) }
+        }
+        compose.waitForIdle()
+        return back
+    }
+
+    /** Kopf der neuesten Version — immer das erste Item der Patchnotes-Liste. */
+    private val patchnotesHero = hasContentDescription("Was ist neu in Version", substring = true)
+
+    /** Patchnotes sind geladen (Assets auf Dispatchers.IO). */
+    private fun patchnotesGeladen() {
+        compose.waitUntil(5_000) { compose.onAllNodes(patchnotesHero).fetchSemanticsNodes().isNotEmpty() }
+    }
+
+    @Test fun homeFragezeichenOeffnetPatchnotes() {
+        prefs.engine = Engine.ONLINE
+        prefs.apiKey = "sk-test"
+        val nav = screen(env(readyStatus)) { HomeScreen(it) }
+        compose.onNodeWithContentDescription("Patchnotes anzeigen").assertIsDisplayed().performClick()
+        compose.waitForIdle()
+        assertEquals(Screen.Patchnotes, nav.current)
+    }
+
+    @Test fun ausDenPatchnotesFuehrtZurueckNachHome() {
+        val back = appMitZurueck()
+        compose.onNodeWithContentDescription("Patchnotes anzeigen").performClick()
+        compose.waitForIdle()
+        patchnotesGeladen()
+        compose.runOnIdle { back.onBackPressed() }
+        compose.waitForIdle()
+        compose.onNodeWithText("Mikro-Knopf starten").assertIsDisplayed()
+        compose.onNode(patchnotesHero).assertDoesNotExist()
+    }
+
+    @Test fun ueberSheetFragezeichenOeffnetPatchnotesOhneSheet() {
+        prefs.engine = Engine.ONLINE
+        val nav = screen(env()) { SettingsHubScreen(it) }
+        compose.onNodeWithText("Über WhisperLoom").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Quellcode auf GitHub").assertExists()
+        compose.onNodeWithContentDescription("Patchnotes anzeigen").performClick()
+        compose.waitForIdle()
+        assertEquals(Screen.Patchnotes, nav.current)
+        compose.onNodeWithText("Quellcode auf GitHub").assertDoesNotExist()
+    }
+
+    @Test fun ausDenPatchnotesFuehrtZurueckInDenHubOhneSheet() {
+        val back = appMitZurueck(RouteRequest(AppNav.ROUTE_SETTINGS))
+        compose.onNodeWithText("Über WhisperLoom").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithContentDescription("Patchnotes anzeigen").performClick()
+        compose.waitForIdle()
+        patchnotesGeladen()
+        compose.runOnIdle { back.onBackPressed() }
+        compose.waitForIdle()
+        compose.onNodeWithText("Anleitung & Hilfe").assertIsDisplayed()
+        compose.onNodeWithText("Quellcode auf GitHub").assertDoesNotExist()
+    }
+
+    @Test fun hilfeFusszeileOeffnetPatchnotes() {
+        val nav = screen(env()) { HelpScreen(1, it) }
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasContentDescription("Patchnotes anzeigen"))
+        compose.waitForIdle()
+        compose.onNodeWithContentDescription("Patchnotes anzeigen").performClick()
+        compose.waitForIdle()
+        assertEquals(Screen.Patchnotes, nav.current)
     }
 }

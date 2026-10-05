@@ -43,6 +43,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -198,7 +199,7 @@ val HeroLabelStyle: TextStyle
 /**
  * Zeile innerhalb einer Karte (Leading, Headline + Supporting, Trailing), min. 56/72 dp;
  * mit [onClick] klickbar und fuer TalkBack zu einem Element verschmolzen, Status als
- * [stateDescription] (Spec §5.6).
+ * [stateDescription] (Spec §5.6). [supportingMaxLines] kuerzt die Unterzeile mit "…" (Patchnotes-Teaser).
  */
 @Composable
 fun LoomRow(
@@ -211,6 +212,7 @@ fun LoomRow(
     onClick: (() -> Unit)? = null,
     stateDescription: String? = null,
     enabled: Boolean = true,
+    supportingMaxLines: Int = Int.MAX_VALUE,
 ) {
     val clickable = if (onClick != null) Modifier.clickable(enabled = enabled, onClick = onClick) else Modifier
     Row(
@@ -226,7 +228,15 @@ fun LoomRow(
         if (leading != null) leading()
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(headline, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
-            if (supporting != null) Text(supporting, style = MaterialTheme.typography.bodyMedium, color = supportingColor)
+            if (supporting != null) {
+                Text(
+                    supporting,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = supportingColor,
+                    maxLines = supportingMaxLines,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
         if (trailing != null) trailing()
     }

@@ -12,6 +12,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -58,6 +60,7 @@ import com.chris.whisperloom.ui.components.ScrollColumn
 import com.chris.whisperloom.ui.components.SectionCard
 import com.chris.whisperloom.ui.components.SmallTopBar
 import com.chris.whisperloom.ui.components.StatusIcon
+import com.chris.whisperloom.ui.components.VersionWithPatchnotes
 import com.chris.whisperloom.ui.components.Tone
 import com.chris.whisperloom.ui.components.LoomIcon
 import com.chris.whisperloom.ui.components.LoomRow
@@ -127,21 +130,31 @@ fun HomeScreen(nav: NavState) {
                 }
             }
 
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    stringResource(R.string.home_version, BuildConfig.VERSION_NAME),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline,
-                )
-                Text("·", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
-                TextButton(onClick = { nav.push(Screen.Setup(SetupRouter.STEP_ENGINE)) }) {
-                    Text(stringResource(R.string.home_rerun_setup), style = MaterialTheme.typography.bodySmall)
-                }
-            }
+            Footer(nav)
+        }
+    }
+}
+
+/**
+ * Fusszeile: Version mit (?) zu den Patchnotes und "Einrichtung erneut oeffnen". Bei 360 dp passt
+ * beides nicht in eine Zeile — FlowRow bricht dann um, jede Zeile zentriert.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun Footer(nav: NavState) {
+    FlowRow(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+    ) {
+        VersionWithPatchnotes(
+            stringResource(R.string.home_version, BuildConfig.VERSION_NAME),
+            MaterialTheme.typography.bodySmall,
+            MaterialTheme.colorScheme.outline,
+            onClick = { nav.push(Screen.Patchnotes) },
+            modifier = Modifier.align(Alignment.CenterVertically),
+        )
+        TextButton(onClick = { nav.push(Screen.Setup(SetupRouter.STEP_ENGINE)) }, modifier = Modifier.align(Alignment.CenterVertically)) {
+            Text(stringResource(R.string.home_rerun_setup), style = MaterialTheme.typography.bodySmall)
         }
     }
 }

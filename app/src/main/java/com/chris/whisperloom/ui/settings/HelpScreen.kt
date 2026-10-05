@@ -39,6 +39,7 @@ import com.chris.whisperloom.ui.components.OutlinedSection
 import com.chris.whisperloom.ui.components.SnackController
 import com.chris.whisperloom.ui.components.StepBadge
 import com.chris.whisperloom.ui.components.SystemIntents
+import com.chris.whisperloom.ui.components.VersionWithPatchnotes
 import com.chris.whisperloom.ui.components.LoomIcon
 import com.chris.whisperloom.ui.components.LoomRow
 import com.chris.whisperloom.ui.components.openLink
@@ -154,7 +155,7 @@ fun HelpScreen(section: Int, nav: NavState) {
                     ProblemEntry(stringResource(R.string.help_p5), stringResource(R.string.help_p5_body)) { nav.push(Screen.Models) }
                 }
             }
-            item { HelpFooter(snack) }
+            item { HelpFooter(snack) { nav.push(Screen.Patchnotes) } }
         }
     }
 }
@@ -221,18 +222,20 @@ private fun ProblemEntry(title: String, body: String, onAction: () -> Unit) {
     }
 }
 
+/** Fusszeile: Version mit (?) zu den Patchnotes, Lizenzen, Quellcode-Link. */
 @Composable
-private fun HelpFooter(snack: SnackController) {
+private fun HelpFooter(snack: SnackController, onPatchnotes: () -> Unit) {
     val ctx = LocalContext.current
     Column(
         Modifier.fillMaxWidth().padding(top = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Text(
+        VersionWithPatchnotes(
             stringResource(R.string.home_version, BuildConfig.VERSION_NAME),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.outline,
+            MaterialTheme.typography.bodySmall,
+            MaterialTheme.colorScheme.outline,
+            onPatchnotes,
         )
         Text(
             stringResource(R.string.about_license),

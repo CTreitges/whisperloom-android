@@ -125,7 +125,13 @@ fun SettingsHubScreen(nav: NavState) {
         }
     }
 
-    if (showAbout) AboutSheet(snack) { showAbout = false }
+    // Patchnotes aus dem Sheet: Sheet zu, dann der Screen — Zurueck fuehrt in den Hub ohne Sheet.
+    if (showAbout) {
+        AboutSheet(snack, onPatchnotes = {
+            showAbout = false
+            nav.push(Screen.Patchnotes)
+        }) { showAbout = false }
+    }
 }
 
 @Composable

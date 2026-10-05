@@ -140,6 +140,56 @@ android {
     }
 }
 
+// ---- Patchnotes: CHANGELOG.md + Fastlane-Highlights als App-Assets ----
+// Quellen bleiben im Repo-Root bzw. unter fastlane/; die Kopie landet unter
+// app/build/generated/assets/copy<Variant>PatchnotesAssets/, nicht in src/main/assets.
+// Fehlt eine Quelle, scheitert der Build (@InputFile/@InputDirectory) — gewollt.
+// AGP-Variant-API: https://github.com/android/gradle-recipes/tree/agp-9.0/addGeneratedSourceFolder
+abstract class CopyPatchnotesAssets : DefaultTask() {
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val changelog: RegularFileProperty
+
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val highlightsDir: DirectoryProperty
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @get:Inject
+    abstract val fs: FileSystemOperations
+
+    @TaskAction
+    fun copy() {
+        // sync statt copy: geloeschte Highlight-Dateien verschwinden auch aus dem Output.
+        fs.sync {
+            into(outputDir)
+            from(changelog) { into("patchnotes") }
+            from(highlightsDir) {
+                include("*.txt")
+                into("patchnotes/highlights")
+            }
+        }
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        val copyPatchnotes = tasks.register<CopyPatchnotesAssets>(
+            "copy${variant.name.replaceFirstChar { it.uppercase() }}PatchnotesAssets",
+        ) {
+            // isolated-View statt rootProject: Configuration-Cache- und Isolated-Projects-tauglich.
+            val root = isolated.rootProject.projectDirectory
+            changelog.set(root.file("CHANGELOG.md"))
+            // Nur de-DE: die App ist nur deutsch.
+            highlightsDir.set(root.dir("fastlane/metadata/android/de-DE/changelogs"))
+        }
+        // Setzt outputDir und haengt die Task vor mergeAssets (auch fuer Robolectric-Unit-Tests).
+        variant.sources.assets?.addGeneratedSourceDirectory(copyPatchnotes, CopyPatchnotesAssets::outputDir)
+    }
+}
+
 dependencies {
     // Compose BOM 2026.08.00 -> ui 1.12.0, material3 1.4.0
     // https://developer.android.com/develop/ui/compose/bom/bom-mapping

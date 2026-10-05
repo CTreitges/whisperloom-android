@@ -60,8 +60,11 @@ Diese Datei ist die **einzige Vorlage** für die Implementierungs-Agenten. Wo di
 | T2 | Tutorial „Sprachauftrag" | Compose, `HorizontalPager` | 4 Seiten; eigenes Gesehen-Flag (`agent_tutorial_seen`) |
 | W1w | **Sprachauftrag-Widget** | RemoteViews (`AppWidgetProvider`) | 4 Zustände auf dem Startbildschirm; `updatePeriodMillis=0`; skalierbar 1×1 bis 4×2, Profil je Widget (§6.14) |
 | N2 | Foreground-Notification Sprachauftrag | Framework | „Nimmt auf …" + Senden |
+| P | Patchnotes | Compose (DetailScaffold) | Hero · Das Wichtigste · Frühere Versionen · Vor Version 3 · GitHub |
 
 > **Nachtrag 3.7.1:** E, E5, E7 („Erweitert“), E8 (Widgets), W1c, T2 und W1w sind geändert — siehe [§6.15](#615-nachtrag-371-pro-widgets).
+
+> **Nachtrag Patchnotes:** P ist neu, H, E5 und E6 haben ein „?“ neben der Versionsnummer — siehe [§6.17](#617-nachtrag-patchnotes-p).
 
 ### 1.2 Startlogik (Router) — präzise Bedingung „eingerichtet"
 
@@ -1524,6 +1527,70 @@ Schlüssel `<providerId>|<stt|llm>|<baseUrl>`, Wert `{fetchedAt, models[]}` — 
 
 Entfallen: `text_ollama_loading`, `text_ollama_models_found`, `text_ollama_models_failed` (gleicher Text jetzt
 `models_loading`, `models_count`, `models_load_failed`).
+
+### 6.17 Nachtrag: Patchnotes (P)
+
+Ergänzt §1.1, §2.1 (H), §2.3 (E6) und §2.8 (E5); wo sie widersprechen, gilt dieser Abschnitt.
+Nutzer-Sicht: `docs/ANLEITUNG.md` 2.4 und „Der Startbildschirm“.
+
+**Inhalt.** `CHANGELOG.md` und `fastlane/metadata/android/de-DE/changelogs/<versionCode>.txt` sind App-Inhalt:
+Gradle kopiert sie beim Build nach `assets/patchnotes/` (Task `copy<Variant>PatchnotesAssets`, nicht in
+`src/main/assets`). `ui/patchnotes/PatchnotesParser.kt` liest sie (reines Kotlin, `[Unreleased]` und `### Technik`
+werden nicht angezeigt), `PatchnotesInline.kt` setzt fett, `Code` und Links (https) als `AnnotatedString`.
+
+**Einstiege (?).** `VersionWithPatchnotes` = Versionstext + `IconButton` (48 dp) mit `ic_help` in primary,
+contentDescription `cd_patchnotes`:
+- **H:** Fußzeile wird `FlowRow` (zentriert, bricht bei 360 dp um): Version mit (?) · „Einrichtung erneut öffnen“.
+  Der Trenner „·“ entfällt.
+- **E5:** Fußzeile, Version mit (?).
+- **E6:** `about_version` (titleMedium) mit (?) 20 dp; schließt das Sheet und öffnet P, Zurück führt in den Hub.
+- Die Hub-Zeile „Über WhisperLoom“ bekommt **kein** (?): die ganze Zeile ist schon klickbar.
+
+**Screen P.** `DetailScaffold` + `LazyColumn` ohne Seitenpadding (wie der Hub), Karten 20 dp seitlich:
+- **Hero** (`SectionCard`, `HeroShape`): 56-dp-Kreis primaryContainer mit `ic_auto_fix_high`, Kicker
+  `patchnotes_kicker`, Version in displaySmall primary; Kopf als eine Überschrift `patchnotes_cd_hero`. Darunter
+  Chip `patchnotes_installed` (successContainer, nur bei der installierten Version) und Datum „d. MMMM yyyy“,
+  Tagline, `patchnotes_highlights` mit nummerierten Highlights (Kicker: Neu primary, Pro tertiary, Behoben
+  success). `TextButton` `patchnotes_show_all` / `patchnotes_show_less` mit `ic_expand_more` (180°) klappt alle
+  Details auf. Ohne Highlights stehen die Details direkt da.
+- **Frühere Versionen** (`SectionHeader`, ab Major 3) und **Vor Version 3** (mit `patchnotes_legacy_hint`): je
+  eine Karte, Zeile = `LoomRow` `patchnotes_version`, Unterzeile „Datum · Teaser“ (max. 2 Zeilen), Überschrift,
+  Zustand `patchnotes_state_expanded`/`_collapsed`; aufgeklappt die Details.
+- **Details:** Intro, je Kategorie ein Kopf (32-dp-Kreis, Label, Anzahl; TalkBack „Neu, 1 Punkt“, Überschrift)
+  und die Punkte (6-dp-Punkt in der Akzentfarbe, Lead titleSmall, Text bodyMedium, Unterpunkte mit „–“).
+- **Ganz unten** `LinkRow` `patchnotes_github` / `patchnotes_github_sub` auf `CHANGELOG.md` bei GitHub.
+- **Fehlen die Assets:** `OutlinedSection` mit `patchnotes_unavailable_title`, `_body` und Button
+  `patchnotes_unavailable_action` (tonal, `ic_open_in_new`).
+
+**Kategorie-Rollen** (nie nur Farbe: immer Icon und Text):
+
+| Kategorie | Label | Icon | Akzent | Container / on |
+|---|---|---|---|---|
+| Hinzugefügt | `patchnotes_cat_added` | `ic_add` | primary | primaryContainer / onPrimaryContainer |
+| Geändert | `patchnotes_cat_changed` | `ic_refresh` | secondary | secondaryContainer / onSecondaryContainer |
+| Behoben | `patchnotes_cat_fixed` | `ic_build` | success | successContainer / onSuccessContainer |
+| Sicherheit | `patchnotes_cat_security` | `ic_lock` | tertiary | tertiaryContainer / onTertiaryContainer |
+| Entfernt | `patchnotes_cat_removed` | `ic_remove_circle_outline` | onSurfaceVariant | surfaceContainerHigh / onSurfaceVariant |
+| Bekannte Punkte | `patchnotes_cat_known` | `ic_warning` | warning | warningContainer / onWarningContainer |
+| anderer Titel | Originaltitel | `ic_info` | onSurfaceVariant | surfaceContainerHigh / onSurfaceVariant |
+| Technik | — ausgeblendet, zählt nicht mit, steht auf GitHub | | | |
+
+| Key | Text |
+|---|---|
+| `patchnotes_title` / `cd_patchnotes` | Patchnotes / Patchnotes anzeigen |
+| `patchnotes_kicker` / `patchnotes_cd_hero` | Was ist neu / Was ist neu in Version %1$s |
+| `patchnotes_installed` / `patchnotes_version` / `patchnotes_highlights` | Installiert / Version %1$s / Das Wichtigste |
+| `patchnotes_show_all` (Plural) / `patchnotes_show_less` | Die Änderung im Detail · Alle %1$d Änderungen im Detail / Weniger anzeigen |
+| `patchnotes_state_expanded` / `_collapsed` | aufgeklappt / zugeklappt |
+| `patchnotes_earlier` / `patchnotes_legacy` | Frühere Versionen / Vor Version 3 |
+| `patchnotes_legacy_hint` | Die erste App-Generation – manches gibt es so nicht mehr. |
+| `patchnotes_cat_added/changed/fixed/security/removed/known` | Neu · Geändert · Behoben · Sicherheit · Entfernt · Bekannte Punkte |
+| `patchnotes_entries` (Plural) | %d Punkt / %d Punkte |
+| `patchnotes_only_tech` | Nur technische Änderungen – Details auf GitHub. |
+| `patchnotes_github` / `_sub` | Vollständiges Changelog / Auf GitHub, mit technischen Details |
+| `patchnotes_unavailable_title` | Patchnotes nicht verfügbar |
+| `patchnotes_unavailable_body` | In dieser App-Version fehlen die Patchnotes. Alle Änderungen stehen auf GitHub. |
+| `patchnotes_unavailable_action` | Auf GitHub ansehen |
 
 ---
 
