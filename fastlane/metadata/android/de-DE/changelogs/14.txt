@@ -1,0 +1,5 @@
+WhisperLoom 3.8.1
+• Neu: „Lesbarer glätten“ – Glätten repariert auf Wunsch auch holprige Sätze, deine Wörter und dein Ton bleiben
+• Neue Anweisungen für Glätten, Verschönern und Zusammenfassen
+• Diktierte Fragen und Bitten werden bearbeitet, nicht beantwortet
+• Glätten setzt kein Fragezeichen mehr hinter Aussagen

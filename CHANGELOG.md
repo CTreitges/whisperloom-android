@@ -2,6 +2,22 @@
 
 Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [3.8.1] — 2026-10-05
+
+### Hinzugefügt
+
+- **„Lesbarer glätten“.** Neuer Schalter unter Einstellungen → Text, direkt unter den Stufen (ab Werk aus). Gesprochenes liest sich wörtlich abgetippt oft holprig. Mit dem Schalter repariert „Glätten“ auch Satzabbrüche, Versprecher, Wiederholungen und Bandwurmsätze, behält bei einer Selbstkorrektur („um drei, nee, um halb vier“) nur die neue Angabe und rückt verrutschten Satzbau gerade („weil ich hab keine Zeit“ → „weil ich keine Zeit hab“). Deine Wortwahl, Kurzformen wie „hab“ und „nen“, kleine Wörter wie „halt“ und „ne?“, Du oder Sie und „ich glaub“ bleiben. Der Schalter gilt fürs Diktat und für geteilte Sprachnachrichten. Ohne ihn bleibt „Glätten“ wie bisher bei Zeichensetzung, Groß-/Kleinschreibung und Absätzen.
+
+### Geändert
+
+- **Neue Anweisungen für Glätten, Verschönern und Zusammenfassen.** Recherchiert und an 27 Test-Diktaten mit einem kleinen lokalen Modell (gemma3:4b) erprobt. „Verschönern“ formuliert flüssiger und behält dabei deinen Ton (locker bleibt locker, förmlich bleibt förmlich), deine Wörter und alle Fakten. „Zusammenfassen“ wird höchstens halb so lang, behält Namen, Zahlen, Termine und offene Fragen genau und bleibt bei „ich“ bzw. „wir“; ein sehr kurzes Diktat kommt nur bereinigt zurück.
+- **Diktierte Fragen und Bitten werden bearbeitet, nicht beantwortet.** Dein Diktat geht in jeder Stufe markiert an die KI. Vorher konnte ein kleines Modell auf „Schreib mir eine Einladung für Samstag“ die Einladung schreiben. Liefert ein Modell trotzdem eine weit längere Antwort, fügt WhisperLoom den Rohtext mit Hinweis ein. Eine Einleitung wie „Hier ist der geglättete Text:“ und Anführungszeichen um den ganzen Text fallen automatisch weg.
+
+### Behoben
+
+- **„Glätten“ setzt kein Fragezeichen mehr hinter Aussagen** (kleine Modelle machten aus „Bin in zehn Minuten da.“ eine Frage).
+- **„Füllwörter intelligent entfernen“ mit „Glätten“:** Die Anweisung widersprach sich nicht mehr selbst, doppelt gesagte Wörter verschwinden jetzt.
+
 ## [3.8.0] — 2026-09-30
 
 ### Hinzugefügt

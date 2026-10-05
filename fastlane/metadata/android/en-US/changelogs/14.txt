@@ -1,0 +1,5 @@
+WhisperLoom 3.8.1
+• New: "More readable polish" – polish can also fix bumpy sentences while keeping your words and tone
+• New instructions for polish, rephrase and summarise
+• Dictated questions and requests are edited, not answered
+• Polish no longer adds a question mark to statements
