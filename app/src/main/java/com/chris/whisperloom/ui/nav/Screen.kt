@@ -37,6 +37,9 @@ sealed class Screen(val key: String) {
      */
     data class Widgets(val tab: WidgetTab? = null, val edit: String? = null) : Screen("widgets")
 
+    /** Patchnotes (P): "?" neben der Versionsnummer in Home, Hilfe und Ueber-Sheet. */
+    data object Patchnotes : Screen("patchnotes")
+
     /** [section] 1..8 = initial geoeffneter Hilfe-Abschnitt (6 = Widgets & Pro Widgets). */
     data class Help(val section: Int = 1) : Screen("help")
 
@@ -78,6 +81,7 @@ sealed class Screen(val key: String) {
                 "advanced", "agent" -> Advanced
                 "widgets" -> Widgets(WidgetTab.fromKey(parts.getOrNull(1)), parts.getOrNull(2)?.ifEmpty { null })
                 "help" -> Help(arg ?: 1)
+                "patchnotes" -> Patchnotes
                 "tutorial" -> Tutorial(
                     arg ?: 0,
                     startBubbleAfter = parts.getOrNull(2) == "1",

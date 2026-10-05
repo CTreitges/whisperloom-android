@@ -784,4 +784,40 @@
     <string name="widget_task_pro_off">Pro Widgets sind aus</string>
     <!-- %1$s = Name des Widgets -->
     <string name="widget_task_no_server">Server fehlt im Widget „%1$s“</string>
+
+    <!-- ==== Patchnotes (P): „?“ neben der Versionsnummer, Inhalt aus CHANGELOG.md + Fastlane-Highlights ==== -->
+    <string name="patchnotes_title">Patchnotes</string>
+    <string name="cd_patchnotes">Patchnotes anzeigen</string>
+    <string name="patchnotes_kicker">Was ist neu</string>
+    <!-- %1$s = Versionsnummer -->
+    <string name="patchnotes_cd_hero">Was ist neu in Version %1$s</string>
+    <string name="patchnotes_installed">Installiert</string>
+    <string name="patchnotes_version">Version %1$s</string>
+    <string name="patchnotes_highlights">Das Wichtigste</string>
+    <plurals name="patchnotes_show_all">
+        <item quantity="one">Die Änderung im Detail</item>
+        <item quantity="other">Alle %1$d Änderungen im Detail</item>
+    </plurals>
+    <string name="patchnotes_show_less">Weniger anzeigen</string>
+    <string name="patchnotes_state_expanded">aufgeklappt</string>
+    <string name="patchnotes_state_collapsed">zugeklappt</string>
+    <string name="patchnotes_earlier">Frühere Versionen</string>
+    <string name="patchnotes_legacy">Vor Version 3</string>
+    <string name="patchnotes_legacy_hint">Die erste App-Generation – manches gibt es so nicht mehr.</string>
+    <string name="patchnotes_cat_added">Neu</string>
+    <string name="patchnotes_cat_changed">Geändert</string>
+    <string name="patchnotes_cat_fixed">Behoben</string>
+    <string name="patchnotes_cat_security">Sicherheit</string>
+    <string name="patchnotes_cat_removed">Entfernt</string>
+    <string name="patchnotes_cat_known">Bekannte Punkte</string>
+    <plurals name="patchnotes_entries">
+        <item quantity="one">%d Punkt</item>
+        <item quantity="other">%d Punkte</item>
+    </plurals>
+    <string name="patchnotes_only_tech">Nur technische Änderungen – Details auf GitHub.</string>
+    <string name="patchnotes_github">Vollständiges Changelog</string>
+    <string name="patchnotes_github_sub">Auf GitHub, mit technischen Details</string>
+    <string name="patchnotes_unavailable_title">Patchnotes nicht verfügbar</string>
+    <string name="patchnotes_unavailable_body">In dieser App-Version fehlen die Patchnotes. Alle Änderungen stehen auf GitHub.</string>
+    <string name="patchnotes_unavailable_action">Auf GitHub ansehen</string>
 </resources>

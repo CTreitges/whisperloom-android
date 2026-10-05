@@ -22,6 +22,7 @@ import com.chris.whisperloom.ui.nav.SetupRouter
 import com.chris.whisperloom.ui.nav.Start
 import com.chris.whisperloom.ui.nav.WidgetTab
 import com.chris.whisperloom.ui.nav.rememberNavState
+import com.chris.whisperloom.ui.patchnotes.PatchnotesScreen
 import com.chris.whisperloom.ui.settings.AdvancedScreen
 import com.chris.whisperloom.ui.settings.ButtonKeyboardScreen
 import com.chris.whisperloom.ui.settings.HelpScreen
@@ -78,6 +79,7 @@ fun WhisperLoomApp(env: AppEnv, route: RouteRequest? = null, onRouteConsumed: ()
                 Screen.Advanced -> AdvancedScreen(nav)
                 is Screen.Widgets -> WidgetsScreen(nav, tab = screen.tab, edit = screen.edit)
                 is Screen.Help -> HelpScreen(section = (nav.current as? Screen.Help)?.section ?: screen.section, nav = nav)
+                Screen.Patchnotes -> PatchnotesScreen(nav)
                 is Screen.Tutorial -> TutorialScreen(
                     startPage = screen.startPage,
                     kind = screen.kind,
