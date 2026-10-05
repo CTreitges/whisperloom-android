@@ -1,0 +1,3 @@
+WhisperLoom 3.8.2
+• New: patch notes in the app – tap the question mark next to the version
+• Highlights first, all details to expand, earlier versions below
