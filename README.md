@@ -4,7 +4,7 @@ Sprechen statt tippen: WhisperLoom nimmt auf, erkennt den Text und schreibt ihn 
 
 Die Erkennung läuft wahlweise **online** über deinen eigenen Zugang bei einem Anbieter (OpenAI, Groq, Mistral, ElevenLabs, Together AI, DeepInfra, OpenRouter oder ein eigener OpenAI-kompatibler Server) oder **offline** auf dem Gerät mit whisper.cpp und einem einmalig heruntergeladenen Modell. Eine optionale KI-Textverbesserung glättet, verschönert oder fasst zusammen.
 
-Version **3.8.0** — Nutzer-Anleitung: [docs/ANLEITUNG.md](docs/ANLEITUNG.md) · Änderungen: [CHANGELOG.md](CHANGELOG.md).
+Version **3.8.1** — Nutzer-Anleitung: [docs/ANLEITUNG.md](docs/ANLEITUNG.md) · Änderungen: [CHANGELOG.md](CHANGELOG.md) (in der App: **?** neben der Version).
 
 Inspiriert von [Wispr Flow](https://wisprflow.ai/) — eigenständige, unabhängige Implementierung.
 
@@ -101,6 +101,23 @@ Damit entfällt der komplette Native-Build — Kotlin, Tests und ein APK entsteh
 
 Native-Konfiguration (nur ohne `whisperloom.skipNative`): nur `arm64-v8a`, `GGML_CPU_ARM_ARCH=armv8.2-a+fp16+dotprod` mit Laufzeit-Guard in `OfflineSupport`, `c++_static` (eine `.so`), Debug-Buildtyp baut den Native-Teil trotzdem als Release (whisper.cpp PR #3913 — sonst unbrauchbar langsam), 16-KB-Page-Alignment, `debugSymbolLevel = SYMBOL_TABLE` im Release. `tools/check_jni_symbols.py` gleicht die `external fun`-Deklarationen in `WhisperLib.kt` mit den `JNIEXPORT`-Symbolen in `whisper_jni.cpp` ab (derselbe Abgleich läuft als `JniSymbolsTest`).
 
+### Patchnotes: CHANGELOG und Fastlane-Texte sind App-Inhalt
+
+`CHANGELOG.md` und `fastlane/metadata/android/de-DE/changelogs/` sind **App-Inhalt**: Die Task
+`copy<Variant>PatchnotesAssets` (`app/build.gradle.kts`) kopiert sie beim Build nach `assets/patchnotes/`, die App
+zeigt sie unter dem **?** neben der Versionsnummer (`ui/patchnotes/`). Fehlt eine der Quellen, scheitert der Build.
+Ihr Format ist damit ein Vertrag:
+
+- Versionskopf `## [x.y.z] — JJJJ-MM-TT` (`## [Unreleased]` wird nicht angezeigt)
+- die bekannten `###`-Kategorien: Hinzugefügt · Geändert · Behoben · Sicherheit · Entfernt · Bekannte Punkte ·
+  Technik (Technik wird ausgeblendet; andere Titel erscheinen unverändert)
+- Punkte als `- **Lead.** Text`, Unterpunkte zwei Leerzeichen eingerückt; inline nur `**fett**`, `` `Code` `` und
+  `[Text](https://…)`
+- Highlights: Zeile 1 `WhisperLoom x.y.z` (optional ` – Tagline`), danach `• Punkt` bzw. `• Neu: Punkt`
+
+`PatchnotesAssetsTest` hält den Release ehrlich: Zur aktuellen `versionName` muss `## [x.y.z]` im CHANGELOG stehen und
+zum `versionCode` die Highlight-Datei existieren.
+
 ### CI (GitHub Actions)
 
 `.github/workflows/build.yml` läuft bei jedem Push und Pull Request:
@@ -158,6 +175,10 @@ Alle Tests laufen ohne Gerät und ohne Emulator (`./gradlew testDebugUnitTest`):
 | `overlay/BubbleUiTest` | Timer „● m:ss", Blinken mit 1 Hz |
 | `overlay/BubbleVisualsTest` | Die vier Zustände unterscheiden sich in Füllung, Ring, Icon und Label |
 | `overlay/OverlayLayoutsTest` | `floating_mic`/`floating_cancel` inflaten, Renderer zeichnet jeden Zustand |
+| `PatchnotesAssetsTest` | Release-Wächter: CHANGELOG-Eintrag und Highlight-Datei zur aktuellen Version liegen in den Assets |
+| `ui/patchnotes/PatchnotesParserTest` | CHANGELOG-/Highlight-Parser: Versionsköpfe, `[Unreleased]`, Kategorien, Lead-Split, Unterpunkte, Inline-Markdown, Teaser; dazu die echten Dateien (historische Fakten) |
+| `ui/patchnotes/PatchnotesScreenTest` | Patchnotes-Screen mit den echten Assets: Hero, Aufklappen, Technik ausgeblendet, „Vor Version 3", Überschriften, Fehlerzustand |
+| `ui/patchnotes/PatchnotesScreenshotTest` | PNGs der Patchnotes, Home-Fußzeile (360 dp) und des Über-Sheets nach `app/build/reports/screenshots/` (Robolectric-Native-Graphics; auf linux-aarch64 übersprungen) |
 | `ui/MainFlowTest` | Oberflächen-Abläufe, u. a. Vokabular-Sheet (Liste, Zeile mit Anzahl und Datei), Absatz-Schalter (an, wirkt nur mit Stufe), Ollama-Masken (Server-Adresse, Modell-Auswahl mit freier Eingabe) |
 | `ui/theme/WhisperLoomThemeTest` | Compose-Smoke, Spec-Tokens im Farbschema, Palette == `colors.xml` |
 | `whisper/DownloadStateTest` | Prozent-Rechnung, Zustands-Map je Modell |

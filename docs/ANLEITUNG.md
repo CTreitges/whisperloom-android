@@ -80,6 +80,7 @@ WhisperLoom liegt in einem eigenen F-Droid-Repository. Damit bekommst du Updates
 
 - **Ab 3.2.0 — neuer Name WhisperLoom, neue Paket-ID `com.chris.whisperloom`:** WhisperLoom wird als neue App installiert; die vorherige Version deinstallieren und API-Key/Einstellungen einmal neu eingeben. Signaturschlüssel unverändert.
 - Eine neue Version wird einfach **über die alte installiert** (APK herunterladen, antippen, „Aktualisieren"). Alle Einstellungen, der API-Key und heruntergeladene Offline-Modelle bleiben erhalten.
+- Was neu ist, zeigt das **?** neben der Versionsnummer.
 - Beim Sprung von Version 2.x auf 3.0.0 werden die alten Einstellungen automatisch übernommen (Details in den [Häufigen Fragen](#14-häufige-fragen)).
 - Voraussetzung dafür ist derselbe **Signaturschlüssel**: Alle offiziellen Releases werden mit demselben Schlüssel signiert. Meldet Android „App nicht installiert" oder „Paket steht in Konflikt", stammt die bereits installierte Version aus einer anders signierten Quelle (z. B. ein selbst gebautes Debug-APK). Dann bleibt nur: alte Version deinstallieren (Einstellungen gehen dabei verloren) und das Release neu installieren.
 
@@ -176,7 +177,7 @@ Danach zeigt WhisperLoom beim Öffnen den Startbildschirm:
 - Ganz oben die Karte **Schwebender Mikro-Knopf** mit dem großen Button **Mikro-Knopf starten** bzw. **Mikro-Knopf beenden**. Fehlt eine Pflicht-Berechtigung, ist der Button gesperrt und ein Chip („Mikrofon fehlt — beheben" / „„Über anderen Apps anzeigen" fehlt — beheben") führt in den passenden Schritt.
 - Ein Banner **Noch nicht optimal** mit Button **Beheben**, wenn die Bedienungshilfe aus ist, Offline gewählt aber kein Modell geladen ist, oder Benachrichtigungen verweigert sind.
 - Die Karte **Status** mit den Zeilen **Erkennung**, **Textverbesserung**, **Berechtigungen**, **Diktat-Tastatur** und (sobald relevant) **Offline-Modelle**. Jede Zeile führt in die passende Einstellung.
-- Ein Hinweis auf das Abtippen von Sprachnachrichten und ganz unten **Einrichtung erneut öffnen**.
+- Ein Hinweis auf das Abtippen von Sprachnachrichten und ganz unten die Fußzeile: die Versionsnummer mit **?** daneben und **Einrichtung erneut öffnen**. Das **?** öffnet die **Patchnotes**: oben die neueste Version mit dem Wichtigsten und „Alle … Änderungen im Detail“ zum Aufklappen, darunter **Frühere Versionen** und **Vor Version 3** zum Antippen, ganz unten das vollständige Changelog auf GitHub. Dasselbe **?** steht in **Anleitung & Hilfe** (unten) und unter **Über WhisperLoom**.
 - Oben rechts: **?** (Anleitung und Hilfe) und **⚙** (Einstellungen).
 
 Die **Einstellungen** sind in vier Gruppen mit Überschrift geteilt:

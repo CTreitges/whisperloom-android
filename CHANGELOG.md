@@ -2,6 +2,12 @@
 
 Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [Unreleased]
+
+### Hinzugefügt
+
+- **Patchnotes in der App.** Das Fragezeichen neben der Versionsnummer (Startbildschirm unten, Anleitung & Hilfe, Über WhisperLoom) zeigt, was sich geändert hat: das Wichtigste zuerst, Details zum Aufklappen, frühere Versionen kompakt darunter.
+
 ## [3.8.1] — 2026-10-05
 
 ### Hinzugefügt
