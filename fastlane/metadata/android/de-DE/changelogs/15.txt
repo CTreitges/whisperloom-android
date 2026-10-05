@@ -1,0 +1,3 @@
+WhisperLoom 3.8.2
+• Neu: Patchnotes in der App – Fragezeichen neben der Version antippen
+• Das Wichtigste zuerst, alle Details zum Aufklappen, frühere Versionen darunter
