@@ -43,6 +43,18 @@ class TextCleanupTest {
         assertEquals(liste, clean(liste, raw = "hier sind meine punkte brot milch"))
     }
 
+    /** Review: das Modell bricht nach dem diktierten Doppelpunkt um — die Zeile gehoert trotzdem dem Sprecher. */
+    @Test fun diktierteEinleitungMitUmbruchDesModellsBleibt() {
+        val glaetten = "Okay, hier ist der neue Text:\nLiebe Frau Müller,\nich komme am Montag."
+        assertEquals(glaetten, clean(glaetten, raw = "okay hier ist der neue Text: liebe Frau Müller ich komme am Montag"))
+        val kuerzen = "Hier ist die Zusammenfassung:\n- Angebot schicken\n- Termin am Montag"
+        assertEquals(kuerzen, clean(kuerzen, raw = "hier ist die Zusammenfassung vom Meeting wir schicken das Angebot und der Termin ist am Montag"))
+        val en = "Sure, here's the summary:\n- fix login\n- ship Friday"
+        assertEquals(en, clean(en, raw = "sure here's the summary we fix login and ship friday"))
+        // Sagt der Sprecher etwas anderes, ist dieselbe Zeile weiter eine Vorrede des Modells.
+        assertEquals("- Angebot schicken", clean("Hier ist die Zusammenfassung:\n- Angebot schicken", raw = "wir schicken das Angebot"))
+    }
+
     @Test fun anfuehrungszeichenUmDenGanzenTextFallenWeg() {
         assertEquals("Ich kann morgen nicht.", clean("„Ich kann morgen nicht.“"))
         assertEquals("Ich kann morgen nicht.", clean("\"Ich kann morgen nicht.\""))

@@ -158,11 +158,25 @@ class TextRefiner(private val access: ApiAccess) {
          */
         fun cleanText(raw: String, output: String): String {
             var text = MARKER.replace(output, "").trim()
-            text = stripPreamble(text, TEXT_PREAMBLE)
+            if (!saidFirst(raw, text)) text = stripPreamble(text, TEXT_PREAMBLE)
             if (QUOTED.matchEntire(raw.trim()) == null) text = unwrap(text)
             requirePlausibleLength(raw, text, "Modell hat geantwortet, statt den Text zu bearbeiten")
             return text
         }
+
+        /**
+         * Hat der Sprecher die erste Zeile selbst gesagt ("okay hier ist der neue Text …")? Dann ist
+         * sie keine Vorrede, auch wenn das Modell danach einen Umbruch setzt (Review 2026-10-05).
+         */
+        private fun saidFirst(raw: String, text: String): Boolean {
+            val first = words(text.lineSequence().first())
+            return first.isNotEmpty() && words(raw).take(first.size) == first
+        }
+
+        private fun words(s: String): List<String> =
+            s.lowercase().split(NON_WORD).filter { it.isNotEmpty() }
+
+        private val NON_WORD = Regex("[^\\p{L}\\p{N}]+")
 
         private fun requirePlausibleLength(raw: String, text: String, message: String) {
             if (RefinePrompt.wordCount(text) > MAX_GROWTH * RefinePrompt.wordCount(raw) + GROWTH_SLACK) {
@@ -186,7 +200,7 @@ class TextRefiner(private val access: ApiAccess) {
             RegexOption.IGNORE_CASE,
         )
         // Wie [PREAMBLE], fuer bearbeiteten Text: "Hier ist der geglättete Text:" + Zeilenumbruch.
-        // Ein Diktat hat davor nie einen Umbruch — Whisper liefert eine Zeile.
+        // Diktiert der Sprecher selbst so eine Zeile, bleibt sie ([saidFirst]).
         private val TEXT_PREAMBLE = Regex(
             "^(hier|here|sure|klar|gerne?|natürlich|okay|ok|certainly)\\b[^\\n]*" +
                 "\\b(dein|deine|der|die|das|ihr|your|the)\\b[^\\n]*" +
