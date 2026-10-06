@@ -459,7 +459,7 @@
     <string name="models_small">Small</string>
     <string name="models_small_sub">190 MB · ~430 MB RAM · gute Qualität für Deutsch</string>
     <string name="models_large">Large v3 Turbo</string>
-    <string name="models_large_sub">574 MB · ~1 GB RAM · beste Qualität, langsam, ab 6 GB Gerätespeicher</string>
+    <string name="models_large_sub">574 MB · ~1 GB RAM · beste Qualität, langsam, Gerät ab 6 GB RAM</string>
     <string name="models_empty_title">Noch kein Modell geladen</string>
     <string name="models_empty_body">Empfehlung: Small — gute Qualität für Deutsch bei 190 MB.</string>
     <string name="models_source">Quelle: huggingface.co/ggerganov/whisper.cpp</string>
@@ -467,9 +467,9 @@
     <string name="models_section_llm">Textverbesserung</string>
     <string name="models_llm_intro">Verbessert offline erkannten Text auf dem Gerät — ohne Netz, der Text verlässt das Handy nicht. Wann es rechnet, stellst du unter Text ein.</string>
     <string name="models_gemma_e2b">Gemma 4 E2B</string>
-    <string name="models_gemma_e2b_sub">%1$s · ~1,8 GB RAM · ab 6 GB Gerätespeicher</string>
+    <string name="models_gemma_e2b_sub">%1$s · ~1,8 GB RAM · Gerät ab 6 GB RAM</string>
     <string name="models_gemma_e4b">Gemma 4 E4B</string>
-    <string name="models_gemma_e4b_sub">%1$s · ~3,3 GB RAM · genauer, langsamer · ab 8 GB Gerätespeicher</string>
+    <string name="models_gemma_e4b_sub">%1$s · ~3,3 GB RAM · genauer, langsamer · Gerät ab 8 GB RAM</string>
     <string name="models_llm_size">%1$s · +%2$s beim ersten Start</string>
     <string name="models_llm_source">Quelle: huggingface.co/litert-community (Gemma 4, Apache 2.0)</string>
     <string name="models_metered_title">Über mobile Daten laden?</string>

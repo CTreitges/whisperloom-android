@@ -47,6 +47,13 @@ class AnleitungsTexteTest {
         assertEquals(emptyMap<String, Int>(), zuLang(mapOf("one" to eins, "other" to mehr), 200))
     }
 
+    @Test fun ramGrenzenHeissenRamNichtGeraetespeicher() {
+        // "Geraetespeicher" ist im Deutschen der Flash-Speicher — die Grenzen (6/8 GB) meinen den Arbeitsspeicher.
+        assertEquals(emptyMap<String, String>(), texte.filterValues { it.contains("Gerätespeicher") })
+        listOf("models_large_sub", "models_gemma_e2b_sub").forEach { assertTrue(it, texte.getValue(it).contains("ab 6 GB RAM")) }
+        assertTrue(texte.getValue("models_gemma_e4b_sub").contains("ab 8 GB RAM"))
+    }
+
     @Test fun lizenzenNennenDasLokaleTextmodell() {
         // 3.9.0: LiteRT-LM (mit Gson) steckt im APK, Gemma 4 wird nachgeladen — beides gehoert in "Ueber" und die Hilfe.
         val lizenz = texte.getValue("about_license")

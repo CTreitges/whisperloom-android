@@ -116,7 +116,7 @@ class TextModelUiTest {
         screen(env(SystemStatus(totalRamBytes = 6L shl 30))) { ModelsScreen(it) }
         val e2b = TextModelCatalog.GEMMA4_E2B
         compose.onNodeWithText(
-            "${size(e2b.bytes)} · +${size(e2b.extraDiskBytes)} beim ersten Start · ~1,8 GB RAM · ab 6 GB Gerätespeicher",
+            "${size(e2b.bytes)} · +${size(e2b.extraDiskBytes)} beim ersten Start · ~1,8 GB RAM · Gerät ab 6 GB RAM",
         ).assertExists()
         compose.onNodeWithContentDescription("Gemma 4 E2B herunterladen").assertIsEnabled()
         compose.onNodeWithContentDescription("Gemma 4 E4B herunterladen").assertIsNotEnabled()

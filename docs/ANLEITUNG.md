@@ -547,7 +547,7 @@ Einstellungen → **Offline-Modelle** (oder Schritt 2b im Assistenten). „Model
 | **Tiny** | 32 MB | ~250 MB | nur zum Ausprobieren — für Deutsch zu ungenau | — |
 | **Base** | 60 MB | ~355 MB | schnell, kurze Sätze | wenn Small zu langsam ist |
 | **Small** | 190 MB | ~430 MB | gute Qualität für Deutsch | **Empfohlen** (Voreinstellung) |
-| **Large v3 Turbo** | 574 MB | ~1 GB | beste Qualität, langsam, ab 6 GB Gerätespeicher | nur für geduldige Nutzer mit starkem Gerät |
+| **Large v3 Turbo** | 574 MB | ~1 GB | beste Qualität, langsam, Gerät ab 6 GB RAM | nur für geduldige Nutzer mit starkem Gerät |
 
 Die Modelle sind quantisierte Versionen (q5) der OpenAI-Whisper-Modelle aus dem Repository `huggingface.co/ggerganov/whisper.cpp`; alle sind mehrsprachig. Quelle und Prüfsummen sind fest in der App hinterlegt — eine beschädigte oder veränderte Datei wird abgelehnt.
 

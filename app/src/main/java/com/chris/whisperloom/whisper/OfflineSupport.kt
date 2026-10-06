@@ -63,7 +63,7 @@ object OfflineSupport {
     }
 
     /**
-     * Unter 3 GB Geraetespeicher wird Offline gar nicht angeboten (UX-Spec §2 Schritt 1): small
+     * Unter 3 GB Arbeitsspeicher wird Offline gar nicht angeboten (UX-Spec §2 Schritt 1): small
      * (~430 MB) laeuft im IME-Prozess neben der Ziel-App — auf 2-GB-Geraeten schiesst der LMK ihn ab.
      */
     const val MIN_DEVICE_RAM_BYTES = 3L shl 30
