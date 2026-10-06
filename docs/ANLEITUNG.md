@@ -485,7 +485,7 @@ Dann erscheinen eigene Felder: **Anbieter** (OpenAI · Groq · Mistral · OpenRo
 
 Auch hier gibt es **Zugang prüfen** — WhisperLoom schickt dem Modell eine Mini-Anfrage und wertet die Antwort aus.
 
-**Ohne Netz wartet nichts:** Vor jeder Online-Textverbesserung prüft WhisperLoom, ob das Telefon gerade Internet hat. Fehlt es, geht keine Anfrage raus, und der Text kommt sofort — ohne KI mit dem Hinweis „Textverbesserung übersprungen: Kein Netz für den Online-Zugang" oder, bei Offline-Erkennung, je nach Regel lokal verbessert ([9.7](#97-lokales-textmodell-gemma-4)). Für Server im eigenen Netz (private Adresse, `*.local`, `*.lan`, `*.home.arpa`, `*.internal`, Tailscale mit `100.x` oder `*.ts.net`) reicht eine WLAN- oder VPN-Verbindung, auch ohne Internet.
+**Ohne Netz wartet nichts:** Vor jeder Online-Textverbesserung prüft WhisperLoom, ob das Telefon gerade Internet hat. Fehlt es, geht keine Anfrage raus, und der Text kommt sofort — ohne KI mit dem Hinweis „Textverbesserung übersprungen: Kein Netz für den Online-Zugang" oder, bei Offline-Erkennung, je nach Regel lokal verbessert ([9.7](#97-lokales-textmodell-gemma-4)). Für Server im eigenen Netz (private Adresse, `*.local`, `*.lan`, `*.home.arpa`, `*.internal`, Tailscale mit `100.x` oder `*.ts.net`) reicht eine WLAN- oder VPN-Verbindung, auch ohne Internet. Ein aktives VPN zählt nur, wenn darunter ein Netz da ist — Android meldet ein VPN sonst auch im Funkloch als verbunden. Nach einer Online-Erkennung reicht jedes verbundene Netz: Die Erkennung ist gerade darüber gelaufen.
 
 ### 8.3 Regeln ohne KI
 
@@ -604,7 +604,7 @@ Erkennst du offline und ist eine KI-Stufe an (fürs Diktat oder für geteilte Sp
 
 **Laden, wählen, löschen** wie bei den Whisper-Modellen ([9.3](#93-laden-auswählen-löschen)): **Laden (2,6 GB)**, Nachfrage über mobile Daten, Download im Hintergrund mit Benachrichtigung, Fortsetzen nach Abbruch, Prüfung von Größe und Prüfsumme. Es lädt immer nur ein Modell zur Zeit. Gemma 4 E2B ist ab Werk gewählt. Ist das gewählte Textmodell nicht geladen, wählt ein fertiger Download das neue von selbst aus; sonst wechselst du nach dem Laden per Radio-Button. **Löschen** fragt „Gemma 4 E2B löschen? — 2,6 GB werden frei. Für die lokale Textverbesserung muss dann wieder ein Textmodell geladen werden." und nimmt den Zwischenspeicher mit. Ist es das gewählte und einzige geladene Textmodell, steht dabei „Dies ist das aktive Textmodell — offline kommt der Text danach ohne KI."
 
-**Im Arbeitsspeicher:** Das Modell wird geladen, sobald es gebraucht wird. Damit das nicht erst nach der Erkennung beginnt, startet WhisperLoom das Laden schon mit der Aufnahme (Knopf, Tastatur, Pro Widget). Nach 2 Minuten ohne Diktat, bei knappem Speicher, beim Löschen und beim Wechsel des Modells gibt WhisperLoom es wieder frei.
+**Im Arbeitsspeicher:** Das Modell wird geladen, sobald es gebraucht wird. Damit das nicht erst nach der Erkennung beginnt, startet WhisperLoom das Laden schon mit der Aufnahme (Knopf, Tastatur, Pro Widget). Vorgewärmt bleibt es bis zur Verbesserung geladen, auch wenn Aufnahme und Erkennung länger dauern (höchstens 10 Minuten). Nach 2 Minuten ohne Diktat, bei knappem Speicher, beim Löschen und beim Wechsel des Modells gibt WhisperLoom es wieder frei.
 
 **Die Regel** steht unter Einstellungen → **Text** → Karte **Offline-Erkennung** (nur auf Geräten, die offline erkennen können), Überschrift „Textverbesserung bei Offline-Erkennung":
 
@@ -849,7 +849,10 @@ Offline ist eine KI-Stufe an, aber das lokale Textmodell fehlt. In der Warnkarte
 Das Textmodell ließ sich nicht laden oder rechnen, meist weil gerade zu wenig Arbeitsspeicher frei ist. Andere Apps schließen und erneut diktieren; hilft das nicht, Gemma 4 E2B statt E4B wählen. Kommt der Fehler gleich beim ersten Diktat nach dem Download, das Textmodell unter Offline-Modelle löschen und neu laden.
 
 **Die lokale Textverbesserung dauert zu lange.**
-Ein Tipp auf die Statuszeile, das Mikrofon oder den Knopf fügt den Text sofort ohne KI ein. Dauerhaft helfen Gemma 4 E2B statt E4B oder die Regel „Online, ohne Netz lokal" mit eigenem Online-Zugang.
+Ein Tipp auf die Statuszeile, das Mikrofon oder den Knopf fügt den Text sofort ohne KI ein. Spätestens nach 45 Sekunden plus 0,6 Sekunden je Wort (höchstens 10 Minuten) bricht WhisperLoom die Rechnung selbst ab; der Text kommt dann ohne KI mit „Lokales Textmodell fehlgeschlagen". Dauerhaft helfen Gemma 4 E2B statt E4B oder die Regel „Online, ohne Netz lokal" mit eigenem Online-Zugang.
+
+**„Textverbesserung übersprungen: Diktat zu lang für das lokale Textmodell".**
+Das lokale Modell fasst Diktat und Antwort zusammen nur rund 4.000 Tokens. Ab etwa 800 Wörtern rechnet es deshalb gar nicht erst — sonst käme nur der Anfang des Texts zurück. Kürzer diktieren oder mit eigenem Online-Zugang „Online, ohne Netz lokal" wählen.
 
 **„Datei beschädigt — erneut laden" / „Offline-Modell konnte nicht geladen werden".**
 Modell unter Offline-Modelle löschen und neu laden. Tritt der Fehler direkt nach dem Download auf, war die Übertragung fehlerhaft; WhisperLoom lädt das Modell beim nächsten Versuch neu.
