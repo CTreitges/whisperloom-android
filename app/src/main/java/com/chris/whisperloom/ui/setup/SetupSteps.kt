@@ -34,6 +34,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chris.whisperloom.Engine
 import com.chris.whisperloom.OfflineRefineRule
 import com.chris.whisperloom.R
+import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.ui.access.SttAccessSection
 import com.chris.whisperloom.ui.components.CardShape
 import com.chris.whisperloom.ui.components.DisclosureKind
@@ -212,8 +213,9 @@ private fun modelStep(facts: SetupFacts, actions: StepActions): StepUi {
     ) {
         ModelListSection(actions.snack, showEmptyState = false)
         Text(stringResource(R.string.setup_s2b_text_title), style = MaterialTheme.typography.titleMedium)
-        // Ist offline schon eine KI-Stufe an, stellt die Pflichtkarte dieselbe Wahl (Spec §4).
-        if (localModelMissing(prefs, env.status)) {
+        // Ist offline schon eine KI-Stufe an, stellt die Pflichtkarte dieselbe Wahl (Spec §4). Laeuft der
+        // Download, bleibt die getroffene Wahl stehen; scheitert er, zeigt die Pflichtkarte den Grund.
+        if (localModelMissing(prefs, env.status) && download == null) {
             LocalModelRequiredCard()
         } else {
             val otherRunning = states.any { (id, state) -> id != model.id && state is DownloadState.Running }
@@ -233,14 +235,19 @@ private fun modelStep(facts: SetupFacts, actions: StepActions): StepUi {
 
 /**
  * Die beiden Karten "Lokales Textmodell" / "Ueberspringen" (Muster [EngineOption]). Lokal startet den
- * Download des Textmodells (ist es schon da oder laedt es: nur die Regel); die KI-Stufe aendert der
- * Assistent nicht. [busy]: ein anderer Download laeuft — der Dienst laedt nur eins, "Lokal" geht erst danach.
+ * Download des Textmodells (ist es schon da oder laedt es: nur die Regel). Stehen beide KI-Stufen auf
+ * "Aus" (ab Werk), schaltet Lokal "Glaetten" ein und sagt das — sonst bewirkte das Modell nichts; eine
+ * gewaehlte Stufe bleibt. [busy]: ein anderer Download laeuft — der Dienst laedt nur eins, "Lokal" geht erst danach.
  */
 @Composable
 private fun TextModelChoice(model: OfflineModel, choice: TextChoice?, loading: Boolean, busy: Boolean) {
     val env = LocalAppEnv.current
     val prefs = env.prefs
-    val load = rememberTextModelLoad()
+    val noStage = prefs.refineMode == RefineMode.OFF && prefs.shareRefineMode == RefineMode.OFF
+    fun polishIfNoStage() {
+        if (prefs.refineMode == RefineMode.OFF && prefs.shareRefineMode == RefineMode.OFF) prefs.refineMode = RefineMode.POLISH
+    }
+    val load = rememberTextModelLoad { polishIfNoStage() }
     val fits = OfflineSupport.fitsDevice(env.status.totalRamBytes, model)
     Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         EngineOption(
@@ -249,12 +256,17 @@ private fun TextModelChoice(model: OfflineModel, choice: TextChoice?, loading: B
             icon = R.drawable.ic_auto_fix_high,
             iconTint = MaterialTheme.colorScheme.tertiary,
             title = stringResource(R.string.setup_s2b_local),
-            body = stringResource(R.string.setup_s2b_local_body, offlineModelLabel(model.id), textModelSize(model)),
+            body = stringResource(
+                if (noStage) R.string.setup_s2b_local_body_polish else R.string.setup_s2b_local_body,
+                offlineModelLabel(model.id),
+                textModelSize(model),
+            ),
             badge = null,
             unavailable = if (fits) null else stringResource(R.string.models_too_big),
         ) {
             if (loading || env.status.textModelReady(model.id)) {
                 if (prefs.offlineRefine == OfflineRefineRule.SKIP) prefs.offlineRefine = OfflineRefineRule.LOCAL
+                polishIfNoStage()
             } else {
                 load.start(model)
             }

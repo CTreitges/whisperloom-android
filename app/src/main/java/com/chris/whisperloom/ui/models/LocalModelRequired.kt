@@ -74,14 +74,15 @@ fun textModelToLoad(selectedId: String, totalRamBytes: Long): OfflineModel {
 /**
  * "Textmodell laden" (Pflichtkarte, Text-Karte, Assistent): Download wie in der Modell-Liste, und
  * sobald er startet, ist das Modell gewaehlt — steht die Regel auf "Ueberspringen", gilt danach
- * "Lokales Textmodell" (der Klick IST diese Wahl).
+ * "Lokales Textmodell" (der Klick IST diese Wahl). [onStarted] laeuft danach (nicht bei Abbruch in D2).
  */
 @Composable
-fun rememberTextModelLoad(): ModelDownload {
+fun rememberTextModelLoad(onStarted: () -> Unit = {}): ModelDownload {
     val prefs = LocalAppEnv.current.prefs
     return rememberModelDownload { model ->
         prefs.localLlmModel = model.id
         if (prefs.offlineRefine == OfflineRefineRule.SKIP) prefs.offlineRefine = OfflineRefineRule.LOCAL
+        onStarted()
     }
 }
 

@@ -393,16 +393,74 @@ class TextModelUiTest {
         compose.onNodeWithText("Weiter").assertIsEnabled()
     }
 
-    @Test fun schritt2bLokalStartetDenDownloadUndAendertDieStufeNicht() {
+    @Test fun schritt2bLokalStartetDenDownloadUndSchaltetGlaettenEin() {
+        // Neuinstallation: beide Stufen ab Werk "Aus" — ohne Stufe bewirkte das Textmodell nichts.
         prefs.offlineRefine = OfflineRefineRule.SKIP
+        schritt2b()
+        compose.onNodeWithText("verbessert den Text auf dem Gerät und schaltet „Glätten“ ein.", substring = true).assertExists()
+        compose.onNode(isSelectable() and hasText("Lokales Textmodell")).performClick()
+        compose.waitForIdle()
+        assertEquals("erst nach D2", RefineMode.OFF, Prefs(ctx).refineMode)
+        compose.onNodeWithText("Laden").performClick() // D2
+        compose.waitForIdle()
+        assertEquals("gemma4_e2b", startedService()?.getStringExtra(ModelDownloadService.EXTRA_MODEL_ID))
+        assertEquals("Klick ist die Wahl", OfflineRefineRule.LOCAL, Prefs(ctx).offlineRefine)
+        assertEquals("Glätten", RefineMode.POLISH, Prefs(ctx).refineMode)
+    }
+
+    @Test fun schritt2bLokalLaesstEineGewaehlteStufe() {
+        // Nur die Stufe fuer geteilte Sprachnachrichten ist an: die Diktat-Stufe bleibt "Aus".
+        prefs.offlineRefine = OfflineRefineRule.SKIP
+        prefs.shareRefineMode = RefineMode.SUMMARIZE
+        schritt2b()
+        compose.onNodeWithText("schaltet „Glätten“ ein", substring = true).assertDoesNotExist()
+        compose.onNode(isSelectable() and hasText("Lokales Textmodell")).performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Laden").performClick() // D2
+        compose.waitForIdle()
+        assertEquals(OfflineRefineRule.LOCAL, Prefs(ctx).offlineRefine)
+        assertEquals("Stufe bleibt", RefineMode.OFF, Prefs(ctx).refineMode)
+    }
+
+    @Test fun schritt2bLokalMitGeladenemModellSchaltetGlaettenEin() {
+        prefs.offlineRefine = OfflineRefineRule.SKIP
+        schritt2b(SystemStatus(installedModels = setOf("small"), installedTextModels = setOf("gemma4_e2b")))
+        compose.onNode(isSelectable() and hasText("Lokales Textmodell")).performClick()
+        compose.waitForIdle()
+        assertEquals(OfflineRefineRule.LOCAL, Prefs(ctx).offlineRefine)
+        assertEquals(RefineMode.POLISH, Prefs(ctx).refineMode)
+        assertEquals("schon geladen", null, startedService())
+    }
+
+    @Test fun schritt2bGescheiterterDownloadZeigtDenGrundUndErneutLaden() {
         schritt2b()
         compose.onNode(isSelectable() and hasText("Lokales Textmodell")).performClick()
         compose.waitForIdle()
         compose.onNodeWithText("Laden").performClick() // D2
         compose.waitForIdle()
-        assertEquals("gemma4_e2b", startedService()?.getStringExtra(ModelDownloadService.EXTRA_MODEL_ID))
-        assertEquals("Klick ist die Wahl", OfflineRefineRule.LOCAL, Prefs(ctx).offlineRefine)
-        assertEquals("Stufe bleibt", RefineMode.OFF, Prefs(ctx).refineMode)
+        try {
+            ModelDownloads.update("gemma4_e2b", DownloadState.Failed("Nicht genug Speicherplatz", retryable = false))
+            compose.waitForIdle()
+            compose.onNodeWithText("Fehlgeschlagen: Nicht genug Speicherplatz").assertExists()
+            compose.onNodeWithText("Textmodell laden (${size(TextModelCatalog.GEMMA4_E2B.bytes)})").assertIsEnabled()
+            compose.onNodeWithText("Überspringen").assertIsEnabled()
+            compose.onNodeWithText("Weiter").assertIsNotEnabled()
+        } finally {
+            ModelDownloads.clear("gemma4_e2b")
+        }
+    }
+
+    @Test fun schritt2bMitStufeBleibtDieWahlWaehrendDesDownloads() {
+        prefs.refineMode = RefineMode.POLISH
+        ModelDownloads.update("gemma4_e2b", DownloadState.Running(1_000, TextModelCatalog.GEMMA4_E2B.bytes, 500))
+        try {
+            schritt2b()
+            pflichtkarte.assertCountEquals(0)
+            compose.onNode(isSelectable() and hasText("Lokales Textmodell")).assertIsSelected()
+            compose.onNodeWithText("Lädt im Hintergrund weiter — du kannst schon weitermachen.").assertExists()
+        } finally {
+            ModelDownloads.clear("gemma4_e2b")
+        }
     }
 
     @Test fun schritt2bWeiterWaehrendDasTextmodellImHintergrundLaedt() {

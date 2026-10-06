@@ -162,6 +162,7 @@
     <string name="setup_s2b_text_title">Textverbesserung ohne Netz</string>
     <string name="setup_s2b_local">Lokales Textmodell</string>
     <string name="setup_s2b_local_body">%1$s verbessert den Text auf dem Gerät. Einmal laden: %2$s.</string>
+    <string name="setup_s2b_local_body_polish">%1$s verbessert den Text auf dem Gerät und schaltet „Glätten“ ein. Einmal laden: %2$s.</string>
     <string name="setup_s2b_skip">Überspringen</string>
     <string name="setup_s2b_skip_body">Nur die Erkennung — offline kommt der Text ohne KI. Ein Textmodell kannst du später unter Offline-Modelle laden.</string>
     <string name="setup_s2b_text_open">Textmodell laden oder „Überspringen“ wählen.</string>
