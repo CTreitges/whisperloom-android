@@ -148,6 +148,28 @@ class TextModelScreenshotTest {
         shot("textmodell-text-online-zugang")
     }
 
+    @Test fun textKarteBeideTextmodelleAuf16Gb() {
+        // E2B geladen und gewaehlt, E4B passt (16 GB): ein Tipp laedt es.
+        installSparse(ctx, TextModelCatalog.GEMMA4_E2B)
+        screen(ready.copy(installedTextModels = setOf("gemma4_e2b"), totalRamBytes = 16L shl 30)) { TextSettingsScreen(it) }
+        nachOben(hasText("Offline-Erkennung"))
+        shot("textmodell-text-auswahl-16gb")
+    }
+
+    @Test fun assistent2bNachLokalMitLaufendemDownload() {
+        // Nach "Lokales Textmodell": E2B laedt, E4B wartet mit Hinweis.
+        prefs.refineMode = RefineMode.OFF
+        installSparse(ctx, ModelCatalog.SMALL)
+        ModelDownloads.update("gemma4_e2b", DownloadState.Running(1_294_073_856, TextModelCatalog.GEMMA4_E2B.bytes, 5_000_000))
+        try {
+            screen(ready.copy(totalRamBytes = 16L shl 30)) { SetupScreen(SetupRouter.STEP_ACCESS, it) }
+            nachOben(hasText("Textverbesserung ohne Netz"), abstandPx = 40f)
+            shot("textmodell-assistent-2b-auswahl")
+        } finally {
+            ModelDownloads.clear("gemma4_e2b")
+        }
+    }
+
     @Test fun homeMitBanner() {
         screen(ready) { HomeScreen(it) }
         shot("textmodell-home-banner")

@@ -50,7 +50,6 @@ import com.chris.whisperloom.ui.components.offlineModelLabel
 import com.chris.whisperloom.ui.components.openOrSnack
 import com.chris.whisperloom.ui.components.textModelSize
 import com.chris.whisperloom.ui.components.rememberPermissionRequest
-import com.chris.whisperloom.ui.models.DownloadProgress
 import com.chris.whisperloom.ui.models.LocalModelRequiredCard
 import com.chris.whisperloom.ui.models.ModelListSection
 import com.chris.whisperloom.ui.models.localModelMissing
@@ -215,12 +214,17 @@ private fun modelStep(facts: SetupFacts, actions: StepActions): StepUi {
         Text(stringResource(R.string.setup_s2b_text_title), style = MaterialTheme.typography.titleMedium)
         // Ist offline schon eine KI-Stufe an, stellt die Pflichtkarte dieselbe Wahl (Spec §4). Laeuft der
         // Download, bleibt die getroffene Wahl stehen; scheitert er, zeigt die Pflichtkarte den Grund.
-        if (localModelMissing(prefs, env.status) && download == null) {
+        val required = localModelMissing(prefs, env.status) && download == null
+        if (required) {
             LocalModelRequiredCard()
         } else {
             val otherRunning = states.any { (id, state) -> id != model.id && state is DownloadState.Running }
             TextModelChoice(model, choice, loading = download != null, busy = otherRunning)
-            if (download != null) DownloadProgress(download)
+        }
+        // Nach der Wahl "Lokales Textmodell" (mit Pflichtkarte gilt sie schon) die Textmodelle selbst:
+        // E2B empfohlen, E4B, wenn es ins Geraet passt. Der Fortschritt steht in der Zeile.
+        if (required || choice == TextChoice.LOCAL || download != null) {
+            ModelListSection(actions.snack, showEmptyState = false, text = true)
         }
         val hint = when {
             choice == null -> R.string.setup_s2b_text_open

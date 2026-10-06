@@ -105,7 +105,7 @@ class ModelDownloadService : Service() {
             }
             when {
                 done -> {
-                    selectIfMissing(this, model)
+                    selectTextModel(this, model)
                     ModelDownloads.update(model.id, DownloadState.Done)
                     showResult(getString(R.string.models_notif_done, model.label))
                 }
@@ -217,15 +217,12 @@ class ModelDownloadService : Service() {
             Intent(context, ModelDownloadService::class.java).setAction(ACTION_CANCEL)
 
         /**
-         * Ein fertig geladenes Textmodell wird gewaehlt, wenn das gewaehlte nicht installiert ist —
-         * sonst blieben Pflichtkarte und Banner, und Diktate kaemen ohne KI, obwohl ein Textmodell
-         * da ist (Review d1: E4B aus der Liste geladen, gewaehlt blieb E2B). Ein installiertes
-         * gewaehltes bleibt gewaehlt; ein whisper-Modell aendert nichts.
+         * Ein fertig geladenes Textmodell wird immer gewaehlt — der Nutzer hat es gezielt geladen
+         * (vorher blieb E2B aktiv, wenn E4B aus der Liste fertig wurde, und E4B war erst per Radio
+         * waehlbar). Ein whisper-Modell aendert nichts.
          */
-        internal fun selectIfMissing(context: Context, model: OfflineModel) {
-            if (TextModelCatalog.find(model.id) == null) return
-            val prefs = Prefs(context)
-            if (!ModelStore(context).isInstalled(prefs.localLlmModel)) prefs.localLlmModel = model.id
+        internal fun selectTextModel(context: Context, model: OfflineModel) {
+            if (TextModelCatalog.find(model.id) != null) Prefs(context).localLlmModel = model.id
         }
 
         /** Nutzertext zu einem Download-Fehler (err_* aus der UX-Spec, sonst die Meldung des Downloaders). */
