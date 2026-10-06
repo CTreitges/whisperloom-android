@@ -8,7 +8,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <!-- Modell-Download-Dienst (whisper.cpp-Modelle, 32-574 MB) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-    <!-- Nachfrage vor Downloads ueber mobile Daten (ConnectivityManager.isActiveNetworkMetered) -->
+    <!-- Nachfrage vor Downloads ueber mobile Daten (ConnectivityManager.isActiveNetworkMetered) und
+         Netz-Vorpruefung vor der Online-Textverbesserung (AndroidNetworkCheck: NET_CAPABILITY_VALIDATED) -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
