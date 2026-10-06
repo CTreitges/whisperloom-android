@@ -189,7 +189,7 @@
 
     <!-- Prominent Disclosure (Google-Play-Pflicht: eigener Consent-Hinweis vor Mikrofon-/Bedienungshilfe-Zugriff) -->
     <string name="disclosure_mic_title">Mikrofon &amp; Diktat</string>
-    <string name="disclosure_mic_body">WhisperLoom nimmt beim Diktieren Ton auf, um ihn in Text umzuwandeln. Im Online-Modus wird die Aufnahme zur Erkennung an den von dir gewählten Anbieter gesendet (z. B. OpenAI oder Groq); im Offline-Modus verlässt nichts das Gerät. WhisperLoom speichert keine Aufnahmen.</string>
+    <string name="disclosure_mic_body">WhisperLoom nimmt beim Diktieren Ton auf, um ihn in Text umzuwandeln. Im Online-Modus wird die Aufnahme zur Erkennung an den von dir gewählten Anbieter gesendet (z. B. OpenAI oder Groq); im Offline-Modus verlässt nichts das Gerät. WhisperLoom speichert keine Aufnahmen; nur der Auftrag eines Pro Widgets bleibt auf dem Gerät, bis er gesendet ist.</string>
     <string name="disclosure_a11y_title">Bedienungshilfe: Text einfügen</string>
     <string name="disclosure_a11y_body">Die Bedienungshilfe „WhisperLoom Text-Einfügen“ fügt ausschließlich den diktierten Text in das gerade aktive Eingabefeld ein. Sie liest keine Bildschirminhalte mit und speichert nichts, und sie wird nur aktiv, wenn du den Knopf antippst.</string>
     <string name="disclosure_continue">Fortfahren</string>
@@ -236,7 +236,7 @@
     <string name="settings_rule_cap">Groß-Schreibung</string>
     <string name="settings_rule_space">Leerzeichen</string>
     <string name="about_version">Version %1$s</string>
-    <string name="about_license">whisper.cpp (MIT) · Jetpack Compose (Apache 2.0) · Material Symbols (Apache 2.0)</string>
+    <string name="about_license">whisper.cpp (MIT) · Jetpack Compose / AndroidX (Apache 2.0) · Kotlin und kotlinx.coroutines (Apache 2.0) · Material Symbols (Apache 2.0)</string>
     <string name="about_source">Quellcode auf GitHub</string>
 
     <!-- §6.5 Erkennung (E1) und Zugangs-Felder (auch Schritt 2a) -->
@@ -469,7 +469,7 @@
     <string name="help_s4_intro">Jeder OpenAI-kompatible Server geht, z. B. speaches, whisper.cpp-server oder LocalAI. Eintragen unter Erkennung → Anbieter „Eigener Server“.</string>
     <string name="help_s4_body">Base-URL eintragen, Key nur falls verlangt. Endpunkte: /v1/audio/transcriptions und /v1/chat/completions.\nTextverbesserung auch über Ollama: lokal ohne Key, Cloud mit Key.\nhttp:// nur im eigenen Netz oder per VPN.</string>
     <string name="help_s5_title">Offline-Modus</string>
-    <string name="help_s5_body">Ein Offline-Modell erkennt Sprache auf dem Gerät, in 2–10 Sekunden. Einmal laden (32–574 MB), löschen unter Offline-Modelle. Für Deutsch ist Small am besten.</string>
+    <string name="help_s5_body">Ein Offline-Modell erkennt Sprache auf dem Gerät, je nach Modell in einigen Sekunden (Small: etwa 5–12 s). Einmal laden (32–574 MB), löschen unter Offline-Modelle. Für Deutsch empfohlen: Small.</string>
     <string name="help_widgets_title">Widgets &amp; Pro Widgets</string>
     <string name="help_widgets_intro">Normale Widgets für den Startbildschirm folgen mit einem Update. Pro Widgets gibt es schon: Sprach-Command-Widgets für Entwickler mit eigenem Server.</string>
     <string name="help_widgets_unlock">Freischalten: Einstellungen → Erweitert → Pro Widgets.</string>
@@ -479,7 +479,7 @@
     <string name="help_widgets_models">Auch unter Erweitert: „Modelle vom Server“ – das Modell wählst du dann aus der aktuellen Liste des Anbieters, nicht nur aus den Empfehlungen.</string>
     <string name="help_widgets_open">Zu den Widgets</string>
     <string name="help_s6_title">Datenschutz</string>
-    <string name="help_s6_intro">WhisperLoom speichert keine Aufnahmen, und dein Key bleibt auf dem Gerät.</string>
+    <string name="help_s6_intro">WhisperLoom speichert keine Aufnahmen (nur ein Pro-Widget-Auftrag wartet bis zum Senden), und dein Key bleibt auf dem Gerät.</string>
     <string name="help_s6_online">Online: Audio und Vokabular gehen an den gewählten Anbieter, bei Textverbesserung auch der erkannte Text — mit Ollama im eigenen Netz bleibt er dort. Eine Vokabular-Datei wird nur gelesen.</string>
     <string name="help_s6_offline">Offline: Nichts verlässt das Gerät — nur der Modell-Download geht ins Netz.</string>
     <string name="help_s6_a11y">Die Bedienungshilfe liest nichts mit und speichert nichts; sie fügt nur den diktierten Text ein.</string>
