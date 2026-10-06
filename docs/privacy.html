@@ -36,12 +36,12 @@
   <!-- ===================== DEUTSCH ===================== -->
   <section id="de" class="lang active">
     <h1>Datenschutzerklärung – WhisperLoom</h1>
-    <p class="sub">Stand: 5. Oktober 2026 · App-ID <code>com.chris.whisperloom</code></p>
+    <p class="sub">Stand: 6. Oktober 2026 · App-ID <code>com.chris.whisperloom</code></p>
 
     <div class="card">
       <strong>Kurzfassung:</strong> WhisperLoom hat keinen eigenen Server, kein Nutzerkonto, keine Werbung
       und kein Tracking. Es werden keine Analyse- oder Absturz-SDKs eingesetzt. Ob Daten das Gerät
-      verlassen, entscheidest allein du über den gewählten Erkennungsweg.
+      verlassen, entscheidest allein du über den gewählten Erkennungsweg und die Textverbesserung.
     </div>
 
     <h2>1. Verantwortlicher</h2>
@@ -63,7 +63,9 @@
     <h3>Auf dem Gerät gespeichert</h3>
     <ul>
       <li>Deine Einstellungen inklusive API-Key im privaten App-Speicher (für andere Apps unzugänglich).</li>
-      <li>Die von dir heruntergeladenen Offline-Modelle.</li>
+      <li>Die von dir heruntergeladenen Offline-Modelle: Whisper-Modelle für die Erkennung und Textmodelle
+      (Gemma 4) für die Textverbesserung, samt dem Zwischenspeicher, den ein Textmodell beim ersten Start
+      anlegt (etwa 0,8–1,1 GB).</li>
       <li>Die Position des schwebenden Knopfs.</li>
       <li>Dein Vokabular (eigene Begriffe; bei einer verknüpften Datei nur der Verweis darauf).</li>
       <li>Die zuletzt geladenen Modell-Listen der Anbieter, ohne Key.</li>
@@ -105,10 +107,18 @@
     Ollama geschieht das auch ohne diese Einstellung.</p>
 
     <h3>Offline-Erkennung</h3>
-    <p>Bei der Offline-Erkennung (whisper.cpp auf dem Gerät) verlässt <strong>nichts</strong> das Gerät.
-    Lediglich der einmalige Modell-Download erfolgt über das Internet von
-    <code>huggingface.co</code>. Ist die Textverbesserung eingeschaltet, geht der erkannte Text wie oben
-    beschrieben an das gewählte Sprachmodell.</p>
+    <p>Bei der Offline-Erkennung (whisper.cpp auf dem Gerät) verlässt die Aufnahme das Gerät
+    <strong>nicht</strong>. Lediglich der einmalige Modell-Download erfolgt über das Internet von
+    <code>huggingface.co/ggerganov/whisper.cpp</code>.</p>
+
+    <h3>Lokales Textmodell (Textverbesserung bei Offline-Erkennung)</h3>
+    <p>Ist die Textverbesserung eingeschaltet, verbessert ab Werk ein lokales Textmodell (Gemma 4, über
+    LiteRT-LM) offline erkannten Text direkt auf dem Gerät – dann verlässt auch der Text das Gerät
+    <strong>nicht</strong>. Das Modell lädst du einmalig von <code>huggingface.co/litert-community</code>
+    herunter, ohne Konto und ohne Key; wie bei jedem Download erhält Hugging Face dabei deine IP-Adresse.
+    Nur wenn du für die Offline-Erkennung „Online, ohne Netz lokal“ oder „Überspringen“ wählst und einen
+    eigenen Online-Zugang einträgst, geht der erkannte Text bei bestehender Verbindung an dieses
+    Sprachmodell (siehe oben). Online erkannter Text wird wie oben beschrieben verbessert.</p>
 
     <h3>Eigener Server und eigenes Ollama</h3>
     <p>Wählst du „Eigener Server" oder „Ollama (lokal / Homeserver)", gehen Audio bzw. Text ausschließlich an die von dir angegebene Adresse – bei einem Server im eigenen Netz verlässt nichts dein Netz.</p>
@@ -133,7 +143,7 @@
     <h2>5. Berechtigungen</h2>
     <ul>
       <li><strong>Mikrofon</strong> – Sprachaufnahme fürs Diktat.</li>
-      <li><strong>Internet / Netzwerkstatus</strong> – Online-Erkennung und Modell-Download; Nachfrage vor Downloads über mobile Daten.</li>
+      <li><strong>Internet / Netzwerkstatus</strong> – Online-Erkennung und Modell-Download; Nachfrage vor Downloads über mobile Daten; Prüfung, ob vor einer Online-Textverbesserung eine Verbindung besteht. Das lokale Textmodell braucht keine zusätzliche Berechtigung.</li>
       <li><strong>Über anderen Apps anzeigen</strong> – der schwebende Mikro-Knopf.</li>
       <li><strong>Benachrichtigungen</strong> – Beenden-Aktion und Download-Fortschritt.</li>
       <li><strong>Vordergrund-Dienste</strong> – laufende Aufnahme (Knopf, Pro Widgets) und Modell-Download.</li>
@@ -161,12 +171,12 @@
   <!-- ===================== ENGLISH ===================== -->
   <section id="en" class="lang">
     <h1>Privacy Policy – WhisperLoom</h1>
-    <p class="sub">Last updated: 5 October 2026 · App ID <code>com.chris.whisperloom</code></p>
+    <p class="sub">Last updated: 6 October 2026 · App ID <code>com.chris.whisperloom</code></p>
 
     <div class="card">
       <strong>In short:</strong> WhisperLoom has no server of its own, no user account, no ads and no
       tracking. It contains no analytics or crash-reporting SDKs. Whether any data leaves your device is
-      entirely your choice, made through the recognition method you select.
+      entirely your choice, made through the recognition method and text refinement you select.
     </div>
 
     <h2>1. Controller</h2>
@@ -187,7 +197,8 @@
     <h3>Stored on the device</h3>
     <ul>
       <li>Your settings including the API key, in private app storage (inaccessible to other apps).</li>
-      <li>The offline models you downloaded.</li>
+      <li>The offline models you downloaded: Whisper models for recognition and text models (Gemma 4) for
+      text refinement, plus the cache a text model creates on first use (about 0.8–1.1 GB).</li>
       <li>The position of the floating button.</li>
       <li>Your vocabulary (your own terms; for a linked file only the reference to it).</li>
       <li>The model lists most recently loaded from the providers, without the key.</li>
@@ -219,9 +230,18 @@
     happens even without that setting.</p>
 
     <h3>Offline recognition</h3>
-    <p>With offline recognition (whisper.cpp on-device), <strong>nothing</strong> leaves the device. Only
-    the one-time model download happens over the internet from <code>huggingface.co</code>. If text
-    refinement is switched on, the recognised text goes to the chosen language model as described above.</p>
+    <p>With offline recognition (whisper.cpp on-device), the recording does <strong>not</strong> leave the
+    device. Only the one-time model download happens over the internet from
+    <code>huggingface.co/ggerganov/whisper.cpp</code>.</p>
+
+    <h3>Local text model (text refinement with offline recognition)</h3>
+    <p>If text refinement is switched on, by default a local text model (Gemma 4, via LiteRT-LM) refines
+    offline-recognised text right on the device – then the text does <strong>not</strong> leave the device
+    either. You download the model once from <code>huggingface.co/litert-community</code>, without an
+    account or key; as with any download, Hugging Face sees your IP address. Only if you choose “Online,
+    ohne Netz lokal” (online, local without network) or “Überspringen” (skip) for offline recognition and enter your own online account is the
+    recognised text sent to that language model while a connection is available (see above). Text
+    recognised online is refined as described above.</p>
 
     <h3>Your own server and your own Ollama</h3>
     <p>If you choose “Your own server" or “Ollama (local / home server)", audio or text go only to the address you specify – with a server on your own network, nothing leaves your network.</p>
@@ -245,7 +265,7 @@
     <h2>5. Permissions</h2>
     <ul>
       <li><strong>Microphone</strong> – voice capture for dictation.</li>
-      <li><strong>Internet / network state</strong> – online recognition and model download; prompt before downloads over mobile data.</li>
+      <li><strong>Internet / network state</strong> – online recognition and model download; prompt before downloads over mobile data; check for a connection before online text refinement. The local text model needs no additional permission.</li>
       <li><strong>Display over other apps</strong> – the floating microphone button.</li>
       <li><strong>Notifications</strong> – stop action and download progress.</li>
       <li><strong>Foreground services</strong> – ongoing recording (button, Pro Widgets) and model download.</li>
