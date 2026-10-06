@@ -66,6 +66,9 @@ data class ShareUiState(
     /** Grund, falls die Textverbesserung bei einer Datei gescheitert ist (der erste). */
     val refineSkipped: String? get() = results.firstNotNullOfOrNull { it.refineSkipped }
 
+    /** Bei mindestens einer Datei ist online gescheitert und das lokale Textmodell eingesprungen. */
+    val refineLocalFallback: Boolean get() = results.any { it.refineLocalFallback }
+
     /** Bei wie vielen Dateien die Textverbesserung gescheitert ist. */
     val refineFailures: Int get() = results.count { it.refineSkipped != null }
 

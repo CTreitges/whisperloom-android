@@ -30,8 +30,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chris.whisperloom.Engine
+import com.chris.whisperloom.OfflineRefineRule
 import com.chris.whisperloom.R
+import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.ui.access.SttAccessSection
 import com.chris.whisperloom.ui.components.CardShape
 import com.chris.whisperloom.ui.components.DisclosureKind
@@ -43,14 +46,27 @@ import com.chris.whisperloom.ui.components.StatusChip
 import com.chris.whisperloom.ui.components.StepBadge
 import com.chris.whisperloom.ui.components.SystemIntents
 import com.chris.whisperloom.ui.components.LoomIcon
+import com.chris.whisperloom.ui.components.offlineModelLabel
 import com.chris.whisperloom.ui.components.openOrSnack
+import com.chris.whisperloom.ui.components.textModelSize
 import com.chris.whisperloom.ui.components.rememberPermissionRequest
+import com.chris.whisperloom.ui.models.DownloadProgress
+import com.chris.whisperloom.ui.models.LocalModelRequiredCard
 import com.chris.whisperloom.ui.models.ModelListSection
+import com.chris.whisperloom.ui.models.localModelMissing
+import com.chris.whisperloom.ui.models.offlineRule
+import com.chris.whisperloom.ui.models.rememberTextModelLoad
+import com.chris.whisperloom.ui.models.textModelToLoad
 import com.chris.whisperloom.ui.nav.SetupFacts
 import com.chris.whisperloom.ui.nav.SetupRouter
 import com.chris.whisperloom.ui.nav.StepState
+import com.chris.whisperloom.ui.nav.TextChoice
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.theme.loom
+import com.chris.whisperloom.whisper.DownloadState
+import com.chris.whisperloom.whisper.ModelDownloads
+import com.chris.whisperloom.whisper.OfflineModel
+import com.chris.whisperloom.whisper.OfflineSupport
 
 /** Baut die Seite zu Schritt [step] (UX-Spec §2.2, Schritte 1–7). */
 @Composable
@@ -177,16 +193,95 @@ private fun accessStep(facts: SetupFacts, actions: StepActions): StepUi = StepUi
     SttAccessSection(actions.snack)
 }
 
+/** 2b: erst das whisper-Modell, dann die Wahl fuer die Textverbesserung ohne Netz — Weiter erst nach beidem. */
 @Composable
-private fun modelStep(facts: SetupFacts, actions: StepActions): StepUi = StepUi(
-    image = R.drawable.ill_help_offline,
-    imageText = R.string.img_help_offline,
-    title = stringResource(R.string.setup_s2b_title),
-    body = stringResource(R.string.setup_s2b_body),
-    state = SetupRouter.stepState(SetupRouter.STEP_ACCESS, facts),
-    primary = nextAction(actions, enabled = facts.modelInstalled),
-) {
-    ModelListSection(actions.snack, showEmptyState = false)
+private fun modelStep(facts: SetupFacts, actions: StepActions): StepUi {
+    val env = LocalAppEnv.current
+    val prefs = env.prefs
+    val states by ModelDownloads.states.collectAsStateWithLifecycle()
+    val model = textModelToLoad(prefs.localLlmModel, env.status.totalRamBytes)
+    val download = states[model.id] as? DownloadState.Running
+    // Passt kein Textmodell ins Geraet, ist "Ueberspringen" schon gewaehlt (die einzige Wahl).
+    val choice = SetupRouter.textChoice(offlineRule(prefs, env.status), env.status.textModelReady(model.id), download != null)
+    return StepUi(
+        image = R.drawable.ill_help_offline,
+        imageText = R.string.img_help_offline,
+        title = stringResource(R.string.setup_s2b_title),
+        body = stringResource(R.string.setup_s2b_body),
+        state = SetupRouter.stepState(SetupRouter.STEP_ACCESS, facts),
+        primary = nextAction(actions, enabled = facts.modelInstalled && choice != null),
+    ) {
+        ModelListSection(actions.snack, showEmptyState = false)
+        Text(stringResource(R.string.setup_s2b_text_title), style = MaterialTheme.typography.titleMedium)
+        // Ist offline schon eine KI-Stufe an, stellt die Pflichtkarte dieselbe Wahl (Spec §4). Laeuft der
+        // Download, bleibt die getroffene Wahl stehen; scheitert er, zeigt die Pflichtkarte den Grund.
+        if (localModelMissing(prefs, env.status) && download == null) {
+            LocalModelRequiredCard()
+        } else {
+            val otherRunning = states.any { (id, state) -> id != model.id && state is DownloadState.Running }
+            TextModelChoice(model, choice, loading = download != null, busy = otherRunning)
+            if (download != null) DownloadProgress(download)
+        }
+        val hint = when {
+            choice == null -> R.string.setup_s2b_text_open
+            download != null -> R.string.setup_s2b_text_bg
+            else -> null
+        }
+        if (hint != null) {
+            Text(stringResource(hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+/**
+ * Die beiden Karten "Lokales Textmodell" / "Ueberspringen" (Muster [EngineOption]). Lokal startet den
+ * Download des Textmodells (ist es schon da oder laedt es: nur die Regel). Stehen beide KI-Stufen auf
+ * "Aus" (ab Werk), schaltet Lokal "Glaetten" ein und sagt das — sonst bewirkte das Modell nichts; eine
+ * gewaehlte Stufe bleibt. [busy]: ein anderer Download laeuft — der Dienst laedt nur eins, "Lokal" geht erst danach.
+ */
+@Composable
+private fun TextModelChoice(model: OfflineModel, choice: TextChoice?, loading: Boolean, busy: Boolean) {
+    val env = LocalAppEnv.current
+    val prefs = env.prefs
+    val noStage = prefs.refineMode == RefineMode.OFF && prefs.shareRefineMode == RefineMode.OFF
+    fun polishIfNoStage() {
+        if (prefs.refineMode == RefineMode.OFF && prefs.shareRefineMode == RefineMode.OFF) prefs.refineMode = RefineMode.POLISH
+    }
+    val load = rememberTextModelLoad { polishIfNoStage() }
+    val fits = OfflineSupport.fitsDevice(env.status.totalRamBytes, model)
+    Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        EngineOption(
+            selected = choice == TextChoice.LOCAL,
+            enabled = fits && !busy,
+            icon = R.drawable.ic_auto_fix_high,
+            iconTint = MaterialTheme.colorScheme.tertiary,
+            title = stringResource(R.string.setup_s2b_local),
+            body = stringResource(
+                if (noStage) R.string.setup_s2b_local_body_polish else R.string.setup_s2b_local_body,
+                offlineModelLabel(model.id),
+                textModelSize(model),
+            ),
+            badge = null,
+            unavailable = if (fits) null else stringResource(R.string.models_too_big),
+        ) {
+            if (loading || env.status.textModelReady(model.id)) {
+                if (prefs.offlineRefine == OfflineRefineRule.SKIP) prefs.offlineRefine = OfflineRefineRule.LOCAL
+                polishIfNoStage()
+            } else {
+                load.start(model)
+            }
+        }
+        EngineOption(
+            selected = choice == TextChoice.SKIP,
+            enabled = true,
+            icon = R.drawable.ic_remove_circle_outline,
+            iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
+            title = stringResource(R.string.setup_s2b_skip),
+            body = stringResource(R.string.setup_s2b_skip_body),
+            badge = null,
+            unavailable = null,
+        ) { prefs.offlineRefine = OfflineRefineRule.SKIP }
+    }
 }
 
 // --- Schritt 3: Mikrofon ------------------------------------------------------

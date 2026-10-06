@@ -47,6 +47,37 @@ class AnleitungsTexteTest {
         assertEquals(emptyMap<String, Int>(), zuLang(mapOf("one" to eins, "other" to mehr), 200))
     }
 
+    @Test fun ramGrenzenHeissenRamNichtGeraetespeicher() {
+        // "Geraetespeicher" ist im Deutschen der Flash-Speicher — die Grenzen (6/8 GB) meinen den Arbeitsspeicher.
+        assertEquals(emptyMap<String, String>(), texte.filterValues { it.contains("Gerätespeicher") })
+        listOf("models_large_sub", "models_gemma_e2b_sub").forEach { assertTrue(it, texte.getValue(it).contains("ab 6 GB RAM")) }
+        assertTrue(texte.getValue("models_gemma_e4b_sub").contains("ab 8 GB RAM"))
+    }
+
+    @Test fun lizenzenNennenDasLokaleTextmodell() {
+        // 3.8.5: LiteRT-LM (mit Gson) steckt im APK, Gemma 4 wird nachgeladen — beides gehoert in "Ueber" und die Hilfe.
+        val lizenz = texte.getValue("about_license")
+        listOf("LiteRT-LM", "Gson", "Gemma 4").forEach { assertTrue("$it fehlt: $lizenz", lizenz.contains(it)) }
+    }
+
+    @Test fun lizenzhinweiseDerInLiteRtLmGelinktenBibliothekenLiegenImApk() {
+        // liblitertlm_jni.so linkt u. a. BSD- und MPL-Komponenten: deren Hinweise muessen mit ins APK.
+        val bytes = ctx.assets.open("licenses/litertlm-0.16.1-THIRD_PARTY_NOTICE.txt").use { it.readBytes() }
+        assertEquals("unveraendert aus litertlm-android-0.16.1.aar", 2_053_178, bytes.size)
+        val notice = bytes.toString(Charsets.UTF_8)
+        listOf("Abseil", "XNNPACK", "Protocol Buffers", "Eigen 3", "ICU4C", "Darts-clone").forEach {
+            assertTrue("$it fehlt", notice.contains("\n$it:\n"))
+        }
+        val hinweis = texte.getValue("about_license_litertlm")
+        assertTrue(hinweis, hinweis.contains("assets/licenses/"))
+    }
+
+    @Test fun datenschutzOfflineNenntDasLokaleTextmodell() {
+        // Offline verbessert ab Werk das lokale Textmodell: "mit Textverbesserung geht der Text ins Netz" stimmt nicht mehr.
+        val offline = texte.getValue("help_s6_offline")
+        assertTrue(offline, offline.contains("lokalen Textmodell"))
+    }
+
     @Test fun tutorialSeitenHabenHoechstens180Zeichen() {
         val seiten = texte.filterKeys { it.matches(Regex("tutorial_(pro_)?p\\d+_body")) }
         assertEquals("4 Einsteiger- und 6 Pro-Widgets-Seiten", 10, seiten.size)

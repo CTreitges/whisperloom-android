@@ -51,6 +51,21 @@ class ModelCatalogTest {
         assertNull(ModelCatalog.find("medium"))
     }
 
+    /** Download-Dienst, ModelDownloads und ModelStore kennen nur die ID — sie muss ueber beide Kataloge eindeutig sein. */
+    @Test fun idsUndDateienUeberBeideKatalogeEindeutig() {
+        val all = ModelCatalog.models + TextModelCatalog.models
+        assertEquals(all.size, all.map { it.id }.toSet().size)
+        assertEquals(all.size, all.map { it.fileName }.toSet().size)
+        assertEquals(all.size, all.map { it.sha256 }.toSet().size)
+        for (m in all) assertSame(m.id, m, findOfflineModel(m.id))
+        assertNull(findOfflineModel("medium"))
+        assertNull(findOfflineModel(null))
+    }
+
+    @Test fun whisperModelleBrauchenKeinenZusatzplatz() {
+        for (m in ModelCatalog.models) assertEquals(m.id, 0L, m.extraDiskBytes)
+    }
+
     @Test fun nurLargeBrauchtMindestRam() {
         assertEquals(6L * 1024 * 1024 * 1024, ModelCatalog.LARGE_V3_TURBO.minDeviceRamBytes)
         for (m in ModelCatalog.models - ModelCatalog.LARGE_V3_TURBO) assertEquals(m.id, 0L, m.minDeviceRamBytes)

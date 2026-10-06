@@ -1,7 +1,7 @@
 package com.chris.whisperloom
 
+import android.content.Context
 import android.util.Log
-import com.chris.whisperloom.api.TextRefiner
 
 /**
  * KI-Stufe fuer geteilte Sprachnachrichten ([Prefs.shareRefineMode]) — getrennt von der Stufe
@@ -9,8 +9,48 @@ import com.chris.whisperloom.api.TextRefiner
  */
 object SharedRefine {
 
-    /** @property paragraphs KI-Fassung; null = keine (Stufe aus oder gescheitert, Grund in [skipped]). */
-    data class Result(val mode: RefineMode, val paragraphs: List<String>?, val skipped: String?)
+    /**
+     * @property paragraphs KI-Fassung; null = keine (Stufe aus oder gescheitert, Grund in [skipped]).
+     * @property localFallback online gescheitert, das lokale Textmodell ist eingesprungen — kein Fehler, nur zur Info.
+     */
+    data class Result(
+        val mode: RefineMode,
+        val paragraphs: List<String>?,
+        val skipped: String?,
+        val localFallback: Boolean = false,
+    )
+
+    /**
+     * Der Weg im Betrieb: [run] mit der Route aus [RefinePlan] — online (Netz vorher geprueft),
+     * lokal oder online mit lokaler Ausweichloesung. Geht es nach der Regel gar nicht (kein Netz,
+     * kein Textmodell), kommt die Fassung ohne KI mit Hinweis, ohne Anfrage. "Ueberspringen" ohne
+     * eigenen Zugang gilt wie "Aus": so gewollt, kein Hinweis.
+     *
+     * @param onStart vor der ersten Rechnung; `local` = das lokale Textmodell rechnet (Fortschrittszeile).
+     */
+    fun run(
+        context: Context,
+        prefs: Prefs,
+        parts: List<String>,
+        language: String,
+        isCancelled: () -> Boolean = { false },
+        onStart: (local: Boolean) -> Unit = {},
+    ): Result {
+        val mode = prefs.effective(prefs.shareRefineMode)
+        if (mode == RefineMode.OFF) return Result(mode, null, null)
+        val plan = RefinePlan.of(context, prefs, mode)
+        val route = plan.route
+        if (route is RefineRoute.Raw) {
+            val hint = route.hint ?: return Result(RefineMode.OFF, null, null)
+            return Result(mode, null, RefinePlan.message(hint))
+        }
+        // Der einzige Hinweis von plan.refine: online gescheitert, lokal verbessert.
+        var localFallback = false
+        val result = run(prefs, parts, language, isCancelled, { onStart(route == RefineRoute.Local) }) { raw, stage ->
+            plan.refine(raw, language, stage, prefs.smartFillers, paragraphs = true, onNote = { localFallback = true }, cancelled = isCancelled)
+        }
+        return if (result.paragraphs != null) result.copy(localFallback = localFallback) else result
+    }
 
     /**
      * Jedes Stueck (hoechstens 5 Minuten, siehe [SharedAudioTranscriber]) geht EINZELN an das
@@ -31,9 +71,7 @@ object SharedRefine {
         language: String,
         isCancelled: () -> Boolean = { false },
         onStart: () -> Unit = {},
-        refine: (raw: String, mode: RefineMode) -> String = { raw, mode ->
-            TextRefiner(prefs.llmAccess()).refine(raw, language, mode, prefs.smartFillers)
-        },
+        refine: (raw: String, mode: RefineMode) -> String,
     ): Result {
         val mode = prefs.effective(prefs.shareRefineMode)
         if (mode == RefineMode.OFF) return Result(mode, null, null)

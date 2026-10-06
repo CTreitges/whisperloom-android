@@ -1,6 +1,6 @@
 # WhisperLoom — Anleitung
 
-Version 3.8.3 · Stand 2026-10-06 · Für Android 8.0 (API 26) und neuer
+Version 3.8.5 · Stand 2026-10-06 · Für Android 8.0 (API 26) und neuer
 
 Diese Anleitung richtet sich an Anwender, die WhisperLoom installieren, einrichten und im Alltag nutzen wollen. Entwickler finden Bau- und Architektur-Hinweise in der [README](../README.md); was sich von Version zu Version geändert hat, steht im [CHANGELOG](../CHANGELOG.md).
 
@@ -18,7 +18,7 @@ Alle Bezeichnungen in dieser Anleitung („Mikro-Knopf starten", „Zugang prüf
 6. [Sprachnachrichten abtippen](#6-sprachnachrichten-abtippen)
 7. [Anbieter und API-Keys](#7-anbieter-und-api-keys)
 8. [Textverbesserung](#8-textverbesserung)
-9. [Offline-Modus](#9-offline-modus)
+9. [Offline-Modus](#9-offline-modus) — mit [Lokales Textmodell (Gemma 4)](#97-lokales-textmodell-gemma-4)
 10. [Eigener Server](#10-eigener-server)
 11. [Datenschutz](#11-datenschutz)
 12. [Wenn etwas nicht klappt](#12-wenn-etwas-nicht-klappt)
@@ -44,7 +44,7 @@ Die Spracherkennung selbst läuft wahlweise
 - **online** über einen Dienst deiner Wahl (OpenAI, Groq, Mistral, ElevenLabs, Together AI, DeepInfra, OpenRouter oder ein eigener Server). Du brauchst dafür einmalig einen API-Key des Anbieters; bei Groq ist das kostenlos. Beste Qualität, schnell.
 - **offline** direkt auf dem Gerät mit einem einmalig heruntergeladenen Whisper-Modell (32–574 MB). Die Aufnahme verlässt das Telefon nicht, die Erkennung dauert dafür einige Sekunden.
 
-Dazu kommt eine optionale **Textverbesserung**: Ein Sprachmodell (KI) glättet Zeichensetzung und Groß-/Kleinschreibung, formuliert verständlicher oder fasst zusammen — in vier Stufen von „Aus" bis „Zusammenfassen". Das Sprachmodell kann bei einem Online-Anbieter laufen, bei **Ollama Cloud** oder auf deinem eigenen **Ollama** zu Hause (lokal / Homeserver). Ein **Vokabular** mit Namen und Fachbegriffen — als Liste in der App oder als verknüpfte Textdatei — hilft der Erkennung bei Eigennamen. Unabhängig davon räumt WhisperLoom lokal auf: Füllwörter („ähm", „äh") entfernen, Satzanfänge groß schreiben, ein Leerzeichen anhängen.
+Dazu kommt eine optionale **Textverbesserung**: Ein Sprachmodell (KI) glättet Zeichensetzung und Groß-/Kleinschreibung, formuliert verständlicher oder fasst zusammen — in vier Stufen von „Aus" bis „Zusammenfassen". Das Sprachmodell kann bei einem Online-Anbieter laufen, bei **Ollama Cloud** oder auf deinem eigenen **Ollama** zu Hause (lokal / Homeserver). Erkennst du offline, verbessert ein **lokales Textmodell** (Gemma 4) den Text direkt auf dem Gerät — ohne Netz und ohne Key ([9.7](#97-lokales-textmodell-gemma-4)). Ein **Vokabular** mit Namen und Fachbegriffen — als Liste in der App oder als verknüpfte Textdatei — hilft der Erkennung bei Eigennamen. Unabhängig davon räumt WhisperLoom lokal auf: Füllwörter („ähm", „äh") entfernen, Satzanfänge groß schreiben, ein Leerzeichen anhängen.
 
 Was WhisperLoom **nicht** tut: Es speichert keine Aufnahmen (einzige Ausnahme: ein noch nicht gesendeter Auftrag eines Pro Widgets, siehe [11](#11-datenschutz)), es liest nicht mit, was du sonst tippst, und dein API-Key bleibt auf dem Gerät.
 
@@ -58,6 +58,7 @@ WhisperLoom wird nicht über den Play Store verteilt, sondern als APK-Datei übe
 
 - Android 8.0 oder neuer.
 - Für den **Offline-Modus** zusätzlich: ein 64-Bit-ARM-Gerät (arm64-v8a), dessen Prozessor FP16-Vektorrechnung und DotProd beherrscht (praktisch alle Geräte ab etwa 2018, siehe [Kapitel 9](#9-offline-modus)). Auf anderen Geräten steht nur der Online-Modus zur Verfügung — WhisperLoom zeigt das im Assistenten als „Auf diesem Gerät nicht verfügbar" an.
+- Für das **lokale Textmodell** (Textverbesserung offline) zusätzlich mindestens 6 GB Arbeitsspeicher, für Gemma 4 E4B 8 GB, und 3,4 bzw. 4,8 GB freier Speicherplatz ([9.7](#97-lokales-textmodell-gemma-4)).
 
 ### 2.2 Installation über F-Droid (eigenes Repository, empfohlen für Updates)
 
@@ -71,7 +72,7 @@ WhisperLoom liegt in einem eigenen F-Droid-Repository. Damit bekommst du Updates
 
 ### 2.3 APK installieren
 
-1. Auf der [Releases-Seite](https://github.com/CTreitges/whisperloom-android/releases) des Projekts das neueste Release (aktuell **3.8.3**) öffnen und die APK-Datei auf das Telefon laden (direkt im Browser des Telefons ist am einfachsten).
+1. Auf der [Releases-Seite](https://github.com/CTreitges/whisperloom-android/releases) des Projekts das neueste Release (aktuell **3.8.5**) öffnen und die APK-Datei auf das Telefon laden (direkt im Browser des Telefons ist am einfachsten).
 2. Die heruntergeladene Datei antippen. Android fragt beim ersten Mal, ob der Browser (bzw. der Dateimanager) **unbekannte Apps installieren** darf — das Wording heißt je nach Hersteller „Unbekannte Apps installieren", „Aus dieser Quelle zulassen" oder „Unbekannte Quellen". Erlauben, zurück, erneut „Installieren" antippen.
 3. Google Play Protect prüft die App ggf. beim Installieren. Das ist normal für Apps außerhalb des Play Stores.
 4. Nach der Installation **WhisperLoom** öffnen — der Einrichtungs-Assistent startet ([Kapitel 3](#3-erste-einrichtung--der-assistent-schritt-für-schritt)).
@@ -119,7 +120,14 @@ Darunter steht der Datenschutz-Hinweis „Audio wird zur Erkennung an {Anbieter}
 
 **2b · Offline-Modell laden** (bei Offline):
 
-„Wähle ein Modell. Empfehlung: Small — gute Qualität für Deutsch bei 190 MB." Die Liste zeigt Tiny, Base, Small und Large v3 Turbo mit Größe, Speicherbedarf und Hinweis. **Laden (190 MB)** startet den Download; er läuft im Hintergrund weiter und zeigt den Fortschritt in einer Benachrichtigung. Über mobile Daten fragt WhisperLoom vorher nach („Über mobile Daten laden?"). Alles Weitere zu Modellen in [Kapitel 9](#9-offline-modus). Sobald das gewählte Modell vollständig geladen ist: **Weiter**.
+„Erst das Modell für die Erkennung, dann die Textverbesserung ohne Netz. Empfehlung: Small (190 MB) und Gemma 4 E2B." Die Liste zeigt Tiny, Base, Small und Large v3 Turbo mit Größe, Speicherbedarf und Hinweis. **Laden (190 MB)** startet den Download; er läuft im Hintergrund weiter und zeigt den Fortschritt in einer Benachrichtigung. Über mobile Daten fragt WhisperLoom vorher nach („Über mobile Daten laden?"). Alles Weitere zu Modellen in [Kapitel 9](#9-offline-modus).
+
+Darunter unter **Textverbesserung ohne Netz** zwei Karten:
+
+- **Lokales Textmodell** — „Gemma 4 E2B verbessert den Text auf dem Gerät und schaltet „Glätten" ein. Einmal laden: 2,6 GB · +800 MB beim ersten Start." Ein Tipp startet den Download des Textmodells ([9.7](#97-lokales-textmodell-gemma-4)) und stellt die KI-Stufe fürs Diktat auf „Glätten" — ab Werk steht sie auf „Aus", und ohne Stufe bliebe das Textmodell ungenutzt. Ist schon eine Stufe gewählt (fürs Diktat oder für geteilte Sprachnachrichten), bleibt sie, und der Zusatz „und schaltet „Glätten" ein" fehlt.
+- **Überspringen** — „Nur die Erkennung — offline kommt der Text ohne KI. Ein Textmodell kannst du später unter Offline-Modelle laden."
+
+**Weiter** wird aktiv, sobald das Whisper-Modell geladen ist und du eine der beiden Karten gewählt hast. Das Textmodell muss dafür nicht fertig sein: „Lädt im Hintergrund weiter — du kannst schon weitermachen." Ist offline schon eine KI-Stufe eingeschaltet und lädt das Textmodell nicht gerade, steht an Stelle der beiden Karten die Karte **Offline ohne Textmodell** mit denselben zwei Möglichkeiten ([9.7](#97-lokales-textmodell-gemma-4)). Scheitert der Download (z. B. „Nicht genug Speicherplatz" oder kein Netz), zeigt diese Karte den Grund („Fehlgeschlagen: …"); **Textmodell laden** versucht es erneut, **Weiter** ist bis zu einer Wahl wieder gesperrt. Auf Geräten mit weniger als 6 GB Arbeitsspeicher ist „Lokales Textmodell" ausgegraut („Für dieses Gerät zu groß") und „Überspringen" schon gewählt: Dort passt kein Textmodell, die Regel wirkt wie „Überspringen" ([9.7](#97-lokales-textmodell-gemma-4)).
 
 ### Schritt 3 — Mikrofon erlauben (Pflicht)
 
@@ -175,7 +183,7 @@ Das Tutorial ist erneut aufrufbar unter **Anleitung & Hilfe → Tutorial erneut 
 Danach zeigt WhisperLoom beim Öffnen den Startbildschirm:
 
 - Ganz oben die Karte **Schwebender Mikro-Knopf** mit dem großen Button **Mikro-Knopf starten** bzw. **Mikro-Knopf beenden**. Fehlt eine Pflicht-Berechtigung, ist der Button gesperrt und ein Chip („Mikrofon fehlt — beheben" / „„Über anderen Apps anzeigen" fehlt — beheben") führt in den passenden Schritt.
-- Ein Banner **Noch nicht optimal** mit Button **Beheben**, wenn die Bedienungshilfe aus ist, Offline gewählt aber kein Modell geladen ist, oder Benachrichtigungen verweigert sind.
+- Ein Banner **Noch nicht optimal** mit Button **Beheben**, wenn die Bedienungshilfe aus ist, Offline gewählt aber kein Modell geladen ist, offline eine KI-Stufe an ist, aber das Textmodell fehlt („Offline ohne Textmodell — der Text kommt ohne KI.", bei „Online, ohne Netz lokal" mit eigenem Zugang „… — ohne Netz kommt der Text ohne KI."; führt zu Einstellungen → Text), oder Benachrichtigungen verweigert sind.
 - Die Karte **Status** mit den Zeilen **Erkennung**, **Textverbesserung**, **Berechtigungen**, **Diktat-Tastatur** und (sobald relevant) **Offline-Modelle**. Jede Zeile führt in die passende Einstellung.
 - Ein Hinweis auf das Abtippen von Sprachnachrichten und ganz unten die Fußzeile: die Versionsnummer mit **?** daneben und **Einrichtung erneut öffnen**. Das **?** öffnet die **Patchnotes**: oben die neueste Version mit dem Wichtigsten und „Alle … Änderungen im Detail“ zum Aufklappen, darunter **Frühere Versionen** und **Vor Version 3** zum Antippen, ganz unten das vollständige Changelog auf GitHub. Dasselbe **?** steht in **Anleitung & Hilfe** (unten) und unter **Über WhisperLoom**.
 - Oben rechts: **?** (Anleitung und Hilfe) und **⚙** (Einstellungen).
@@ -203,7 +211,7 @@ Der Knopf (68 dp groß) schwebt über allen Apps, solange er läuft. Er startet 
 |---|---|---|---|
 | **Bereit** | dunkler Kreis mit türkisem Ring, Mikrofon-Symbol | Aufnahme starten | Knopf verschieben |
 | **Nimmt auf** | roter Kreis, pulsierender Ring, Stopp-Symbol, darunter der Timer „● 0:07" | Aufnahme beenden und senden | Knopf verschieben — dabei erscheint unten das Abbrechen-Ziel |
-| **Sendet** | dunkeltürkiser Kreis mit rotierendem Bogen, Label „sendet …" | (wird ignoriert) | Knopf verschieben |
+| **Sendet** | dunkeltürkiser Kreis mit rotierendem Bogen, Label „sendet …", während der Textverbesserung „verbessert … tippen = ohne KI" | bei „sendet …" ignoriert; bei „verbessert …" sofort ohne KI einfügen ([9.7](#97-lokales-textmodell-gemma-4)) | Knopf verschieben |
 | **Fehler** | dunkelroter Kreis, Wiederholen-Symbol, Label „tippen = erneut" | erneut senden — das Audio ist noch da | aufs Abbrechen-Ziel ziehen = verwerfen |
 
 Der Ablauf im Normalfall: **antippen → sprechen → nochmal antippen**. Kurz darauf steht der Text im Feld, in dem der Cursor stand. Wichtig: Der Cursor muss in einem Textfeld stehen, *bevor* du die Aufnahme beendest — WhisperLoom fügt dort ein, wo gerade der Fokus ist.
@@ -244,7 +252,7 @@ Aktivieren und auswählen wie in [Schritt 7](#schritt-7--diktat-tastatur-optiona
 
 Die Tastatur besteht aus drei Zonen:
 
-- **Statuszeile** oben: „Halte das Mikrofon gedrückt und sprich" — während der Aufnahme „Höre zu … rechts wischen stellt fest", dann „Wird übertragen …". Fehlt das Mikrofon oder der Zugang, steht dort ein Warntext („Mikrofon-Berechtigung fehlt — tippe zum Einrichten" / „Kein Zugang eingerichtet — tippe zum Einrichten"); ein Tipp darauf öffnet den passenden Schritt der Einrichtung.
+- **Statuszeile** oben: „Halte das Mikrofon gedrückt und sprich" — während der Aufnahme „Höre zu … rechts wischen stellt fest", dann „Wird übertragen …" und, mit KI-Stufe, „Text wird verbessert … antippen = ohne KI einfügen": Ein Tipp auf die Statuszeile oder das Mikrofon fügt den erkannten Text dann sofort ohne KI ein. Fehlt das Mikrofon oder der Zugang, steht dort ein Warntext („Mikrofon-Berechtigung fehlt — tippe zum Einrichten" / „Kein Zugang eingerichtet — tippe zum Einrichten"); ein Tipp darauf öffnet den passenden Schritt der Einrichtung.
 - **Pegelband und Mikrofon-Taste**: Die große Taste in der Mitte funktioniert mit **Halten-zum-Sprechen** — gedrückt halten, sprechen, loslassen. Das Pegelband darüber zeigt während der Aufnahme deine Lautstärke. Die Taste zeigt dieselben vier Zustände wie der schwebende Knopf (bereit, nimmt auf, sendet, Fehler).
 - **Tastenreihe** unten: Globus (Eingabemethode wechseln) · Komma · Leertaste · Punkt · Löschen · Eingabe · (nur nach einem Fehler:) **Erneut senden** · Zahnrad (WhisperLoom-Einstellungen).
 
@@ -281,7 +289,7 @@ Die aktuelle Stufe ist hervorgehoben. Ein Tipp wählt eine andere — sie gilt a
 
 Sobald du zu diktieren anfängst, verschwindet der Zauberstab — an seiner Stelle erscheinen dann die Ziele der Wisch-Geste. Eine offene Stufen-Zeile klappt dabei zu.
 
-Die drei oberen Stufen brauchen einen KI-Zugang. Hast du keinen eingerichtet, sind sie ausgegraut und die Statuszeile sagt es dir — ein Tipp darauf führt in die Einstellungen. **Aus** bleibt immer wählbar.
+Die drei oberen Stufen brauchen einen KI-Zugang. Hast du keinen eingerichtet, sind sie ausgegraut und die Statuszeile sagt es dir — ein Tipp darauf führt in die Einstellungen. Bei Offline-Erkennung entscheidet die Regel aus [9.7](#97-lokales-textmodell-gemma-4): Mit geladenem Textmodell sind die Stufen frei; fehlt es, steht dort „Offline ohne Textmodell — tippe zum Laden", und der Tipp führt zu den Offline-Modellen. **Aus** bleibt immer wählbar.
 
 Hast du unter Einstellungen → Erweitert die **Stufe „Prompt“** eingeschaltet, steht sie als fünfte Taste am Ende der Zeile ([Kapitel 8.1](#81-textverbesserung-ki--vier-stufen)).
 
@@ -297,13 +305,13 @@ WhisperLoom erscheint im **Teilen-Menü** von Android für Audiodateien („Mit 
 - **Telegram, Signal:** Nachricht lange drücken → Teilen → WhisperLoom. Wo genau der Teilen-Eintrag sitzt, unterscheidet sich je App und Version — er heißt aber überall „Teilen".
 - Genauso mit Aufnahmen aus Rekorder-Apps oder Dateien aus dem Dateimanager. Mehrere Dateien auf einmal gehen auch.
 
-WhisperLoom öffnet den Bildschirm **Transkription**. Oben steht die Quelle mit Dauer („Sprachnachricht · 0:42 · 1 Datei"), darunter der Fortschritt („Audio wird entpackt …", „Wird übertragen …", mit KI-Stufe „Text wird verbessert …"; bei mehreren oder langen Dateien „Datei 1 von 3 · Stück 1 von 2 · …"). Fertige Dateien erscheinen sofort, auch wenn weitere noch laufen.
+WhisperLoom öffnet den Bildschirm **Transkription**. Oben steht die Quelle mit Dauer („Sprachnachricht · 0:42 · 1 Datei"), darunter der Fortschritt („Audio wird entpackt …", „Wird übertragen …", mit KI-Stufe „Text wird verbessert …" bzw. mit dem lokalen Textmodell „Text wird lokal verbessert …"; bei mehreren oder langen Dateien „Datei 1 von 3 · Stück 1 von 2 · …"). Fertige Dateien erscheinen sofort, auch wenn weitere noch laufen.
 
 ### 6.2 Das Ergebnis
 
 - Der Text erscheint in **Absätzen** — WhisperLoom setzt sie an Satzgrenzen, bevorzugt vor Wörtern wie „Also", „Außerdem", „Dann". Bei mehreren Dateien gibt es je Datei einen Abschnitt mit Quelle und Dauer. Der Text ist markierbar.
 - Schalter **Füllwörter ausblenden** (standardmäßig **an**): Blendet „ähm, äh …" aus. Ausgeschaltet zeigt WhisperLoom den Text **wortgetreu, 100 %** — bei fremden Nachrichten will man manchmal genau wissen, was gesagt wurde. Der Schalter wirkt sofort auf die Anzeige und auf Kopieren/Teilen; es wird nichts neu hochgeladen.
-- Ist unter Einstellungen → Text → **Geteilte Sprachnachrichten** eine KI-Stufe gewählt ([Kapitel 8.1](#81-textverbesserung-ki--vier-stufen)), zeigt der Bildschirm die verbesserte Fassung; der Füllwort-Schalter entfällt dann, darunter steht z. B. „Textverbesserung: Glätten · änderbar unter Einstellungen › Text". Scheitert die KI (Netz, Anbieter, kein Zugang), erscheint wie gewohnt die Fassung ohne KI mit Schalter und dem Hinweis „Textverbesserung übersprungen: …"; bei mehreren Dateien nennt die Zeile, bei wie vielen die KI übersprungen wurde.
+- Ist unter Einstellungen → Text → **Geteilte Sprachnachrichten** eine KI-Stufe gewählt ([Kapitel 8.1](#81-textverbesserung-ki--vier-stufen)), zeigt der Bildschirm die verbesserte Fassung; der Füllwort-Schalter entfällt dann, darunter steht z. B. „Textverbesserung: Glätten · änderbar unter Einstellungen › Text". Scheitert die KI (Netz, Anbieter, kein Zugang), erscheint wie gewohnt die Fassung ohne KI mit Schalter und dem Hinweis „Textverbesserung übersprungen: …"; bei mehreren Dateien nennt die Zeile, bei wie vielen die KI übersprungen wurde. Bei Offline-Erkennung mit der Regel „Online, ohne Netz lokal" springt nach einem Online-Fehler das lokale Textmodell ein („Textverbesserung: Glätten · online fehlgeschlagen, lokal verbessert"); die weiteren Stücke gehen dann gleich lokal ([9.7](#97-lokales-textmodell-gemma-4)).
 - **Kopieren** legt den angezeigten Text in die Zwischenablage („In die Zwischenablage kopiert"); **Teilen** gibt ihn als Text an eine andere App weiter. Die Zwischenablage wird nie automatisch überschrieben.
 - Ist eine Datei fehlgeschlagen, steht der Grund bei ihr („Fehlgeschlagen: …") mit **Erneut** nur für diese Datei; bei mehreren Fehlern gibt es zusätzlich **Alles erneut**.
 - Ist noch kein Zugang eingerichtet, zeigt der Bildschirm „Kein Zugang eingerichtet" mit **Einrichtung öffnen**.
@@ -343,7 +351,7 @@ Die Spalte „Modelle" nennt die Einträge, wie sie in WhisperLoom im Dropdown s
 | **Google Gemini** | nur Text | — | Gemini 3.5 Flash-Lite · Gemini 3.8 Flash · Gemini 2.5 Flash-Lite und Gemini 2.5 Flash (nur Bestandskonten) | — | **ja**, aber Free-Tier-Inhalte dürfen zum Training genutzt werden | https://aistudio.google.com/apikey |
 | **DeepSeek** | nur Text | — | DeepSeek Flash (V4.1) · DeepSeek V4 Flash (alter Name) | — | nein | https://platform.deepseek.com/api_keys |
 | **Ollama (lokal / Homeserver)** | nur Text | — | frei — die Liste kommt automatisch von deinem Server (z. B. `qwen3:8b`) | — | deine Hardware | kein Key nötig (Feld optional) |
-| **Ollama Cloud** | nur Text | — | Gemma 4 31B (empfohlen) · GLM 5.3 Flash · GPT-OSS 20B · GPT-OSS 120B; weitere per Knopf unter dem Feld „Modell" ([8.2](#82-zugang-für-die-textverbesserung)) | — | — | https://ollama.com/settings/keys |
+| **Ollama Cloud** | nur Text | — | Gemma 4 31B (empfohlen) · GLM 5.3 Flash · GPT-OSS 20B · GPT-OSS 120B; weitere per Knopf unter dem Feld „Modell" ([8.2](#82-online-zugang-für-die-textverbesserung)) | — | — | https://ollama.com/settings/keys |
 | **Eigener Server** | Erkennung + Text | frei (z. B. `Systran/faster-whisper-medium`, `whisper-1`) | frei (z. B. `qwen3:8b`) | deine Hardware | — | kein Key nötig, außer dein Server verlangt einen |
 
 Mit der Pro-Funktion **Modelle vom Server** wählst du zusätzlich aus der aktuellen Liste des Anbieters ([7.6](#76-modelle-vom-server-pro-funktion)).
@@ -355,7 +363,7 @@ Textverbesserung kostet zusätzlich, aber deutlich weniger als die Erkennung —
 - **Kostenlos anfangen: Groq.** Free-Plan ohne Kreditkarte, 8 Stunden Audio pro Tag, „Whisper Large v3 Turbo" ist für Deutsch gut und sehr schnell. Mit demselben Key läuft auch die Textverbesserung (GPT-OSS 20B) — ein Konto, alles gratis.
 - **Beste Qualität: OpenAI „GPT Transcribe".** Das aktuelle Modell mit den besten dokumentierten Erkennungsraten; $0,0045 pro Minute, dafür ist eine Mindestaufladung von $5 nötig. Das Standardmodell in WhisperLoom.
 - **Europäischer Anbieter: Mistral „Voxtral Mini Transcribe 2".** Server in der EU, Deutsch als Kernsprache, $0,003/min.
-- **Viele Sprachen, Fachbegriffe: ElevenLabs „Scribe v2".** Über 90 Sprachen, $0,22 pro Stunde; das Vokabular geht als Schlüsselbegriffe mit (etwa 20 % Aufpreis). Für medizinische Diktate gibt es „Scribe v2 Medical". Keine Textverbesserung — dafür einen eigenen Zugang eintragen ([8.2](#82-zugang-für-die-textverbesserung)).
+- **Viele Sprachen, Fachbegriffe: ElevenLabs „Scribe v2".** Über 90 Sprachen, $0,22 pro Stunde; das Vokabular geht als Schlüsselbegriffe mit (etwa 20 % Aufpreis). Für medizinische Diktate gibt es „Scribe v2 Medical". Keine Textverbesserung — dafür einen eigenen Zugang eintragen ([8.2](#82-online-zugang-für-die-textverbesserung)).
 - **Sehr günstig:** DeepInfra ab $0,0002/min oder Together AI $0,0015/min — beide mit Whisper Large v3.
 - **Ein Key für alles:** OpenRouter bündelt viele Modelle unter einem Konto; für lange Aufnahmen ungünstig (60-Sekunden-Limit je Anfrage beim Anbieter).
 
@@ -373,7 +381,7 @@ Dieselben Schritte zeigt WhisperLoom unter **Wo bekomme ich einen Key?** (im Ass
 
 **Mistral** — 1) https://console.mistral.ai registrieren, Studio aktivieren. 2) Plan wählen: *Experiment* (gratis, Telefonnummer verifizieren) oder *Pay-as-you-go* (Karte). 3) *API Keys* → *Create new key*.
 
-**ElevenLabs** (nur Erkennung) — 1) https://elevenlabs.io registrieren (Free-Plan mit 4 h 30 min Scribe). 2) *Settings → API Keys* → *Create API Key* (direkt: https://elevenlabs.io/app/settings/api-keys) und bei den Berechtigungen **„Speech to Text"** erlauben — ohne sie lehnt ElevenLabs jede Erkennung ab, WhisperLoom meldet dann „Key oder Berechtigung „Speech to Text" prüfen". Für **Modelle vom Server** ([7.6](#76-modelle-vom-server-pro-funktion)) zusätzlich **„Models: Lesen"**. 3) In WhisperLoom: Anbieter „ElevenLabs (Scribe)", Key einfügen. Für die Textverbesserung brauchst du einen zweiten Zugang, etwa Groq ([8.2](#82-zugang-für-die-textverbesserung)).
+**ElevenLabs** (nur Erkennung) — 1) https://elevenlabs.io registrieren (Free-Plan mit 4 h 30 min Scribe). 2) *Settings → API Keys* → *Create API Key* (direkt: https://elevenlabs.io/app/settings/api-keys) und bei den Berechtigungen **„Speech to Text"** erlauben — ohne sie lehnt ElevenLabs jede Erkennung ab, WhisperLoom meldet dann „Key oder Berechtigung „Speech to Text" prüfen". Für **Modelle vom Server** ([7.6](#76-modelle-vom-server-pro-funktion)) zusätzlich **„Models: Lesen"**. 3) In WhisperLoom: Anbieter „ElevenLabs (Scribe)", Key einfügen. Für die Textverbesserung brauchst du einen zweiten Zugang, etwa Groq ([8.2](#82-online-zugang-für-die-textverbesserung)).
 
 **Together AI** — 1) https://api.together.ai registrieren (Startguthaben). 2) *Settings → API Keys* → *Create key*.
 
@@ -387,7 +395,7 @@ Dieselben Schritte zeigt WhisperLoom unter **Wo bekomme ich einen Key?** (im Ass
 
 **DeepSeek** (nur Textverbesserung) — 1) https://platform.deepseek.com registrieren. 2) *Top up* (kein Free-Tier). 3) https://platform.deepseek.com/api_keys → *Create new API key*. Hinweis in WhisperLoom: „Server in China — Datenschutz beachten."
 
-**Ollama Cloud** (nur Textverbesserung) — 1) https://ollama.com registrieren. 2) *Settings → Keys* → *Add API Key* (direkt: https://ollama.com/settings/keys). 3) In WhisperLoom: Einstellungen → Text → **Eigenen Zugang verwenden** → Anbieter „Ollama Cloud", Key einfügen. Für ein **lokales Ollama** (eigener Rechner oder Homeserver) brauchst du keinen Key ([8.2](#82-zugang-für-die-textverbesserung)).
+**Ollama Cloud** (nur Textverbesserung) — 1) https://ollama.com registrieren. 2) *Settings → Keys* → *Add API Key* (direkt: https://ollama.com/settings/keys). 3) In WhisperLoom: Einstellungen → Text → **Eigenen Zugang verwenden** → Anbieter „Ollama Cloud", Key einfügen. Für ein **lokales Ollama** (eigener Rechner oder Homeserver) brauchst du keinen Key ([8.2](#82-online-zugang-für-die-textverbesserung)).
 
 ### 7.5 Eigenes Modell und Zugang prüfen
 
@@ -396,7 +404,7 @@ Dieselben Schritte zeigt WhisperLoom unter **Wo bekomme ich einen Key?** (im Ass
 
 ### 7.6 Modelle vom Server (Pro-Funktion)
 
-Die Modelle in WhisperLoom sind **Empfehlungen** mit Stand 09/2026 — die Anbieter bringen laufend neue und schalten alte ab. Wer das aktuelle Angebot sehen will, schaltet unter Einstellungen → Gruppe PRO → **Erweitert** → Karte **Pro-Funktionen** den Schalter **Modelle vom Server** ein („Lädt bei jedem Anbieter die aktuelle Modell-Liste – für Erkennung und Textverbesserung."). Ab Werk ist er aus; dann bleibt alles wie in 7.1 beschrieben (Ollama lädt seine Liste trotzdem, siehe [8.2](#82-zugang-für-die-textverbesserung)).
+Die Modelle in WhisperLoom sind **Empfehlungen** mit Stand 09/2026 — die Anbieter bringen laufend neue und schalten alte ab. Wer das aktuelle Angebot sehen will, schaltet unter Einstellungen → Gruppe PRO → **Erweitert** → Karte **Pro-Funktionen** den Schalter **Modelle vom Server** ein („Lädt bei jedem Anbieter die aktuelle Modell-Liste – für Erkennung und Textverbesserung."). Ab Werk ist er aus; dann bleibt alles wie in 7.1 beschrieben (Ollama lädt seine Liste trotzdem, siehe [8.2](#82-online-zugang-für-die-textverbesserung)).
 
 Eingeschaltet wird das Feld **Modell** unter Erkennung und unter Text (auch bei „wie Erkennung") zu einer Auswahl, bei jedem Anbieter einschließlich Eigener Server — nur bei Together AI und DeepInfra bleibt das Textmodell ein Freitext:
 
@@ -413,7 +421,7 @@ WhisperLoom zeigt nur, was passt: unter Erkennung Spracherkennungs-Modelle, unte
 
 ## 8. Textverbesserung
 
-Einstellungen → **Text**. Hier stellst du ein, was mit dem erkannten Text passiert, bevor er ins Feld kommt. Es gibt zwei Ebenen: die **KI-Textverbesserung** (eine zweite Anfrage an ein Sprachmodell) und die **Regeln ohne KI** (lokal, immer verfügbar, kostenlos).
+Einstellungen → **Text**. Hier stellst du ein, was mit dem erkannten Text passiert, bevor er ins Feld kommt. Es gibt zwei Ebenen: die **KI-Textverbesserung** (eine zweite Anfrage an ein Sprachmodell — online oder, bei Offline-Erkennung, an das lokale Textmodell auf dem Gerät) und die **Regeln ohne KI** (lokal, immer verfügbar, kostenlos). Die Karten von oben nach unten: Textverbesserung (KI) · Geteilte Sprachnachrichten · **Offline-Erkennung** ([9.7](#97-lokales-textmodell-gemma-4); nur auf Geräten, die offline erkennen können) · **Online-Zugang für die Textverbesserung** ([8.2](#82-online-zugang-für-die-textverbesserung)) · Regeln ohne KI.
 
 ### 8.1 Textverbesserung (KI) — vier Stufen
 
@@ -442,15 +450,20 @@ Diktierst du Material mit (eine E-Mail, einen Text), steht es am Ende zwischen T
 
 **Automatische Absätze** (direkt darunter): „Die KI gliedert längere Diktate in Absätze. Ausgeschaltet kommt alles als ein durchgehender Text." Ab Werk **an** — das ist das bisherige Verhalten. Ausgeschaltet bekommt die KI die Anweisung, keine Absätze und Zeilenumbrüche zu setzen (bei „Zusammenfassen": wenige Sätze statt Absätzen oder Stichpunkten); liefert das Modell trotzdem Zeilenumbrüche, zieht WhisperLoom sie zu einem Fließtext zusammen. Wie „Füllwörter intelligent entfernen" braucht der Schalter eine Stufe über „Aus". Für geteilte Sprachnachrichten gilt er nicht: Ohne eigene Stufe setzt WhisperLoom die Absätze dort selbst ([Kapitel 6](#6-sprachnachrichten-abtippen)), mit Stufe immer die KI (siehe unten).
 
-**Geteilte Sprachnachrichten** (eigene Karte darunter): „Für Audios, die du per Teilen an WhisperLoom schickst (z. B. aus WhatsApp). Eigene Stufe, unabhängig vom Diktat; bei „Aus" bleibt der Text wortgetreu." Zur Wahl stehen **Aus** (ab Werk), **Glätten**, **Verschönern** und **Zusammenfassen** — „Prompt" nicht, das ergibt für eine fremde Nachricht keinen Sinn. Jedes 5-Minuten-Stück ([6.3](#63-lange-nachrichten)) geht einzeln an die KI — am Stück würde eine lange Nachricht an der Längengrenze des Modells abgeschnitten. Die meisten Sprachnachrichten sind ein Stück; bei längeren gibt „Zusammenfassen" eine Zusammenfassung je Stück. Scheitert ein Stück, zeigt WhisperLoom die ganze Datei ohne KI, mit Hinweis. Absätze setzt die KI immer, der Schalter „Automatische Absätze" gilt hier nicht. „Füllwörter intelligent entfernen" wirkt auch hier und lässt sich deshalb schon einschalten, wenn nur diese Stufe gewählt ist; die Regeln ohne KI wirken wie beim Diktat. Es gilt derselbe Zugang wie für die Textverbesserung ([8.2](#82-zugang-für-die-textverbesserung)); jedes Stück kostet damit eine zusätzliche Anfrage.
+**Geteilte Sprachnachrichten** (eigene Karte darunter): „Für Audios, die du per Teilen an WhisperLoom schickst (z. B. aus WhatsApp). Eigene Stufe, unabhängig vom Diktat; bei „Aus" bleibt der Text wortgetreu." Zur Wahl stehen **Aus** (ab Werk), **Glätten**, **Verschönern** und **Zusammenfassen** — „Prompt" nicht, das ergibt für eine fremde Nachricht keinen Sinn. Jedes 5-Minuten-Stück ([6.3](#63-lange-nachrichten)) geht einzeln an die KI — am Stück würde eine lange Nachricht an der Längengrenze des Modells abgeschnitten. Die meisten Sprachnachrichten sind ein Stück; bei längeren gibt „Zusammenfassen" eine Zusammenfassung je Stück. Scheitert ein Stück, zeigt WhisperLoom die ganze Datei ohne KI, mit Hinweis. Absätze setzt die KI immer, der Schalter „Automatische Absätze" gilt hier nicht. „Füllwörter intelligent entfernen" wirkt auch hier und lässt sich deshalb schon einschalten, wenn nur diese Stufe gewählt ist; die Regeln ohne KI wirken wie beim Diktat. Es gilt derselbe Zugang wie für die Textverbesserung ([8.2](#82-online-zugang-für-die-textverbesserung)); jedes Stück kostet damit eine zusätzliche Anfrage.
 
-### 8.2 Zugang für die Textverbesserung
+### 8.2 Online-Zugang für die Textverbesserung
 
 Standardmäßig nutzt die Textverbesserung **Anbieter und Key der Erkennung** (Schalter **Eigenen Zugang verwenden** aus). Das ist bei OpenAI, Groq, Mistral und OpenRouter der einfache Weg: ein Konto, ein Key. Als Modell wird die Voreinstellung des Anbieters genommen (bei OpenAI „GPT-4o mini", bei Groq „GPT-OSS 20B"); unter **Modell** kannst du ein anderes wählen oder per **Eigenes Modell …** eintippen.
 
+Diese Karte regelt nur die **Online**-Textverbesserung. Bei Offline-Erkennung rechnet ab Werk das lokale Textmodell, ganz ohne Online-Zugang ([9.7](#97-lokales-textmodell-gemma-4)).
+
 **Eigenen Zugang verwenden** einschalten, wenn
 
-- die Erkennung offline läuft (Offline-Modelle können keine Textverbesserung — die Karte zeigt dann „Textverbesserung braucht einen Online-Zugang." mit **Eigenen Zugang eintragen**),
+- die Erkennung offline läuft und du offline erkannten Text online verbessern lassen willst — mit der Regel „Online, ohne Netz lokal" oder „Überspringen" ([9.7](#97-lokales-textmodell-gemma-4)). „Wie Erkennung" zählt bei Offline-Erkennung nie: Der gespeicherte Online-Zugang der Erkennung bekommt dann keinen Text; der ausgeschaltete Schalter sagt deshalb „Bei Offline-Erkennung geht ohne eigenen Zugang kein Text online." statt „Nutzt Anbieter und Key der Erkennung". Statt der Zugangs-Felder zeigt die Karte je nach Regel, was passiert:
+  - **Lokales Textmodell:** „Bei Offline-Erkennung verbessert das lokale Textmodell — dafür brauchst du keinen Online-Zugang." (ohne Knopf)
+  - **Online, ohne Netz lokal:** „Ohne eigenen Zugang verbessert bei Offline-Erkennung das lokale Textmodell. Mit eigenem Zugang geht es online, solange Netz da ist." mit **Eigenen Zugang eintragen**
+  - **Überspringen** (Warnfarbe): „Ohne eigenen Zugang kommt der Text bei Offline-Erkennung ohne KI. Mit eigenem Zugang wird online verbessert, solange Netz da ist." mit **Eigenen Zugang eintragen**
 - dein Erkennungs-Anbieter nur Sprache erkennt (ElevenLabs) — „wie Erkennung" gibt es dort nicht: Die Karte zeigt „ElevenLabs erkennt nur Sprache und bietet keine Textverbesserung." mit **Eigenen Zugang eintragen**, **Zugang prüfen** ist gesperrt. Ist trotzdem eine Stufe gewählt, kommt der Text ohne KI an, mit dem Hinweis „Der Erkennungs-Anbieter kann keinen Text verbessern — unter „Text" einen eigenen Zugang eintragen", oder
 - dein Erkennungs-Anbieter keine eingebauten Textmodelle hat (Together AI, DeepInfra) und du kein Modell eintippen willst — „wie Erkennung" geht dort nur mit selbst eingetipptem Modell (**Zugang prüfen** erst dann); ohne kommt der Text ohne KI an, Hinweis „Kein Textmodell eingetragen — unter „Text" ein Modell eintragen", oder
 - du ein anderes Sprachmodell willst als beim Erkennungs-Anbieter.
@@ -471,6 +484,8 @@ Dann erscheinen eigene Felder: **Anbieter** (OpenAI · Groq · Mistral · OpenRo
 - **DeepSeek**: „Server in China — Datenschutz beachten."
 
 Auch hier gibt es **Zugang prüfen** — WhisperLoom schickt dem Modell eine Mini-Anfrage und wertet die Antwort aus.
+
+**Ohne Netz wartet nichts:** Vor jeder Online-Textverbesserung prüft WhisperLoom, ob das Telefon gerade Internet hat. Fehlt es, geht keine Anfrage raus, und der Text kommt sofort — ohne KI mit dem Hinweis „Textverbesserung übersprungen: Kein Netz für den Online-Zugang" oder, bei Offline-Erkennung, je nach Regel lokal verbessert ([9.7](#97-lokales-textmodell-gemma-4)). Für Server im eigenen Netz (private Adresse, `*.local`, `*.lan`, `*.home.arpa`, `*.internal`, Tailscale mit `100.x` oder `*.ts.net`) reicht eine WLAN- oder VPN-Verbindung, auch ohne Internet. Ein aktives VPN zählt nur, wenn darunter ein Netz da ist — Android meldet ein VPN sonst auch im Funkloch als verbunden. Nach einer Online-Erkennung reicht jedes verbundene Netz: Die Erkennung ist gerade darüber gelaufen.
 
 ### 8.3 Regeln ohne KI
 
@@ -515,7 +530,7 @@ Mistral und OpenRouter nehmen kein Vokabular entgegen — dort wird es nicht mit
 
 ## 9. Offline-Modus
 
-Im Offline-Modus erkennt WhisperLoom Sprache direkt auf dem Gerät — mit whisper.cpp und einem Whisper-Modell, das du einmalig herunterlädst. Danach braucht die Erkennung kein Internet, keinen Key und schickt nichts weg.
+Im Offline-Modus erkennt WhisperLoom Sprache direkt auf dem Gerät — mit whisper.cpp und einem Whisper-Modell, das du einmalig herunterlädst. Danach braucht die Erkennung kein Internet, keinen Key und schickt nichts weg. Für die Textverbesserung gibt es dazu ein **lokales Textmodell** (Gemma 4), ebenfalls einmalig zu laden ([9.7](#97-lokales-textmodell-gemma-4)).
 
 ### 9.1 Voraussetzungen
 
@@ -525,14 +540,14 @@ Im Offline-Modus erkennt WhisperLoom Sprache direkt auf dem Gerät — mit whisp
 
 ### 9.2 Die Modelle
 
-Einstellungen → **Offline-Modelle** (oder Schritt 2b im Assistenten). „Modelle werden einmalig von huggingface.co geladen und bleiben auf dem Gerät. Kein Modell ist in der App enthalten."
+Einstellungen → **Offline-Modelle** (oder Schritt 2b im Assistenten). „Modelle werden einmalig von huggingface.co geladen und bleiben auf dem Gerät. Kein Modell ist in der App enthalten." Der Bildschirm hat zwei Abschnitte: **SPRACHERKENNUNG** mit der Umschaltung Online/Offline und den Whisper-Modellen (diese Tabelle) und **TEXTVERBESSERUNG** mit den Gemma-Modellen ([9.7](#97-lokales-textmodell-gemma-4)).
 
 | Modell | Download | Arbeitsspeicher | Einschätzung | Empfehlung |
 |---|---|---|---|---|
 | **Tiny** | 32 MB | ~250 MB | nur zum Ausprobieren — für Deutsch zu ungenau | — |
 | **Base** | 60 MB | ~355 MB | schnell, kurze Sätze | wenn Small zu langsam ist |
 | **Small** | 190 MB | ~430 MB | gute Qualität für Deutsch | **Empfohlen** (Voreinstellung) |
-| **Large v3 Turbo** | 574 MB | ~1 GB | beste Qualität, langsam, ab 6 GB Gerätespeicher | nur für geduldige Nutzer mit starkem Gerät |
+| **Large v3 Turbo** | 574 MB | ~1 GB | beste Qualität, langsam, Gerät ab 6 GB RAM | nur für geduldige Nutzer mit starkem Gerät |
 
 Die Modelle sind quantisierte Versionen (q5) der OpenAI-Whisper-Modelle aus dem Repository `huggingface.co/ggerganov/whisper.cpp`; alle sind mehrsprachig. Quelle und Prüfsummen sind fest in der App hinterlegt — eine beschädigte oder veränderte Datei wird abgelehnt.
 
@@ -544,7 +559,7 @@ Die Modelle sind quantisierte Versionen (q5) der OpenAI-Whisper-Modelle aus dem 
 - Nach dem Download prüft WhisperLoom Größe und SHA-256-Prüfsumme. Stimmt etwas nicht: „Datei beschädigt — erneut laden".
 - **Auswählen:** Der Radio-Button links markiert das aktive Modell (nur bei geladenen Modellen wählbar). Ein Wechsel greift beim nächsten Diktat.
 - **Löschen:** Papierkorb-Symbol → „Small löschen? — 190 MB werden frei. Für die Offline-Erkennung muss dann ein anderes Modell geladen werden." Ist es das aktive und einzige Modell, warnt der Dialog zusätzlich („Dies ist das aktive Modell — Offline ist danach nicht einsatzbereit."); der Startbildschirm zeigt dann das Banner „Offline gewählt, aber kein Modell geladen."
-- Die Zeile „Belegt: … · Frei: …" zeigt, was die Modelle auf dem Gerät belegen.
+- Die Zeile „Belegt: … · Frei: …" zeigt, was die Modelle auf dem Gerät belegen — Whisper- und Textmodelle zusammen, samt Zwischenspeicher der Textmodelle.
 
 Unter Erkennung → Offline-Modell steht das aktive Modell mit **Ändern**. Hinweis dort: „Erste Nutzung lädt das Modell in den Speicher (2–5 s)." Danach bleibt es geladen; erst wenn du die WhisperLoom-Oberfläche öffnest und wieder verlässt oder der Arbeitsspeicher knapp wird, gibt WhisperLoom das Modell frei, und das nächste Diktat lädt es erneut.
 
@@ -569,7 +584,73 @@ Was die Qualität offline am meisten verbessert, in dieser Reihenfolge: das grö
 
 ### 9.6 Online und offline kombinieren
 
-Die Umschaltung zwischen **Online-Dienst** und **Offline-Modell** steht unter Erkennung ganz oben (und in Offline-Modelle). Beide Zugänge bleiben gespeichert — du kannst also mit Offline im Flugzeug diktieren und zu Hause auf den Online-Dienst zurückwechseln. Die KI-Textverbesserung braucht in jedem Fall einen Online-Zugang (siehe [8.2](#82-zugang-für-die-textverbesserung)); der Anbieter der Erkennung und der Anbieter der Textverbesserung dürfen verschieden sein.
+Die Umschaltung zwischen **Online-Dienst** und **Offline-Modell** steht unter Erkennung ganz oben (und in Offline-Modelle). Beide Zugänge bleiben gespeichert — du kannst also mit Offline im Flugzeug diktieren und zu Hause auf den Online-Dienst zurückwechseln. Wie der Text verbessert wird, hängt vom Erkennungsweg ab: Online erkannter Text geht wie bisher an den Online-Zugang für die Textverbesserung ([8.2](#82-online-zugang-für-die-textverbesserung)); der Anbieter der Erkennung und der Anbieter der Textverbesserung dürfen verschieden sein. Offline erkannten Text verbessert ab Werk das lokale Textmodell auf dem Gerät — einen Online-Zugang brauchst du dafür nicht. Ob offline stattdessen online verbessert oder die KI übersprungen wird, stellst du unter Einstellungen → Text → Karte **Offline-Erkennung** ein ([9.7](#97-lokales-textmodell-gemma-4)).
+
+### 9.7 Lokales Textmodell (Gemma 4)
+
+Erkennst du offline und ist eine KI-Stufe an (fürs Diktat oder für geteilte Sprachnachrichten), verbessert ab Werk ein **lokales Textmodell** den erkannten Text direkt auf dem Gerät. Es gelten dieselben Stufen, Schalter und Anweisungen wie online ([8.1](#81-textverbesserung-ki--vier-stufen)) — nur ohne Netz, ohne Key und ohne Kosten. Der Text verlässt das Handy nicht. Online erkannter Text wird davon unberührt wie bisher online verbessert.
+
+**Die Modelle** stehen unter Einstellungen → **Offline-Modelle** im Abschnitt **TEXTVERBESSERUNG**: „Verbessert offline erkannten Text auf dem Gerät — ohne Netz, der Text verlässt das Handy nicht. Wann es rechnet, stellst du unter Text ein."
+
+| Modell | Download | dazu beim ersten Start | Arbeitsspeicher beim Rechnen (Google, nur Modell) | Gerät braucht | Einschätzung |
+|---|---|---|---|---|---|
+| **Gemma 4 E2B** | 2,6 GB | +800 MB | ~1,8 GB | ab 6 GB RAM | **Empfohlen** (Voreinstellung), schneller |
+| **Gemma 4 E4B** | 3,7 GB | +1,1 GB (geschätzt) | ~3,3 GB | ab 8 GB RAM | genauer, langsamer |
+
+- **Dazu beim ersten Start:** Beim ersten Laden legt das Modell einen Zwischenspeicher an, der danach das Laden beschleunigt. Bei E2B sind es gemessen 788 MB, bei E4B ist der Wert geschätzt. Die App zeigt beides an („2,6 GB · +800 MB beim ersten Start"), prüft vor dem Download, ob Platz für Modell und Zwischenspeicher ist („Nicht genug Speicherplatz"), und löscht den Zwischenspeicher mit dem Modell.
+- **Arbeitsspeicher:** Die Werte in der Tabelle sind Googles Angaben fürs Rechnen auf dem Prozessor, nur fürs Modell (in der Spitze rund 1,8 bzw. 3,3 GB). Der ganze Prozess braucht mehr: In einem eigenen Test auf einem Server-Prozessor belegte er mit E2B in der Spitze 2,8 GB — samt Java-Laufzeit und eingeblendetem Zwischenspeicher. In WhisperLoom bleibt außerdem das Whisper-Modell im selben Prozess geladen, während Gemma rechnet (Small etwa 430 MB, Large v3 Turbo etwa 1 GB); mit E2B kommen so grob 3–4 GB zusammen. Auf einem 6-GB-Gerät ist das gut die Hälfte des Arbeitsspeichers — wird es knapp, helfen Small statt Large v3 Turbo und weniger offene Apps. Unter der Grenze ist das Modell ausgegraut („Für dieses Gerät zu groß"); wie bei Large v3 Turbo zählt ein Gerät, das etwas weniger meldet (10 % Toleranz), noch mit. Die Grenzen gelten für reinen Text mit kurzem Kontext — Googles eigene Beispiel-App verlangt für Bilder, Ton und langen Kontext mehr. Auf einem Handy gemessen ist der Bedarf in WhisperLoom noch nicht. Reicht der freie Speicher nicht, kommt der Text ohne KI mit dem Hinweis „Lokales Textmodell fehlgeschlagen".
+- **Voraussetzung** ist ein Gerät, das offline erkennen kann ([9.1](#91-voraussetzungen)). Gemma rechnet auf dem Prozessor (CPU). Die Grafikeinheit nutzt WhisperLoom bewusst nicht, weil sie auf manchen Geräten (Pixel, Exynos, Mali) falsch rechnet.
+- **Quelle:** „huggingface.co/litert-community (Gemma 4, Apache 2.0)". Dateiversion, Größe und SHA-256-Prüfsumme sind fest in der App hinterlegt, wie bei den Whisper-Modellen.
+
+**Laden, wählen, löschen** wie bei den Whisper-Modellen ([9.3](#93-laden-auswählen-löschen)): **Laden (2,6 GB)**, Nachfrage über mobile Daten, Download im Hintergrund mit Benachrichtigung, Fortsetzen nach Abbruch, Prüfung von Größe und Prüfsumme. Es lädt immer nur ein Modell zur Zeit. Gemma 4 E2B ist ab Werk gewählt. Ist das gewählte Textmodell nicht geladen, wählt ein fertiger Download das neue von selbst aus; sonst wechselst du nach dem Laden per Radio-Button. **Löschen** fragt „Gemma 4 E2B löschen? — 2,6 GB Modell und 788 MB Zwischenspeicher werden frei. Für die lokale Textverbesserung muss dann wieder ein Textmodell geladen werden." und nimmt den Zwischenspeicher mit; war das Modell noch nie geladen, gibt es keinen Zwischenspeicher, und der Dialog nennt nur die 2,6 GB. Ist es das gewählte und einzige geladene Textmodell, steht dabei „Dies ist das aktive Textmodell — offline kommt der Text danach ohne KI."
+
+**Im Arbeitsspeicher:** Das Modell wird geladen, sobald es gebraucht wird. Damit das nicht erst nach der Erkennung beginnt, startet WhisperLoom das Laden schon mit der Aufnahme (Knopf, Tastatur, Pro Widget). Vorgewärmt bleibt es bis zur Verbesserung geladen, auch wenn Aufnahme und Erkennung länger dauern (höchstens 10 Minuten). Nach 2 Minuten ohne Diktat, bei knappem Speicher, beim Löschen und beim Wechsel des Modells gibt WhisperLoom es wieder frei.
+
+**Die Regel** steht unter Einstellungen → **Text** → Karte **Offline-Erkennung** (nur auf Geräten, die offline erkennen können), Überschrift „Textverbesserung bei Offline-Erkennung":
+
+- **Lokales Textmodell** — „Standard — offline erkannter Text wird auf dem Gerät verbessert, nie online."
+- **Online, ohne Netz lokal** — „Mit eigenem Online-Zugang und Netz online. Ohne Netz, ohne eigenen Zugang oder bei einem Fehler lokal."
+- **Überspringen** — „Kein lokales Modell. Mit eigenem Online-Zugang und Netz online, sonst kommt der Text ohne KI."
+
+Darüber steht das gewählte Textmodell: geladen „Gemma 4 E2B · Geladen · 2,6 GB" mit **Ändern** (führt zu den Offline-Modellen), sonst „Kein Textmodell geladen" mit **Laden (2,6 GB)**. Dieser Knopf lädt nur; die Regel wählst du darunter. Passt kein Textmodell ins Gerät (unter 6 GB RAM), steht dort statt des Knopfs „Für ein lokales Textmodell braucht das Gerät mindestens 6 GB RAM."; „Lokales Textmodell" und „Online, ohne Netz lokal" sind dann gesperrt, und die Regel wirkt wie „Überspringen". Stehen die Stufen fürs Diktat und für geteilte Sprachnachrichten beide auf „Aus", wirkt die Regel nicht. „Eigener Online-Zugang" heißt: Unter „Online-Zugang für die Textverbesserung" ist **Eigenen Zugang verwenden** an und vollständig eingetragen ([8.2](#82-online-zugang-für-die-textverbesserung)). „Wie Erkennung" zählt bei Offline-Erkennung nie.
+
+**Was passiert wann** — bei Offline-Erkennung und einer KI-Stufe über „Aus":
+
+| Lage | Lokales Textmodell | Online, ohne Netz lokal | Überspringen |
+|---|---|---|---|
+| Eigener Online-Zugang, Netz da | lokal | online; scheitert die Anfrage, lokal mit Hinweis „Online-Textverbesserung fehlgeschlagen — lokal verbessert" | online; scheitert die Anfrage, ohne KI mit Hinweis |
+| Eigener Online-Zugang, kein Netz | lokal | lokal, es geht keine Anfrage raus | sofort ohne KI, Hinweis „Kein Netz für den Online-Zugang" |
+| Kein eigener Online-Zugang | lokal | lokal | ohne KI, ohne Hinweis (so gewählt) |
+| Textmodell nicht geladen | sofort ohne KI, Hinweis „Kein Textmodell geladen …" | mit Zugang und Netz online; sonst sofort ohne KI, Hinweis „Kein Textmodell geladen …" | wie oben, braucht kein Textmodell |
+
+„Ohne KI" heißt: der erkannte Text mit den Regeln ohne KI ([8.3](#83-regeln-ohne-ki)). Der Hinweis erscheint am Knopf als kurze Meldung, in der Tastatur in der Statuszeile und bei geteilten Sprachnachrichten unter dem Text, z. B. „Textverbesserung übersprungen: Kein Textmodell geladen — unter „Text" laden oder „Überspringen" wählen".
+
+**Offline ohne Textmodell.** Erkennst du offline, ist eine KI-Stufe an, steht die Regel auf „Lokales Textmodell" oder „Online, ohne Netz lokal" und ist das gewählte Textmodell nicht geladen (oder zu groß fürs Gerät), zeigt WhisperLoom an vier Stellen dieselbe Warnkarte: unter **Erkennung**, in **Offline-Modelle** (Abschnitt Textverbesserung), unter **Text** (Karte Offline-Erkennung) und im Assistenten (Schritt 2b). Sie lautet „Offline ohne Textmodell — Die Textverbesserung braucht offline ein lokales Modell: Gemma 4 E2B (2,6 GB · +800 MB beim ersten Start). Lade es oder überspringe sie — dann kommt der Text ohne KI." Mit eigenem Online-Zugang sagt sie, was dann wirklich passiert: bei „Lokales Textmodell" „… Lade es oder überspringe sie — dann verbessert mit Netz dein Online-Zugang, sonst kommt der Text ohne KI.", bei „Online, ohne Netz lokal" „Mit Netz verbessert dein Online-Zugang, ohne Netz ein lokales Modell: … Lade es oder überspringe es — dann kommt der Text ohne Netz ohne KI." Zwei Knöpfe:
+
+- **Textmodell laden (2,6 GB)** lädt das gewählte Modell (passt es nicht ins Gerät, Gemma 4 E2B) und wählt es aus. Die Karte zeigt dann den Fortschritt.
+- **Überspringen** stellt die Regel auf „Überspringen".
+
+Bis dahin kommt der Text offline **sofort** ohne KI — WhisperLoom wartet nie auf ein fehlendes Modell. Ausnahme „Online, ohne Netz lokal" mit eigenem Online-Zugang: Mit Netz geht der Text weiter an diesen Zugang, nur ohne Netz kommt er ohne KI. Der Startbildschirm zeigt die Zeile Textverbesserung in Warnfarbe („Glätten · Textmodell fehlt — Text ohne KI", bei der Ausnahme „Glätten · GPT-4o mini · ohne Netz ohne KI") und das Banner „Offline ohne Textmodell — der Text kommt ohne KI." (bei der Ausnahme „… — ohne Netz kommt der Text ohne KI.") mit **Beheben** (führt zu Text). In der Tastatur sind die KI-Stufen ausgegraut („Offline ohne Textmodell — tippe zum Laden").
+
+**Update von 3.8.x:** Umgestellt wird nichts, die Regel steht für alle auf „Lokales Textmodell". Wer schon offline mit einer KI-Stufe diktiert, sieht deshalb die Warnkarte, bis er das Modell lädt oder „Überspringen" wählt. Auf Geräten unter 6 GB RAM passt kein Textmodell: Dort wirkt die Regel von selbst wie „Überspringen" — ohne Warnkarte, ohne Banner, und die Tastatur bietet kein Laden an. Mit „Überspringen" und eigenem Online-Zugang bleibt alles wie bisher: Online verbessert wird, solange Netz da ist — ohne Netz kommt der Text jetzt sofort statt nach einer Zeitüberschreitung.
+
+**Anzeige:** Auf dem Startbildschirm steht bei Offline-Erkennung in der Zeile Textverbesserung, was passiert: „Glätten · lokal · Gemma 4 E2B", „Glätten · GPT-4o mini · ohne Netz lokal", „Glätten · offline übersprungen" oder, bei „Überspringen" mit eigenem Zugang, das Online-Modell wie gewohnt. Ist nur die Stufe für geteilte Sprachnachrichten an und fehlt das Textmodell, steht dort in Warnfarbe „Aus · geteilte Sprachnachrichten: Textmodell fehlt" — passend zum Banner. In den Einstellungen zeigt die Zeile **Text** die Kurzform: „lokal bei Offline", „online, ohne Netz lokal" oder „ohne lokales Modell". Die Zeile **Offline-Modelle** zählt Whisper- und Textmodelle zusammen.
+
+**Ausweg: ohne KI einfügen.** Läuft die Textverbesserung — online oder lokal —, zeigt die Tastatur „Text wird verbessert … antippen = ohne KI einfügen" und der Knopf „verbessert … tippen = ohne KI". Ein Tipp auf die Statuszeile, das Mikrofon oder den Knopf fügt den erkannten Text sofort ohne KI ein; die laufende Verbesserung wird verworfen. Das hilft, wenn ein langes Diktat auf einem langsamen Gerät dauert.
+
+**Wie lange dauert es?** Nur grobe Anhaltspunkte — auf einem Handy ist die lokale Textverbesserung noch nicht vermessen:
+
+| | Gemma 4 E2B | Gemma 4 E4B |
+|---|---|---|
+| Diktat von etwa einer Minute, Spitzengerät | etwa 5–8 s | etwa 15–20 s |
+| Diktat von etwa einer Minute, Mittelklasse | etwa 20–45 s (sehr unsicher) | zwei- bis dreimal so lang |
+| Erstes Laden überhaupt (baut den Zwischenspeicher) | einige Sekunden bis etwa 30 s | bis etwa 40 s berichtet |
+
+Hochgerechnet aus Googles Messung auf einem Galaxy S26 Ultra (Modellkarten unter huggingface.co/litert-community: E2B rund 47, E4B rund 18 Textbausteine pro Sekunde, erste Ausgabe nach 1,8 bzw. 5,3 s) und aus einem eigenen Test auf einem Server-Prozessor mit 4 Kernen (E2B: 4–8,5 s je Verbesserung kurzer bis mittlerer Diktate, erstes Laden 6 s, danach 1 s). Für Mittelklasse-Handys gibt es mit dieser Technik keine Messung; die Spanne ist eine Schätzung. Kurze Diktate gehen entsprechend schneller, langsamer als online ist es fast immer.
+
+**Qualität:** Gemma 4 E2B ist ein kleines Modell. Im Test hat es diktierte Bitten („Schreib mir eine Einladung …") wie gewünscht bearbeitet statt ausgeführt, und Kürzen und Verschönern waren brauchbar. Bei „Glätten" schreibt es Kurzformen manchmal aus („hab" → „habe"). E4B ist größer und soll genauer sein, ist aber nicht eigens getestet. Wer online bessere Texte will, nimmt „Online, ohne Netz lokal" mit eigenem Online-Zugang.
+
+**Geteilte Sprachnachrichten und Pro Widgets** folgen derselben Regel. Bei geteilten Nachrichten wird jedes 5-Minuten-Stück einzeln lokal verbessert („Text wird lokal verbessert …") — lange Nachrichten dauern dann entsprechend.
 
 ---
 
@@ -697,7 +778,7 @@ Dann **Zugang prüfen**.
 
 ## 11. Datenschutz
 
-WhisperLoom hat keinen eigenen Server, kein Konto, keine Telemetrie. Was mit deinen Daten passiert, hängt allein vom gewählten Erkennungsweg ab:
+WhisperLoom hat keinen eigenen Server, kein Konto, keine Telemetrie. Was mit deinen Daten passiert, hängt allein vom gewählten Erkennungsweg und von der Textverbesserung ab:
 
 **Online:** Audio und Vokabular gehen an den gewählten Anbieter. Bei Textverbesserung geht der erkannte Text an das Sprachmodell (denselben oder einen anderen Anbieter). Dein Key bleibt auf dem Gerät. WhisperLoom speichert keine Aufnahmen (Ausnahme: Pro Widgets, siehe unten). Unter Erkennung steht immer, an wen gesendet wird („Audio wird zur Erkennung an OpenAI gesendet."). Was der Anbieter mit den Daten macht, regeln dessen Bedingungen — bei Google Gemini im Free-Tier ausdrücklich Trainingsnutzung, bei DeepSeek Server in China; WhisperLoom weist an der Auswahl darauf hin.
 
@@ -705,7 +786,7 @@ WhisperLoom hat keinen eigenen Server, kein Konto, keine Telemetrie. Was mit dei
 
 **Modelle vom Server (Pro):** Ist die Funktion an, fragt WhisperLoom beim Anbieter zusätzlich die Modell-Liste ab (mit deinem Key, ohne Audio oder Text). Auf dem Gerät gespeichert wird nur die Liste.
 
-**Offline:** Die Aufnahme verlässt das Gerät nicht. Ins Netz gehen nur der Modell-Download (zu huggingface.co) und, wenn die Textverbesserung an ist, der erkannte Text an das Sprachmodell.
+**Offline:** Die Aufnahme verlässt das Gerät nicht. Mit dem **lokalen Textmodell** (Regel „Lokales Textmodell", ab Werk) bleibt auch der erkannte Text auf dem Gerät — Gemma rechnet auf dem Handy und schickt nichts weg. Ins Netz gehen nur die Modell-Downloads von huggingface.co: die Whisper-Modelle von `huggingface.co/ggerganov/whisper.cpp`, die Textmodelle von `huggingface.co/litert-community` (ohne Konto, ohne Key; Hugging Face sieht dabei wie jeder Webserver deine IP-Adresse). Nur mit den Regeln „Online, ohne Netz lokal" oder „Überspringen" und einem eigenen Online-Zugang geht der erkannte Text bei Netz an dieses Sprachmodell ([9.7](#97-lokales-textmodell-gemma-4)).
 
 **Eigener Server:** Audio und Text gehen nur an deinen Server.
 
@@ -715,9 +796,9 @@ WhisperLoom hat keinen eigenen Server, kein Konto, keine Telemetrie. Was mit dei
 
 **Bedienungshilfe:** Die Bedienungshilfe „WhisperLoom Text-Einfügen" liest nichts mit und speichert nichts; sie fügt nur den diktierten Text in das fokussierte Feld ein. Android zeigt beim Aktivieren die übliche Warnung für Bedienungshilfen („kann Bildschirminhalte lesen") — WhisperLoom nutzt davon ausschließlich das Einfügen.
 
-**Auf dem Gerät gespeichert:** Deine Einstellungen inklusive API-Key (im privaten App-Speicher, für andere Apps unzugänglich), die heruntergeladenen Modelle, dein Vokabular (bei einer verknüpften Datei nur der Verweis darauf), die zuletzt geladenen Modell-Listen der Anbieter (ohne Key) und die Position des Knopfs; mit Pro Widgets außerdem die Widgets samt Server-Adressen, Tokens und Galerie-Bildern sowie ein noch nicht gesendeter Auftrag, bis er draußen oder verworfen ist ([13.9](#139-was-dabei-gesendet-wird)). Sonst keine Aufnahmen, keine Texte, keine Verläufe. Ein fehlgeschlagenes Diktat bleibt nur so lange im Arbeitsspeicher gepuffert, bis du es erneut sendest oder verwirfst. WhisperLoom ist vom Android-System-Backup ausgenommen (`allowBackup=false`): die Einstellungen inklusive Key und Widget-Tokens landen weder im Google-Backup noch im Geräte-zu-Gerät-Transfer — nach einem Gerätewechsel richtest du den Zugang neu ein.
+**Auf dem Gerät gespeichert:** Deine Einstellungen inklusive API-Key (im privaten App-Speicher, für andere Apps unzugänglich), die heruntergeladenen Modelle (Whisper- und Textmodelle, dazu der Zwischenspeicher, den ein Textmodell beim ersten Start anlegt), dein Vokabular (bei einer verknüpften Datei nur der Verweis darauf), die zuletzt geladenen Modell-Listen der Anbieter (ohne Key) und die Position des Knopfs; mit Pro Widgets außerdem die Widgets samt Server-Adressen, Tokens und Galerie-Bildern sowie ein noch nicht gesendeter Auftrag, bis er draußen oder verworfen ist ([13.9](#139-was-dabei-gesendet-wird)). Sonst keine Aufnahmen, keine Texte, keine Verläufe. Ein fehlgeschlagenes Diktat bleibt nur so lange im Arbeitsspeicher gepuffert, bis du es erneut sendest oder verwirfst. WhisperLoom ist vom Android-System-Backup ausgenommen (`allowBackup=false`): die Einstellungen inklusive Key und Widget-Tokens landen weder im Google-Backup noch im Geräte-zu-Gerät-Transfer — nach einem Gerätewechsel richtest du den Zugang neu ein.
 
-**Berechtigungen:** Mikrofon (Aufnahme), Internet (Online-Dienst und Modell-Download), Über anderen Apps anzeigen (Knopf), Benachrichtigungen (Beenden-Aktion und Download-Fortschritt), Netzwerkstatus (Nachfrage vor Downloads über mobile Daten), Vordergrund-Dienste (Knopf, Modell-Download und Aufnahme eines Pro Widgets).
+**Berechtigungen:** Mikrofon (Aufnahme), Internet (Online-Dienst und Modell-Download), Über anderen Apps anzeigen (Knopf), Benachrichtigungen (Beenden-Aktion und Download-Fortschritt), Netzwerkstatus (Nachfrage vor Downloads über mobile Daten und Prüfung, ob vor einer Online-Textverbesserung Netz da ist), Vordergrund-Dienste (Knopf, Modell-Download und Aufnahme eines Pro Widgets). Das lokale Textmodell braucht keine neue Berechtigung.
 
 ---
 
@@ -760,6 +841,18 @@ Beim Anbieter „Ollama (lokal / Homeserver)": Auf dem Server muss `OLLAMA_HOST=
 
 **Offline ist zu langsam.**
 Ein kleineres Modell wählen (Base oder Small) oder auf den Online-Dienst wechseln. Auch andere gleichzeitig laufende Apps bremsen — die Erkennung nutzt alle Performance-Kerne.
+
+**„Offline ohne Textmodell" / „Textverbesserung übersprungen: Kein Textmodell geladen — …".**
+Offline ist eine KI-Stufe an, aber das lokale Textmodell fehlt. In der Warnkarte (oder unter Text → Offline-Erkennung) **Textmodell laden** antippen — oder **Überspringen**, wenn offline keine KI rechnen soll ([9.7](#97-lokales-textmodell-gemma-4)). Auf Geräten unter 6 GB RAM kommt beides nicht vor: Dort passt kein Textmodell, und die Regel wirkt wie „Überspringen".
+
+**„Textverbesserung übersprungen: Lokales Textmodell fehlgeschlagen".**
+Das Textmodell ließ sich nicht laden oder rechnen, meist weil gerade zu wenig Arbeitsspeicher frei ist. Andere Apps schließen und erneut diktieren; hilft das nicht, Gemma 4 E2B statt E4B wählen. Kommt der Fehler gleich beim ersten Diktat nach dem Download, das Textmodell unter Offline-Modelle löschen und neu laden.
+
+**Die lokale Textverbesserung dauert zu lange.**
+Ein Tipp auf die Statuszeile, das Mikrofon oder den Knopf fügt den Text sofort ohne KI ein. Spätestens nach 45 Sekunden plus 0,6 Sekunden je Wort (höchstens 10 Minuten) bricht WhisperLoom die Rechnung selbst ab; der Text kommt dann ohne KI mit „Lokales Textmodell fehlgeschlagen". Dauerhaft helfen Gemma 4 E2B statt E4B oder die Regel „Online, ohne Netz lokal" mit eigenem Online-Zugang.
+
+**„Textverbesserung übersprungen: Diktat zu lang für das lokale Textmodell".**
+Das lokale Modell fasst Diktat und Antwort zusammen nur rund 4.000 Tokens. Ab etwa 800 Wörtern rechnet es deshalb gar nicht erst — sonst käme nur der Anfang des Texts zurück. Kürzer diktieren oder mit eigenem Online-Zugang „Online, ohne Netz lokal" wählen.
 
 **„Datei beschädigt — erneut laden" / „Offline-Modell konnte nicht geladen werden".**
 Modell unter Offline-Modelle löschen und neu laden. Tritt der Fehler direkt nach dem Download auf, war die Übertragung fehlerhaft; WhisperLoom lädt das Modell beim nächsten Versuch neu.

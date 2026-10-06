@@ -38,6 +38,8 @@ import com.chris.whisperloom.ui.components.offlineModelDetails
 import com.chris.whisperloom.ui.components.offlineModelLabel
 import com.chris.whisperloom.ui.components.providerShortName
 import com.chris.whisperloom.ui.components.rememberSnack
+import com.chris.whisperloom.ui.models.LocalModelRequiredCard
+import com.chris.whisperloom.ui.models.localModelMissing
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.state.LocalAppEnv
@@ -69,6 +71,9 @@ fun RecognitionScreen(nav: NavState) {
                     FilledTonalButton(onClick = { nav.push(Screen.Models) }) { Text(stringResource(R.string.rec_load_model)) }
                 }
             }
+
+            // Offline mit KI-Stufe: ohne Textmodell kaeme der Text ohne KI (Spec §4, Pflichtkarte).
+            if (localModelMissing(prefs, status)) LocalModelRequiredCard()
 
             if (!offline) {
                 SectionCard(title = stringResource(R.string.rec_card_transcription)) {

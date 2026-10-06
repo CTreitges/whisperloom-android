@@ -2,6 +2,34 @@
 
 Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [3.8.5] — 2026-10-06
+
+### Hinzugefügt
+
+- **Lokales Textmodell für die Offline-Erkennung.** Erkennst du offline, verbessert jetzt Gemma 4 den Text direkt auf dem Gerät: dieselben Stufen und Anweisungen wie online, ohne Netz, ohne Key, ohne Kosten — der Text verlässt das Handy nicht. Einstellungen → Offline-Modelle hat dafür den neuen Abschnitt **Textverbesserung** mit **Gemma 4 E2B** (empfohlen, 2,6 GB, ab 6 GB Arbeitsspeicher) und **Gemma 4 E4B** (3,7 GB, genauer, langsamer, ab 8 GB). Beim ersten Start legt das Modell einen Zwischenspeicher an (etwa 0,8 bzw. 1,1 GB); die App zeigt ihn bei der Größe mit an und löscht ihn mit dem Modell. Der Download kommt von huggingface.co/litert-community, mit Fortsetzen und Prüfsumme wie bei den Whisper-Modellen.
+- **Regel „Textverbesserung bei Offline-Erkennung“.** Einstellungen → Text → neue Karte **Offline-Erkennung** mit drei Optionen: **Lokales Textmodell** (Standard, offline erkannter Text geht nie online), **Online, ohne Netz lokal** (mit eigenem Online-Zugang und Netz online, sonst oder bei einem Fehler lokal) und **Überspringen** (kein lokales Modell; ohne eigenen Zugang oder ohne Netz kommt der Text ohne KI). Online erkannter Text wird wie bisher online verbessert.
+- **„Offline ohne Textmodell“.** Ist offline eine KI-Stufe an und fehlt das Textmodell, zeigen Erkennung, Offline-Modelle, Text und der Assistent dieselbe Karte mit **Textmodell laden** und **Überspringen**, und der Startbildschirm warnt mit einem Banner. Bis dahin kommt der Text sofort ohne KI — mit „Online, ohne Netz lokal“ und eigenem Online-Zugang nur ohne Netz, mit Netz geht er an diesen Zugang. Die App wartet nie auf ein fehlendes Modell. Auf Geräten unter 6 GB RAM passt kein Textmodell: Dort wirkt die Regel wie „Überspringen“, ohne Warnkarte und Banner.
+- **Ausweg während der Textverbesserung.** Tastatur und schwebender Knopf zeigen jetzt, dass der Text verbessert wird („Text wird verbessert … antippen = ohne KI einfügen“). Ein Tipp fügt den erkannten Text sofort ohne KI ein, online wie lokal.
+- **Einrichtung offline:** Nach dem Whisper-Modell wählst du im Assistenten **Lokales Textmodell** oder **Überspringen**. „Lokales Textmodell“ schaltet die Stufe „Glätten“ ein, wenn noch keine KI-Stufe an ist. „Weiter“ geht schon, während das Textmodell im Hintergrund lädt; scheitert der Download, nennt der Assistent den Grund und bietet ihn erneut an.
+
+### Geändert
+
+- **Die Zugangs-Karte unter Text heißt „Online-Zugang für die Textverbesserung“.** Bei Offline-Erkennung sagt sie, was nach der gewählten Regel passiert, statt pauschal „braucht einen Online-Zugang“.
+- **Startbildschirm, Einstellungen und Tastatur kennen das Textmodell.** Die Zeile Textverbesserung zeigt bei Offline-Erkennung, wie verbessert wird („Glätten · lokal · Gemma 4 E2B“, „Glätten · offline übersprungen“), der Einstellungs-Hub die Kurzform der Regel. Die Tastatur gibt die KI-Stufen offline frei, sobald das Textmodell bereit ist; sonst führt ihr Hinweis zu den Offline-Modellen.
+- **Offline-Modelle** zählen Whisper- und Textmodelle zusammen, in „Belegt“ samt Zwischenspeicher.
+
+### Behoben
+
+- **Offline-Erkennung schickte den Text still an den alten Online-Zugang.** Stand die Textverbesserung auf „wie Erkennung“, ging offline erkannter Text an den noch gespeicherten Online-Anbieter der Erkennung, obwohl die Karte „braucht einen Online-Zugang“ zeigte. Bei Offline-Erkennung zählt jetzt nur ein eigener Text-Zugang.
+- **Kein Hänger mehr ohne Netz.** Vor jeder Online-Textverbesserung prüft die App, ob das Telefon Internet hat. Ohne Netz geht keine Anfrage raus, und der Text kommt sofort — lokal verbessert oder ohne KI mit Hinweis — statt erst nach einer Zeitüberschreitung. Für Server im eigenen Netz (Ollama zu Hause, Tailscale) reicht eine WLAN- oder VPN-Verbindung.
+
+### Technik
+
+- Neue Abhängigkeit **LiteRT-LM 0.16.1** (`com.google.ai.edge.litertlm:litertlm-android`, Apache 2.0), fest gepinnt, weil 0.17.x Kotlin 2.4 voraussetzt; transitiv Gson 2.13.2 und kotlin-reflect 2.2.21. R8-Keep-Regel für das Paket `com.google.ai.edge.litertlm` (das AAR bringt keine Consumer-Regeln mit, ohne sie stürzt die Rechnung im Release ab, LiteRT-LM #3739). Die native Bibliothek (arm64, 21,5 MB, unkomprimiert) lässt das Release-APK von etwa 4 auf etwa 26 MB wachsen; die Modelle sind nicht im APK. Die Lizenzhinweise der darin gelinkten Bibliotheken (Abseil, XNNPACK, Protobuf, Eigen u. a.) liegen als `assets/licenses/litertlm-0.16.1-THIRD_PARTY_NOTICE.txt` im APK.
+- Gemma rechnet auf der CPU (`Backend.CPU`, `maxNumTokens` 4096), eine Conversation je Auftrag, prozessweit geteilt (`LocalTextEngine`), Vorwärmen beim Aufnahmestart, Freigabe nach 2 min Leerlauf, bei Speicherdruck, Löschen und Modellwechsel; Abbruch nur per `cancelProcess`, nie `close` mitten in der Rechnung. Dateien auf feste Hugging-Face-Revisionen gepinnt (Bytes, SHA-256), Platzprüfung inklusive Cache (`extraDiskBytes`).
+- Entscheidungstabelle als reine Funktion (`RefineDecision`), Ausführung in `RefinePlan` für Diktat und geteilte Audios; Netz-Vorprüfung `NetworkCheck` (`NET_CAPABILITY_VALIDATED`, im eigenen Netz reicht ein aktives Netz); Connect-Timeout 8 s statt 15 s, wenn das lokale Modell einspringen kann. Neue Prefs `offline_refine` (Standard `local`) und `local_llm_model` (Standard `gemma4_e2b`), ohne Migration.
+- Doku: Anleitung (8.2, neues Kapitel 9.7, 9.6, 11), README, Datenschutzerklärung, `THIRD_PARTY.md`, Store-Texte.
+
 ## [3.8.3] — 2026-10-06
 
 ### Behoben

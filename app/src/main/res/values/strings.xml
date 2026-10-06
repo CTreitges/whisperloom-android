@@ -79,6 +79,8 @@
     <string name="home_banner_title">Noch nicht optimal</string>
     <string name="home_banner_a11y">Ohne Bedienungshilfe landet der Text nur in der Zwischenablage.</string>
     <string name="home_banner_model">Offline gewählt, aber kein Modell geladen.</string>
+    <string name="home_banner_text_model">Offline ohne Textmodell — der Text kommt ohne KI.</string>
+    <string name="home_banner_text_model_online">Offline ohne Textmodell — ohne Netz kommt der Text ohne KI.</string>
     <string name="home_banner_notif">Ohne Benachrichtigung kannst du den Knopf nur hier beenden.</string>
     <string name="home_banner_fix">Beheben</string>
     <string name="home_status_title">Status</string>
@@ -91,9 +93,15 @@
     <string name="home_val_offline">Offline · %1$s (%2$s)</string>
     <string name="home_val_offline_missing">Offline · kein Modell geladen</string>
     <string name="home_val_refine_off">Aus</string>
+    <string name="home_val_refine_off_share_missing">Aus · geteilte Sprachnachrichten: Textmodell fehlt</string>
     <string name="home_val_refine">%1$s · %2$s</string>
     <string name="home_val_refine_no_llm">%1$s · %2$s bietet keine Textverbesserung</string>
     <string name="home_val_refine_no_model">%1$s · kein Textmodell eingetragen</string>
+    <string name="home_val_refine_local">%1$s · lokal · %2$s</string>
+    <string name="home_val_refine_online_local">%1$s · %2$s · ohne Netz lokal</string>
+    <string name="home_val_refine_skip_offline">%1$s · offline übersprungen</string>
+    <string name="home_val_refine_local_missing">%1$s · Textmodell fehlt — Text ohne KI</string>
+    <string name="home_val_refine_online_no_local">%1$s · %2$s · ohne Netz ohne KI</string>
     <string name="home_val_perms_ok">Mikrofon ✓ · Über Apps ✓ · Bedienungshilfe ✓</string>
     <string name="home_val_perms_a11y_missing">Mikrofon ✓ · Über Apps ✓ · Bedienungshilfe ✗ (Zwischenablage)</string>
     <string name="home_val_perms_missing">Pflicht-Berechtigung fehlt</string>
@@ -150,7 +158,15 @@
     <string name="setup_s2a_title">Zugang zum Dienst</string>
     <string name="setup_s2a_body">Wähle den Anbieter und füge deinen API-Key ein. Der Key wird nur auf diesem Gerät gespeichert.</string>
     <string name="setup_s2b_title">Offline-Modell laden</string>
-    <string name="setup_s2b_body">Wähle ein Modell. Empfehlung: Small — gute Qualität für Deutsch bei 190 MB.</string>
+    <string name="setup_s2b_body">Erst das Modell für die Erkennung, dann die Textverbesserung ohne Netz. Empfehlung: Small (190 MB) und Gemma 4 E2B.</string>
+    <string name="setup_s2b_text_title">Textverbesserung ohne Netz</string>
+    <string name="setup_s2b_local">Lokales Textmodell</string>
+    <string name="setup_s2b_local_body">%1$s verbessert den Text auf dem Gerät. Einmal laden: %2$s.</string>
+    <string name="setup_s2b_local_body_polish">%1$s verbessert den Text auf dem Gerät und schaltet „Glätten“ ein. Einmal laden: %2$s.</string>
+    <string name="setup_s2b_skip">Überspringen</string>
+    <string name="setup_s2b_skip_body">Nur die Erkennung — offline kommt der Text ohne KI. Ein Textmodell kannst du später unter Offline-Modelle laden.</string>
+    <string name="setup_s2b_text_open">Textmodell laden oder „Überspringen“ wählen.</string>
+    <string name="setup_s2b_text_bg">Lädt im Hintergrund weiter — du kannst schon weitermachen.</string>
     <string name="setup_s3_title">Mikrofon erlauben</string>
     <string name="setup_s3_body">Ohne Mikrofon kein Diktat. Android fragt dich gleich — bitte „Bei Nutzung der App“ wählen.</string>
     <string name="setup_s3_btn">Mikrofon erlauben</string>
@@ -235,8 +251,13 @@
     <string name="settings_rule_fillers">Füllwörter</string>
     <string name="settings_rule_cap">Groß-Schreibung</string>
     <string name="settings_rule_space">Leerzeichen</string>
+    <string name="settings_rule_offline_local">lokal bei Offline</string>
+    <string name="settings_rule_offline_online_local">online, ohne Netz lokal</string>
+    <string name="settings_rule_offline_skip">ohne lokales Modell</string>
     <string name="about_version">Version %1$s</string>
-    <string name="about_license">whisper.cpp (MIT) · Jetpack Compose / AndroidX (Apache 2.0) · Kotlin und kotlinx.coroutines (Apache 2.0) · Material Symbols (Apache 2.0)</string>
+    <!-- Pflichthinweise der in liblitertlm_jni.so gelinkten Bibliotheken (BSD, MPL u. a.): Datei aus dem LiteRT-LM-AAR -->
+    <string name="about_license_litertlm">LiteRT-LM enthält weitere Bibliotheken (u. a. Abseil, XNNPACK, Protobuf, Eigen, ICU) mit eigenen Lizenzen; ihre Hinweise liegen im APK unter assets/licenses/.</string>
+    <string name="about_license">whisper.cpp (MIT) · Jetpack Compose / AndroidX (Apache 2.0) · Kotlin und kotlinx.coroutines (Apache 2.0) · LiteRT-LM und Gson (Apache 2.0) · Material Symbols (Apache 2.0) · Gemma 4 (Apache 2.0)</string>
     <string name="about_source">Quellcode auf GitHub</string>
 
     <!-- §6.5 Erkennung (E1) und Zugangs-Felder (auch Schritt 2a) -->
@@ -329,9 +350,21 @@
     <string name="text_card_share">Geteilte Sprachnachrichten</string>
     <string name="text_share_intro">Für Audios, die du per Teilen an WhisperLoom schickst (z. B. aus WhatsApp). Eigene Stufe, unabhängig vom Diktat; bei „Aus“ bleibt der Text wortgetreu.</string>
     <string name="text_share_off_sub">Wortgetreu, Füllwörter per Schalter ausblendbar. Keine zweite Anfrage.</string>
-    <string name="text_card_access">Zugang für die Textverbesserung</string>
+    <string name="text_card_offline">Offline-Erkennung</string>
+    <string name="text_local_loaded">Geladen · %1$s</string>
+    <string name="text_local_none">Kein Textmodell geladen</string>
+    <string name="text_local_needs_ram">Für ein lokales Textmodell braucht das Gerät mindestens 6 GB RAM.</string>
+    <string name="text_rule_title">Textverbesserung bei Offline-Erkennung</string>
+    <string name="text_rule_local">Lokales Textmodell</string>
+    <string name="text_rule_local_sub">Standard — offline erkannter Text wird auf dem Gerät verbessert, nie online.</string>
+    <string name="text_rule_online_local">Online, ohne Netz lokal</string>
+    <string name="text_rule_online_local_sub">Mit eigenem Online-Zugang und Netz online. Ohne Netz, ohne eigenen Zugang oder bei einem Fehler lokal.</string>
+    <string name="text_rule_skip">Überspringen</string>
+    <string name="text_rule_skip_sub">Kein lokales Modell. Mit eigenem Online-Zugang und Netz online, sonst kommt der Text ohne KI.</string>
+    <string name="text_card_access">Online-Zugang für die Textverbesserung</string>
     <string name="text_own_access">Eigenen Zugang verwenden</string>
     <string name="text_own_access_off">Nutzt Anbieter und Key der Erkennung (%1$s).</string>
+    <string name="text_own_access_off_offline">Bei Offline-Erkennung geht ohne eigenen Zugang kein Text online.</string>
     <string name="text_own_access_on">Eigener Anbieter, Key und Modell.</string>
     <string name="text_llm_provider">Anbieter</string>
     <string name="text_llm_model">Modell</string>
@@ -360,7 +393,9 @@
         <item quantity="other">%d Modelle gefunden</item>
     </plurals>
     <string name="models_load_failed">Modelle nicht geladen: %1$s</string>
-    <string name="text_needs_online">Textverbesserung braucht einen Online-Zugang.</string>
+    <string name="text_access_offline_local">Bei Offline-Erkennung verbessert das lokale Textmodell — dafür brauchst du keinen Online-Zugang.</string>
+    <string name="text_access_offline_online_local">Ohne eigenen Zugang verbessert bei Offline-Erkennung das lokale Textmodell. Mit eigenem Zugang geht es online, solange Netz da ist.</string>
+    <string name="text_access_offline_skip">Ohne eigenen Zugang kommt der Text bei Offline-Erkennung ohne KI. Mit eigenem Zugang wird online verbessert, solange Netz da ist.</string>
     <string name="text_no_llm">%1$s erkennt nur Sprache und bietet keine Textverbesserung.</string>
     <string name="text_add_access">Eigenen Zugang eintragen</string>
     <string name="text_test">Zugang prüfen</string>
@@ -409,7 +444,7 @@
     <string name="models_channel">Modell-Downloads</string>
     <string name="models_intro">Modelle werden einmalig von huggingface.co geladen und bleiben auf dem Gerät. Kein Modell ist in der App enthalten.</string>
     <string name="models_storage">Belegt: %1$s · Frei: %2$s</string>
-    <string name="models_need_download">Zuerst ein Modell laden</string>
+    <string name="models_need_download">Zuerst ein Modell für die Erkennung laden</string>
     <string name="models_load">Laden (%1$s)</string>
     <string name="models_download_cd">%1$s herunterladen</string>
     <string name="models_cancel_cd">Download abbrechen</string>
@@ -427,16 +462,35 @@
     <string name="models_small">Small</string>
     <string name="models_small_sub">190 MB · ~430 MB RAM · gute Qualität für Deutsch</string>
     <string name="models_large">Large v3 Turbo</string>
-    <string name="models_large_sub">574 MB · ~1 GB RAM · beste Qualität, langsam, ab 6 GB Gerätespeicher</string>
+    <string name="models_large_sub">574 MB · ~1 GB RAM · beste Qualität, langsam, Gerät ab 6 GB RAM</string>
     <string name="models_empty_title">Noch kein Modell geladen</string>
     <string name="models_empty_body">Empfehlung: Small — gute Qualität für Deutsch bei 190 MB.</string>
     <string name="models_source">Quelle: huggingface.co/ggerganov/whisper.cpp</string>
+    <string name="models_section_stt">Spracherkennung</string>
+    <string name="models_section_llm">Textverbesserung</string>
+    <string name="models_llm_intro">Verbessert offline erkannten Text auf dem Gerät — ohne Netz, der Text verlässt das Handy nicht. Wann es rechnet, stellst du unter Text ein.</string>
+    <string name="models_gemma_e2b">Gemma 4 E2B</string>
+    <string name="models_gemma_e2b_sub">%1$s · ~1,8 GB RAM · Gerät ab 6 GB RAM</string>
+    <string name="models_gemma_e4b">Gemma 4 E4B</string>
+    <string name="models_gemma_e4b_sub">%1$s · ~3,3 GB RAM · genauer, langsamer · Gerät ab 8 GB RAM</string>
+    <string name="models_llm_size">%1$s · +%2$s beim ersten Start</string>
+    <string name="models_llm_source">Quelle: huggingface.co/litert-community (Gemma 4, Apache 2.0)</string>
     <string name="models_metered_title">Über mobile Daten laden?</string>
     <string name="models_metered_body">%1$s werden heruntergeladen. Im WLAN ist das kostenlos.</string>
     <string name="models_metered_ok">Laden</string>
     <string name="models_delete_title">%1$s löschen?</string>
     <string name="models_delete_body">%1$s werden frei. Für die Offline-Erkennung muss dann ein anderes Modell geladen werden.</string>
     <string name="models_delete_active">Dies ist das aktive Modell — Offline ist danach nicht einsatzbereit.</string>
+    <string name="models_llm_delete_body">%1$s werden frei. Für die lokale Textverbesserung muss dann wieder ein Textmodell geladen werden.</string>
+    <string name="models_llm_delete_body_cache">%1$s Modell und %2$s Zwischenspeicher werden frei. Für die lokale Textverbesserung muss dann wieder ein Textmodell geladen werden.</string>
+    <string name="local_missing_title">Offline ohne Textmodell</string>
+    <string name="local_missing_body">Die Textverbesserung braucht offline ein lokales Modell: %1$s (%2$s). Lade es oder überspringe sie — dann kommt der Text ohne KI.</string>
+    <!-- Mit eigenem Online-Zugang: Ueberspringen heisst dann "mit Netz online", nicht "ohne KI" -->
+    <string name="local_missing_body_own">Die Textverbesserung braucht offline ein lokales Modell: %1$s (%2$s). Lade es oder überspringe sie — dann verbessert mit Netz dein Online-Zugang, sonst kommt der Text ohne KI.</string>
+    <string name="local_missing_body_online">Mit Netz verbessert dein Online-Zugang, ohne Netz ein lokales Modell: %1$s (%2$s). Lade es oder überspringe es — dann kommt der Text ohne Netz ohne KI.</string>
+    <string name="local_missing_load">Textmodell laden (%1$s)</string>
+    <string name="local_missing_skip">Überspringen</string>
+    <string name="models_llm_delete_active">Dies ist das aktive Textmodell — offline kommt der Text danach ohne KI.</string>
     <string name="models_notif_title">Modell wird geladen</string>
     <string name="models_notif_text">%1$s · %2$d %%</string>
     <string name="models_notif_done">%1$s ist bereit</string>
@@ -481,7 +535,7 @@
     <string name="help_s6_title">Datenschutz</string>
     <string name="help_s6_intro">WhisperLoom speichert keine Aufnahmen (nur ein Pro-Widget-Auftrag wartet bis zum Senden), und dein Key bleibt auf dem Gerät.</string>
     <string name="help_s6_online">Online: Audio und Vokabular gehen an den gewählten Anbieter, bei Textverbesserung auch der erkannte Text — mit Ollama im eigenen Netz bleibt er dort. Eine Vokabular-Datei wird nur gelesen.</string>
-    <string name="help_s6_offline">Offline: Die Aufnahme bleibt auf dem Gerät — ins Netz gehen nur der Modell-Download und, mit Textverbesserung, der erkannte Text.</string>
+    <string name="help_s6_offline">Offline: Die Aufnahme bleibt auf dem Gerät, mit dem lokalen Textmodell auch der Text. Ins Netz gehen nur Modell-Downloads und, wenn du offline online verbessern lässt, der erkannte Text.</string>
     <string name="help_s6_a11y">Die Bedienungshilfe liest nichts mit und speichert nichts; sie fügt nur den diktierten Text ein.</string>
     <string name="help_s7_title">Wenn etwas nicht klappt</string>
     <string name="help_s7_intro">Die häufigsten Probleme und wo du sie behebst: Antippen zeigt die Lösung, „Öffnen“ führt direkt hin.</string>
@@ -503,7 +557,9 @@
     <string name="share_decoding">Audio wird entpackt …</string>
     <string name="share_sending">Wird übertragen …</string>
     <string name="share_refining">Text wird verbessert …</string>
+    <string name="share_refining_local">Text wird lokal verbessert …</string>
     <string name="share_refine_note">Textverbesserung: %1$s · änderbar unter Einstellungen › Text</string>
+    <string name="share_refine_local_fallback">Textverbesserung: %1$s · online fehlgeschlagen, lokal verbessert</string>
     <string name="share_refine_partly" tools:ignore="PluralsCandidate">Textverbesserung: %1$s · bei %2$d von %3$d Dateien übersprungen: %4$s</string>
     <string name="share_copy">Kopieren</string>
     <string name="share_forward">Teilen</string>
@@ -540,6 +596,7 @@
     <string name="float_clipboard_fallback">Text kopiert — Bedienungshilfe aktivieren zum automatischen Einfügen</string>
     <string name="float_copied_short">Kopiert — einfügen</string>
     <string name="float_sending">sendet …</string>
+    <string name="float_refining">verbessert … tippen = ohne KI</string>
     <string name="float_retry_hint">tippen = erneut</string>
     <string name="float_discarded">Diktat verworfen</string>
     <string name="float_cancel_label">Verwerfen</string>
@@ -548,6 +605,7 @@
     <string name="cd_bubble_idle">Diktat starten</string>
     <string name="cd_bubble_recording">Aufnahme läuft, %1$s — antippen zum Beenden</string>
     <string name="cd_bubble_sending">Wird übertragen</string>
+    <string name="cd_bubble_refining">Text wird verbessert. Antippen fügt ihn ohne KI ein</string>
     <string name="cd_bubble_error">Fehler — antippen für erneuten Versuch</string>
     <string name="cd_cancel">Diktat verwerfen</string>
 
@@ -555,6 +613,7 @@
     <string name="kb_hint_hold">Halte das Mikrofon gedrückt und sprich</string>
     <string name="kb_listening">Höre zu … rechts wischen stellt fest</string>
     <string name="kb_transcribing">Wird übertragen …</string>
+    <string name="kb_refining">Text wird verbessert … antippen = ohne KI einfügen</string>
     <string name="kb_need_permission">Mikrofon-Berechtigung fehlt — tippe zum Einrichten</string>
     <string name="kb_not_configured">Kein Zugang eingerichtet — tippe zum Einrichten</string>
     <string name="kb_error">Fehler bei der Erkennung — erneut versuchen</string>
@@ -564,6 +623,7 @@
     <string name="kb_discarded">Aufnahme verworfen</string>
     <string name="kb_refine_set">Textverbesserung: %1$s</string>
     <string name="kb_refine_needs_llm">Für die KI-Stufen fehlt ein Zugang — tippe zum Einrichten</string>
+    <string name="kb_refine_needs_local">Offline ohne Textmodell — tippe zum Laden</string>
     <!-- Kurzfassungen der Stufen: in der Tastatur teilen sich vier Tasten eine Zeile (mit
          „Prompt“ fünf), "Verschönern" und "Zusammenfassen" passen dort nicht. -->
     <string name="kb_level_off">Aus</string>
@@ -592,6 +652,7 @@
     <string name="cd_mic_recording">Aufnahme läuft, %1$s — antippen zum Senden</string>
     <string name="cd_mic_locked">Aufnahme festgestellt, %1$s — antippen zum Senden</string>
     <string name="cd_mic_sending">Wird übertragen</string>
+    <string name="cd_mic_refining">Text wird verbessert. Antippen fügt ihn ohne KI ein</string>
     <string name="cd_mic_error">Fehler — antippen für erneuten Versuch</string>
 
     <!-- ==== Sprach-Command-Widget (Paket B) ======================================= -->

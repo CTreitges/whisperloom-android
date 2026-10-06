@@ -3,6 +3,7 @@ package com.chris.whisperloom.ui.state
 import android.content.SharedPreferences
 import androidx.compose.runtime.mutableStateOf
 import com.chris.whisperloom.Engine
+import com.chris.whisperloom.OfflineRefineRule
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.ProFeature
 import com.chris.whisperloom.RefineMode
@@ -63,6 +64,8 @@ class PrefsState(val prefs: Prefs) {
 
     // Offline
     var offlineModel: String by pref({ prefs.offlineModel }) { prefs.offlineModel = it }
+    var offlineRefine: OfflineRefineRule by pref({ prefs.offlineRefine }) { prefs.offlineRefine = it }
+    var localLlmModel: String by pref({ prefs.localLlmModel }) { prefs.localLlmModel = it }
 
     // Pro-Funktionen ("Erweitert"); Server und Token stehen je Widget im Profil, nicht hier.
     var proWidgetsEnabled: Boolean by pref({ prefs.proWidgetsEnabled }) { prefs.proWidgetsEnabled = it }
@@ -105,6 +108,7 @@ class PrefsState(val prefs: Prefs) {
         apiKey = llmKey,
         model = llmModel,
         serverModels = prefs.modelCache,
+        sttOffline = engine == Engine.OFFLINE,
     )
 
     /** Position des schwebenden Knopfs auf den Default (E3 "Position zuruecksetzen"). */

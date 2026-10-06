@@ -38,6 +38,11 @@ class ApplyRouteTest {
         assertEquals(listOf(Screen.Home, Screen.SettingsHub, Screen.Advanced), stapel(RouteRequest(AppNav.ROUTE_AGENT)))
     }
 
+    @Test fun modelsOeffnetDieOfflineModelleUeberDenEinstellungen() {
+        // Tastatur-Hinweis "Offline ohne Textmodell".
+        assertEquals(listOf(Screen.Home, Screen.SettingsHub, Screen.Models), stapel(RouteRequest(AppNav.ROUTE_MODELS)))
+    }
+
     @Test fun widgetsOeffnetDenTabProWidgets() {
         assertEquals(
             listOf(Screen.Home, Screen.SettingsHub, Screen.Widgets(WidgetTab.PRO)),

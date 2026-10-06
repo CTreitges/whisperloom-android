@@ -48,8 +48,10 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.chris.whisperloom.BuildConfig
 import com.chris.whisperloom.Engine
+import com.chris.whisperloom.OfflineRefineRule
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.SetupState
 import com.chris.whisperloom.api.RefineBlock
 import com.chris.whisperloom.overlay.BubbleAnimators
 import com.chris.whisperloom.ui.components.HeroLabelStyle
@@ -70,6 +72,8 @@ import com.chris.whisperloom.ui.components.modelLabel
 import com.chris.whisperloom.ui.components.offlineModelLabel
 import com.chris.whisperloom.ui.components.providerShortName
 import com.chris.whisperloom.ui.components.rememberSnack
+import com.chris.whisperloom.ui.models.localModelMissing
+import com.chris.whisperloom.ui.models.offlineRule
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SetupRouter
@@ -104,12 +108,18 @@ fun HomeScreen(nav: NavState) {
             HeroCard(control, onFix = { nav.push(Screen.Setup(it)) })
 
             val modelInstalled = prefs.offlineModel in status.installedModels
-            val banner = HomeStatus.banner(status.a11yRunning, prefs.engine, modelInstalled, status.notifNeeded, status.notifGranted)
+            val banner = HomeStatus.banner(
+                status.a11yRunning, prefs.engine, modelInstalled, status.notifNeeded, status.notifGranted,
+                textModelMissing = localModelMissing(prefs, status),
+            )
             if (banner != HomeStatus.Banner.NONE) {
-                ReadinessBanner(banner) {
+                // "Online, ohne Netz lokal" mit eigenem Zugang: mit Netz geht der Text online, ohne KI nur ohne Netz.
+                val onlineFirst = offlineRule(prefs, status) == OfflineRefineRule.ONLINE_LOCAL && SetupState.llmReady(prefs.llmAccess())
+                ReadinessBanner(banner, onlineFirst) {
                     when (banner) {
                         HomeStatus.Banner.A11Y -> nav.push(Screen.Setup(SetupRouter.STEP_A11Y))
                         HomeStatus.Banner.MODEL -> nav.push(Screen.Models)
+                        HomeStatus.Banner.TEXT_MODEL -> nav.push(Screen.TextSettings)
                         HomeStatus.Banner.NOTIF -> nav.push(Screen.Setup(SetupRouter.STEP_NOTIF))
                         HomeStatus.Banner.NONE -> Unit
                     }
@@ -263,7 +273,7 @@ private fun PulseRing() {
 }
 
 @Composable
-private fun ReadinessBanner(banner: HomeStatus.Banner, onFix: () -> Unit) {
+private fun ReadinessBanner(banner: HomeStatus.Banner, onlineFirst: Boolean, onFix: () -> Unit) {
     val loom = MaterialTheme.loom
     Column(
         Modifier
@@ -280,6 +290,8 @@ private fun ReadinessBanner(banner: HomeStatus.Banner, onFix: () -> Unit) {
                     stringResource(
                         when (banner) {
                             HomeStatus.Banner.MODEL -> R.string.home_banner_model
+                            HomeStatus.Banner.TEXT_MODEL ->
+                                if (onlineFirst) R.string.home_banner_text_model_online else R.string.home_banner_text_model
                             HomeStatus.Banner.NOTIF -> R.string.home_banner_notif
                             else -> R.string.home_banner_a11y
                         },
@@ -315,15 +327,38 @@ private fun StatusCard(nav: NavState, modelInstalled: Boolean) {
         null -> stringResource(R.string.setup_chip_open)
     }
     val llm = prefs.llmAccess()
+    val level = levelLabel(prefs.refineMode)
+    // Offline erkannt: die Regel entscheidet (lokal, online mit Ausweg, uebersprungen) — "wie Erkennung" zaehlt nie.
+    // Auch wenn nur die Stufe fuer geteilte Sprachnachrichten an ist: fehlt das Modell, warnt die Zeile wie das Banner.
+    val anyStage = prefs.refineMode != RefineMode.OFF || prefs.shareRefineMode != RefineMode.OFF
+    val offlineRefine = if (prefs.engine == Engine.OFFLINE && anyStage) {
+        HomeStatus.offlineRefine(offlineRule(prefs, status), SetupState.llmReady(llm), status.textModelReady(prefs.localLlmModel))
+    } else {
+        null
+    }
     // Gleiches Kriterium wie TextRefiner: ElevenLabs "wie Erkennung" hat keinen Chat, Together/
     // DeepInfra ohne eingetragenes Modell auch nicht — sonst stuende hier "Glaetten · " ohne Modell.
     val refineText = when {
-        prefs.refineMode == RefineMode.OFF -> stringResource(R.string.home_val_refine_off)
+        prefs.refineMode == RefineMode.OFF ->
+            if (offlineRefine != null && HomeStatus.offlineRefineTone(offlineRefine) == Tone.WARNING) {
+                stringResource(R.string.home_val_refine_off_share_missing)
+            } else {
+                stringResource(R.string.home_val_refine_off)
+            }
+        offlineRefine != null -> when (offlineRefine) {
+            HomeStatus.OfflineRefine.LOCAL -> stringResource(R.string.home_val_refine_local, level, offlineModelLabel(prefs.localLlmModel))
+            HomeStatus.OfflineRefine.ONLINE_LOCAL -> stringResource(R.string.home_val_refine_online_local, level, modelLabel(llm))
+            HomeStatus.OfflineRefine.ONLINE -> stringResource(R.string.home_val_refine, level, modelLabel(llm))
+            HomeStatus.OfflineRefine.SKIPPED -> stringResource(R.string.home_val_refine_skip_offline, level)
+            HomeStatus.OfflineRefine.MISSING -> stringResource(R.string.home_val_refine_local_missing, level)
+            HomeStatus.OfflineRefine.ONLINE_MISSING -> stringResource(R.string.home_val_refine_online_no_local, level, modelLabel(llm))
+        }
         llm.refineBlock == RefineBlock.NO_CHAT ->
-            stringResource(R.string.home_val_refine_no_llm, levelLabel(prefs.refineMode), providerShortName(llm.provider))
-        llm.refineBlock == RefineBlock.NO_MODEL -> stringResource(R.string.home_val_refine_no_model, levelLabel(prefs.refineMode))
-        else -> stringResource(R.string.home_val_refine, levelLabel(prefs.refineMode), modelLabel(llm))
+            stringResource(R.string.home_val_refine_no_llm, level, providerShortName(llm.provider))
+        llm.refineBlock == RefineBlock.NO_MODEL -> stringResource(R.string.home_val_refine_no_model, level)
+        else -> stringResource(R.string.home_val_refine, level, modelLabel(llm))
     }
+    val refineTone = if (offlineRefine != null) HomeStatus.offlineRefineTone(offlineRefine) else HomeStatus.refineTone(prefs.refineMode, llm.refineBlock)
     val permTone = HomeStatus.permissionsTone(status.micGranted, status.canDrawOverlays, status.a11yRunning)
     val permText = when (permTone) {
         Tone.SUCCESS -> stringResource(R.string.home_val_perms_ok)
@@ -338,7 +373,7 @@ private fun StatusCard(nav: NavState, modelInstalled: Boolean) {
             HomeStatus.Keyboard.OFF -> R.string.home_val_kb_off
         },
     )
-    val installedCount = status.installedModels.size
+    val installedCount = status.installedCount
 
     OutlinedSection(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp), gap = 0.dp) {
         Text(
@@ -349,7 +384,7 @@ private fun StatusCard(nav: NavState, modelInstalled: Boolean) {
         StatusRow(stringResource(R.string.home_row_recognition), recognitionText, HomeStatus.recognitionTone(prefs.engine, modelInstalled)) {
             nav.push(Screen.Recognition)
         }
-        StatusRow(stringResource(R.string.home_row_refine), refineText, HomeStatus.refineTone(prefs.refineMode, llm.refineBlock), R.drawable.ic_auto_fix_high) {
+        StatusRow(stringResource(R.string.home_row_refine), refineText, refineTone, R.drawable.ic_auto_fix_high) {
             nav.push(Screen.TextSettings)
         }
         StatusRow(stringResource(R.string.home_row_permissions), permText, permTone) { nav.push(Screen.ButtonKeyboard) }

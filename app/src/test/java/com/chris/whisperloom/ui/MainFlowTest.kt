@@ -709,8 +709,9 @@ class MainFlowTest {
     @Test fun modelleZeigenVierEintraegeEmpfehlungUndGrossGedimmt() {
         screen(env(SystemStatus(totalRamBytes = 4L shl 30))) { ModelsScreen(it) }
         listOf("Tiny", "Base", "Small", "Large v3 Turbo").forEach { compose.onNodeWithText(it).assertExists() }
-        compose.onNodeWithText("Empfohlen").assertExists()
-        compose.onNodeWithText("Für dieses Gerät zu groß").assertExists()
+        // Die Textmodelle darunter haben eigene Empfehlung und RAM-Grenze (TextModelUiTest).
+        compose.onNode(hasText("Small") and hasText("Empfohlen")).assertExists()
+        compose.onNode(hasText("Large v3 Turbo") and hasText("Für dieses Gerät zu groß")).assertExists()
         compose.onNodeWithContentDescription("Large v3 Turbo herunterladen").assertIsNotEnabled()
         compose.onNodeWithContentDescription("Small herunterladen").assertIsEnabled()
         compose.onNodeWithText("Noch kein Modell geladen").assertExists()

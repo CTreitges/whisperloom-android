@@ -144,7 +144,7 @@ fun rememberNavState(initial: () -> List<Screen>): NavState =
     rememberSaveable(saver = NavState.Saver) { NavState(initial()) }
 
 /**
- * Deep-Link-Wunsch aus dem Start-Intent (AppNav) — `route` home|settings|setup|advanced|widgets,
+ * Deep-Link-Wunsch aus dem Start-Intent (AppNav) — `route` home|settings|models|setup|advanced|widgets,
  * optional `step` 1..7 (setup) bzw. [profileId] (widgets: dessen Editor oeffnen).
  */
 data class RouteRequest(val route: String, val step: Int? = null, val profileId: String? = null) {

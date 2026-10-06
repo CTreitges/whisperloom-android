@@ -10,6 +10,8 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.work.ExistingWorkPolicy
 import androidx.work.testing.TestListenableWorkerBuilder
 import com.chris.whisperloom.R
+import com.chris.whisperloom.llm.LocalTextEngine
+import com.chris.whisperloom.llm.OfflineRefineFixture
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -158,6 +160,20 @@ class VoiceTaskServiceTest {
         tonQuelle()
         aufnehmen(dienst())
         assertEquals(VoiceTaskState.RECORDING, store.state)
+    }
+
+    @Test fun aufnahmestartWaermtDasLokaleTextmodellVor() {
+        // Offline-Erkennung, Regel "lokal", Textmodell da: geladen wird schon waehrend der Aufnahme.
+        val lokal = OfflineRefineFixture(app)
+        lokal.setUp()
+        try {
+            tonQuelle()
+            aufnehmen(dienst())
+            assertEquals(VoiceTaskState.RECORDING, store.state)
+            lokal.waitFor("Textmodell nicht vorgewaermt") { LocalTextEngine.isLoaded }
+        } finally {
+            lokal.tearDown()
+        }
     }
 
     @Test fun einZweitesStartIstEinDoppelklickUndAendertNichts() {

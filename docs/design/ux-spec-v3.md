@@ -1,4 +1,4 @@
-> **Stand 2026-09-06, Grundlage der v3-Implementierung; Abweichungen siehe CHANGELOG/Code.** Kopie der verbindlichen UX-Spezifikation (Arbeitsstand `research/ux-spec.md`); Fundstellen-Verweise auf `research/*.md` meinen die Reports unter `docs/research/`. Spätere Versionen sind als Nachträge ergänzt (§6.13–§6.17 für 3.4.0 bis 3.8.2, Markierungen `[Stand x.y.z]`); bekannte Abweichung vom Rahmen in §0.2: targetSdk ist seit der Play-Store-Vorbereitung 36.
+> **Stand 2026-09-06, Grundlage der v3-Implementierung; Abweichungen siehe CHANGELOG/Code.** Kopie der verbindlichen UX-Spezifikation (Arbeitsstand `research/ux-spec.md`); Fundstellen-Verweise auf `research/*.md` meinen die Reports unter `docs/research/`. Spätere Versionen sind als Nachträge ergänzt (§6.13–§6.18 für 3.4.0 bis 3.8.5, Markierungen `[Stand x.y.z]`); bekannte Abweichung vom Rahmen in §0.2: targetSdk ist seit der Play-Store-Vorbereitung 36.
 
 # WhisperLoom v3 — Verbindliche UX-Spezifikation
 
@@ -65,6 +65,8 @@ Diese Datei ist die **einzige Vorlage** für die Implementierungs-Agenten. Wo di
 > **Nachtrag 3.7.1:** E, E5, E7 („Erweitert“), E8 (Widgets), W1c, T2 und W1w sind geändert — siehe [§6.15](#615-nachtrag-371-pro-widgets).
 
 > **Nachtrag Patchnotes:** P ist neu, H, E5 und E6 haben ein „?“ neben der Versionsnummer — siehe [§6.17](#617-nachtrag-patchnotes-p).
+
+> **Nachtrag 3.8.5:** E4 hat einen zweiten Abschnitt TEXTVERBESSERUNG, E2 die Karte „Offline-Erkennung“, H/E/W2b/V1/V2 kennen das lokale Textmodell — siehe [§6.18](#618-nachtrag-390-lokales-textmodell).
 
 ### 1.2 Startlogik (Router) — präzise Bedingung „eingerichtet"
 
@@ -1591,6 +1593,32 @@ contentDescription `cd_patchnotes`:
 | `patchnotes_unavailable_title` | Patchnotes nicht verfügbar |
 | `patchnotes_unavailable_body` | In dieser App-Version fehlen die Patchnotes. Alle Änderungen stehen auf GitHub. |
 | `patchnotes_unavailable_action` | Auf GitHub ansehen |
+
+### 6.18 Nachtrag 3.8.5: Lokales Textmodell
+
+Ergänzt §2.1 (H), §2.2 (W2b), §2.4 (E1), §2.5 (E2), §2.7 (E4), §2.9 (S), §5 (V1, V2) und §6.5/§6.6/§6.8; wo sie widersprechen, gilt dieser
+Abschnitt. Kein neuer Screen, keine neue Navigationsebene. Nutzer-Sicht: `docs/ANLEITUNG.md` 3 (Schritt 2b), 8.2, 9.6,
+**9.7**, 11. Verbindliche Fassung der Logik: `RefineDecision` (Entscheidungstabelle, `localModelMissing`, `stagesReady`).
+
+- **E4:** `SectionHeader` `models_section_stt` (wie bisher) und `models_section_llm` mit `models_llm_intro`, Pflichtkarte,
+  `ModelListSection(text = true)` (Gemma 4 E2B/E4B als `ModelRow`, unter 8 GB E4B gedimmt `models_too_big`),
+  `models_llm_source`. Speicherzeile zählt beide Arten samt Cache.
+- **E2:** Karte `text_card_offline` (ic_offline_bolt, tertiary) zwischen „Geteilte Sprachnachrichten“ und
+  `text_card_access` (neuer Titel „Online-Zugang für die Textverbesserung“): Modellzeile (`text_local_loaded` + Ändern
+  bzw. `text_local_none` + Laden), `text_rule_title`, Radio `text_rule_local/_online_local/_skip` mit `_sub`.
+  Offline ohne eigenen Zugang ersetzt `OfflineAccessNote` (`text_access_offline_*`) den früheren `text_needs_online`.
+- **Pflichtkarte** `LocalModelRequiredCard` (warningContainer, `local_missing_title/_body`, Knöpfe `local_missing_skip`
+  und `local_missing_load`): E1 bei Offline, E4 Abschnitt Textverbesserung, E2 statt der Modellzeile, W2b statt der
+  Wahlkarten. Kein Dialog (§1.3: Dialoge nur für destruktive Aktionen und Netz-Entscheidungen).
+- **H:** Status-Zeile `home_val_refine_local/_online_local/_skip_offline/_local_missing` (nur Letzteres warning),
+  Banner `TEXT_MODEL` (Priorität A11Y > MODEL > TEXT_MODEL > NOTIF) `home_banner_text_model` → E2. **E:** Hub-Unterzeile
+  Text mit `settings_rule_offline_*`.
+- **W2b:** `setup_s2b_body` neu, darunter `setup_s2b_text_title` und zwei `EngineOption`-Karten `setup_s2b_local` /
+  `setup_s2b_skip`; Weiter erst nach Whisper-Modell und Wahl (`setup_s2b_text_open`), Download im Hintergrund
+  (`setup_s2b_text_bg`). `isSetUp` hängt nicht davon ab.
+- **V1/V2:** Phase Textverbesserung sichtbar (`float_refining`, `cd_bubble_refining`, `kb_refining`, `cd_mic_refining`),
+  Tipp = ohne KI einfügen. V2 Stufenleiste: offline nach Regel bereit, sonst `kb_refine_needs_local` → E4.
+- **S:** `share_refining_local`, `share_refine_local_fallback`.
 
 ---
 

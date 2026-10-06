@@ -1,10 +1,12 @@
 package com.chris.whisperloom.api
 
+import com.chris.whisperloom.RefineMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 
 /**
@@ -217,5 +219,31 @@ class AccessResolverTest {
         // Eigener Server / Ollama ohne Modell: kein Sperrgrund hier (das Modellfeld zeigt den Fehler).
         assertNull(AccessResolver.resolveLlm(stt, "custom", "http://h:1/v1", "", "").refineBlock)
         assertNull(AccessResolver.resolveLlm(stt, "ollama", "http://h:11434", "", "").refineBlock)
+    }
+
+    @Test fun wieErkennungBeiOfflineErkennungSchicktNichtsAnDenAltenZugang() {
+        // Offline gewaehlt, der Online-Zugang von frueher bleibt gespeichert (Anleitung 9.6).
+        val stt = AccessResolver.resolveStt("openai", "", "sk-alt", "", 0)
+        val llm = AccessResolver.resolveLlm(stt, "same", "", "", "gpt-4o-mini", sttOffline = true)
+        assertEquals(RefineBlock.OFFLINE, llm.refineBlock)
+        assertEquals("", llm.baseUrl)
+        assertEquals("", llm.apiKey)
+        try {
+            TextRefiner(llm).refine("hallo welt", "de", RefineMode.POLISH, smartFillers = false)
+            fail("Offline ohne eigenen Zugang darf nichts senden")
+        } catch (e: ApiNotConfiguredException) {
+            assertEquals(TextRefiner.MSG_OFFLINE, e.message)
+        }
+        // Online bleibt "wie Erkennung" wie bisher.
+        assertNull(AccessResolver.resolveLlm(stt, "same", "", "", "gpt-4o-mini").refineBlock)
+    }
+
+    @Test fun eigenerTextZugangGiltAuchBeiOfflineErkennung() {
+        val stt = AccessResolver.resolveStt("openai", "", "sk-alt", "", 0)
+        val llm = AccessResolver.resolveLlm(stt, "groq", "", "gsk", "", sttOffline = true)
+        assertNull(llm.refineBlock)
+        assertEquals("groq", llm.provider.id)
+        assertEquals("gsk", llm.apiKey)
+        assertEquals("https://api.groq.com/openai/v1", llm.baseUrl)
     }
 }

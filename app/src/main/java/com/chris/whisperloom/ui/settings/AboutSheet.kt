@@ -35,6 +35,11 @@ fun AboutSheet(snack: SnackController, onPatchnotes: () -> Unit, onDismiss: () -
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        Text(
+            stringResource(R.string.about_license_litertlm),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         LinkRow(headline = stringResource(R.string.about_source), url = GITHUB_URL, snack = snack)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             TextButton(onClick = dismiss) { Text(stringResource(R.string.common_close)) }

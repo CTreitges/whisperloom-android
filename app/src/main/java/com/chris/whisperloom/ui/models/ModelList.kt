@@ -4,6 +4,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,6 +47,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chris.whisperloom.R
+import com.chris.whisperloom.llm.LocalTextEngine
 import com.chris.whisperloom.ui.components.CardShape
 import com.chris.whisperloom.ui.components.SnackController
 import com.chris.whisperloom.ui.components.StatusChip
@@ -58,76 +62,70 @@ import com.chris.whisperloom.whisper.ModelCatalog
 import com.chris.whisperloom.whisper.ModelDownloadService
 import com.chris.whisperloom.whisper.ModelDownloads
 import com.chris.whisperloom.whisper.ModelStore
+import com.chris.whisperloom.whisper.OfflineModel
 import com.chris.whisperloom.whisper.OfflineSupport
+import com.chris.whisperloom.whisper.TextModelCatalog
 import com.chris.whisperloom.whisper.WhisperEngine
-import com.chris.whisperloom.whisper.WhisperModel
 
 /**
  * Modell-Liste mit Download/Abbruch/Loeschen/Auswahl (E4 und Schritt 2b, Spec §2.7) inkl.
- * Dialoge D1 (Loeschen) und D2 (mobile Daten). Zustand je Modell: ModelStore (installiert)
+ * Dialoge D1 (Loeschen) und D2 (mobile Daten) — die whisper-Modelle oder, mit [text], die
+ * Textmodelle (E4 Abschnitt Textverbesserung). Zustand je Modell: ModelStore (installiert)
  * vor ModelDownloads (laedt/fehlgeschlagen), siehe wp3-notes §4.
  */
 @Composable
-fun ModelListSection(snack: SnackController, showEmptyState: Boolean = true) {
+fun ModelListSection(snack: SnackController, showEmptyState: Boolean = true, text: Boolean = false) {
     val ctx = LocalContext.current
     val env = LocalAppEnv.current
     val prefs = env.prefs
     val store = remember { ModelStore(ctx) }
+    val models = if (text) TextModelCatalog.models else ModelCatalog.models
+    val selectedId = if (text) prefs.localLlmModel else prefs.offlineModel
     val states by ModelDownloads.states.collectAsStateWithLifecycle()
     var storeVersion by remember { mutableIntStateOf(0) }
     val installed = remember(states, storeVersion) {
-        ModelCatalog.models.filter { store.isInstalled(it) }.map { it.id }.toSet()
+        models.filter { store.isInstalled(it) }.map { it.id }.toSet()
     }
-    // Home/Router/Hub lesen installedModels aus dem Systemstatus — nach Download/Loeschen nachziehen.
+    // Home/Router/Hub lesen die installierten Modelle aus dem Systemstatus — nach Download/Loeschen nachziehen.
     LaunchedEffect(installed) {
-        if (installed != env.status.installedModels) env.refreshStatus()
+        val known = if (text) env.status.installedTextModels else env.status.installedModels
+        if (installed != known) env.refreshStatus()
     }
-    var pendingDownload by remember { mutableStateOf<WhisperModel?>(null) }
-    var pendingDelete by remember { mutableStateOf<WhisperModel?>(null) }
+    val download = rememberModelDownload()
+    var pendingDelete by remember { mutableStateOf<OfflineModel?>(null) }
     val anyRunning = states.values.any { it is DownloadState.Running }
-
-    fun startDownload(model: WhisperModel) {
-        if (OfflineSupport.isMeteredNetwork(ctx)) pendingDownload = model
-        else ModelDownloadService.start(ctx, model.id)
-    }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         if (showEmptyState && installed.isEmpty() && !anyRunning) EmptyModelsState()
-        ModelCatalog.models.forEach { model ->
+        models.forEach { model ->
             ModelRow(
                 model = model,
                 installed = model.id in installed,
-                selected = prefs.offlineModel == model.id,
+                selected = selectedId == model.id,
                 state = states[model.id] ?: DownloadState.Idle,
                 fits = OfflineSupport.fitsDevice(env.status.totalRamBytes, model),
                 busy = anyRunning,
-                onSelect = { prefs.offlineModel = model.id },
-                onLoad = { startDownload(model) },
+                onSelect = { if (text) prefs.localLlmModel = model.id else prefs.offlineModel = model.id },
+                onLoad = { download.start(model) },
                 onCancel = { ModelDownloadService.cancel(ctx) },
                 onDelete = { pendingDelete = model },
-                onRetry = { startDownload(model) },
+                onRetry = { download.start(model) },
             )
         }
     }
 
-    pendingDownload?.let { model ->
-        MeteredDialog(
-            model = model,
-            onConfirm = {
-                ModelDownloadService.start(ctx, model.id)
-                pendingDownload = null
-            },
-            onDismiss = { pendingDownload = null },
-        )
-    }
     pendingDelete?.let { model ->
         DeleteDialog(
             model = model,
-            activeAndOnly = prefs.offlineModel == model.id && installed.size == 1,
+            text = text,
+            // Der Zwischenspeicher (XNNPACK-Cache, ~0,8 GB bei E2B) wird mitgeloescht — ehrlich mitzaehlen.
+            cacheBytes = if (text) store.cacheBytes(model) else 0L,
+            activeAndOnly = selectedId == model.id && installed.size == 1,
             onConfirm = {
                 store.delete(model)
                 ModelDownloads.clear(model.id)
-                WhisperEngine.release() // geladenes Modell aus dem RAM
+                // geladenes Modell aus dem RAM (nie mitten in einer Rechnung)
+                if (text) LocalTextEngine.release() else WhisperEngine.release()
                 storeVersion++
                 pendingDelete = null
             },
@@ -136,10 +134,41 @@ fun ModelListSection(snack: SnackController, showEmptyState: Boolean = true) {
     }
 }
 
+/** Startet einen Modell-Download ([start]); ueber mobile Daten erst nach Dialog D2. */
+class ModelDownload(val start: (OfflineModel) -> Unit)
+
+/**
+ * Download-Start fuer Modell-Liste, Pflichtkarte, Text-Karte und Assistent. Den Dialog D2 zeichnet
+ * dieses Composable selbst (Muster rememberDisclosureGate). [onStarted] laeuft erst, wenn der
+ * Download wirklich startet — nicht, wenn der Nutzer D2 abbricht.
+ */
+@Composable
+fun rememberModelDownload(onStarted: (OfflineModel) -> Unit = {}): ModelDownload {
+    val ctx = LocalContext.current
+    val started by rememberUpdatedState(onStarted)
+    var pending by remember { mutableStateOf<OfflineModel?>(null) }
+    fun begin(model: OfflineModel) {
+        ModelDownloadService.start(ctx, model.id)
+        started(model)
+    }
+    pending?.let { model ->
+        MeteredDialog(
+            model = model,
+            onConfirm = {
+                begin(model)
+                pending = null
+            },
+            onDismiss = { pending = null },
+        )
+    }
+    return remember { ModelDownload { model -> if (OfflineSupport.isMeteredNetwork(ctx)) pending = model else begin(model) } }
+}
+
 /** Eine Modell-Zeile: Radio (nur installiert), Label + Details, Trailing je Zustand, Fortschritt. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ModelRow(
-    model: WhisperModel,
+    model: OfflineModel,
     installed: Boolean,
     selected: Boolean,
     state: DownloadState,
@@ -180,8 +209,13 @@ fun ModelRow(
                 ) {
                     RadioButton(selected = selected, onClick = null, enabled = installed)
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(label, style = MaterialTheme.typography.titleMedium)
+                        // FlowRow: neben "Gemma 4 E2B" und dem Laden-Knopf passt "Empfohlen" nicht immer —
+                        // dann in die naechste Zeile statt zusammengedrueckt.
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Text(label, style = MaterialTheme.typography.titleMedium, modifier = Modifier.align(Alignment.CenterVertically))
                             if (model.recommended) {
                                 StatusChip(
                                     stringResource(R.string.models_recommended), R.drawable.ic_check,
@@ -241,8 +275,9 @@ fun ModelRow(
     }
 }
 
+/** Fortschrittsbalken und -zeile eines laufenden Downloads (auch Pflichtkarte, Text-Karte, Assistent). */
 @Composable
-private fun DownloadProgress(running: DownloadState.Running) {
+fun DownloadProgress(running: DownloadState.Running) {
     val known = running.total > 0
     if (known) {
         LinearProgressIndicator(
@@ -295,7 +330,7 @@ private fun EmptyModelsState() {
 
 /** D2: vor einem Download ueber gebuehrenpflichtiges Netz. */
 @Composable
-private fun MeteredDialog(model: WhisperModel, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+private fun MeteredDialog(model: OfflineModel, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -306,12 +341,24 @@ private fun MeteredDialog(model: WhisperModel, onConfirm: () -> Unit, onDismiss:
     )
 }
 
-/** D1: Modell loeschen; beim aktiven und einzigen Modell mit Zusatzhinweis. */
+/** D1: Modell loeschen; beim aktiven und einzigen Modell mit Zusatzhinweis. [text] = Textmodell. */
 @Composable
-private fun DeleteDialog(model: WhisperModel, activeAndOnly: Boolean, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+private fun DeleteDialog(
+    model: OfflineModel,
+    text: Boolean,
+    cacheBytes: Long,
+    activeAndOnly: Boolean,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
     val label = offlineModelLabel(model.id)
-    val body = stringResource(R.string.models_delete_body, fileSize(model.bytes)) +
-        if (activeAndOnly) "\n\n" + stringResource(R.string.models_delete_active) else ""
+    val freed = when {
+        cacheBytes > 0 -> stringResource(R.string.models_llm_delete_body_cache, fileSize(model.bytes), fileSize(cacheBytes))
+        text -> stringResource(R.string.models_llm_delete_body, fileSize(model.bytes))
+        else -> stringResource(R.string.models_delete_body, fileSize(model.bytes))
+    }
+    val body = freed +
+        if (activeAndOnly) "\n\n" + stringResource(if (text) R.string.models_llm_delete_active else R.string.models_delete_active) else ""
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surfaceContainer,

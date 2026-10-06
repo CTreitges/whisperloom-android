@@ -1,1 +1,1 @@
-Dictate into any app – online with your own API key or offline with Whisper
+Dictate into any app – online with your own key or offline with Whisper & Gemma

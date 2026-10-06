@@ -12,6 +12,8 @@ data class ApiAccess(
     val readTimeoutMs: Int,
     val provider: Provider,
     val modelOption: ModelOption?,
+    /** "Wie Erkennung", waehrend offline erkannt wird: es gibt keinen Online-Zugang zum Uebernehmen. */
+    val sameAsOffline: Boolean = false,
 ) {
     /**
      * Warum dieser Zugang keinen Text verbessern kann; null = er kann es (soweit bekannt). Betrifft
@@ -20,6 +22,7 @@ data class ApiAccess(
      */
     val refineBlock: RefineBlock?
         get() = when {
+            sameAsOffline -> RefineBlock.OFFLINE
             provider.api == ApiStyle.ELEVENLABS -> RefineBlock.NO_CHAT
             !provider.hasLlm && model.isBlank() -> RefineBlock.NO_MODEL
             else -> null
@@ -33,6 +36,9 @@ enum class RefineBlock {
 
     /** Reiner Erkennungs-Anbieter ohne eingetragenes Textmodell (Together, DeepInfra). */
     NO_MODEL,
+
+    /** "Wie Erkennung" bei Offline-Erkennung: ein Offline-Modell kann keinen Text verbessern. */
+    OFFLINE,
 }
 
 /**
@@ -75,6 +81,10 @@ object AccessResolver {
      * Ist derselbe Anbieter explizit gewaehlt, fuellen leere Felder sich aus dem
      * Transkriptions-Zugang; ein anderer Anbieter bekommt seine eigenen Defaults —
      * der OpenAI-Key darf nie versehentlich an Groq gehen.
+     *
+     * @param sttOffline Erkennung laeuft offline. Dann gibt es nichts zu uebernehmen: der noch
+     *   gespeicherte Online-Zugang ist abgewaehlt, und der erkannte Text darf nicht still dorthin
+     *   gehen ([RefineBlock.OFFLINE], ohne Adresse und Key).
      */
     fun resolveLlm(
         stt: ApiAccess,
@@ -83,8 +93,20 @@ object AccessResolver {
         apiKey: String,
         model: String,
         serverModels: ServerModelLookup = ServerModelLookup.NONE,
+        sttOffline: Boolean = false,
     ): ApiAccess {
         val same = providerId.isBlank() || providerId == LLM_SAME
+        if (same && sttOffline) {
+            return ApiAccess(
+                baseUrl = "",
+                apiKey = "",
+                model = "",
+                readTimeoutMs = stt.readTimeoutMs,
+                provider = stt.provider,
+                modelOption = null,
+                sameAsOffline = true,
+            )
+        }
         val provider = if (same) stt.provider else ProviderCatalog.byId(providerId)
         val sameProvider = provider.id == stt.provider.id
         val modelId = model.trim().ifBlank { provider.defaultLlmModel }

@@ -27,10 +27,12 @@ class ModelDownloaderTest {
     @get:Rule val tmp = TemporaryFolder()
 
     private val data = ByteArray(300_000) { (it * 31 + it / 7).toByte() }
-    private val model = WhisperModel("test", "Test", "ggml-test.bin", data.size.toLong(), sha256(data), 0, 0)
 
     private lateinit var server: HttpServer
     private lateinit var store: ModelStore
+
+    /** Laedt von seiner eigenen URL — der Pfad weicht bewusst vom Dateinamen ab (wie die gepinnten HF-URLs). */
+    private lateinit var model: OfflineModel
 
     // Server-Verhalten je Test
     private var rangeSupported = true
@@ -40,14 +42,21 @@ class ModelDownloaderTest {
     private var body: ByteArray = data
     private var truncateFirstResponseAt = -1 // erste Antwort nach so vielen Bytes beenden (Netzabbruch)
     private val ranges = mutableListOf<String?>() // Range-Header je Request
+    private val paths = mutableListOf<String>() // angefragte Pfade
     private val statuses = mutableListOf<Int>()
 
     @Before fun setUp() {
         store = ModelStore(File(tmp.root, "models"))
         server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
         server.executor = Executors.newCachedThreadPool()
-        server.createContext("/" + model.fileName) { ex -> handle(ex) }
+        server.createContext("/whisper/resolve/main/ggml-test.bin") { ex -> handle(ex) }
+        server.createContext("/litert/resolve/0123abc/text-test.litertlm") { ex -> handle(ex) }
         server.start()
+        model = OfflineModel(
+            id = "test", label = "Test", fileName = "ggml-test.bin",
+            url = "http://127.0.0.1:${server.address.port}/whisper/resolve/main/ggml-test.bin",
+            bytes = data.size.toLong(), sha256 = sha256(data), approxRamBytes = 0, minDeviceRamBytes = 0,
+        )
     }
 
     @After fun tearDown() {
@@ -57,6 +66,7 @@ class ModelDownloaderTest {
     private fun handle(ex: HttpExchange) {
         val range = ex.requestHeaders.getFirst("Range")
         val first = synchronized(ranges) { ranges.add(range); ranges.size == 1 }
+        synchronized(paths) { paths.add(ex.requestURI.path) }
         runCatching {
             if (holdMs > 0) Thread.sleep(holdMs)
             if (statusOverride != 0) {
@@ -99,7 +109,6 @@ class ModelDownloaderTest {
     private fun seenStatuses() = synchronized(statuses) { statuses.toList() }
 
     private fun downloader(retries: Int = 3, freeSpace: (File) -> Long = { it.usableSpace }, readTimeoutMs: Int = 30_000) = ModelDownloader(
-        baseUrl = "http://127.0.0.1:${server.address.port}/",
         readTimeoutMs = readTimeoutMs,
         retries = retries,
         backoffMs = 5,
@@ -242,6 +251,29 @@ class ModelDownloaderTest {
         assertFalse(e.retryable)
         assertEquals(ModelDownloader.MSG_STORAGE, e.message)
         assertTrue(seenRanges().isEmpty())
+    }
+
+    @Test fun textmodellLaedtVonSeinerUrlUnterSeinemDateinamen() {
+        val text = model.copy(
+            id = "text_test", fileName = "text-test.litertlm",
+            url = "http://127.0.0.1:${server.address.port}/litert/resolve/0123abc/text-test.litertlm",
+            extraDiskBytes = 1_000,
+        )
+        assertTrue(downloader().download(text, store))
+        assertEquals(listOf("/litert/resolve/0123abc/text-test.litertlm"), synchronized(paths) { paths.toList() })
+        assertArrayEquals(data, File(store.dir, "text-test.litertlm").readBytes())
+        assertTrue(store.isInstalled(text))
+        assertFalse(store.isInstalled(model))
+    }
+
+    @Test fun platzpruefungRechnetDenZusatzplatzMit() {
+        val text = model.copy(extraDiskBytes = 1_000)
+        val e = assertThrows(DownloadException::class.java) {
+            downloader(freeSpace = { text.bytes + text.extraDiskBytes - 1 }).download(text, store)
+        }
+        assertEquals(DownloadException.Kind.STORAGE, e.kind)
+        assertTrue(seenRanges().isEmpty())
+        assertTrue(downloader(freeSpace = { text.bytes + text.extraDiskBytes }).download(text, store))
     }
 
     @Test fun bereitsInstalliertOhneRequest() {

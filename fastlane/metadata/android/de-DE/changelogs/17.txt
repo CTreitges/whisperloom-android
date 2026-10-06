@@ -1,0 +1,6 @@
+WhisperLoom 3.8.5
+• Neu: Textverbesserung auch offline – Gemma 4 rechnet auf dem Gerät, der Text verlässt das Handy nicht
+• Neu: Regel für die Offline-Erkennung – lokales Textmodell, online mit lokalem Ausweg oder überspringen
+• Neu: Tipp während der Textverbesserung fügt den Text sofort ohne KI ein
+• Behoben: Offline erkannter Text ging still an den alten Online-Zugang
+• Behoben: Ohne Netz wartet die Textverbesserung nicht mehr auf eine Zeitüberschreitung

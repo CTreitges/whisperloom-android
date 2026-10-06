@@ -38,6 +38,7 @@ internal object Http {
      * @param authHeader Name eines eigenen Key-Headers, der den Key ohne "Bearer " traegt
      *   (ElevenLabs: xi-api-key); null = `Authorization: Bearer …`. Einen eigenen Header streift
      *   die JVM bei einer Weiterleitung nicht ab — dafuer immer [followRedirects] = false.
+     * @param connectTimeoutMs kuerzer, wenn bei Fehlschlag ein Ersatz bereitsteht (lokales Textmodell).
      * @param write schreibt den Request-Body.
      * @throws ApiNetworkException wenn die Verbindung scheitert.
      * @throws ApiHttpException bei Status != 2xx.
@@ -49,8 +50,9 @@ internal object Http {
         readTimeoutMs: Int = DEFAULT_READ_TIMEOUT_MS,
         followRedirects: Boolean = true,
         authHeader: String? = null,
+        connectTimeoutMs: Int = CONNECT_TIMEOUT_MS,
         write: (java.io.OutputStream) -> Unit,
-    ): String = execute(url, "POST", apiKey, readTimeoutMs, followRedirects, authHeader, emptyMap()) { conn ->
+    ): String = execute(url, "POST", apiKey, readTimeoutMs, followRedirects, authHeader, emptyMap(), connectTimeoutMs) { conn ->
         conn.doOutput = true
         conn.setRequestProperty("Content-Type", contentType)
         conn.outputStream.use(write)
@@ -79,13 +81,14 @@ internal object Http {
         followRedirects: Boolean,
         authHeader: String?,
         headers: Map<String, String>,
+        connectTimeoutMs: Int = CONNECT_TIMEOUT_MS,
         send: (HttpURLConnection) -> Unit,
     ): String {
         val conn = try {
             (URL(url).openConnection() as? HttpURLConnection
                 ?: throw IOException("Keine http(s)-URL: $url")).apply {
                 requestMethod = method
-                connectTimeout = CONNECT_TIMEOUT_MS
+                connectTimeout = connectTimeoutMs
                 readTimeout = readTimeoutMs
                 instanceFollowRedirects = followRedirects
                 setRequestProperty("User-Agent", USER_AGENT)

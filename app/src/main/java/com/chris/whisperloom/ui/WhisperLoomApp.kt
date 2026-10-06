@@ -10,7 +10,9 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.overlay.FloatingMicService
 import com.chris.whisperloom.ui.home.HomeScreen
@@ -36,6 +38,8 @@ import com.chris.whisperloom.ui.state.AppEnv
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.tutorial.TutorialKind
 import com.chris.whisperloom.ui.tutorial.TutorialScreen
+import com.chris.whisperloom.whisper.DownloadState
+import com.chris.whisperloom.whisper.ModelDownloads
 
 /**
  * Wurzel der Compose-UI: Router (§1.2), Back-Stack und Screen-Wechsel (Fade-through, §5.4).
@@ -52,6 +56,17 @@ fun WhisperLoomApp(env: AppEnv, route: RouteRequest? = null, onRouteConsumed: ()
                 applyRoute(nav, route, SetupFacts.from(env.prefs, env.status))
                 onRouteConsumed()
             }
+        }
+
+        // Ein fertiger Download aendert den Systemstatus (installierte Modelle) — auch wenn er auf einem
+        // anderen Screen fertig wird als dem, der ihn gestartet hat (Home-Banner, Pflichtkarte, Hub).
+        val downloads by ModelDownloads.states.collectAsStateWithLifecycle()
+        LaunchedEffect(downloads) {
+            val status = env.status
+            val unseen = downloads.any { (id, state) ->
+                state is DownloadState.Done && id !in status.installedModels && id !in status.installedTextModels
+            }
+            if (unseen) env.refreshStatus()
         }
 
         // Der Assistent hat einen eigenen BackHandler (Schritt zurueck), der tiefer in der
@@ -120,13 +135,15 @@ fun finishTutorial(nav: NavState, kind: TutorialKind) {
 }
 
 /**
- * Deep-Link anwenden: `home` (Notification), `settings` (IME-Zahnrad), `setup[+step]` (IME/Overlay/Share),
+ * Deep-Link anwenden: `home` (Notification), `settings` (IME-Zahnrad), `models` (IME, Textmodell fehlt), `setup[+step]` (IME/Overlay/Share),
  * `advanced` und `widgets[+profile]` (Widget-Tipp, der nicht aufnehmen kann; Aufnahme-Notification).
  */
 fun applyRoute(nav: NavState, route: RouteRequest, facts: SetupFacts) {
     when (route.route) {
         AppNav.ROUTE_HOME -> nav.replaceAll(Screen.Home)
         AppNav.ROUTE_SETTINGS -> nav.replaceAll(startScreen(facts), Screen.SettingsHub)
+        // Tastatur: offline ohne Textmodell.
+        AppNav.ROUTE_MODELS -> nav.replaceAll(startScreen(facts), Screen.SettingsHub, Screen.Models)
         // Pro Widgets aus. "agent" kommt noch aus Intents von 3.7.0.
         AppNav.ROUTE_ADVANCED, AppNav.ROUTE_AGENT -> nav.replaceAll(startScreen(facts), Screen.SettingsHub, Screen.Advanced)
         // Kein Mikrofon oder Aufnahme-Notification; mit Profil: dessen Server fehlt, der Editor oeffnet sich.

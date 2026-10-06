@@ -2,7 +2,9 @@ package com.chris.whisperloom.whisper
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
+import com.chris.whisperloom.llm.installSparse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -41,6 +43,30 @@ class ModelDownloadServiceTest {
         val intent = ModelDownloadService.cancelIntent(ctx)
         val service = Robolectric.buildService(ModelDownloadService::class.java, intent).create().startCommand(0, 1).get()
         assertTrue(shadowOf(service).isStoppedBySelf)
+    }
+
+    /** Review d1: E4B aus der Liste geladen, gewaehlt war das nicht installierte E2B. */
+    @Test fun einFertigesTextmodellWirdGewaehltWennDasGewaehlteFehlt() {
+        ctx.getSharedPreferences(Prefs.FILE, Context.MODE_PRIVATE).edit().clear().commit()
+        val prefs = Prefs(ctx)
+        val e2b = TextModelCatalog.GEMMA4_E2B
+        val e4b = TextModelCatalog.GEMMA4_E4B
+        try {
+            assertEquals("ab Werk E2B", e2b.id, prefs.localLlmModel)
+            installSparse(ctx, e4b)
+            ModelDownloadService.selectIfMissing(ctx, e4b)
+            assertEquals(e4b.id, prefs.localLlmModel)
+
+            installSparse(ctx, e2b)
+            ModelDownloadService.selectIfMissing(ctx, e2b)
+            assertEquals("das gewaehlte ist installiert: bleibt", e4b.id, prefs.localLlmModel)
+
+            ModelStore(ctx).delete(e4b)
+            ModelDownloadService.selectIfMissing(ctx, ModelCatalog.SMALL)
+            assertEquals("ein whisper-Modell waehlt kein Textmodell", e4b.id, prefs.localLlmModel)
+        } finally {
+            ModelStore(ctx).dir.deleteRecursively()
+        }
     }
 
     @Test fun fehlertexteAusDenRessourcen() {

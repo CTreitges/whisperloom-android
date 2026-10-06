@@ -24,6 +24,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.chris.whisperloom.Engine
 import com.chris.whisperloom.ModelCache
+import com.chris.whisperloom.OfflineRefineRule
 import com.chris.whisperloom.R
 import com.chris.whisperloom.api.AccessResolver
 import com.chris.whisperloom.api.ModelKind
@@ -41,17 +42,19 @@ import com.chris.whisperloom.ui.components.LoomPickerField
 import com.chris.whisperloom.ui.components.modelLabel
 import com.chris.whisperloom.ui.components.providerLabel
 import com.chris.whisperloom.ui.components.providerShortName
+import com.chris.whisperloom.ui.models.offlineRule
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.theme.loom
 
 /**
- * Karte "Zugang fuer die Textverbesserung" (E2, Spec §2.5): Schalter, eigener Anbieter, Modell, Test.
+ * Karte "Online-Zugang fuer die Textverbesserung" (E2, Spec §2.5): Schalter, eigener Anbieter, Modell, Test.
  * Ollama laedt seine Modelle immer vom Server; mit Pro "Modelle vom Server" jeder Anbieter
  * ([ModelPickerSheet]).
  */
 @Composable
 fun LlmAccessSection(snack: SnackController) {
     val prefs = LocalAppEnv.current.prefs
+    val status = LocalAppEnv.current.status
     val stt = prefs.sttAccess()
     val llm = prefs.llmAccess()
     val provider = llm.provider
@@ -104,8 +107,12 @@ fun LlmAccessSection(snack: SnackController) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SwitchRow(
             headline = stringResource(R.string.text_own_access),
-            supporting = if (useOwn) stringResource(R.string.text_own_access_on)
-            else stringResource(R.string.text_own_access_off, providerShortName(stt.provider)),
+            supporting = when {
+                useOwn -> stringResource(R.string.text_own_access_on)
+                // Offline bekommt der Zugang der Erkennung nie Text (RefineBlock.OFFLINE) — nicht "Nutzt …".
+                offlineWithoutOwn -> stringResource(R.string.text_own_access_off_offline)
+                else -> stringResource(R.string.text_own_access_off, providerShortName(stt.provider))
+            },
             checked = useOwn,
             onCheckedChange = { on -> if (on) switchToOwn() else prefs.llmProviderId = AccessResolver.LLM_SAME },
         )
@@ -162,9 +169,9 @@ fun LlmAccessSection(snack: SnackController) {
         }
 
         when {
-            noLlmWithoutOwn -> InfoCard(
-                text = if (offlineWithoutOwn) stringResource(R.string.text_needs_online)
-                else stringResource(R.string.text_no_llm, providerShortName(stt.provider)),
+            offlineWithoutOwn -> OfflineAccessNote(offlineRule(prefs, status)) { switchToOwn() }
+            noChatWithoutOwn -> InfoCard(
+                text = stringResource(R.string.text_no_llm, providerShortName(stt.provider)),
                 icon = R.drawable.ic_warning,
                 container = MaterialTheme.loom.warningContainer,
                 onContainer = MaterialTheme.loom.onWarningContainer,
@@ -248,6 +255,29 @@ fun LlmAccessSection(snack: SnackController) {
             initial = if (provider.llmModel(llm.model) == null) llm.model else "",
             onApply = { prefs.llmModel = it },
             onDismiss = { showCustomModel = false },
+        )
+    }
+}
+
+/**
+ * Offline ohne eigenen Zugang: was bei Offline-Erkennung mit dem Text passiert, je nach Regel
+ * (Spec §4). "Lokal" fragt den Online-Zugang offline nie — dort ist nichts zu tun, also kein Knopf.
+ */
+@Composable
+private fun OfflineAccessNote(rule: OfflineRefineRule, onAddAccess: () -> Unit) {
+    val loom = MaterialTheme.loom
+    val add: @Composable () -> Unit = {
+        FilledTonalButton(onClick = onAddAccess) { Text(stringResource(R.string.text_add_access)) }
+    }
+    when (rule) {
+        OfflineRefineRule.LOCAL -> InfoCard(stringResource(R.string.text_access_offline_local))
+        OfflineRefineRule.ONLINE_LOCAL -> InfoCard(stringResource(R.string.text_access_offline_online_local), action = add)
+        OfflineRefineRule.SKIP -> InfoCard(
+            text = stringResource(R.string.text_access_offline_skip),
+            icon = R.drawable.ic_warning,
+            container = loom.warningContainer,
+            onContainer = loom.onWarningContainer,
+            action = add,
         )
     }
 }

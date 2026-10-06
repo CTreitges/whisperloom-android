@@ -16,6 +16,7 @@ import com.chris.whisperloom.AudioRecorder
 import com.chris.whisperloom.BuildConfig
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
+import com.chris.whisperloom.TranscriptionEngine
 import java.time.Instant
 
 /**
@@ -146,6 +147,8 @@ class VoiceTaskService : Service() {
             return
         }
         recording = true
+        // Wird das Diktat gleich lokal verbessert, laedt das Textmodell schon parallel zur Aufnahme.
+        TranscriptionEngine.warmUp(this)
         startedAt = SystemClock.elapsedRealtime()
         recordedAt = Instant.now().toString()
         store.state = VoiceTaskState.RECORDING

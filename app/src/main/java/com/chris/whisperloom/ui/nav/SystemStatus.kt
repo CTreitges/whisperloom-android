@@ -10,6 +10,7 @@ import com.chris.whisperloom.a11y.TextInserterAccessibilityService
 import com.chris.whisperloom.overlay.FloatingMicService
 import com.chris.whisperloom.whisper.ModelStore
 import com.chris.whisperloom.whisper.OfflineSupport
+import com.chris.whisperloom.whisper.TextModelCatalog
 
 /**
  * Momentaufnahme des Systemzustands, den die App nicht selbst kontrolliert (Berechtigungen,
@@ -26,12 +27,28 @@ data class SystemStatus(
     val imeEnabled: Boolean = false,
     val imeSelected: Boolean = false,
     val bubbleRunning: Boolean = false,
-    /** IDs der vollstaendig installierten Offline-Modelle (ModelCatalog). */
+    /** IDs der vollstaendig installierten whisper-Modelle (ModelCatalog). */
     val installedModels: Set<String> = emptySet(),
+    /** IDs der vollstaendig installierten Textmodelle (TextModelCatalog). */
+    val installedTextModels: Set<String> = emptySet(),
+    /** Belegter Platz aller Offline-Modelle (beide Arten, Teildateien, Caches). */
     val modelsUsedBytes: Long = 0L,
     val offlineSupported: Boolean = true,
     val totalRamBytes: Long = 8L shl 30,
 ) {
+    /**
+     * "Lokales Modell bereit" wie [com.chris.whisperloom.llm.LocalTextEngine.isReady], nur aus dieser
+     * Momentaufnahme: [id] ist ein Textmodell, vollstaendig installiert und passt in den RAM.
+     */
+    fun textModelReady(id: String): Boolean =
+        TextModelCatalog.find(id)?.let { it.id in installedTextModels && OfflineSupport.fitsDevice(totalRamBytes, it) } ?: false
+
+    /** Passt ueberhaupt ein Textmodell ins Geraet ([TextModelCatalog.anyFits])? Sonst wirkt die Regel wie "Ueberspringen". */
+    val textModelFits: Boolean get() = TextModelCatalog.anyFits(totalRamBytes)
+
+    /** Wie viele Offline-Modelle insgesamt geladen sind (whisper- und Textmodelle). */
+    val installedCount: Int get() = installedModels.size + installedTextModels.size
+
     companion object {
         fun read(context: Context): SystemStatus {
             val app = context.applicationContext
@@ -51,6 +68,7 @@ data class SystemStatus(
                 imeSelected = selected?.startsWith(app.packageName + "/") == true,
                 bubbleRunning = FloatingMicService.isRunning,
                 installedModels = store.installed().map { it.id }.toSet(),
+                installedTextModels = store.installed(TextModelCatalog.models).map { it.id }.toSet(),
                 modelsUsedBytes = store.usedBytes(),
                 offlineSupported = OfflineSupport.isSupported && OfflineSupport.deviceFits(totalRam),
                 totalRamBytes = totalRam,

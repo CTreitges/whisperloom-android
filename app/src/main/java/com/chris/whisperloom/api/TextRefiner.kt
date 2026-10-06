@@ -12,7 +12,11 @@ import org.json.JSONObject
  * Spricht POST /chat/completions des [ApiAccess] bzw. bei Ollama POST /api/chat — das kann
  * ein anderer Anbieter als bei der Transkription sein (z. B. Groq-STT + Ollama-LLM).
  */
-class TextRefiner(private val access: ApiAccess) {
+class TextRefiner(
+    private val access: ApiAccess,
+    /** Kuerzer, wenn eine lokale Ausweichloesung bereitsteht (Regel "Online, ohne Netz lokal"). */
+    private val connectTimeoutMs: Int = Http.CONNECT_TIMEOUT_MS,
+) {
 
     /**
      * Liefert den bearbeiteten Text. Bei leerer Eingabe, [RefineMode.OFF] oder leerer
@@ -22,7 +26,7 @@ class TextRefiner(private val access: ApiAccess) {
      *
      * @throws ApiNotConfiguredException wenn die Base-URL leer ist (eigener Server ohne URL) —
      *   sonst ginge die Anfrage an "/chat/completions" ohne Host — oder der Zugang keinen Text
-     *   verbessern kann ([ApiAccess.refineBlock]: [MSG_NO_LLM], [MSG_NO_MODEL]).
+     *   verbessern kann ([ApiAccess.refineBlock]: [MSG_NO_LLM], [MSG_NO_MODEL], [MSG_OFFLINE]).
      * @throws RefineRejectedException wenn das Modell geantwortet hat, statt den Text zu bearbeiten
      *   (Ausgabe weit laenger als das Diktat), oder an seiner Laengengrenze abgebrochen hat ([MSG_TRUNCATED]).
      */
@@ -39,19 +43,13 @@ class TextRefiner(private val access: ApiAccess) {
         when (access.refineBlock) {
             RefineBlock.NO_CHAT -> throw ApiNotConfiguredException(MSG_NO_LLM)
             RefineBlock.NO_MODEL -> throw ApiNotConfiguredException(MSG_NO_MODEL)
+            RefineBlock.OFFLINE -> throw ApiNotConfiguredException(MSG_OFFLINE)
             null -> Unit
         }
         if (access.baseUrl.isBlank()) throw ApiNotConfiguredException()
 
-        val german = language == "de"
-        val systemPrompt = RefinePrompt.build(mode, german, smartFillers, paragraphs, short = RefinePrompt.isShort(raw))
-        val userText = RefinePrompt.userText(raw, german)
-        val text = (if (access.provider.isOllama) ollama(systemPrompt, userText) else openAi(systemPrompt, userText))
-            ?.let { stripThinking(it) }
-            ?.trim()
-            ?.let { if (mode == RefineMode.PROMPT) cleanPrompt(raw, it) else cleanText(raw, it) }
-
-        return if (text.isNullOrBlank()) raw else text
+        val (systemPrompt, userText) = messages(raw, language, mode, smartFillers, paragraphs)
+        return finish(raw, mode, if (access.provider.isOllama) ollama(systemPrompt, userText) else openAi(systemPrompt, userText))
     }
 
     /**
@@ -81,6 +79,7 @@ class TextRefiner(private val access: ApiAccess) {
             apiKey = access.apiKey,
             contentType = "application/json",
             readTimeoutMs = access.readTimeoutMs,
+            connectTimeoutMs = connectTimeoutMs,
         ) { os -> os.write(payload.toByteArray(Charsets.UTF_8)) }
     }
 
@@ -92,6 +91,7 @@ class TextRefiner(private val access: ApiAccess) {
             apiKey = access.apiKey,
             contentType = "application/json",
             readTimeoutMs = access.readTimeoutMs,
+            connectTimeoutMs = connectTimeoutMs,
         ) { os -> os.write(payload.toByteArray(Charsets.UTF_8)) }
         if (JSONObject(body).optString("done_reason") == LENGTH) throw RefineRejectedException(MSG_TRUNCATED)
         return OllamaApi.parseChat(body)
@@ -110,6 +110,9 @@ class TextRefiner(private val access: ApiAccess) {
 
         /** "Wie Erkennung" bei Together/DeepInfra: der Katalog kennt dort kein Textmodell, eingetragen ist keins. */
         const val MSG_NO_MODEL = "Kein Textmodell eingetragen — unter „Text“ ein Modell eintragen"
+
+        /** "Wie Erkennung" bei Offline-Erkennung: kein Online-Zugang, an den der Text gehen duerfte. */
+        const val MSG_OFFLINE = "Offline-Erkennung ohne Textverbesserung — unter „Text“ einen eigenen Zugang eintragen"
         private const val LENGTH = "length"
 
         /** OpenAI: "Unsupported parameter: 'temperature' is not supported with this model." */
@@ -121,6 +124,30 @@ class TextRefiner(private val access: ApiAccess) {
         private val THINK_BLOCK = Regex("(?s)^\\s*<think>.*?</think>\\s*")
 
         fun stripThinking(content: String): String = THINK_BLOCK.replace(content, "")
+
+        /**
+         * System-Prompt und markiertes Diktat — online wie lokal
+         * ([com.chris.whisperloom.llm.LocalRefiner]) derselbe Auftrag.
+         */
+        fun messages(raw: String, language: String, mode: RefineMode, smartFillers: Boolean, paragraphs: Boolean): Pair<String, String> {
+            val german = language == "de"
+            val systemPrompt = RefinePrompt.build(mode, german, smartFillers, paragraphs, short = RefinePrompt.isShort(raw))
+            return systemPrompt to RefinePrompt.userText(raw, german)
+        }
+
+        /**
+         * Nacharbeit der Modell-Antwort — online wie lokal: Nachdenken, Markierung, Vorrede und
+         * Verpackung weg ([cleanText]/[cleanPrompt]). Keine oder leere Antwort = Rohtext.
+         *
+         * @throws RefineRejectedException bei unplausibel langer Ausgabe.
+         */
+        fun finish(raw: String, mode: RefineMode, output: String?): String {
+            val text = output
+                ?.let { stripThinking(it) }
+                ?.trim()
+                ?.let { if (mode == RefineMode.PROMPT) cleanPrompt(raw, it) else cleanText(raw, it) }
+            return if (text.isNullOrBlank()) raw else text
+        }
 
         /**
          * Nacharbeit der Stufe "Prompt". Kleine Modelle lassen gern Reste stehen: eine Vorrede

@@ -326,6 +326,21 @@ class Prefs(context: Context) {
         get() = sp.getBoolean(KEY_OFFLINE_ACCURATE, true)
         set(v) = sp.edit { putBoolean(KEY_OFFLINE_ACCURATE, v) }
 
+    // --- Lokales Textmodell (LiteRT-LM) --------------------------------------
+
+    /**
+     * Textverbesserung bei Offline-Erkennung (lokal / online, ohne Netz lokal / ueberspringen).
+     * Ungespeichert gilt [OfflineRefineRule.LOCAL] — auch fuer Bestandsnutzer, ohne Migration.
+     */
+    var offlineRefine: OfflineRefineRule
+        get() = OfflineRefineRule.fromKey(sp.getString(KEY_OFFLINE_REFINE, null))
+        set(v) = sp.edit { putString(KEY_OFFLINE_REFINE, v.key) }
+
+    /** TextModelCatalog-ID des lokalen Textmodells (gemma4_e2b/gemma4_e4b). */
+    var localLlmModel: String
+        get() = sp.getString(KEY_LOCAL_LLM_MODEL, DEFAULT_LOCAL_LLM_MODEL) ?: DEFAULT_LOCAL_LLM_MODEL
+        set(v) = sp.edit { putString(KEY_LOCAL_LLM_MODEL, v) }
+
     // --- Geteilte Audios -----------------------------------------------------
 
     /** Schalter "Fuellwoerter ausblenden" in der Share-Ansicht. */
@@ -406,6 +421,7 @@ class Prefs(context: Context) {
         apiKey = llmKey,
         model = llmModel,
         serverModels = modelCache,
+        sttOffline = engine == Engine.OFFLINE,
     )
 
     companion object {
@@ -448,6 +464,8 @@ class Prefs(context: Context) {
         private const val KEY_TUTORIAL_SEEN = "tutorial_seen"
         private const val KEY_OFFLINE_MODEL = "offline_model"
         private const val KEY_OFFLINE_ACCURATE = "offline_accurate"
+        private const val KEY_OFFLINE_REFINE = "offline_refine"
+        private const val KEY_LOCAL_LLM_MODEL = "local_llm_model"
         private const val KEY_SHARE_HIDE_FILLERS = "share_hide_fillers"
         private const val KEY_SHARE_REFINE_MODE = "share_refine_mode"
         /** Schluessel aus der Zeit des "Sprachauftrags" — bleibt, damit nichts migriert werden muss. */
@@ -482,6 +500,9 @@ class Prefs(context: Context) {
         const val DEFAULT_LLM_MODEL = "gpt-4o-mini"
 
         const val DEFAULT_OFFLINE_MODEL = "small"
+
+        /** Gemma 4 E2B: laeuft ab 6 GB RAM (E4B erst ab 8 GB). */
+        const val DEFAULT_LOCAL_LLM_MODEL = "gemma4_e2b"
 
         /** Startposition des schwebenden Knopfs, wenn noch nichts verschoben wurde. */
         const val DEFAULT_FLOAT_X = 24

@@ -1,6 +1,7 @@
 package com.chris.whisperloom.ui.nav
 
 import com.chris.whisperloom.Engine
+import com.chris.whisperloom.OfflineRefineRule
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -95,5 +96,19 @@ class SetupRouterTest {
         // 1–3 erledigt, 4 + 5 uebersprungen, 7 (Pflicht im Tastatur-Pfad) offen -> 5 von 6.
         assertEquals(5, SetupRouter.doneCount(ready.copy(a11ySkipped = true, overlayGranted = false, overlaySkipped = true)))
         assertEquals(6, SetupRouter.visibleSteps(ready).size)
+    }
+
+    @Test fun schritt2bWahlTextmodellOderUeberspringen() {
+        assertEquals(TextChoice.SKIP, SetupRouter.textChoice(OfflineRefineRule.SKIP, localReady = true, localLoading = false))
+        assertEquals(TextChoice.LOCAL, SetupRouter.textChoice(OfflineRefineRule.LOCAL, localReady = true, localLoading = false))
+        assertEquals("Weiter schon waehrend des Downloads", TextChoice.LOCAL, SetupRouter.textChoice(OfflineRefineRule.LOCAL, localReady = false, localLoading = true))
+        assertEquals(TextChoice.LOCAL, SetupRouter.textChoice(OfflineRefineRule.ONLINE_LOCAL, localReady = true, localLoading = false))
+        // Der Standard "lokal" allein ist noch keine Wahl: ohne Modell bleibt Weiter gesperrt.
+        assertEquals(null, SetupRouter.textChoice(OfflineRefineRule.LOCAL, localReady = false, localLoading = false))
+    }
+
+    @Test fun dieWahlIn2bAendertNichtsAmEingerichtetSein() {
+        val f = SetupFacts(engine = Engine.OFFLINE, modelInstalled = true, micGranted = true, overlayGranted = true)
+        assertTrue(SetupRouter.isSetUp(f))
     }
 }

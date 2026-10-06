@@ -43,6 +43,8 @@ import com.chris.whisperloom.ui.components.fileSize
 import com.chris.whisperloom.ui.components.levelLabel
 import com.chris.whisperloom.ui.components.modelLabel
 import com.chris.whisperloom.ui.components.offlineModelLabel
+import com.chris.whisperloom.ui.components.offlineRuleShort
+import com.chris.whisperloom.ui.models.offlineRule
 import com.chris.whisperloom.ui.components.providerShortName
 import com.chris.whisperloom.ui.components.rememberSnack
 import com.chris.whisperloom.ui.nav.NavState
@@ -76,8 +78,12 @@ fun SettingsHubScreen(nav: NavState) {
         if (prefs.autoCapitalize) add(stringResource(R.string.settings_rule_cap))
         if (prefs.trailingSpace) add(stringResource(R.string.settings_rule_space))
     }
-    val text = if (rules.isEmpty()) levelLabel(prefs.refineMode)
-    else stringResource(R.string.settings_val_text, levelLabel(prefs.refineMode), rules.joinToString(" · "))
+    // Offline erkannt mit KI-Stufe: die Regel dazu, als Kurzform ("Glaetten · lokal bei Offline").
+    val level = listOfNotNull(
+        levelLabel(prefs.refineMode),
+        if (prefs.engine == Engine.OFFLINE && prefs.refineMode != RefineMode.OFF) offlineRuleShort(offlineRule(prefs, status)) else null,
+    ).joinToString(" · ")
+    val text = if (rules.isEmpty()) level else stringResource(R.string.settings_val_text, level, rules.joinToString(" · "))
     val button = stringResource(if (status.bubbleRunning) R.string.settings_val_bubble_on else R.string.settings_val_bubble_off) +
         " · " + stringResource(if (status.imeEnabled) R.string.settings_val_kb_on else R.string.settings_val_kb_off)
     // Kein Schalter auf Hub-Ebene (Spec §2.3) — nur die eingeschalteten Pro-Funktionen als Unterzeile.
@@ -95,7 +101,7 @@ fun SettingsHubScreen(nav: NavState) {
     else pluralStringResource(R.plurals.widgets_sub_profiles, proCount, proCount) + " · " +
         if (placed == 0) stringResource(R.string.widgets_sub_none_placed)
         else pluralStringResource(R.plurals.widgets_sub_placed, placed, placed)
-    val n = status.installedModels.size
+    val n = status.installedCount
     val models = if (n > 0) stringResource(R.string.home_val_models, n, fileSize(status.modelsUsedBytes))
     else stringResource(R.string.settings_models_none)
 
