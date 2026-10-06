@@ -44,15 +44,8 @@ class TextRefiner(private val access: ApiAccess) {
         }
         if (access.baseUrl.isBlank()) throw ApiNotConfiguredException()
 
-        val german = language == "de"
-        val systemPrompt = RefinePrompt.build(mode, german, smartFillers, paragraphs, short = RefinePrompt.isShort(raw))
-        val userText = RefinePrompt.userText(raw, german)
-        val text = (if (access.provider.isOllama) ollama(systemPrompt, userText) else openAi(systemPrompt, userText))
-            ?.let { stripThinking(it) }
-            ?.trim()
-            ?.let { if (mode == RefineMode.PROMPT) cleanPrompt(raw, it) else cleanText(raw, it) }
-
-        return if (text.isNullOrBlank()) raw else text
+        val (systemPrompt, userText) = messages(raw, language, mode, smartFillers, paragraphs)
+        return finish(raw, mode, if (access.provider.isOllama) ollama(systemPrompt, userText) else openAi(systemPrompt, userText))
     }
 
     /**
@@ -125,6 +118,30 @@ class TextRefiner(private val access: ApiAccess) {
         private val THINK_BLOCK = Regex("(?s)^\\s*<think>.*?</think>\\s*")
 
         fun stripThinking(content: String): String = THINK_BLOCK.replace(content, "")
+
+        /**
+         * System-Prompt und markiertes Diktat — online wie lokal
+         * ([com.chris.whisperloom.llm.LocalRefiner]) derselbe Auftrag.
+         */
+        fun messages(raw: String, language: String, mode: RefineMode, smartFillers: Boolean, paragraphs: Boolean): Pair<String, String> {
+            val german = language == "de"
+            val systemPrompt = RefinePrompt.build(mode, german, smartFillers, paragraphs, short = RefinePrompt.isShort(raw))
+            return systemPrompt to RefinePrompt.userText(raw, german)
+        }
+
+        /**
+         * Nacharbeit der Modell-Antwort — online wie lokal: Nachdenken, Markierung, Vorrede und
+         * Verpackung weg ([cleanText]/[cleanPrompt]). Keine oder leere Antwort = Rohtext.
+         *
+         * @throws RefineRejectedException bei unplausibel langer Ausgabe.
+         */
+        fun finish(raw: String, mode: RefineMode, output: String?): String {
+            val text = output
+                ?.let { stripThinking(it) }
+                ?.trim()
+                ?.let { if (mode == RefineMode.PROMPT) cleanPrompt(raw, it) else cleanText(raw, it) }
+            return if (text.isNullOrBlank()) raw else text
+        }
 
         /**
          * Nacharbeit der Stufe "Prompt". Kleine Modelle lassen gern Reste stehen: eine Vorrede

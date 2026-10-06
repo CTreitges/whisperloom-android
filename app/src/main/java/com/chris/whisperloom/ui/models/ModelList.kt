@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chris.whisperloom.R
+import com.chris.whisperloom.llm.LocalTextEngine
 import com.chris.whisperloom.ui.components.CardShape
 import com.chris.whisperloom.ui.components.SnackController
 import com.chris.whisperloom.ui.components.StatusChip
@@ -60,6 +61,7 @@ import com.chris.whisperloom.whisper.ModelDownloads
 import com.chris.whisperloom.whisper.ModelStore
 import com.chris.whisperloom.whisper.OfflineModel
 import com.chris.whisperloom.whisper.OfflineSupport
+import com.chris.whisperloom.whisper.TextModelCatalog
 import com.chris.whisperloom.whisper.WhisperEngine
 
 /**
@@ -127,7 +129,8 @@ fun ModelListSection(snack: SnackController, showEmptyState: Boolean = true) {
             onConfirm = {
                 store.delete(model)
                 ModelDownloads.clear(model.id)
-                WhisperEngine.release() // geladenes Modell aus dem RAM
+                // geladenes Modell aus dem RAM (nie mitten in einer Rechnung)
+                if (model in TextModelCatalog.models) LocalTextEngine.release() else WhisperEngine.release()
                 storeVersion++
                 pendingDelete = null
             },
