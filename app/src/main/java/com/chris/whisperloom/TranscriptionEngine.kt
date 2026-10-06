@@ -203,6 +203,8 @@ data class SharedTranscript(
     val refineMode: RefineMode = RefineMode.OFF,
     /** Warum die KI-Fassung trotz Stufe fehlt ("API-Fehler 401 …"); null = nicht gescheitert. */
     val refineSkipped: String? = null,
+    /** Online gescheitert, das lokale Textmodell hat verbessert (nur Hinweis, kein Fehler). */
+    val refineLocalFallback: Boolean = false,
 )
 
 /**
@@ -277,8 +279,8 @@ object SharedAudioTranscriber {
             val paragraphsVerbatim = paragraphsForChunks(parts.map { TextPolisher.polish(it, verbatimOptions) })
             val paragraphsCleaned = paragraphsForChunks(parts.map { TextPolisher.polish(it, cleanedOptions) })
 
-            val refined = SharedRefine.run(app, prefs, parts, language, isCancelled, onStart = {
-                onProgress(chunks.size, chunks.size, app.getString(R.string.share_refining))
+            val refined = SharedRefine.run(app, prefs, parts, language, isCancelled, onStart = { local ->
+                onProgress(chunks.size, chunks.size, app.getString(if (local) R.string.share_refining_local else R.string.share_refining))
             })
             return SharedTranscript(
                 source = name,
@@ -292,6 +294,7 @@ object SharedAudioTranscriber {
                 paragraphsRefined = refined.paragraphs,
                 refineMode = refined.mode,
                 refineSkipped = refined.skipped,
+                refineLocalFallback = refined.localFallback,
             )
         } finally {
             temp.delete()

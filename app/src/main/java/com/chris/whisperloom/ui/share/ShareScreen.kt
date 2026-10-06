@@ -169,9 +169,9 @@ private fun TranscriptContent(
 }
 
 /**
- * Hinweiszeile zur KI-Stufe fuer geteilte Audios: aktiv, gescheitert (mit Grund) oder bei mehreren
- * Dateien nur teilweise gescheitert — dann mit Anzahl, sonst saehe die KI-Fassung der anderen Dateien
- * wie gescheitert aus. Bei "Aus" nichts.
+ * Hinweiszeile zur KI-Stufe fuer geteilte Audios: aktiv, online gescheitert und lokal verbessert,
+ * gescheitert (mit Grund) oder bei mehreren Dateien nur teilweise gescheitert — dann mit Anzahl,
+ * sonst saehe die KI-Fassung der anderen Dateien wie gescheitert aus. Bei "Aus" nichts.
  */
 @Composable
 private fun RefineNote(state: ShareUiState) {
@@ -181,6 +181,7 @@ private fun RefineNote(state: ShareUiState) {
     val failures = state.refineFailures
     Text(
         when {
+            skipped == null && state.refineLocalFallback -> stringResource(R.string.share_refine_local_fallback, levelLabel(mode))
             skipped == null -> stringResource(R.string.share_refine_note, levelLabel(mode))
             failures < state.results.size ->
                 stringResource(R.string.share_refine_partly, levelLabel(mode), failures, state.results.size, skipped)

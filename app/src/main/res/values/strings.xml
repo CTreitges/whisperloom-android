@@ -545,7 +545,9 @@
     <string name="share_decoding">Audio wird entpackt …</string>
     <string name="share_sending">Wird übertragen …</string>
     <string name="share_refining">Text wird verbessert …</string>
+    <string name="share_refining_local">Text wird lokal verbessert …</string>
     <string name="share_refine_note">Textverbesserung: %1$s · änderbar unter Einstellungen › Text</string>
+    <string name="share_refine_local_fallback">Textverbesserung: %1$s · online fehlgeschlagen, lokal verbessert</string>
     <string name="share_refine_partly" tools:ignore="PluralsCandidate">Textverbesserung: %1$s · bei %2$d von %3$d Dateien übersprungen: %4$s</string>
     <string name="share_copy">Kopieren</string>
     <string name="share_forward">Teilen</string>

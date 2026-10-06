@@ -481,8 +481,11 @@ class RefinePipelineTest {
 
     // --- Geteilte Audios ---------------------------------------------------------------------
 
+    /** Was onStart gemeldet hat: true = lokal, false = online, null = nie gerufen. */
+    private var startedLocal: Boolean? = null
+
     private fun share(parts: List<String> = listOf("Erstes Stück.", "Zweites Stück.")) =
-        SharedRefine.run(ctx, prefs, parts, "de")
+        SharedRefine.run(ctx, prefs, parts, "de", onStart = { startedLocal = it })
 
     @Test fun geteilteAudiosOfflineLokal() {
         offline(OfflineRefineRule.LOCAL)
@@ -496,6 +499,21 @@ class RefinePipelineTest {
         assertNull(result.skipped)
         assertEquals("je Stueck eine Rechnung", 2, localCalls)
         assertEquals(0, chatRequests.get())
+        assertEquals("Fortschritt: \"Text wird lokal verbessert …\"", true, startedLocal)
+        assertEquals("kein Ausweg noetig", false, result.localFallback)
+    }
+
+    @Test fun geteilteAudiosOnlineMeldenDenStartAlsOnline() {
+        offline(OfflineRefineRule.ONLINE_LOCAL)
+        localModel()
+        ownAccess()
+        prefs.shareRefineMode = RefineMode.POLISH
+
+        val result = share()
+
+        assertEquals(listOf("Online verbessert.", "Online verbessert."), result.paragraphs)
+        assertEquals(false, startedLocal)
+        assertEquals(false, result.localFallback)
     }
 
     @Test fun geteilteAudiosOhneModellOhneKiMitHinweis() {
@@ -539,5 +557,7 @@ class RefinePipelineTest {
         assertEquals(listOf("Lokal verbessert.", "Lokal verbessert."), result.paragraphs)
         assertEquals("nur ein Timeout, nicht je Stueck", 1, chatRequests.get())
         assertEquals(2, localCalls)
+        assertEquals("Share-Ansicht: online fehlgeschlagen, lokal verbessert", true, result.localFallback)
+        assertNull(result.skipped)
     }
 }

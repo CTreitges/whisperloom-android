@@ -169,6 +169,22 @@ class ShareScreenTest {
         compose.onNodeWithText("Textverbesserung: Glätten · änderbar unter Einstellungen › Text").assertIsDisplayed()
     }
 
+    @Test fun onlineGescheitertLokalVerbessertIstEinHinweisKeinFehler() {
+        val k = done.copy(paragraphsRefined = listOf("Lokal geglättet."), refineMode = RefineMode.POLISH, refineLocalFallback = true)
+        val state = ShareUiState(phase = SharePhase.DONE, files = listOf(ShareFile("a.ogg", result = k)))
+        assertTrue(state.refineLocalFallback)
+        show(state)
+        compose.onNodeWithText("Lokal geglättet.").assertIsDisplayed()
+        compose.onNodeWithText("Textverbesserung: Glätten · online fehlgeschlagen, lokal verbessert").assertIsDisplayed()
+        compose.onNodeWithText("Füllwörter ausblenden").assertDoesNotExist()
+    }
+
+    @Test fun waehrendDerLokalenVerbesserungNenntDieFortschrittszeileLokal() {
+        val text = ctx.getString(com.chris.whisperloom.R.string.share_refining_local)
+        show(ShareUiState(phase = SharePhase.LOADING, files = listOf(ShareFile("a.ogg")), progress = ShareProgress(0, 1, 1, 1, text)))
+        compose.onNodeWithText("Text wird lokal verbessert …").assertIsDisplayed()
+    }
+
     @Test fun gescheiterteKiZeigtGrundUndDenSchalter() {
         val k = done.copy(refineMode = RefineMode.BEAUTIFY, refineSkipped = "API-Fehler 401")
         show(ShareUiState(phase = SharePhase.DONE, files = listOf(ShareFile("a.ogg", result = k))))
