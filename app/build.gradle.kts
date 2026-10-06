@@ -206,6 +206,15 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
     implementation("androidx.work:work-runtime-ktx:2.11.2")
 
+    // LiteRT-LM: lokales Textmodell (Gemma 4) fuer die Textverbesserung bei Offline-Erkennung.
+    // Context7 (/google-ai-edge/litert-lm, getting_started.md) empfiehlt litertlm-android:latest.release
+    // — hier bewusst fest gepinnt (reproduzierbar, F-Droid). 0.16.1 statt 0.17.x: 0.17 traegt Kotlin-Metadaten
+    // 2.4 und zieht kotlin-stdlib 2.4, AGP 9.4 baut mit Kotlin 2.2.10. Gemma 4 laeuft seit <= 0.11; JVM-Smoketest
+    // mit 0.16.1 und der gepinnten E2B-Datei bestanden. Transitiv: gson 2.13.2, kotlin-reflect 2.2.21, coroutines 1.9.0.
+    // Keine Consumer-ProGuard-Regeln im AAR -> Keep-Regel in proguard-rules.pro (Issue #3739).
+    // https://github.com/google-ai-edge/LiteRT-LM/blob/main/docs/api/kotlin/getting_started.md
+    implementation("com.google.ai.edge.litertlm:litertlm-android:0.16.1")
+
     // kotlinx-coroutines (StateFlow fuer ModelDownloads) kommt transitiv ueber Compose (core 1.9.0) —
     // bewusst nicht doppelt deklariert.
     // Bewusst NICHT: material-icons-core/-extended (35,7 MB AAR, von Google nicht mehr empfohlen),
