@@ -183,6 +183,21 @@ class LocalTextEngineTest {
         assertEquals(listOf("sys" to "eins"), fakes[0].calls)
     }
 
+    /** Review c5: Aufnahme und Erkennung dauern laenger als der Leerlauf — das Vorgewaermte bleibt bis zur Verbesserung. */
+    @Test fun vorgewaermtesModellUeberstehtDenLeerlaufBisZurVerbesserung() {
+        installSparse(ctx, e2b)
+        LocalTextEngine.idleReleaseMs = 50
+        LocalTextEngine.warmUp(e2b.id)
+        waitUntil("Vorwaermen hat nicht geladen") { LocalTextEngine.isLoaded }
+
+        Thread.sleep(300) // laenger als der Leerlauf
+        assertTrue("vor der Verbesserung freigegeben", LocalTextEngine.isLoaded)
+
+        LocalTextEngine.generate(e2b.id, "sys", "eins")
+        assertEquals("ohne erneutes Laden", 1, made.size)
+        waitUntil("nach der Verbesserung gilt wieder der Leerlauf") { !LocalTextEngine.isLoaded }
+    }
+
     @Test fun vorwaermenOhneModellIstStill() {
         LocalTextEngine.warmUp(e2b.id)
         Thread.sleep(100)

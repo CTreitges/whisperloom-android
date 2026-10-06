@@ -91,6 +91,7 @@ fun resetTextEngine(original: (File, File) -> LocalTextModel) {
     LocalTextEngine.release()
     LocalTextEngine.factory = original
     LocalTextEngine.idleReleaseMs = 2 * 60_000L
+    LocalTextEngine.warmHoldMs = 10 * 60_000L
     LocalTextEngine.budget = defaultBudget
     LocalTextEngine.hungGraceMs = defaultHungGraceMs
     LocalTextEngine.lockWaitMs = defaultLockWaitMs

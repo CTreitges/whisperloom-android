@@ -37,6 +37,13 @@ object LocalTextEngine {
     private const val IDLE_RELEASE_MS = 2 * 60_000L
 
     /**
+     * So lange haelt das Vorwaermen das Modell fuer die anstehende Verbesserung: Aufnahme und
+     * Erkennung koennen laenger dauern als [IDLE_RELEASE_MS] (Review c5). Erst die Rechnung stellt
+     * die Uhr wieder auf den normalen Leerlauf.
+     */
+    private const val WARM_HOLD_MS = 10 * 60_000L
+
+    /**
      * Zeitbudget einer Rechnung: Grundzeit plus je Wort, gedeckelt. Grosszuegig — der Smoketest
      * brauchte 4–8,5 s fuer kurze Diktate auf 4 Server-Kernen, Mittelklasse-Handys und E4B sind
      * deutlich langsamer.
@@ -87,6 +94,9 @@ object LocalTextEngine {
     @VisibleForTesting
     internal var idleReleaseMs = IDLE_RELEASE_MS
 
+    @VisibleForTesting
+    internal var warmHoldMs = WARM_HOLD_MS
+
     /** Naht fuer Tests: Zeitbudget je Auftrag (Eingabe -> ms). */
     @VisibleForTesting
     internal var budget: (user: String) -> Long = { budgetMs(RefinePrompt.wordCount(it)) }
@@ -123,13 +133,14 @@ object LocalTextEngine {
 
     /**
      * Laden anstossen, ohne zu warten (Aufnahmestart): Init dauert Sekunden bis gut 30 s und soll
-     * nicht erst hinter der Erkennung beginnen. Fehler landen nur im Log — die echte Generierung
-     * versucht es erneut und meldet sie dann.
+     * nicht erst hinter der Erkennung beginnen. Das Modell bleibt dann bis zur Verbesserung geladen
+     * (hoechstens [WARM_HOLD_MS]). Fehler landen nur im Log — die echte Generierung versucht es
+     * erneut und meldet sie dann.
      */
     fun warmUp(modelId: String) {
         worker.execute {
             try {
-                locked(idleReleaseMs) { ensureLoaded(modelId) }
+                locked(warmHoldMs) { ensureLoaded(modelId) }
             } catch (e: Throwable) {
                 Log.w(TAG, "Vorwaermen fehlgeschlagen", e)
             }
@@ -181,6 +192,8 @@ object LocalTextEngine {
     fun release() {
         if (!lock.tryLock()) return
         try {
+            // Frei ist frei: eine noch ausstehende Leerlauf-Freigabe (Vorwaermen: bis 10 min) entfaellt.
+            synchronized(worker) { idleRelease?.cancel(false) }
             val loaded = model ?: return
             Log.i(TAG, "Gebe Textmodell $loadedModelId frei")
             model = null
