@@ -15,7 +15,9 @@ import com.chris.whisperloom.ui.components.ScrollColumn
 import com.chris.whisperloom.ui.components.SectionHeader
 import com.chris.whisperloom.ui.components.fileSize
 import com.chris.whisperloom.ui.components.rememberSnack
+import com.chris.whisperloom.ui.models.LocalModelRequiredCard
 import com.chris.whisperloom.ui.models.ModelListSection
+import com.chris.whisperloom.ui.models.localModelMissing
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.whisper.ModelDownloads
@@ -23,8 +25,8 @@ import com.chris.whisperloom.whisper.ModelStore
 
 /**
  * E4 — Offline-Modelle (UX-Spec §2.7): Intro, Speicher (beide Arten), Abschnitt Spracherkennung
- * (Engine-Umschalter, whisper-Modelle, Quelle) und Abschnitt Textverbesserung (Pflichtkarte,
- * Textmodelle, Quelle).
+ * (Engine-Umschalter, whisper-Modelle, Quelle) und Abschnitt Textverbesserung (Pflichtkarte, wenn
+ * offline das Textmodell fehlt; Textmodelle, Quelle).
  */
 @Composable
 fun ModelsScreen(nav: NavState) {
@@ -65,6 +67,7 @@ fun ModelsScreen(nav: NavState) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (localModelMissing(env.prefs, env.status)) LocalModelRequiredCard()
             ModelListSection(snack, showEmptyState = false, text = true)
             Text(
                 stringResource(R.string.models_llm_source),

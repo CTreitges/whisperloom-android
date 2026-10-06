@@ -14,24 +14,32 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelectable
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.Engine
+import com.chris.whisperloom.OfflineRefineRule
 import com.chris.whisperloom.Prefs
+import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.llm.installSparse
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SystemStatus
 import com.chris.whisperloom.ui.settings.ModelsScreen
+import com.chris.whisperloom.ui.settings.RecognitionScreen
 import com.chris.whisperloom.ui.settings.SettingsHubScreen
 import com.chris.whisperloom.ui.state.AppEnv
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.PrefsState
 import com.chris.whisperloom.ui.theme.WhisperLoomTheme
+import com.chris.whisperloom.whisper.DownloadState
+import com.chris.whisperloom.whisper.ModelCatalog
 import com.chris.whisperloom.whisper.ModelDownloadService
+import com.chris.whisperloom.whisper.ModelDownloads
 import com.chris.whisperloom.whisper.ModelStore
 import com.chris.whisperloom.whisper.TextModelCatalog
 import org.junit.After
@@ -46,7 +54,7 @@ import org.robolectric.annotation.Config
 
 /**
  * Das lokale Textmodell in der Oberflaeche (Spec §4), Compose-Semantik unter Robolectric:
- * E4 Abschnitt Textverbesserung, Hub-Zaehler.
+ * E4 Abschnitt Textverbesserung, Pflichtkarte "Offline ohne Textmodell", Hub-Zaehler.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w411dp-h2400dp-xxhdpi")
@@ -146,6 +154,107 @@ class TextModelUiTest {
         compose.onNodeWithText("Löschen").performClick()
         compose.waitForIdle()
         assertEquals(false, ModelStore(ctx).isInstalled(TextModelCatalog.GEMMA4_E2B))
+    }
+
+    // --- Pflichtkarte "Offline ohne Textmodell" ----------------------------------------------
+
+    /** Offline mit Stufe "Glaetten", Regel [rule], kein Textmodell. */
+    private fun offlineOhneTextmodell(rule: OfflineRefineRule = OfflineRefineRule.LOCAL) {
+        prefs.engine = Engine.OFFLINE
+        prefs.refineMode = RefineMode.POLISH
+        prefs.offlineRefine = rule
+    }
+
+    private val pflichtkarte get() = compose.onAllNodesWithTag(LOCAL_MODEL_REQUIRED_TAG)
+
+    @Test fun ladeModellIstDasGewaehlteOderDasEmpfohleneWennEsNichtPasst() {
+        assertEquals(TextModelCatalog.GEMMA4_E4B, textModelToLoad("gemma4_e4b", 8L shl 30))
+        assertEquals(TextModelCatalog.GEMMA4_E2B, textModelToLoad("gemma4_e4b", 6L shl 30))
+        assertEquals(TextModelCatalog.GEMMA4_E2B, textModelToLoad("unbekannt", 8L shl 30))
+    }
+
+    @Test fun pflichtkarteInDerErkennungBeiOfflineOhneTextmodell() {
+        offlineOhneTextmodell()
+        screen(env(SystemStatus(installedModels = setOf("small")))) { RecognitionScreen(it) }
+        pflichtkarte.assertCountEquals(1)
+        compose.onNodeWithText("Offline ohne Textmodell").assertExists()
+        compose.onNodeWithText("Textmodell laden (${size(TextModelCatalog.GEMMA4_E2B.bytes)})").assertIsEnabled()
+    }
+
+    @Test fun ueberspringenSetztDieRegelUndDieKarteVerschwindet() {
+        offlineOhneTextmodell(OfflineRefineRule.ONLINE_LOCAL)
+        screen(env(SystemStatus(installedModels = setOf("small")))) { RecognitionScreen(it) }
+        compose.onNodeWithText("Überspringen").performClick()
+        compose.waitForIdle()
+        assertEquals(OfflineRefineRule.SKIP, Prefs(ctx).offlineRefine)
+        pflichtkarte.assertCountEquals(0)
+    }
+
+    @Test fun keinePflichtkarteWennNichtsFehlt() {
+        // Online erkannt: die Regel gilt nicht.
+        offlineOhneTextmodell()
+        prefs.engine = Engine.ONLINE
+        screen(env()) { RecognitionScreen(it) }
+        pflichtkarte.assertCountEquals(0)
+    }
+
+    @Test fun keinePflichtkarteMitGeladenemTextmodellOderOhneStufe() {
+        offlineOhneTextmodell()
+        val ready = SystemStatus(installedModels = setOf("small"), installedTextModels = setOf("gemma4_e2b"))
+        screen(env(ready)) { RecognitionScreen(it) }
+        pflichtkarte.assertCountEquals(0)
+    }
+
+    @Test fun keinePflichtkarteWennBeideStufenAusSind() {
+        offlineOhneTextmodell()
+        prefs.refineMode = RefineMode.OFF
+        screen(env(SystemStatus(installedModels = setOf("small")))) { RecognitionScreen(it) }
+        pflichtkarte.assertCountEquals(0)
+    }
+
+    @Test fun pflichtkarteAuchBeiNurDerShareStufe() {
+        offlineOhneTextmodell()
+        prefs.refineMode = RefineMode.OFF
+        prefs.shareRefineMode = RefineMode.SUMMARIZE
+        screen(env(SystemStatus(installedModels = setOf("small")))) { ModelsScreen(it) }
+        pflichtkarte.assertCountEquals(1)
+    }
+
+    @Test fun pflichtkarteLaedtDasEmpfohleneWennDasGewaehlteZuGrossIst() {
+        offlineOhneTextmodell()
+        prefs.localLlmModel = "gemma4_e4b"
+        screen(env(SystemStatus(installedModels = setOf("small"), totalRamBytes = 6L shl 30))) { RecognitionScreen(it) }
+        compose.onNodeWithText("Textmodell laden (${size(TextModelCatalog.GEMMA4_E2B.bytes)})").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Laden").performClick() // D2, Robolectric meldet Mobilfunk
+        compose.waitForIdle()
+        assertEquals("gemma4_e2b", startedService()?.getStringExtra(ModelDownloadService.EXTRA_MODEL_ID))
+        assertEquals("gemma4_e2b", Prefs(ctx).localLlmModel)
+    }
+
+    @Test fun waehrendDesDownloadsFortschrittStattKnoepfe() {
+        offlineOhneTextmodell()
+        ModelDownloads.update("gemma4_e2b", DownloadState.Running(1_294_073_856, TextModelCatalog.GEMMA4_E2B.bytes, 5_000_000))
+        try {
+            screen(env(SystemStatus(installedModels = setOf("small")))) { RecognitionScreen(it) }
+            pflichtkarte.assertCountEquals(1)
+            compose.onNodeWithText("50 %", substring = true).assertExists()
+            compose.onNodeWithText("Überspringen").assertDoesNotExist()
+        } finally {
+            ModelDownloads.clear("gemma4_e2b")
+        }
+    }
+
+    @Test fun ladenIstGesperrtSolangeEinAndererDownloadLaeuft() {
+        offlineOhneTextmodell()
+        ModelDownloads.update("small", DownloadState.Running(1_000, ModelCatalog.SMALL.bytes, 500))
+        try {
+            screen(env(SystemStatus(installedModels = setOf("base")))) { RecognitionScreen(it) }
+            compose.onNodeWithText("Textmodell laden (${size(TextModelCatalog.GEMMA4_E2B.bytes)})").assertIsNotEnabled()
+            compose.onNodeWithText("Überspringen").assertIsEnabled()
+        } finally {
+            ModelDownloads.clear("small")
+        }
     }
 
     // --- Hub und Home zaehlen beide Arten ----------------------------------------------------
