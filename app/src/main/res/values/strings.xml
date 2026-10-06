@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Texte laut UX-Spec §6 (verbindlich). Anfuehrungszeichen „…“, Ellipsen als …, Platzhalter %1$s / %1$d. -->
+    <!-- tools:ignore="PluralsCandidate": das Wort nach der Zahl ("von", "geladen") bleibt im Deutschen
+         gleich, "Dateien" steht nur bei mindestens zwei Dateien. Wo es sich aendert: <plurals>. -->
 
     <!-- §6.1 Allgemein / gemeinsam -->
     <string name="app_name">WhisperLoom</string>
     <string name="ime_label">WhisperLoom Diktat</string>
     <string name="subtype_de">Deutsch</string>
     <string name="subtype_en">Englisch</string>
-    <string name="common_next">Weiter</string>
-    <string name="common_back">Zurück</string>
     <string name="common_close">Schließen</string>
     <string name="common_cancel">Abbrechen</string>
     <string name="common_done">Fertig</string>
@@ -100,7 +100,7 @@
     <string name="home_val_kb_active">Aktiv</string>
     <string name="home_val_kb_enabled">Aktiviert, nicht ausgewählt</string>
     <string name="home_val_kb_off">Nicht aktiviert (optional)</string>
-    <string name="home_val_models">%1$d geladen · %2$s belegt</string>
+    <string name="home_val_models" tools:ignore="PluralsCandidate">%1$d geladen · %2$s belegt</string>
     <string name="home_val_models_none">Keins geladen</string>
     <string name="home_share_hint">Sprachnachrichten abtippen: in WhatsApp lange drücken → Teilen → WhisperLoom.</string>
     <string name="home_rerun_setup">Einrichtung erneut öffnen</string>
@@ -111,7 +111,7 @@
     <!-- §6.3 Einrichtungs-Assistent (W) -->
     <string name="setup_title">Einrichtung</string>
     <string name="setup_cd_overview">Alle Schritte anzeigen</string>
-    <string name="setup_progress">Schritt %1$d von %2$d</string>
+    <string name="setup_progress" tools:ignore="PluralsCandidate">Schritt %1$d von %2$d</string>
     <string name="setup_chip_done">Erledigt</string>
     <string name="setup_chip_open">Fehlt noch</string>
     <string name="setup_chip_optional">Optional</string>
@@ -145,7 +145,7 @@
     <string name="setup_s1_online_body">Beste Qualität, schnell. Audio wird an den gewählten Anbieter gesendet. Braucht einen API-Key (bei Groq kostenlos).</string>
     <string name="setup_s1_recommended">Empfohlen</string>
     <string name="setup_s1_offline">Offline auf dem Gerät</string>
-    <string name="setup_s1_offline_body">Alles bleibt auf dem Gerät. Modell einmalig laden (32–574 MB), Erkennung dauert einige Sekunden.</string>
+    <string name="setup_s1_offline_body">Die Aufnahme bleibt auf dem Gerät. Modell einmalig laden (32–574 MB), Erkennung dauert einige Sekunden.</string>
     <string name="setup_s1_offline_unavailable">Auf diesem Gerät nicht verfügbar</string>
     <string name="setup_s2a_title">Zugang zum Dienst</string>
     <string name="setup_s2a_body">Wähle den Anbieter und füge deinen API-Key ein. Der Key wird nur auf diesem Gerät gespeichert.</string>
@@ -189,7 +189,7 @@
 
     <!-- Prominent Disclosure (Google-Play-Pflicht: eigener Consent-Hinweis vor Mikrofon-/Bedienungshilfe-Zugriff) -->
     <string name="disclosure_mic_title">Mikrofon &amp; Diktat</string>
-    <string name="disclosure_mic_body">WhisperLoom nimmt beim Diktieren Ton auf, um ihn in Text umzuwandeln. Im Online-Modus wird die Aufnahme zur Erkennung an den von dir gewählten Anbieter gesendet (z. B. OpenAI oder Groq); im Offline-Modus verlässt nichts das Gerät. WhisperLoom speichert keine Aufnahmen.</string>
+    <string name="disclosure_mic_body">WhisperLoom nimmt beim Diktieren Ton auf, um ihn in Text umzuwandeln. Im Online-Modus wird die Aufnahme zur Erkennung an den von dir gewählten Anbieter gesendet (z. B. OpenAI oder Groq); im Offline-Modus verlässt die Aufnahme das Gerät nicht. WhisperLoom speichert keine Aufnahmen; nur der Auftrag eines Pro Widgets bleibt auf dem Gerät, bis er gesendet ist.</string>
     <string name="disclosure_a11y_title">Bedienungshilfe: Text einfügen</string>
     <string name="disclosure_a11y_body">Die Bedienungshilfe „WhisperLoom Text-Einfügen“ fügt ausschließlich den diktierten Text in das gerade aktive Eingabefeld ein. Sie liest keine Bildschirminhalte mit und speichert nichts, und sie wird nur aktiv, wenn du den Knopf antippst.</string>
     <string name="disclosure_continue">Fortfahren</string>
@@ -198,7 +198,7 @@
     <string name="tutorial_skip">Überspringen</string>
     <string name="tutorial_next">Weiter</string>
     <string name="tutorial_start">Los geht\'s</string>
-    <string name="tutorial_cd_page">Seite %1$d von %2$d</string>
+    <string name="tutorial_cd_page" tools:ignore="PluralsCandidate">Seite %1$d von %2$d</string>
     <string name="tutorial_p1_title">Diktieren mit dem Knopf</string>
     <string name="tutorial_p1_body">Tippe den schwebenden Knopf an: Er wird rot und nimmt auf. Nochmal antippen — der Text landet im aktiven Feld. Auf ✕ ziehen verwirft. Rot mit ↻: antippen versucht es erneut.</string>
     <string name="tutorial_p2_title">Diktier-Tastatur</string>
@@ -236,7 +236,7 @@
     <string name="settings_rule_cap">Groß-Schreibung</string>
     <string name="settings_rule_space">Leerzeichen</string>
     <string name="about_version">Version %1$s</string>
-    <string name="about_license">whisper.cpp (MIT) · Jetpack Compose (Apache 2.0) · Material Symbols (Apache 2.0)</string>
+    <string name="about_license">whisper.cpp (MIT) · Jetpack Compose / AndroidX (Apache 2.0) · Kotlin und kotlinx.coroutines (Apache 2.0) · Material Symbols (Apache 2.0)</string>
     <string name="about_source">Quellcode auf GitHub</string>
 
     <!-- §6.5 Erkennung (E1) und Zugangs-Felder (auch Schritt 2a) -->
@@ -264,7 +264,7 @@
     <string name="rec_test_ok">Verbunden · %1$s s</string>
     <string name="rec_test_fail">Fehler: %1$s</string>
     <string name="rec_privacy_online">Audio wird zur Erkennung an %1$s gesendet.</string>
-    <string name="rec_privacy_offline">Alles bleibt auf dem Gerät.</string>
+    <string name="rec_privacy_offline">Die Aufnahme bleibt auf dem Gerät.</string>
     <string name="rec_context_keyterms" formatted="false">Geht als Schlüsselbegriffe an ElevenLabs und hilft bei Eigennamen und Fachwörtern. Vokabular kostet bei ElevenLabs etwa 20 % Aufpreis.</string>
     <string name="rec_context_unsupported">Dieser Anbieter nimmt kein Vokabular entgegen — es wirkt nur bei anderen Anbietern und offline.</string>
     <string name="pref_api_prompt_info">Wird als Prompt mitgeschickt und hilft der Erkennung bei Eigennamen und Fachwörtern. Kostet nichts extra.</string>
@@ -299,13 +299,14 @@
         <item quantity="one">%d Begriff wird mitgeschickt.</item>
         <item quantity="other">Alle %d Begriffe werden mitgeschickt.</item>
     </plurals>
-    <string name="vocab_usage_truncated">%1$d von %2$d Begriffen werden mitgeschickt: Whisper beachtet nur rund 200 Wörter Kontext. Eigene Begriffe haben Vorrang vor der Datei.</string>
+    <plurals name="vocab_usage_truncated">
+        <item quantity="one">%1$d von %2$d Begriffen wird mitgeschickt: Whisper beachtet nur rund 200 Wörter Kontext. Eigene Begriffe haben Vorrang vor der Datei.</item>
+        <item quantity="other">%1$d von %2$d Begriffen werden mitgeschickt: Whisper beachtet nur rund 200 Wörter Kontext. Eigene Begriffe haben Vorrang vor der Datei.</item>
+    </plurals>
     <string name="vocab_clear">Eigene löschen</string>
-    <string name="pref_language">Sprache</string>
     <string name="model_custom_title">Eigenes Modell</string>
     <string name="model_custom_hint">Modell-ID</string>
     <string name="model_custom_info">Genau so, wie der Anbieter die ID nennt.</string>
-    <string name="model_deprecated_suffix">(Auslauf %1$s)</string>
     <string name="key_sheet_title">Wo bekomme ich einen Key?</string>
 
     <!-- §6.6 Text (E2) und Füllwörter-Sheet (B3) -->
@@ -468,7 +469,7 @@
     <string name="help_s4_intro">Jeder OpenAI-kompatible Server geht, z. B. speaches, whisper.cpp-server oder LocalAI. Eintragen unter Erkennung → Anbieter „Eigener Server“.</string>
     <string name="help_s4_body">Base-URL eintragen, Key nur falls verlangt. Endpunkte: /v1/audio/transcriptions und /v1/chat/completions.\nTextverbesserung auch über Ollama: lokal ohne Key, Cloud mit Key.\nhttp:// nur im eigenen Netz oder per VPN.</string>
     <string name="help_s5_title">Offline-Modus</string>
-    <string name="help_s5_body">Ein Offline-Modell erkennt Sprache auf dem Gerät, in 2–10 Sekunden. Einmal laden (32–574 MB), löschen unter Offline-Modelle. Für Deutsch ist Small am besten.</string>
+    <string name="help_s5_body">Ein Offline-Modell erkennt Sprache auf dem Gerät (Small: etwa 5–12 s). Einmal laden (32–574 MB), löschen unter Offline-Modelle. Für Deutsch empfohlen: Small.</string>
     <string name="help_widgets_title">Widgets &amp; Pro Widgets</string>
     <string name="help_widgets_intro">Normale Widgets für den Startbildschirm folgen mit einem Update. Pro Widgets gibt es schon: Sprach-Command-Widgets für Entwickler mit eigenem Server.</string>
     <string name="help_widgets_unlock">Freischalten: Einstellungen → Erweitert → Pro Widgets.</string>
@@ -478,9 +479,9 @@
     <string name="help_widgets_models">Auch unter Erweitert: „Modelle vom Server“ – das Modell wählst du dann aus der aktuellen Liste des Anbieters, nicht nur aus den Empfehlungen.</string>
     <string name="help_widgets_open">Zu den Widgets</string>
     <string name="help_s6_title">Datenschutz</string>
-    <string name="help_s6_intro">WhisperLoom speichert keine Aufnahmen, und dein Key bleibt auf dem Gerät.</string>
+    <string name="help_s6_intro">WhisperLoom speichert keine Aufnahmen (nur ein Pro-Widget-Auftrag wartet bis zum Senden), und dein Key bleibt auf dem Gerät.</string>
     <string name="help_s6_online">Online: Audio und Vokabular gehen an den gewählten Anbieter, bei Textverbesserung auch der erkannte Text — mit Ollama im eigenen Netz bleibt er dort. Eine Vokabular-Datei wird nur gelesen.</string>
-    <string name="help_s6_offline">Offline: Nichts verlässt das Gerät — nur der Modell-Download geht ins Netz.</string>
+    <string name="help_s6_offline">Offline: Die Aufnahme bleibt auf dem Gerät — ins Netz gehen nur der Modell-Download und, mit Textverbesserung, der erkannte Text.</string>
     <string name="help_s6_a11y">Die Bedienungshilfe liest nichts mit und speichert nichts; sie fügt nur den diktierten Text ein.</string>
     <string name="help_s7_title">Wenn etwas nicht klappt</string>
     <string name="help_s7_intro">Die häufigsten Probleme und wo du sie behebst: Antippen zeigt die Lösung, „Öffnen“ führt direkt hin.</string>
@@ -496,7 +497,6 @@
     <string name="help_p5_body">Ein kleineres Modell wählen (Base oder Small) oder auf den Online-Dienst wechseln.</string>
 
     <!-- §6.10 Transkription (S) — bestehende Keys; der Share-Screen (WP5) ergaenzt die neuen. -->
-    <string name="api_not_configured">Anbieter nicht eingerichtet — Base-URL und API-Key in den Einstellungen prüfen</string>
     <string name="share_label">Mit WhisperLoom transkribieren</string>
     <string name="share_title">Transkription</string>
     <string name="share_starting">Wird vorbereitet …</string>
@@ -504,8 +504,7 @@
     <string name="share_sending">Wird übertragen …</string>
     <string name="share_refining">Text wird verbessert …</string>
     <string name="share_refine_note">Textverbesserung: %1$s · änderbar unter Einstellungen › Text</string>
-    <string name="share_refine_partly">Textverbesserung: %1$s · bei %2$d von %3$d Dateien übersprungen: %4$s</string>
-    <string name="share_file_of">Datei %1$d/%2$d</string>
+    <string name="share_refine_partly" tools:ignore="PluralsCandidate">Textverbesserung: %1$s · bei %2$d von %3$d Dateien übersprungen: %4$s</string>
     <string name="share_copy">Kopieren</string>
     <string name="share_forward">Teilen</string>
     <string name="share_copied">In die Zwischenablage kopiert</string>
@@ -514,9 +513,9 @@
     <string name="share_nothing_recognised">(nichts erkannt)</string>
     <string name="share_one_failed">Fehlgeschlagen: %1$s</string>
     <string name="share_unknown_source">Sprachnachricht</string>
-    <string name="share_progress">Datei %1$d von %2$d · Stück %3$d von %4$d · %5$s</string>
+    <string name="share_progress" tools:ignore="PluralsCandidate">Datei %1$d von %2$d · Stück %3$d von %4$d · %5$s</string>
     <string name="share_head_single">%1$s · 1 Datei</string>
-    <string name="share_head_multi">%1$d Dateien · %2$s gesamt</string>
+    <string name="share_head_multi" tools:ignore="PluralsCandidate">%1$d Dateien · %2$s gesamt</string>
     <string name="share_section">%1$s · %2$s</string>
     <string name="share_no_audio_body">Teile eine Audiodatei oder Sprachnachricht mit WhisperLoom.</string>
     <string name="share_all_failed">Transkription fehlgeschlagen</string>
@@ -574,6 +573,8 @@
     <string name="kb_level_prompt">Prompt</string>
     <string name="refine_skipped">Textverbesserung übersprungen: %1$s</string>
     <string name="kb_space">Leer</string>
+    <string name="kb_comma">,</string>
+    <string name="kb_period">.</string>
     <string name="cd_mic">Diktat-Mikrofon — antippen zum Starten, gedrückt halten zum Sprechen</string>
     <string name="cd_kb_switch">Eingabemethode wechseln</string>
     <string name="cd_kb_comma">Komma</string>

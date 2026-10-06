@@ -1,0 +1,2 @@
+WhisperLoom 3.8.3
+• Fixed: notes on privacy (Pro Widgets, offline with text refinement), vocabulary and offline timing are accurate again

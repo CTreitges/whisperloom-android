@@ -1,6 +1,7 @@
 package com.chris.whisperloom.overlay
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.NotificationManager
 import android.app.Service
 import android.content.ClipData
@@ -123,6 +124,9 @@ class FloatingMicService : Service() {
 
     // --- Foreground-Notification ---------------------------------------------
 
+    // MICROPHONE (API 30) wird als Zahl eingebaut; Android 10 nimmt sie an, weil sie dem
+    // foregroundServiceType="microphone" aus dem Manifest entspricht.
+    @SuppressLint("InlinedApi")
     private fun startAsForeground() {
         BubbleNotification.ensureChannel(this)
         val notif = BubbleNotification.build(this, state)
@@ -143,6 +147,7 @@ class FloatingMicService : Service() {
 
     // --- Bubble --------------------------------------------------------------
 
+    @SuppressLint("InflateParams") // Overlay-Fenster ohne Elternteil; die LayoutParams setzt wm.addView.
     private fun addBubble() {
         val v = LayoutInflater.from(this).inflate(R.layout.floating_mic, null)
         val r = BubbleRenderer(v) { BubbleAnimators.reduceMotion(this) }
@@ -220,6 +225,9 @@ class FloatingMicService : Service() {
         var startY = 0
         var moved = false
 
+        // Kein performClick(): es spielte den System-Klickton ab — genau zum Aufnahmestart, also
+        // mit im Diktat. TalkBack bedient den Knopf ueber den OnClickListener (addBubble).
+        @SuppressLint("ClickableViewAccessibility")
         override fun onTouch(view: View, e: MotionEvent): Boolean {
             val root = bubbleView ?: return false
             when (e.actionMasked) {

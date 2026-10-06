@@ -1,3 +1,5 @@
+> **Historisch — Recherche-Archiv, Stand 2026-09-06.** Keine gepflegte Referenz: maßgeblich sind Code und [CHANGELOG](../../CHANGELOG.md); Einordnung in der [Übersicht](README.md).
+
 # whisper.cpp On-Device-Erkennung für WhisperLoom — Wiederherstellung technisch abgesichert
 
 Stand der Recherche: 2026-09-06 · Alt-Stand: Tag `offline-v1`

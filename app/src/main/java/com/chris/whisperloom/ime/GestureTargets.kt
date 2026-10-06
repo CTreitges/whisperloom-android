@@ -2,6 +2,7 @@ package com.chris.whisperloom.ime
 
 import android.view.View
 import android.widget.ImageButton
+import androidx.core.view.isVisible
 import com.chris.whisperloom.R
 import com.chris.whisperloom.overlay.BubbleAnimators
 
@@ -50,7 +51,7 @@ class GestureTargets(
         lock.contentDescription = lock.context.getString(R.string.cd_kb_lock)
     }
 
-    val isShown: Boolean get() = discard.visibility == View.VISIBLE
+    val isShown: Boolean get() = discard.isVisible
 
     private val targets get() = listOf(discard, lock)
 

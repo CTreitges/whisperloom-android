@@ -2,6 +2,21 @@
 
 Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [3.8.3] — 2026-10-06
+
+### Behoben
+
+- **Vokabular-Hinweis:** Wird von einer gekürzten Liste genau ein Begriff mitgeschickt, heißt es jetzt „1 von 3 Begriffen wird mitgeschickt“ statt „werden“.
+- **Datenschutz-Texte sind genauer:** Der Hinweis vor der Mikrofon-Freigabe und „Anleitung & Hilfe“ sagten pauschal „speichert keine Aufnahmen“. Ein Auftrag eines Pro Widgets bleibt aber auf dem Gerät, bis er gesendet ist; das steht jetzt dabei. Und „offline verlässt nichts das Gerät“ heißt jetzt „die Aufnahme bleibt auf dem Gerät“, denn mit eingeschalteter Textverbesserung geht der erkannte Text auch nach einer Offline-Erkennung an das Sprachmodell.
+- **Hilfe zum Offline-Modus:** Statt „2–10 Sekunden“ steht dort jetzt „Small: etwa 5–12 s“ (wie in der Anleitung), und Small heißt „empfohlen“ statt „am besten“.
+- **Über WhisperLoom** nennt bei den Lizenzen jetzt auch Kotlin und kotlinx.coroutines.
+
+### Technik
+
+- Beschreibungen auf Stand gebracht: README, Anleitung, Datenschutzerklärung (ElevenLabs, Pro Widgets, gespeicherte Daten), Play-Store-Notizen, `THIRD_PARTY.md` und Store-Beschreibung (was online wohin geht); Recherche-Reports als historisch markiert.
+- CI: actions/checkout v7, setup-java v6, cache v6, upload-artifact v7, android-actions/setup-android v4, gradle/actions/setup-gradle v5 (bewusst nicht v6, Begründung in `build.yml`).
+- Lint von 113 Warnungen auf 0: KTX-Erweiterungen (`edit {}`, `toUri()`, `isVisible`, `createBitmap`), sechs ungenutzte Texte entfernt, `mipmap-anydpi-v26` → `mipmap-anydpi` (minSdk 26), bewusste Ausnahmen mit Begründung in `app/lint.xml`.
+
 ## [3.8.2] — 2026-10-05
 
 ### Hinzugefügt

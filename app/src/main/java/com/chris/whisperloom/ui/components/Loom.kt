@@ -82,8 +82,8 @@ fun StatusIcon(tone: Tone, @DrawableRes neutralIcon: Int = R.drawable.ic_info, s
 /** ElevatedCard(surfaceContainer, Radius 20, Elevation 0, Innenabstand 20) mit optionalem Titel. */
 @Composable
 fun SectionCard(
-    title: String? = null,
     modifier: Modifier = Modifier,
+    title: String? = null,
     @DrawableRes titleIcon: Int? = null,
     titleIconTint: Color = MaterialTheme.colorScheme.primary,
     shape: RoundedCornerShape = CardShape,

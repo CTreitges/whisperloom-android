@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.R
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -33,6 +34,17 @@ class AnleitungsTexteTest {
         val auswahl = texte.filterKeys { !it.startsWith("disclosure_") && it != "help_s4_body" }
         assertEquals(emptyMap<String, Int>(), zuLang(auswahl, 200))
         assertEquals(emptyMap<String, Int>(), zuLang(texte.filterKeys { it == "help_s4_body" }, 220))
+    }
+
+    @Test fun gekuerztesVokabularSagtBeiEinemBegriffWird() {
+        // Plural statt String: "1 von 3 Begriffen werden" war falsch. Als <plurals> faellt der Text
+        // aus [texte] heraus, deshalb die 200-Zeichen-Grenze hier noch einmal.
+        val res = ctx.resources
+        val eins = res.getQuantityString(R.plurals.vocab_usage_truncated, 1, 1, 3)
+        val mehr = res.getQuantityString(R.plurals.vocab_usage_truncated, 2, 2, 3)
+        assertTrue(eins, eins.startsWith("1 von 3 Begriffen wird mitgeschickt:"))
+        assertTrue(mehr, mehr.startsWith("2 von 3 Begriffen werden mitgeschickt:"))
+        assertEquals(emptyMap<String, Int>(), zuLang(mapOf("one" to eins, "other" to mehr), 200))
     }
 
     @Test fun tutorialSeitenHabenHoechstens180Zeichen() {

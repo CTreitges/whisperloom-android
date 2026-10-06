@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Lint-Konfiguration fuer :app (AGP liest app/lint.xml automatisch).
+     Hier steht nur, was BEWUSST so bleibt — jede Zeile mit Grund. Echte Funde werden im Code
+     behoben, Einzelfaelle dort per @SuppressLint bzw. tools:ignore mit Kommentar. -->
+<lint>
+    <!-- Versions-Upgrades sind eigene Aufgaben mit eigenem Test (Gradle, AGP, Abhaengigkeiten);
+         als Dauerwarnung verdecken sie echte Funde. Zum Pruefen auf neue Versionen diese vier
+         Eintraege kurz entfernen und lintDebug laufen lassen. -->
+    <issue id="AndroidGradlePluginVersion" severity="ignore" />
+    <issue id="GradleDependency" severity="ignore" />
+    <issue id="NewerVersionAvailable" severity="ignore" />
+    <!-- targetSdk 36 ist die aktuelle Play-Pflicht; 37 erst nach Pruefung am Geraet (build.gradle.kts). -->
+    <issue id="OldTargetApi" severity="ignore" />
+
+    <!-- Native whisper.cpp nur fuer arm64-v8a: die realen Zielgeraete. x86_64 (ChromeOS,
+         Emulator) wuerde die APK vergroessern, ohne dass es dort Nutzer gibt. -->
+    <issue id="ChromeOsAbiSupport" severity="ignore" />
+
+    <!-- Plattform-ExifInterface laeuft nur auf Android 8.x (ab 9 dreht ImageDecoder selbst);
+         androidx.exifinterface waere eine neue Abhaengigkeit fuer zwei Android-Versionen. -->
+    <issue id="ExifInterface">
+        <ignore path="src/main/java/com/chris/whisperloom/agent/WidgetPhoto.kt" />
+    </issue>
+
+    <!-- Freier Platz fuer Modelle bewusst als usableSpace: Anzeige und Download-Pruefung zeigen,
+         was sofort frei ist. getAllocatableBytes zaehlt loeschbaren Cache mit und braucht dann
+         allocateBytes vor dem Schreiben — eigener Umbau, Verhalten aendert sich. ModelDownloader
+         ist ausserdem bewusst ohne Android-API (reine JVM-Tests). -->
+    <issue id="UsableSpace">
+        <ignore path="src/main/java/com/chris/whisperloom/whisper/ModelDownloader.kt" />
+        <ignore path="src/main/java/com/chris/whisperloom/whisper/ModelStore.kt" />
+    </issue>
+</lint>

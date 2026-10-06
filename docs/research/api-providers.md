@@ -1,3 +1,5 @@
+> **Historisch — Recherche-Archiv, Stand 2026-09-06.** Keine gepflegte Referenz: maßgeblich sind Code und [CHANGELOG](../../CHANGELOG.md); Einordnung in der [Übersicht](README.md).
+
 # WhisperLoom — Provider- und Modell-Katalog (Stand 2026-09-06)
 
 Recherche gegen aktuelle Anbieter-Doku für die Dropdowns „Transkription" (`POST {baseUrl}/audio/transcriptions`, multipart WAV, Felder `model/language/prompt/response_format`) und „Textverbesserung" (`POST {baseUrl}/chat/completions`, aktuell mit `temperature: 0`).

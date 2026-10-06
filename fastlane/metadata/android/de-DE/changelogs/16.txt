@@ -1,0 +1,2 @@
+WhisperLoom 3.8.3
+• Behoben: Hinweise zu Datenschutz (Pro Widgets, offline mit Textverbesserung), Vokabular und Dauer im Offline-Modus stimmen wieder

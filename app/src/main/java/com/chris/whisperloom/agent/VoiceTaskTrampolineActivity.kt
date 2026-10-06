@@ -4,9 +4,9 @@ import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.os.SystemClock
+import androidx.core.net.toUri
 import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.Prefs
 
@@ -154,7 +154,7 @@ class VoiceTaskTrampolineActivity : Activity() {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 .apply {
                     if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
-                        data = Uri.parse("$WIDGET_URI$appWidgetId")
+                        data = "$WIDGET_URI$appWidgetId".toUri()
                         putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
                     }
                 }

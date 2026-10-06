@@ -183,7 +183,7 @@
             android:id="@+id/key_comma"
             style="@style/Key"
             android:contentDescription="@string/cd_kb_comma"
-            android:text="," />
+            android:text="@string/kb_comma" />
 
         <Button
             android:id="@+id/key_space"
@@ -199,7 +199,7 @@
             android:id="@+id/key_period"
             style="@style/Key"
             android:contentDescription="@string/cd_kb_period"
-            android:text="." />
+            android:text="@string/kb_period" />
 
         <ImageButton
             android:id="@+id/key_backspace"

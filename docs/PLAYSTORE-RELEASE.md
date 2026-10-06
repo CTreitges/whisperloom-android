@@ -2,7 +2,8 @@
 
 Recherchestand: **8. September 2026**. Quellen unten. Diese Anleitung listet, was du für die
 Erstveröffentlichung von `com.chris.whisperloom` im Play Store tun musst, und was am Projekt bereits
-dafür vorbereitet wurde.
+dafür vorbereitet wurde. Projektstand (Abschnitte 3, 4, 6) nachgezogen am 5. Oktober 2026 für
+Version 3.8.2; Fristen, Gebühren und Regeln sind weiterhin der Recherchestand.
 
 ---
 
@@ -107,8 +108,9 @@ eigene F-Droid-Repo läuft davon unberührt weiter.
       dieses Dialogs für das Accessibility-/FGS-Formular (am Gerät aufnehmen).
 - [ ] **Screenshots** (mind. 2 Telefon-Screenshots) und **Feature-Graphic 1024×500** erzeugen —
       brauchen ein echtes Gerät/einen Emulator (siehe Abschnitt 8).
-- [ ] **Gerätetest** der v3-Generation generell (bislang nur Build-verifiziert, kein Lauf auf einem
-      Telefon) — inkl. Android-16-Verhalten (erzwungenes edge-to-edge).
+- [ ] **Gerätetest** der v3-Generation: Die App läuft im Alltag auf einem eigenen Gerät (vgl.
+      Issue #10); ein systematischer Test aller Abläufe, möglichst auf mehreren Geräten, steht aus —
+      inkl. Android-16-Verhalten (erzwungenes edge-to-edge).
 - [x] **Accessibility-Service**: Weg A gewählt (behalten + deklarieren) — Disclosure-Flow eingebaut.
       Offen: Accessibility-Deklarationsformular + Demo-Video in der Play Console.
 
@@ -142,8 +144,11 @@ Drei Wege:
 - [ ] **Data-Safety-Formular**: „Audio recordings" als **erhoben** deklarieren (weil optional an
       Online-Anbieter gesendet), als **optional** markieren. „Sharing": bei kostenlosen Anbieter-Tarifen,
       die Daten fürs Training nutzen könnten, sicherheitshalber als „geteilt" angeben. Muss
-      **deckungsgleich** mit der Datenschutzerklärung sein (Abweichung = Ablehnung).
-- [ ] **Foreground-Service-Deklaration**: Typ `microphone` (laufende Aufnahme) und `dataSync`
+      **deckungsgleich** mit der Datenschutzerklärung sein (Abweichung = Ablehnung). Inzwischen
+      zusätzlich bedenken: ElevenLabs als Erkennungs-Anbieter und Pro Widgets (erkannter Text geht an
+      den Server, den der Nutzer im Widget selbst einträgt).
+- [ ] **Foreground-Service-Deklaration**: Typ `microphone` (laufende Aufnahme: schwebender Knopf und
+      Pro-Widget-Aufnahme) und `dataSync`
       (Modell-Download) je begründen, mit **Demo-Video** des nutzer-initiierten Einsatzes. Hinweis:
       Google empfiehlt für reine Downloads einen „user-initiated data transfer job" statt `dataSync` —
       für den Erst-Release ist die `dataSync`-Deklaration mit Video akzeptabel.

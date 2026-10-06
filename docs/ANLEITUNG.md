@@ -1,6 +1,6 @@
 # WhisperLoom — Anleitung
 
-Version 3.8.0 · Stand 2026-09-30 · Für Android 8.0 (API 26) und neuer
+Version 3.8.3 · Stand 2026-10-06 · Für Android 8.0 (API 26) und neuer
 
 Diese Anleitung richtet sich an Anwender, die WhisperLoom installieren, einrichten und im Alltag nutzen wollen. Entwickler finden Bau- und Architektur-Hinweise in der [README](../README.md); was sich von Version zu Version geändert hat, steht im [CHANGELOG](../CHANGELOG.md).
 
@@ -42,11 +42,11 @@ Dafür gibt es drei Wege:
 Die Spracherkennung selbst läuft wahlweise
 
 - **online** über einen Dienst deiner Wahl (OpenAI, Groq, Mistral, ElevenLabs, Together AI, DeepInfra, OpenRouter oder ein eigener Server). Du brauchst dafür einmalig einen API-Key des Anbieters; bei Groq ist das kostenlos. Beste Qualität, schnell.
-- **offline** direkt auf dem Gerät mit einem einmalig heruntergeladenen Whisper-Modell (32–574 MB). Nichts verlässt das Telefon, die Erkennung dauert dafür einige Sekunden.
+- **offline** direkt auf dem Gerät mit einem einmalig heruntergeladenen Whisper-Modell (32–574 MB). Die Aufnahme verlässt das Telefon nicht, die Erkennung dauert dafür einige Sekunden.
 
 Dazu kommt eine optionale **Textverbesserung**: Ein Sprachmodell (KI) glättet Zeichensetzung und Groß-/Kleinschreibung, formuliert verständlicher oder fasst zusammen — in vier Stufen von „Aus" bis „Zusammenfassen". Das Sprachmodell kann bei einem Online-Anbieter laufen, bei **Ollama Cloud** oder auf deinem eigenen **Ollama** zu Hause (lokal / Homeserver). Ein **Vokabular** mit Namen und Fachbegriffen — als Liste in der App oder als verknüpfte Textdatei — hilft der Erkennung bei Eigennamen. Unabhängig davon räumt WhisperLoom lokal auf: Füllwörter („ähm", „äh") entfernen, Satzanfänge groß schreiben, ein Leerzeichen anhängen.
 
-Was WhisperLoom **nicht** tut: Es speichert keine Aufnahmen, es liest nicht mit, was du sonst tippst, und dein API-Key bleibt auf dem Gerät.
+Was WhisperLoom **nicht** tut: Es speichert keine Aufnahmen (einzige Ausnahme: ein noch nicht gesendeter Auftrag eines Pro Widgets, siehe [11](#11-datenschutz)), es liest nicht mit, was du sonst tippst, und dein API-Key bleibt auf dem Gerät.
 
 ---
 
@@ -71,7 +71,7 @@ WhisperLoom liegt in einem eigenen F-Droid-Repository. Damit bekommst du Updates
 
 ### 2.3 APK installieren
 
-1. Auf der Releases-Seite des Projekts das neueste Release (aktuell **3.8.0**) öffnen und die APK-Datei auf das Telefon laden (direkt im Browser des Telefons ist am einfachsten).
+1. Auf der [Releases-Seite](https://github.com/CTreitges/whisperloom-android/releases) des Projekts das neueste Release (aktuell **3.8.3**) öffnen und die APK-Datei auf das Telefon laden (direkt im Browser des Telefons ist am einfachsten).
 2. Die heruntergeladene Datei antippen. Android fragt beim ersten Mal, ob der Browser (bzw. der Dateimanager) **unbekannte Apps installieren** darf — das Wording heißt je nach Hersteller „Unbekannte Apps installieren", „Aus dieser Quelle zulassen" oder „Unbekannte Quellen". Erlauben, zurück, erneut „Installieren" antippen.
 3. Google Play Protect prüft die App ggf. beim Installieren. Das ist normal für Apps außerhalb des Play Stores.
 4. Nach der Installation **WhisperLoom** öffnen — der Einrichtungs-Assistent startet ([Kapitel 3](#3-erste-einrichtung--der-assistent-schritt-für-schritt)).
@@ -99,7 +99,7 @@ Vor dem ersten Schritt begrüßt dich eine Willkommensseite („Diktiere in jede
 Zwei Karten, du wählst eine:
 
 - **Online-Dienst** (Empfohlen) — „Beste Qualität, schnell. Audio wird an den gewählten Anbieter gesendet. Braucht einen API-Key (bei Groq kostenlos)."
-- **Offline auf dem Gerät** — „Alles bleibt auf dem Gerät. Modell einmalig laden (32–574 MB), Erkennung dauert einige Sekunden." Ist dein Gerät nicht geeignet, ist die Karte ausgegraut und trägt den Hinweis „Auf diesem Gerät nicht verfügbar".
+- **Offline auf dem Gerät** — „Die Aufnahme bleibt auf dem Gerät. Modell einmalig laden (32–574 MB), Erkennung dauert einige Sekunden." Ist dein Gerät nicht geeignet, ist die Karte ausgegraut und trägt den Hinweis „Auf diesem Gerät nicht verfügbar".
 
 Du kannst später jederzeit wechseln (Einstellungen → Erkennung). Dann **Weiter**.
 
@@ -550,7 +550,7 @@ Unter Erkennung → Offline-Modell steht das aktive Modell mit **Ändern**. Hinw
 
 ### 9.4 Genauigkeit
 
-Die Offline-Erkennung arbeitet fest mit Beam-Search (fünf Kandidaten — derselbe Modus wie die whisper.cpp-Kommandozeile; weniger Abbrüche und Halluzinationen als Greedy). Einen Umschalter auf den schnelleren, etwas ungenaueren Greedy-Modus gibt es in 3.0.0 nicht; für Small ist der Laufzeit-Unterschied ohnehin klein, weil der Encoder dominiert. Wer Tempo braucht, wählt ein kleineres Modell (Base).
+Die Offline-Erkennung arbeitet fest mit Beam-Search (fünf Kandidaten — derselbe Modus wie die whisper.cpp-Kommandozeile; weniger Abbrüche und Halluzinationen als Greedy). Einen Umschalter auf den schnelleren, etwas ungenaueren Greedy-Modus gibt es in der App nicht; für Small ist der Laufzeit-Unterschied ohnehin klein, weil der Encoder dominiert. Wer Tempo braucht, wählt ein kleineres Modell (Base).
 
 ### 9.5 Wie lange dauert es?
 
@@ -565,7 +565,7 @@ Nur eine **grobe Größenordnung** — WhisperLoom wurde auf keinem Gerät verme
 
 Whisper rechnet immer über ein 30-Sekunden-Fenster — ein 3-Sekunden-Diktat ist also kaum schneller als ein 10-Sekunden-Diktat. Ist dir Small zu langsam, hilft Base; ist die Qualität nicht gut genug, hilft der Online-Dienst.
 
-Was die Qualität offline am meisten verbessert, in dieser Reihenfolge: das größere Modell · eine fest eingestellte Sprache statt „Automatisch erkennen" · das Vokabular mit deinen Eigennamen · der Modus „Genau".
+Was die Qualität offline am meisten verbessert, in dieser Reihenfolge: das größere Modell · eine fest eingestellte Sprache statt „Automatisch erkennen" · das Vokabular mit deinen Eigennamen.
 
 ### 9.6 Online und offline kombinieren
 
@@ -699,13 +699,13 @@ Dann **Zugang prüfen**.
 
 WhisperLoom hat keinen eigenen Server, kein Konto, keine Telemetrie. Was mit deinen Daten passiert, hängt allein vom gewählten Erkennungsweg ab:
 
-**Online:** Audio und Vokabular gehen an den gewählten Anbieter. Bei Textverbesserung geht der erkannte Text an das Sprachmodell (denselben oder einen anderen Anbieter). Dein Key bleibt auf dem Gerät. WhisperLoom speichert keine Aufnahmen. Unter Erkennung steht immer, an wen gesendet wird („Audio wird zur Erkennung an OpenAI gesendet."). Was der Anbieter mit den Daten macht, regeln dessen Bedingungen — bei Google Gemini im Free-Tier ausdrücklich Trainingsnutzung, bei DeepSeek Server in China; WhisperLoom weist an der Auswahl darauf hin.
+**Online:** Audio und Vokabular gehen an den gewählten Anbieter. Bei Textverbesserung geht der erkannte Text an das Sprachmodell (denselben oder einen anderen Anbieter). Dein Key bleibt auf dem Gerät. WhisperLoom speichert keine Aufnahmen (Ausnahme: Pro Widgets, siehe unten). Unter Erkennung steht immer, an wen gesendet wird („Audio wird zur Erkennung an OpenAI gesendet."). Was der Anbieter mit den Daten macht, regeln dessen Bedingungen — bei Google Gemini im Free-Tier ausdrücklich Trainingsnutzung, bei DeepSeek Server in China; WhisperLoom weist an der Auswahl darauf hin.
 
 **ElevenLabs:** Das Audio geht an ElevenLabs, das Vokabular als Schlüsselbegriffe. ElevenLabs bewahrt Anfragen laut eigener Datenschutzerklärung auf; ohne Speicherung („Zero Retention") arbeitet es nur für Enterprise-Kunden.
 
 **Modelle vom Server (Pro):** Ist die Funktion an, fragt WhisperLoom beim Anbieter zusätzlich die Modell-Liste ab (mit deinem Key, ohne Audio oder Text). Auf dem Gerät gespeichert wird nur die Liste.
 
-**Offline:** Nichts verlässt das Gerät — nur der Modell-Download geht ins Netz (zu huggingface.co).
+**Offline:** Die Aufnahme verlässt das Gerät nicht. Ins Netz gehen nur der Modell-Download (zu huggingface.co) und, wenn die Textverbesserung an ist, der erkannte Text an das Sprachmodell.
 
 **Eigener Server:** Audio und Text gehen nur an deinen Server.
 
@@ -715,9 +715,9 @@ WhisperLoom hat keinen eigenen Server, kein Konto, keine Telemetrie. Was mit dei
 
 **Bedienungshilfe:** Die Bedienungshilfe „WhisperLoom Text-Einfügen" liest nichts mit und speichert nichts; sie fügt nur den diktierten Text in das fokussierte Feld ein. Android zeigt beim Aktivieren die übliche Warnung für Bedienungshilfen („kann Bildschirminhalte lesen") — WhisperLoom nutzt davon ausschließlich das Einfügen.
 
-**Auf dem Gerät gespeichert:** Deine Einstellungen inklusive API-Key (im privaten App-Speicher, für andere Apps unzugänglich), die heruntergeladenen Modelle, die zuletzt geladenen Modell-Listen der Anbieter (ohne Key) und die Position des Knopfs. Keine Aufnahmen, keine Texte, keine Verläufe. Ein fehlgeschlagenes Diktat bleibt nur so lange im Arbeitsspeicher gepuffert, bis du es erneut sendest oder verwirfst. WhisperLoom ist vom Android-System-Backup ausgenommen (`allowBackup=false`): die Einstellungen inklusive Key landen weder im Google-Backup noch im Geräte-zu-Gerät-Transfer — nach einem Gerätewechsel richtest du den Zugang neu ein.
+**Auf dem Gerät gespeichert:** Deine Einstellungen inklusive API-Key (im privaten App-Speicher, für andere Apps unzugänglich), die heruntergeladenen Modelle, dein Vokabular (bei einer verknüpften Datei nur der Verweis darauf), die zuletzt geladenen Modell-Listen der Anbieter (ohne Key) und die Position des Knopfs; mit Pro Widgets außerdem die Widgets samt Server-Adressen, Tokens und Galerie-Bildern sowie ein noch nicht gesendeter Auftrag, bis er draußen oder verworfen ist ([13.9](#139-was-dabei-gesendet-wird)). Sonst keine Aufnahmen, keine Texte, keine Verläufe. Ein fehlgeschlagenes Diktat bleibt nur so lange im Arbeitsspeicher gepuffert, bis du es erneut sendest oder verwirfst. WhisperLoom ist vom Android-System-Backup ausgenommen (`allowBackup=false`): die Einstellungen inklusive Key und Widget-Tokens landen weder im Google-Backup noch im Geräte-zu-Gerät-Transfer — nach einem Gerätewechsel richtest du den Zugang neu ein.
 
-**Berechtigungen:** Mikrofon (Aufnahme), Internet (Online-Dienst und Modell-Download), Über anderen Apps anzeigen (Knopf), Benachrichtigungen (Beenden-Aktion und Download-Fortschritt), Netzwerkstatus (Nachfrage vor Downloads über mobile Daten), Vordergrund-Dienste (Knopf und Modell-Download).
+**Berechtigungen:** Mikrofon (Aufnahme), Internet (Online-Dienst und Modell-Download), Über anderen Apps anzeigen (Knopf), Benachrichtigungen (Beenden-Aktion und Download-Fortschritt), Netzwerkstatus (Nachfrage vor Downloads über mobile Daten), Vordergrund-Dienste (Knopf, Modell-Download und Aufnahme eines Pro Widgets).
 
 ---
 
@@ -789,7 +789,7 @@ Pro Widgets sind für Entwickler und Bastler gedacht: Ein **Sprach-Command-Widge
 
 ### 13.1 Was du brauchst
 
-- Einen erreichbaren Server mit der **Bridge** (dem kleinen Gegenstück, das den Auftrag entgegennimmt und an deinen Agenten übergibt). Adresse und ein **Token** bekommst du von dort. Mehrere Widgets dürfen denselben Server nutzen oder verschiedene.
+- Einen erreichbaren Server mit der **Bridge** (dem kleinen Gegenstück, das den Auftrag entgegennimmt und an deinen Agenten übergibt; Quellcode und Einrichtung: [hermes-bridge](https://github.com/CTreitges/hermes-bridge)). Adresse und ein **Token** bekommst du von dort. Mehrere Widgets dürfen denselben Server nutzen oder verschiedene.
 - Eine eingerichtete Erkennung — online oder offline, beides geht. Das Mitschreiben läuft genau so wie beim normalen Diktat.
 - Die Mikrofon-Berechtigung. Die hast du aus der Einrichtung meist schon.
 
@@ -897,7 +897,7 @@ Nur mit Auto-Stopp: Das Widget hat 8 Sekunden lang keine Sprache erkannt und die
 Beim Hinzufügen erscheint „Welches Widget-Profil?“, und du hast die Frage weggewischt — dann legt der Startbildschirm das Widget nicht ab. Einfach noch einmal hinziehen und ein Widget-Profil antippen.
 
 **Das Widget bleibt auf „Wird gesendet …“ stehen oder zeigt „… — neuer Versuch folgt“**
-Ein Versuch ist gescheitert, meist am Netz oder an einem Server, der gerade erst startet. WhisperLoom versucht es von allein erneut, mit wachsendem Abstand. Ein Tipp auf die Fläche sendet sofort, ohne auf den nächsten Termin oder auf Netz zu warten. Läuft gerade ein Versuch, lässt der Tipp ihn in Ruhe; hängt er länger als drei Minuten, ersetzt ihn der Tipp. Das gilt nicht, solange die Offline-Erkennung noch rechnet: sie lässt sich nicht abbrechen, ein zweiter Versuch müsste hinter ihr warten und würde alles nur verlängern. Der Tipp tut dann nichts — bei einer langen Aufnahme mit „Genau“ kann das einige Minuten dauern. Doppelt ankommen kann dabei praktisch nichts: die Bridge führt denselben Auftrag innerhalb einer Stunde nur einmal aus. Geht er erst später erneut hinaus (etwa ein roter Auftrag, den du am nächsten Tag noch einmal sendest) oder wurde die Bridge dazwischen neu gestartet, kann er in seltenen Fällen ein zweites Mal ausgeführt werden — dann nämlich, wenn der erste Versuch schon angekommen war und nur die Antwort verloren ging. Ohne Netz scheitert der sofortige Versuch ehrlich, und nach einigen Versuchen wird das Widget rot.
+Ein Versuch ist gescheitert, meist am Netz oder an einem Server, der gerade erst startet. WhisperLoom versucht es von allein erneut, mit wachsendem Abstand. Ein Tipp auf die Fläche sendet sofort, ohne auf den nächsten Termin oder auf Netz zu warten. Läuft gerade ein Versuch, lässt der Tipp ihn in Ruhe; hängt er länger als drei Minuten, ersetzt ihn der Tipp. Das gilt nicht, solange die Offline-Erkennung noch rechnet: sie lässt sich nicht abbrechen, ein zweiter Versuch müsste hinter ihr warten und würde alles nur verlängern. Der Tipp tut dann nichts — bei einer langen Aufnahme und einem großen Modell kann das einige Minuten dauern. Doppelt ankommen kann dabei praktisch nichts: die Bridge führt denselben Auftrag innerhalb einer Stunde nur einmal aus. Geht er erst später erneut hinaus (etwa ein roter Auftrag, den du am nächsten Tag noch einmal sendest) oder wurde die Bridge dazwischen neu gestartet, kann er in seltenen Fällen ein zweites Mal ausgeführt werden — dann nämlich, wenn der erste Versuch schon angekommen war und nur die Antwort verloren ging. Ohne Netz scheitert der sofortige Versuch ehrlich, und nach einigen Versuchen wird das Widget rot.
 
 Hängt es trotzdem immer wieder: Einstellungen des Telefons → Apps → WhisperLoom → Akku → **Nicht eingeschränkt**. Manche Hersteller halten Hintergrundaufträge sonst lange zurück. Für die Fehlersuche am Rechner zeigt `adb shell dumpsys jobscheduler com.chris.whisperloom`, worauf der Auftrag wartet, und `adb shell am get-standby-bucket com.chris.whisperloom` die Standby-Stufe der App.
 

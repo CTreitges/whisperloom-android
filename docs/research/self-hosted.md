@@ -1,3 +1,5 @@
+> **Historisch — Recherche-Archiv, Stand 2026-09-06.** Keine gepflegte Referenz: maßgeblich sind Code und [CHANGELOG](../../CHANGELOG.md); Einordnung in der [Übersicht](README.md).
+
 # WhisperLoom — Provider „Eigener Server" (Recherche + Anleitung + App-Änderungsliste)
 
 Stand: 2026-09-06 · Ziel-Maschine für spätere Installation: Oracle-VPS aarch64 (4 Kerne, 24 GB RAM, Ubuntu 24.04, Caddy, systemd-User-Services).

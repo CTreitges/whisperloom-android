@@ -1,5 +1,6 @@
 package com.chris.whisperloom.overlay
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.ColorStateList
 import android.graphics.PixelFormat
@@ -33,6 +34,7 @@ class CancelTarget(private val ctx: Context, private val wm: WindowManager) {
 
     val isShown: Boolean get() = root != null
 
+    @SuppressLint("InflateParams") // Overlay-Fenster ohne Elternteil; die LayoutParams setzt wm.addView.
     fun show() {
         if (root != null) return
         val dm = ctx.resources.displayMetrics

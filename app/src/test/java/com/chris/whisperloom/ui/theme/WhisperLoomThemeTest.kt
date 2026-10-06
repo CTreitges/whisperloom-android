@@ -125,9 +125,10 @@ class WhisperLoomThemeTest {
         val actual = mutableMapOf<String, Color>()
         compose.setContent {
             val context = androidx.compose.ui.platform.LocalContext.current
+            val resources = androidx.compose.ui.platform.LocalResources.current
             for (name in expected.keys) {
                 // getIdentifier nur im Test: die Namen kommen aus der Spec-Liste oben, nicht aus R.
-                val id = context.resources.getIdentifier(name, "color", context.packageName)
+                val id = resources.getIdentifier(name, "color", context.packageName)
                 actual[name] = if (id == 0) Color.Unspecified else colorResource(id)
             }
         }

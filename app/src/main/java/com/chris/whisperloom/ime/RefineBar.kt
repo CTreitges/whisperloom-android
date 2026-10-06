@@ -3,6 +3,7 @@ package com.chris.whisperloom.ime
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import androidx.core.view.isVisible
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.overlay.BubbleAnimators
@@ -33,7 +34,7 @@ class RefineBar(
         RefineMode.PROMPT to row.findViewById(R.id.refine_prompt),
     )
 
-    val isShown: Boolean get() = row.visibility == View.VISIBLE
+    val isShown: Boolean get() = row.isVisible
 
     fun bind(onPick: (RefineMode) -> Unit) {
         for ((mode, key) in keys) {
@@ -53,7 +54,7 @@ class RefineBar(
             if (promptEnabled) View.VISIBLE else View.GONE
         select(selected)
         setLlmReady(llmReady)
-        if (row.visibility == View.VISIBLE) return
+        if (row.isVisible) return
         row.visibility = View.VISIBLE
         if (reduceMotion()) {
             row.alpha = 1f
