@@ -60,6 +60,18 @@ class AnleitungsTexteTest {
         listOf("LiteRT-LM", "Gson", "Gemma 4").forEach { assertTrue("$it fehlt: $lizenz", lizenz.contains(it)) }
     }
 
+    @Test fun lizenzhinweiseDerInLiteRtLmGelinktenBibliothekenLiegenImApk() {
+        // liblitertlm_jni.so linkt u. a. BSD- und MPL-Komponenten: deren Hinweise muessen mit ins APK.
+        val bytes = ctx.assets.open("licenses/litertlm-0.16.1-THIRD_PARTY_NOTICE.txt").use { it.readBytes() }
+        assertEquals("unveraendert aus litertlm-android-0.16.1.aar", 2_053_178, bytes.size)
+        val notice = bytes.toString(Charsets.UTF_8)
+        listOf("Abseil", "XNNPACK", "Protocol Buffers", "Eigen 3", "ICU4C", "Darts-clone").forEach {
+            assertTrue("$it fehlt", notice.contains("\n$it:\n"))
+        }
+        val hinweis = texte.getValue("about_license_litertlm")
+        assertTrue(hinweis, hinweis.contains("assets/licenses/"))
+    }
+
     @Test fun datenschutzOfflineNenntDasLokaleTextmodell() {
         // Offline verbessert ab Werk das lokale Textmodell: "mit Textverbesserung geht der Text ins Netz" stimmt nicht mehr.
         val offline = texte.getValue("help_s6_offline")

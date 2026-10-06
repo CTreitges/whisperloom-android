@@ -243,6 +243,12 @@ private fun HelpFooter(snack: SnackController, onPatchnotes: () -> Unit) {
             color = MaterialTheme.colorScheme.outline,
             textAlign = TextAlign.Center,
         )
+        Text(
+            stringResource(R.string.about_license_litertlm),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.outline,
+            textAlign = TextAlign.Center,
+        )
         TextButton(onClick = { openLink(ctx, GITHUB_URL, snack) }) {
             Text(stringResource(R.string.about_source), style = MaterialTheme.typography.bodySmall)
             LoomIcon(R.drawable.ic_open_in_new, stringResource(R.string.cd_open_link), Modifier.padding(start = 4.dp).size(16.dp))

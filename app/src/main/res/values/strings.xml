@@ -255,6 +255,8 @@
     <string name="settings_rule_offline_online_local">online, ohne Netz lokal</string>
     <string name="settings_rule_offline_skip">ohne lokales Modell</string>
     <string name="about_version">Version %1$s</string>
+    <!-- Pflichthinweise der in liblitertlm_jni.so gelinkten Bibliotheken (BSD, MPL u. a.): Datei aus dem LiteRT-LM-AAR -->
+    <string name="about_license_litertlm">LiteRT-LM enthält weitere Bibliotheken (u. a. Abseil, XNNPACK, Protobuf, Eigen, ICU) mit eigenen Lizenzen; ihre Hinweise liegen im APK unter assets/licenses/.</string>
     <string name="about_license">whisper.cpp (MIT) · Jetpack Compose / AndroidX (Apache 2.0) · Kotlin und kotlinx.coroutines (Apache 2.0) · LiteRT-LM und Gson (Apache 2.0) · Material Symbols (Apache 2.0) · Gemma 4 (Apache 2.0)</string>
     <string name="about_source">Quellcode auf GitHub</string>
 
