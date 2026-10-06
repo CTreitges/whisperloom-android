@@ -112,6 +112,7 @@ class ModelDownloadService : Service() {
                 timedOut -> ModelDownloads.update(model.id, DownloadState.Failed(MSG_TIMEOUT, retryable = true))
                 else -> {
                     store.partFile(model).delete() // Abbruch durch den Nutzer verwirft die Teildatei
+                    resetCancelledTextModel(this, model)
                     ModelDownloads.update(model.id, DownloadState.Idle)
                 }
             }
@@ -223,6 +224,18 @@ class ModelDownloadService : Service() {
          */
         internal fun selectTextModel(context: Context, model: OfflineModel) {
             if (TextModelCatalog.find(model.id) != null) Prefs(context).localLlmModel = model.id
+        }
+
+        /**
+         * Abbruch: Ein Textmodell, das nur gewaehlt war, weil es lud (ModelListSection, Pflichtkarte), bleibt
+         * es nicht — sonst boeten Pflichtkarte, Assistent und Home weiter das abgebrochene an. Es gilt ein
+         * geladenes Textmodell, sonst der Standard ([TextModelCatalog.DEFAULT]).
+         */
+        internal fun resetCancelledTextModel(context: Context, model: OfflineModel) {
+            val prefs = Prefs(context)
+            val store = ModelStore(context)
+            if (prefs.localLlmModel != model.id || store.isInstalled(model)) return
+            prefs.localLlmModel = (TextModelCatalog.models.firstOrNull { store.isInstalled(it) } ?: TextModelCatalog.DEFAULT).id
         }
 
         /** Nutzertext zu einem Download-Fehler (err_* aus der UX-Spec, sonst die Meldung des Downloaders). */

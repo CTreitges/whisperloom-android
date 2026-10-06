@@ -68,6 +68,31 @@ class ModelDownloadServiceTest {
         }
     }
 
+    /**
+     * Abbruch: Ein Textmodell, das nur gewaehlt war, weil es lud, bleibt es nicht — sonst boeten Pflichtkarte,
+     * Assistent und Home das abgebrochene E4B statt des empfohlenen E2B an. Es gilt ein geladenes, sonst der Standard.
+     */
+    @Test fun einAbgebrochenesTextmodellBleibtNichtGewaehlt() {
+        ctx.getSharedPreferences(Prefs.FILE, Context.MODE_PRIVATE).edit().clear().commit()
+        val prefs = Prefs(ctx)
+        val e2b = TextModelCatalog.GEMMA4_E2B
+        val e4b = TextModelCatalog.GEMMA4_E4B
+        try {
+            prefs.localLlmModel = e4b.id
+            ModelDownloadService.resetCancelledTextModel(ctx, e4b)
+            assertEquals("nichts geladen: der Standard", e2b.id, prefs.localLlmModel)
+
+            installSparse(ctx, e4b)
+            ModelDownloadService.resetCancelledTextModel(ctx, e2b)
+            assertEquals("ein geladenes vor dem Standard", e4b.id, prefs.localLlmModel)
+
+            ModelDownloadService.resetCancelledTextModel(ctx, e2b)
+            assertEquals("ein anderes gewaehltes bleibt", e4b.id, prefs.localLlmModel)
+        } finally {
+            ModelStore(ctx).dir.deleteRecursively()
+        }
+    }
+
     @Test fun fehlertexteAusDenRessourcen() {
         fun text(kind: DownloadException.Kind, msg: String = "x") =
             ModelDownloadService.messageFor(ctx, DownloadException(msg, retryable = false, kind = kind))
