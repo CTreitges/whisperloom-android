@@ -13,7 +13,9 @@ import java.util.concurrent.TimeUnit
 /**
  * Lokales Textmodell fuer Tests (in der JVM gibt es kein liblitertlm_jni.so). Zeichnet Aufrufe auf;
  * nach [holdNext] blockiert die naechste [generate], bis der Test [proceed] ruft — so laesst sich
- * eine laufende Rechnung pruefen ([started] meldet ihren Beginn). [cancel] beendet sie wie cancelProcess.
+ * eine laufende Rechnung pruefen ([started] meldet ihren Beginn). [cancel] beendet sie wie
+ * cancelProcess (LiteRT-LM wirft dann "CANCELLED"), und zwar ueber denselben [CancelSlot] wie das
+ * echte Modell: nur, wenn der Auftrag der laufenden Rechnung abgebrochen ist.
  */
 class FakeTextModel(
     val file: File,
@@ -22,30 +24,44 @@ class FakeTextModel(
 ) : LocalTextModel {
 
     val calls = mutableListOf<Pair<String, String>>()
-    var cancels = 0
+    @Volatile var cancels = 0
     var closes = 0
     @Volatile private var hold = false
     @Volatile var started = CountDownLatch(1)
         private set
     private val gate = CountDownLatch(1)
+    @Volatile private var aborted = false
+    private val slot = CancelSlot<Unit> {
+        cancels++
+        aborted = true
+        gate.countDown()
+    }
+
+    /** Laeuft in [generate] vor dem Eintragen der Rechnung — fuer einen Abbruch genau in dieser Luecke. */
+    @Volatile var beforeEnter: () -> Unit = {}
 
     fun holdNext() {
         started = CountDownLatch(1)
         hold = true
     }
 
-    override fun generate(system: String, user: String): String {
+    override fun generate(system: String, user: String, cancelled: () -> Boolean): String {
         check(closes == 0) { "generate nach close" }
-        synchronized(calls) { calls += system to user }
-        started.countDown()
-        if (hold) check(gate.await(5, TimeUnit.SECONDS)) { "Test hat die Rechnung nicht freigegeben" }
-        return answer(system, user)
+        aborted = false
+        beforeEnter()
+        slot.enter(Unit, cancelled)
+        try {
+            synchronized(calls) { calls += system to user }
+            started.countDown()
+            if (hold) check(gate.await(5, TimeUnit.SECONDS)) { "Test hat die Rechnung nicht freigegeben" }
+            if (aborted) throw IllegalStateException("CANCELLED: Task cancelled")
+            return answer(system, user)
+        } finally {
+            slot.leave()
+        }
     }
 
-    override fun cancel() {
-        cancels++
-        gate.countDown()
-    }
+    override fun cancel() = slot.cancel()
 
     override fun close() {
         closes++

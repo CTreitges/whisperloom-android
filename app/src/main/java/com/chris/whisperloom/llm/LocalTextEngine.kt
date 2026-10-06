@@ -37,9 +37,6 @@ object LocalTextEngine {
     @Volatile private var model: LocalTextModel? = null
     private var loadedModelId: String? = null
 
-    /** Abbruch-Frage der laufenden Generierung; [cancel] bricht nur ab, wenn sie true sagt. */
-    @Volatile private var runningCancelled: (() -> Boolean)? = null
-
     /** Vorwaermen und Leerlauf-Freigabe — ein Daemon-Thread, damit er den Prozess nie aufhaelt. */
     private val worker = Executors.newSingleThreadScheduledExecutor { r ->
         Thread(r, "loom-llm").apply { isDaemon = true }
@@ -103,12 +100,7 @@ object LocalTextEngine {
             return lock.withLock {
                 val loaded = ensureLoaded(modelId)
                 if (cancelled()) throw CancellationException("Textverbesserung abgebrochen")
-                runningCancelled = cancelled
-                try {
-                    loaded.generate(system, user)
-                } finally {
-                    runningCancelled = null
-                }
+                loaded.generate(system, user, cancelled)
             }
         } finally {
             scheduleIdleRelease()
@@ -117,11 +109,13 @@ object LocalTextEngine {
 
     /**
      * Bricht die laufende Generierung ab, wenn ihr Auftrag abgebrochen ist (seine `cancelled`-Frage
-     * sagt true). So trifft der Tipp "ohne KI" in der Tastatur nie die Rechnung eines anderen
-     * Auftrags (Widget, Share). Nur cancelProcess — nie close mitten in der Rechnung.
+     * sagt true). Das Modell prueft das im selben Schritt wie den Abbruch ([CancelSlot]): so trifft
+     * der Tipp "ohne KI" in der Tastatur nie die Rechnung eines anderen Auftrags (Widget, Share)
+     * und geht auch kurz vor dem Rechenstart nicht verloren. Nur cancelProcess — nie close mitten
+     * in der Rechnung.
      */
     fun cancel() {
-        if (runningCancelled?.invoke() == true) model?.cancel()
+        model?.cancel()
     }
 
     /**

@@ -212,6 +212,25 @@ class LocalTextEngineTest {
         assertEquals("cancel ist kein close", 0, model.closes)
     }
 
+    /** Review c4: der Tipp faellt zwischen die Pruefung des Halters und den Rechenstart des Modells. */
+    @Test fun abbruchKurzVorDemRechenstartGehtNichtVerloren() {
+        installSparse(ctx, e2b)
+        LocalTextEngine.generate(e2b.id, "sys", "laden")
+        val model = made[0]
+        var abgebrochen = false
+        model.beforeEnter = {
+            abgebrochen = true
+            LocalTextEngine.cancel()
+        }
+
+        try {
+            LocalTextEngine.generate(e2b.id, "sys", "lang") { abgebrochen }
+            fail("CancellationException erwartet")
+        } catch (e: CancellationException) {
+            assertEquals("die verworfene Rechnung laeuft nicht", listOf("sys" to "laden"), model.calls)
+        }
+    }
+
     @Test fun abgebrochenVorDerRechnungRechnetGarNicht() {
         installSparse(ctx, e2b)
         try {
