@@ -19,15 +19,19 @@ import android.widget.ImageButton
 import android.widget.TextView
 import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.AudioRecorder
+import com.chris.whisperloom.Engine
 import com.chris.whisperloom.Formats
+import com.chris.whisperloom.OfflineRefineRule
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
+import com.chris.whisperloom.RefineDecision
 import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.RefineSkip
 import com.chris.whisperloom.SetupState
 import com.chris.whisperloom.TranscriptionEngine
 import com.chris.whisperloom.api.ApiNotConfiguredException
 import com.chris.whisperloom.api.isRetryable
+import com.chris.whisperloom.llm.LocalTextEngine
 import com.chris.whisperloom.overlay.BubbleAnimators
 import com.chris.whisperloom.overlay.BubbleMotion
 import com.chris.whisperloom.overlay.BubbleState
@@ -123,7 +127,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
     /** Statuszeile: Farbe und Tipp-Ziel je Art (UX-Spec §5.3). */
     private enum class Status {
         HINT, LISTENING, LOCK_ARMED, CANCEL_ARMED, LOCKED, DISCARDED,
-        TRANSCRIBING, REFINING, ERROR, NEED_PERMISSION, NOT_CONFIGURED, NEEDS_LLM,
+        TRANSCRIBING, REFINING, ERROR, NEED_PERMISSION, NOT_CONFIGURED, NEEDS_LLM, NEEDS_LOCAL,
     }
 
     override fun onCreate() {
@@ -243,7 +247,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
         // Der Eingabe-View wird ueber Feld- und App-Wechsel hinweg wiederverwendet. Eine
         // offen stehende Leiste zeigte sonst die Stufe und den KI-Zugang von vorhin —
         // beides kann sich inzwischen geaendert haben.
-        if (refineBar?.isShown == true) refineBar?.show(prefs.refineMode, hasLlmAccess(), prefs.promptLevelEnabled)
+        if (refineBar?.isShown == true) refineBar?.show(prefs.refineMode, refineBlocked() == null, prefs.promptLevelEnabled)
         restoreStatus()
     }
 
@@ -448,12 +452,12 @@ class WhisperLoomInputMethodService : InputMethodService() {
             closeRefineBar()
             return
         }
-        val llmReady = hasLlmAccess()
-        bar.show(prefs.refineMode, llmReady, prefs.promptLevelEnabled)
+        val blocked = refineBlocked()
+        bar.show(prefs.refineMode, blocked == null, prefs.promptLevelEnabled)
         refineKey?.isSelected = true
-        // Ohne Zugang sind die drei KI-Stufen abgeblendet — das braucht eine Erklaerung,
+        // Ohne Zugang bzw. Textmodell sind die KI-Stufen abgeblendet — das braucht eine Erklaerung,
         // sonst sieht es nach einem Fehler aus.
-        if (!llmReady && state == BubbleState.IDLE) showStatus(Status.NEEDS_LLM)
+        if (blocked != null && state == BubbleState.IDLE) showStatus(blocked)
     }
 
     private fun closeRefineBar() {
@@ -486,11 +490,21 @@ class WhisperLoomInputMethodService : InputMethodService() {
     )
 
     /**
-     * Ob eine KI-Stufe ueberhaupt etwas ausrichten kann. Ohne Zugang kaeme nur der Rohtext
-     * zurueck (plus Hinweis) — ein Fehlgriff in der Leiste zerstoert also nichts, aber ins
-     * Leere fuehren soll sie trotzdem nicht.
+     * Warum eine KI-Stufe gerade nichts ausrichten kann ([RefineDecision.stagesReady]); null = sie
+     * kann. Sonst kaeme nur der Rohtext zurueck (plus Hinweis) — ein Fehlgriff in der Leiste
+     * zerstoert also nichts, aber ins Leere fuehren soll sie trotzdem nicht. Offline mit einer
+     * Regel, die lokal rechnen will: das Textmodell fehlt; sonst fehlt ein (eigener) Zugang.
      */
-    private fun hasLlmAccess(): Boolean = SetupState.llmReady(prefs.llmAccess())
+    private fun refineBlocked(): Status? {
+        val offline = prefs.engine == Engine.OFFLINE
+        val localReady = offline && LocalTextEngine.isReady(this, prefs.localLlmModel)
+        val onlineReady = SetupState.llmReady(prefs.llmAccess())
+        return when {
+            RefineDecision.stagesReady(prefs.engine, prefs.offlineRefine, onlineReady, localReady) -> null
+            offline && prefs.offlineRefine != OfflineRefineRule.SKIP -> Status.NEEDS_LOCAL
+            else -> Status.NEEDS_LLM
+        }
+    }
 
     // --- Diktat -------------------------------------------------------------
 
@@ -717,6 +731,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
                 Status.NEED_PERMISSION -> R.string.kb_need_permission
                 Status.NOT_CONFIGURED -> R.string.kb_not_configured
                 Status.NEEDS_LLM -> R.string.kb_refine_needs_llm
+                Status.NEEDS_LOCAL -> R.string.kb_refine_needs_local
             },
         )
         v.setTextColor(
@@ -726,7 +741,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
                     Status.LISTENING, Status.LOCKED -> R.color.loom_recordingText
                     Status.LOCK_ARMED, Status.REFINING -> R.color.loom_primary
                     Status.CANCEL_ARMED, Status.ERROR -> R.color.loom_error
-                    Status.NEED_PERMISSION, Status.NOT_CONFIGURED, Status.NEEDS_LLM -> R.color.loom_warning
+                    Status.NEED_PERMISSION, Status.NOT_CONFIGURED, Status.NEEDS_LLM, Status.NEEDS_LOCAL -> R.color.loom_warning
                 },
             ),
         )
@@ -736,12 +751,14 @@ class WhisperLoomInputMethodService : InputMethodService() {
             Status.NOT_CONFIGURED -> v.setOnClickListener { startActivity(AppNav.setup(this)) }
             // Der KI-Zugang wird in den Text-Einstellungen eingerichtet, nicht im Assistenten.
             Status.NEEDS_LLM -> v.setOnClickListener { startActivity(AppNav.settings(this)) }
+            // Das Textmodell laedt man unter Offline-Modelle.
+            Status.NEEDS_LOCAL -> v.setOnClickListener { startActivity(AppNav.models(this)) }
             // Ausweg waehrend der Textverbesserung: Text sofort ohne KI einfuegen.
             Status.REFINING -> v.setOnClickListener { skipRefine() }
             else -> v.setOnClickListener(null)
         }
         v.isClickable = kind == Status.NEED_PERMISSION || kind == Status.NOT_CONFIGURED ||
-            kind == Status.NEEDS_LLM || kind == Status.REFINING
+            kind == Status.NEEDS_LLM || kind == Status.NEEDS_LOCAL || kind == Status.REFINING
     }
 
     private fun reduceMotion() = BubbleAnimators.reduceMotion(this)

@@ -86,6 +86,22 @@ object RefineDecision {
         if (ready) RefineRoute.Local else RefineRoute.Raw(RefineHint.LOCAL_MISSING)
 
     /**
+     * Koennen die KI-Stufen gerade etwas ausrichten (Stufenleiste der Tastatur)? Online erkannt
+     * entscheidet der Zugang, offline die Regel: lokal mit bereitem Modell, online mit eigenem Zugang.
+     * Das Netz zaehlt hier nicht — es wechselt, und ohne Netz greift ohnehin [route].
+     *
+     * @param onlineReady [SetupState.llmReady] des Text-Zugangs; offline zaehlt "wie Erkennung" dabei nie.
+     */
+    fun stagesReady(engine: Engine?, rule: OfflineRefineRule, onlineReady: Boolean, localReady: Boolean): Boolean {
+        if (engine != Engine.OFFLINE) return onlineReady
+        return when (rule) {
+            OfflineRefineRule.LOCAL -> localReady
+            OfflineRefineRule.ONLINE_LOCAL -> onlineReady || localReady
+            OfflineRefineRule.SKIP -> onlineReady
+        }
+    }
+
+    /**
      * "Lokales Textmodell fehlt": steuert Pflichtkarte, Home-Warnung und Banner. Offline-Erkennung,
      * eine KI-Stufe an (Diktat oder geteilte Audios), die Regel will lokal rechnen, das Modell ist nicht bereit.
      */

@@ -602,6 +602,7 @@
     <string name="kb_discarded">Aufnahme verworfen</string>
     <string name="kb_refine_set">Textverbesserung: %1$s</string>
     <string name="kb_refine_needs_llm">Für die KI-Stufen fehlt ein Zugang — tippe zum Einrichten</string>
+    <string name="kb_refine_needs_local">Offline ohne Textmodell — tippe zum Laden</string>
     <!-- Kurzfassungen der Stufen: in der Tastatur teilen sich vier Tasten eine Zeile (mit
          „Prompt“ fünf), "Verschönern" und "Zusammenfassen" passen dort nicht. -->
     <string name="kb_level_off">Aus</string>

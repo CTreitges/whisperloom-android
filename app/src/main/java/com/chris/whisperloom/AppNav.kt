@@ -23,6 +23,7 @@ object AppNav {
     /** Frueherer Name von [ROUTE_ADVANCED] (bis 3.7.0) — gilt weiter fuer schon erzeugte Intents. */
     const val ROUTE_AGENT = "agent"
     const val ROUTE_WIDGETS = "widgets"
+    const val ROUTE_MODELS = "models"
 
     /** Home (H): Notification-Tipp. */
     fun home(ctx: Context): Intent = intent(ctx, ROUTE_HOME)
@@ -35,6 +36,9 @@ object AppNav {
 
     /** Einstellungen (E): IME-Zahnrad. */
     fun settings(ctx: Context): Intent = intent(ctx, ROUTE_SETTINGS)
+
+    /** Offline-Modelle (E4): Tastatur-Hinweis "Offline ohne Textmodell". */
+    fun models(ctx: Context): Intent = intent(ctx, ROUTE_MODELS)
 
     /** "Erweitert": Widget-Tipp, solange Pro Widgets aus sind. */
     fun advanced(ctx: Context): Intent = intent(ctx, ROUTE_ADVANCED)

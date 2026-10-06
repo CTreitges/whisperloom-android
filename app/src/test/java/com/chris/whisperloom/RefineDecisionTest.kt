@@ -122,6 +122,23 @@ class RefineDecisionTest {
         }
     }
 
+    // --- Stufenleiste der Tastatur ----------------------------------------------------
+
+    @Test fun kiStufenBereitWennDieRouteNichtOhneKiMitGrundWaere() {
+        // Online erkannt: allein der Zugang.
+        assertEquals(true, RefineDecision.stagesReady(Engine.ONLINE, LOCAL, onlineReady = true, localReady = false))
+        assertEquals(false, RefineDecision.stagesReady(Engine.ONLINE, LOCAL, onlineReady = false, localReady = true))
+        assertEquals(false, RefineDecision.stagesReady(null, SKIP, onlineReady = false, localReady = false))
+        // Offline: die Regel.
+        assertEquals(true, RefineDecision.stagesReady(Engine.OFFLINE, LOCAL, onlineReady = false, localReady = true))
+        assertEquals("lokal geht nie online", false, RefineDecision.stagesReady(Engine.OFFLINE, LOCAL, onlineReady = true, localReady = false))
+        assertEquals(true, RefineDecision.stagesReady(Engine.OFFLINE, ONLINE_LOCAL, onlineReady = true, localReady = false))
+        assertEquals(true, RefineDecision.stagesReady(Engine.OFFLINE, ONLINE_LOCAL, onlineReady = false, localReady = true))
+        assertEquals(false, RefineDecision.stagesReady(Engine.OFFLINE, ONLINE_LOCAL, onlineReady = false, localReady = false))
+        assertEquals(true, RefineDecision.stagesReady(Engine.OFFLINE, SKIP, onlineReady = true, localReady = false))
+        assertEquals("Ueberspringen nutzt kein Modell", false, RefineDecision.stagesReady(Engine.OFFLINE, SKIP, onlineReady = false, localReady = true))
+    }
+
     // --- Regel-Schluessel -----------------------------------------------------------
 
     @Test fun regelSchluesselUndDefault() {

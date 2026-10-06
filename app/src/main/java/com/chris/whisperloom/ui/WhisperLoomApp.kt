@@ -135,13 +135,15 @@ fun finishTutorial(nav: NavState, kind: TutorialKind) {
 }
 
 /**
- * Deep-Link anwenden: `home` (Notification), `settings` (IME-Zahnrad), `setup[+step]` (IME/Overlay/Share),
+ * Deep-Link anwenden: `home` (Notification), `settings` (IME-Zahnrad), `models` (IME, Textmodell fehlt), `setup[+step]` (IME/Overlay/Share),
  * `advanced` und `widgets[+profile]` (Widget-Tipp, der nicht aufnehmen kann; Aufnahme-Notification).
  */
 fun applyRoute(nav: NavState, route: RouteRequest, facts: SetupFacts) {
     when (route.route) {
         AppNav.ROUTE_HOME -> nav.replaceAll(Screen.Home)
         AppNav.ROUTE_SETTINGS -> nav.replaceAll(startScreen(facts), Screen.SettingsHub)
+        // Tastatur: offline ohne Textmodell.
+        AppNav.ROUTE_MODELS -> nav.replaceAll(startScreen(facts), Screen.SettingsHub, Screen.Models)
         // Pro Widgets aus. "agent" kommt noch aus Intents von 3.7.0.
         AppNav.ROUTE_ADVANCED, AppNav.ROUTE_AGENT -> nav.replaceAll(startScreen(facts), Screen.SettingsHub, Screen.Advanced)
         // Kein Mikrofon oder Aufnahme-Notification; mit Profil: dessen Server fehlt, der Editor oeffnet sich.

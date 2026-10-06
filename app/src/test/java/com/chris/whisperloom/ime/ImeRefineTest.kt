@@ -8,24 +8,33 @@ import android.view.inputmethod.BaseInputConnection
 import android.widget.ImageButton
 import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
+import com.chris.whisperloom.AppNav
+import com.chris.whisperloom.OfflineRefineRule
+import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import com.chris.whisperloom.llm.LocalTextEngine
 import com.chris.whisperloom.llm.OfflineRefineFixture
+import com.chris.whisperloom.llm.deviceRam
+import com.chris.whisperloom.whisper.ModelStore
+import com.chris.whisperloom.whisper.TextModelCatalog
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.util.concurrent.TimeUnit
 
 /**
  * Der Ausweg in der Tastatur am echten Dienst: Offline-Diktat, die lokale Textverbesserung haengt
  * (Fake-Modell angehalten) — die Statuszeile sagt es, ein Tipp fuegt den erkannten Text sofort ohne
- * KI ein und bricht die Rechnung ab. Dazu: der Aufnahmestart waermt das Textmodell vor.
+ * KI ein und bricht die Rechnung ab. Dazu: der Aufnahmestart waermt das Textmodell vor, und die
+ * Stufenleiste ist offline bereit, wenn die Regel rechnen kann (sonst Hinweis mit Weg).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -90,6 +99,42 @@ class ImeRefineTest {
             statusText == app.getString(R.string.kb_refining)
         }
         assertTrue("Rechnung laeuft", model.started.await(5, TimeUnit.SECONDS))
+    }
+
+    // --- Stufenleiste offline: bereit nach Regel und Textmodell ------------------------------
+
+    private fun refineKey(id: Int): View = root.findViewById(id)
+
+    @Test fun offlineMitTextmodellSindDieKiStufenBereit() {
+        root.findViewById<View>(R.id.key_refine).performClick()
+        assertTrue(refineKey(R.id.refine_polish).isEnabled)
+        assertEquals(app.getString(R.string.kb_hint_hold), statusText)
+    }
+
+    @Test fun offlineOhneTextmodellFuehrtDerHinweisZuDenOfflineModellen() {
+        ModelStore(app).delete(TextModelCatalog.GEMMA4_E2B)
+        root.findViewById<View>(R.id.key_refine).performClick()
+        assertFalse(refineKey(R.id.refine_polish).isEnabled)
+        assertTrue("Aus bleibt waehlbar", refineKey(R.id.refine_off).isEnabled)
+        assertEquals(app.getString(R.string.kb_refine_needs_local), statusText)
+        assertTrue("Hinweis nicht antippbar", status.isClickable)
+        status.performClick()
+        val started = shadowOf(app).nextStartedActivity
+        assertEquals(AppNav.ROUTE_MODELS, started?.getStringExtra(AppNav.EXTRA_ROUTE))
+    }
+
+    @Test fun offlineUeberspringenOhneEigenenZugangFehltDerZugang() {
+        Prefs(app).offlineRefine = OfflineRefineRule.SKIP
+        root.findViewById<View>(R.id.key_refine).performClick()
+        assertFalse(refineKey(R.id.refine_polish).isEnabled)
+        assertEquals(app.getString(R.string.kb_refine_needs_llm), statusText)
+    }
+
+    @Test fun offlineZuWenigRamFuerDasTextmodellIstNichtBereit() {
+        deviceRam(app, 4)
+        root.findViewById<View>(R.id.key_refine).performClick()
+        assertFalse(refineKey(R.id.refine_polish).isEnabled)
+        assertEquals(app.getString(R.string.kb_refine_needs_local), statusText)
     }
 
     @Test fun aufnahmestartWaermtDasTextmodellVor() {
