@@ -362,6 +362,7 @@
     <string name="text_card_access">Online-Zugang für die Textverbesserung</string>
     <string name="text_own_access">Eigenen Zugang verwenden</string>
     <string name="text_own_access_off">Nutzt Anbieter und Key der Erkennung (%1$s).</string>
+    <string name="text_own_access_off_offline">Bei Offline-Erkennung geht ohne eigenen Zugang kein Text online.</string>
     <string name="text_own_access_on">Eigener Anbieter, Key und Modell.</string>
     <string name="text_llm_provider">Anbieter</string>
     <string name="text_llm_model">Modell</string>

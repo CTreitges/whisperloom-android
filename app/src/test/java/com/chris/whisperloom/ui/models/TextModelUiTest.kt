@@ -354,6 +354,19 @@ class TextModelUiTest {
         compose.onNodeWithText("Eigenen Zugang eintragen").assertDoesNotExist()
     }
 
+    @Test fun schalterSagtOfflineNichtDassDerZugangDerErkennungGenutztWird() {
+        prefs.engine = Engine.OFFLINE
+        screen(env()) { TextSettingsScreen(it) }
+        compose.onNodeWithText("Bei Offline-Erkennung geht ohne eigenen Zugang kein Text online.").assertExists()
+        compose.onNodeWithText("Nutzt Anbieter und Key der Erkennung", substring = true).assertDoesNotExist()
+    }
+
+    @Test fun schalterNenntOnlineDenZugangDerErkennung() {
+        prefs.engine = Engine.ONLINE
+        screen(env()) { TextSettingsScreen(it) }
+        compose.onNodeWithText("Nutzt Anbieter und Key der Erkennung", substring = true).assertExists()
+    }
+
     @Test fun onlineZugangOfflineMitOnlineLokalOderUeberspringenBietetEigenenZugangAn() {
         prefs.engine = Engine.OFFLINE
         prefs.offlineRefine = OfflineRefineRule.ONLINE_LOCAL

@@ -460,7 +460,7 @@ Diese Karte regelt nur die **Online**-Textverbesserung. Bei Offline-Erkennung re
 
 **Eigenen Zugang verwenden** einschalten, wenn
 
-- die Erkennung offline läuft und du offline erkannten Text online verbessern lassen willst — mit der Regel „Online, ohne Netz lokal" oder „Überspringen" ([9.7](#97-lokales-textmodell-gemma-4)). „Wie Erkennung" zählt bei Offline-Erkennung nie: Der gespeicherte Online-Zugang der Erkennung bekommt dann keinen Text. Statt der Zugangs-Felder zeigt die Karte je nach Regel, was passiert:
+- die Erkennung offline läuft und du offline erkannten Text online verbessern lassen willst — mit der Regel „Online, ohne Netz lokal" oder „Überspringen" ([9.7](#97-lokales-textmodell-gemma-4)). „Wie Erkennung" zählt bei Offline-Erkennung nie: Der gespeicherte Online-Zugang der Erkennung bekommt dann keinen Text; der ausgeschaltete Schalter sagt deshalb „Bei Offline-Erkennung geht ohne eigenen Zugang kein Text online." statt „Nutzt Anbieter und Key der Erkennung". Statt der Zugangs-Felder zeigt die Karte je nach Regel, was passiert:
   - **Lokales Textmodell:** „Bei Offline-Erkennung verbessert das lokale Textmodell — dafür brauchst du keinen Online-Zugang." (ohne Knopf)
   - **Online, ohne Netz lokal:** „Ohne eigenen Zugang verbessert bei Offline-Erkennung das lokale Textmodell. Mit eigenem Zugang geht es online, solange Netz da ist." mit **Eigenen Zugang eintragen**
   - **Überspringen** (Warnfarbe): „Ohne eigenen Zugang kommt der Text bei Offline-Erkennung ohne KI. Mit eigenem Zugang wird online verbessert, solange Netz da ist." mit **Eigenen Zugang eintragen**

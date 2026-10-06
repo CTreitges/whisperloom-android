@@ -107,8 +107,12 @@ fun LlmAccessSection(snack: SnackController) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SwitchRow(
             headline = stringResource(R.string.text_own_access),
-            supporting = if (useOwn) stringResource(R.string.text_own_access_on)
-            else stringResource(R.string.text_own_access_off, providerShortName(stt.provider)),
+            supporting = when {
+                useOwn -> stringResource(R.string.text_own_access_on)
+                // Offline bekommt der Zugang der Erkennung nie Text (RefineBlock.OFFLINE) — nicht "Nutzt …".
+                offlineWithoutOwn -> stringResource(R.string.text_own_access_off_offline)
+                else -> stringResource(R.string.text_own_access_off, providerShortName(stt.provider))
+            },
             checked = useOwn,
             onCheckedChange = { on -> if (on) switchToOwn() else prefs.llmProviderId = AccessResolver.LLM_SAME },
         )
