@@ -14,6 +14,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
+import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 
 /**
@@ -104,6 +105,7 @@ class ModelDownloadService : Service() {
             }
             when {
                 done -> {
+                    selectIfMissing(this, model)
                     ModelDownloads.update(model.id, DownloadState.Done)
                     showResult(getString(R.string.models_notif_done, model.label))
                 }
@@ -213,6 +215,18 @@ class ModelDownloadService : Service() {
 
         fun cancelIntent(context: Context): Intent =
             Intent(context, ModelDownloadService::class.java).setAction(ACTION_CANCEL)
+
+        /**
+         * Ein fertig geladenes Textmodell wird gewaehlt, wenn das gewaehlte nicht installiert ist —
+         * sonst blieben Pflichtkarte und Banner, und Diktate kaemen ohne KI, obwohl ein Textmodell
+         * da ist (Review d1: E4B aus der Liste geladen, gewaehlt blieb E2B). Ein installiertes
+         * gewaehltes bleibt gewaehlt; ein whisper-Modell aendert nichts.
+         */
+        internal fun selectIfMissing(context: Context, model: OfflineModel) {
+            if (TextModelCatalog.find(model.id) == null) return
+            val prefs = Prefs(context)
+            if (!ModelStore(context).isInstalled(prefs.localLlmModel)) prefs.localLlmModel = model.id
+        }
 
         /** Nutzertext zu einem Download-Fehler (err_* aus der UX-Spec, sonst die Meldung des Downloaders). */
         fun messageFor(context: Context, e: DownloadException): String = when (e.kind) {
