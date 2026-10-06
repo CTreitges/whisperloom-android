@@ -10,6 +10,8 @@ import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.api.ApiAccess
 import com.chris.whisperloom.api.Provider
 import com.chris.whisperloom.whisper.ModelCatalog
+import com.chris.whisperloom.whisper.OfflineModel
+import com.chris.whisperloom.whisper.TextModelCatalog
 
 /** Dropdown-Text eines Anbieters (Spec §6.1); unbekannte IDs zeigen den Katalognamen. */
 @Composable
@@ -42,6 +44,8 @@ fun offlineModelLabel(id: String): String = when (id) {
     ModelCatalog.BASE.id -> stringResource(R.string.models_base)
     ModelCatalog.SMALL.id -> stringResource(R.string.models_small)
     ModelCatalog.LARGE_V3_TURBO.id -> stringResource(R.string.models_large)
+    TextModelCatalog.GEMMA4_E2B.id -> stringResource(R.string.models_gemma_e2b)
+    TextModelCatalog.GEMMA4_E4B.id -> stringResource(R.string.models_gemma_e4b)
     else -> ModelCatalog.byId(id).label
 }
 
@@ -50,8 +54,15 @@ fun offlineModelDetails(id: String): String = when (id) {
     ModelCatalog.TINY.id -> stringResource(R.string.models_tiny_sub)
     ModelCatalog.BASE.id -> stringResource(R.string.models_base_sub)
     ModelCatalog.SMALL.id -> stringResource(R.string.models_small_sub)
+    TextModelCatalog.GEMMA4_E2B.id -> stringResource(R.string.models_gemma_e2b_sub, textModelSize(TextModelCatalog.GEMMA4_E2B))
+    TextModelCatalog.GEMMA4_E4B.id -> stringResource(R.string.models_gemma_e4b_sub, textModelSize(TextModelCatalog.GEMMA4_E4B))
     else -> stringResource(R.string.models_large_sub)
 }
+
+/** Groesse eines Textmodells ehrlich: Download plus Cache, den es beim ersten Start anlegt ("2,6 GB · +800 MB beim ersten Start"). */
+@Composable
+fun textModelSize(model: OfflineModel): String =
+    stringResource(R.string.models_llm_size, fileSize(model.bytes), fileSize(model.extraDiskBytes))
 
 @Composable
 fun levelLabel(mode: RefineMode): String = when (mode) {

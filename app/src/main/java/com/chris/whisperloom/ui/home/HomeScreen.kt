@@ -339,7 +339,7 @@ private fun StatusCard(nav: NavState, modelInstalled: Boolean) {
             HomeStatus.Keyboard.OFF -> R.string.home_val_kb_off
         },
     )
-    val installedCount = status.installedModels.size
+    val installedCount = status.installedCount
 
     OutlinedSection(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp), gap = 0.dp) {
         Text(

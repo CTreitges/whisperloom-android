@@ -7,6 +7,8 @@ import com.chris.whisperloom.whisper.ModelStore
 import com.chris.whisperloom.whisper.TextModelCatalog
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -42,5 +44,19 @@ class SystemStatusTest {
         assertEquals(setOf("base"), status.installedModels)
         assertEquals(setOf("gemma4_e2b"), status.installedTextModels)
         assertEquals(ModelCatalog.BASE.bytes + e2b.bytes + 1_000, status.modelsUsedBytes)
+    }
+
+    @Test fun textmodellBereitHeisstInstalliertUndPasstInDenRam() {
+        val status = SystemStatus(installedTextModels = setOf("gemma4_e2b", "gemma4_e4b"), totalRamBytes = 6L shl 30)
+        assertTrue(status.textModelReady("gemma4_e2b"))
+        assertFalse("E4B braucht 8 GB", status.textModelReady("gemma4_e4b"))
+        assertFalse("nicht installiert", SystemStatus(totalRamBytes = 8L shl 30).textModelReady("gemma4_e2b"))
+        assertFalse("whisper-ID ist kein Textmodell", SystemStatus(installedTextModels = setOf("small")).textModelReady("small"))
+        assertFalse(status.textModelReady("unbekannt"))
+    }
+
+    @Test fun geladenZaehltBeideArten() {
+        assertEquals(3, SystemStatus(installedModels = setOf("small", "base"), installedTextModels = setOf("gemma4_e2b")).installedCount)
+        assertEquals(0, SystemStatus().installedCount)
     }
 }

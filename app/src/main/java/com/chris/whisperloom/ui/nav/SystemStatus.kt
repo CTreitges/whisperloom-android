@@ -36,6 +36,16 @@ data class SystemStatus(
     val offlineSupported: Boolean = true,
     val totalRamBytes: Long = 8L shl 30,
 ) {
+    /**
+     * "Lokales Modell bereit" wie [com.chris.whisperloom.llm.LocalTextEngine.isReady], nur aus dieser
+     * Momentaufnahme: [id] ist ein Textmodell, vollstaendig installiert und passt in den RAM.
+     */
+    fun textModelReady(id: String): Boolean =
+        TextModelCatalog.find(id)?.let { it.id in installedTextModels && OfflineSupport.fitsDevice(totalRamBytes, it) } ?: false
+
+    /** Wie viele Offline-Modelle insgesamt geladen sind (whisper- und Textmodelle). */
+    val installedCount: Int get() = installedModels.size + installedTextModels.size
+
     companion object {
         fun read(context: Context): SystemStatus {
             val app = context.applicationContext

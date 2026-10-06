@@ -95,7 +95,7 @@ fun SettingsHubScreen(nav: NavState) {
     else pluralStringResource(R.plurals.widgets_sub_profiles, proCount, proCount) + " · " +
         if (placed == 0) stringResource(R.string.widgets_sub_none_placed)
         else pluralStringResource(R.plurals.widgets_sub_placed, placed, placed)
-    val n = status.installedModels.size
+    val n = status.installedCount
     val models = if (n > 0) stringResource(R.string.home_val_models, n, fileSize(status.modelsUsedBytes))
     else stringResource(R.string.settings_models_none)
 
