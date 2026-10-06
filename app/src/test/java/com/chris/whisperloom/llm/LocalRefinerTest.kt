@@ -79,6 +79,23 @@ class LocalRefinerTest {
         assertEquals("also ähm hallo welt", refine())
     }
 
+    /** Review c3: Diktat + Antwort passen nicht in die KV-Tabelle — sonst kaeme nur der Anfang zurueck. */
+    @Test fun zuLangesDiktatGehtGarNichtErstInsModell() {
+        val lang = List(1_000) { "termin" }.joinToString(" ") // rund 7 Zeichen je Wort wie im Deutschen
+        try {
+            refine(raw = lang)
+            fail("RefineRejectedException erwartet")
+        } catch (e: RefineRejectedException) {
+            assertEquals(LocalRefiner.MSG_TOO_LONG, e.message)
+        }
+        assertEquals("kein Laden, keine Rechnung", 0, made.size)
+    }
+
+    @Test fun einMittellangesDiktatWirdLokalVerbessert() {
+        antwort = List(500) { "Termin" }.joinToString(" ")
+        assertEquals(antwort, refine(raw = List(500) { "termin" }.joinToString(" ")))
+    }
+
     @Test fun ausOderLeerRechnetGarNicht() {
         assertEquals("roh", refine(raw = "roh", mode = RefineMode.OFF))
         assertEquals(" ", refine(raw = " "))

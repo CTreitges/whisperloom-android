@@ -1,5 +1,7 @@
 package com.chris.whisperloom.llm
 
+import com.chris.whisperloom.api.RefineRejectedException
+import com.chris.whisperloom.api.TextRefiner
 import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.Contents
 import com.google.ai.edge.litertlm.Conversation
@@ -31,6 +33,33 @@ interface LocalTextModel {
 
     /** Speicher freigeben. Nie waehrend [generate]: LiteRT-LM stuerzt dann nativ ab (SIGSEGV, Issue #3771). */
     fun close()
+
+    companion object {
+        /**
+         * KV-Cache fuer Eingabe und Ausgabe zusammen: System-Prompt + Diktat + bearbeiteter Text.
+         * Zugleich die einzige Grenze der Antwort — nur an ihr ist ein Abbruch erkennbar ([truncated]).
+         */
+        const val MAX_NUM_TOKENS = 4096
+
+        /**
+         * Zeichen je Token, bewusst knapp: gemessen (Gemma 4 E2B, deutsch) 3,8–4,2 fuer System-Prompt
+         * und Diktat, 4,5 fuer die Antwort — die Schaetzung liegt also eher zu hoch.
+         */
+        private const val CHARS_PER_TOKEN = 3.5
+
+        /**
+         * Passen System-Prompt, Diktat und eine etwa gleich lange Antwort in [MAX_NUM_TOKENS]? Sonst
+         * schnitte LiteRT-LM die Antwort an der Grenze still ab (Review c3) — dann gar nicht erst rechnen.
+         */
+        fun fits(system: String, user: String): Boolean =
+            (system.length + 2 * user.length) / CHARS_PER_TOKEN <= MAX_NUM_TOKENS
+
+        /**
+         * Volle KV-Tabelle nach der Rechnung = Antwort abgeschnitten. LiteRT-LM meldet das nicht, es
+         * hoert einfach auf; die Conversation steht dann genau auf [MAX_NUM_TOKENS] (Smoketest 0.16.1).
+         */
+        fun truncated(tokenCount: Int): Boolean = tokenCount >= MAX_NUM_TOKENS
+    }
 }
 
 /**
@@ -40,7 +69,9 @@ interface LocalTextModel {
  * Je Auftrag eine eigene Conversation: LiteRT-LM erlaubt nur eine Sitzung je Engine.
  *
  * Context7: LiteRT-LM v0.16.1 (/google-ai-edge/litert-lm, docs/api/kotlin/getting_started.md);
- * Signaturen (maxOutputToken, cancelProcess) per javap am AAR 0.16.1 geprueft.
+ * Signaturen (maxOutputToken, cancelProcess, getTokenCount) per javap am AAR 0.16.1 geprueft; Abbruch
+ * und KV-Grenze im JVM-Smoketest: cancelProcess vor sendMessage verpufft, waehrend der Rechnung wirft
+ * sendMessage "CANCELLED"; an der Grenze kommt die Antwort ohne Fehler abgeschnitten zurueck.
  */
 class LiteRtTextModel(modelPath: String, cacheDir: String) : LocalTextModel {
 
@@ -48,7 +79,7 @@ class LiteRtTextModel(modelPath: String, cacheDir: String) : LocalTextModel {
         EngineConfig(
             modelPath = modelPath,
             backend = Backend.CPU(),
-            maxNumTokens = MAX_NUM_TOKENS,
+            maxNumTokens = LocalTextModel.MAX_NUM_TOKENS,
             cacheDir = cacheDir,
         ),
     )
@@ -70,12 +101,16 @@ class LiteRtTextModel(modelPath: String, cacheDir: String) : LocalTextModel {
             systemInstruction = Contents.of(system),
             // Niedrige Temperatur: korrigieren, nicht dichten. Thinking bleibt aus (Gemma-4-Standard).
             samplerConfig = SamplerConfig(topK = 40, topP = 0.95, temperature = 0.2),
-            maxOutputToken = MAX_OUTPUT_TOKENS,
+            // Keine eigene Grenze unter der KV-Tabelle: an maxOutputToken schnitte LiteRT-LM die
+            // Antwort genauso still ab, aber unerkennbar (Smoketest). Die Zeit begrenzt der Waechter.
+            maxOutputToken = LocalTextModel.MAX_NUM_TOKENS,
         )
         val conv = engine.createConversation(config)
         try {
             slot.enter(conv, cancelled)
-            return conv.sendMessage(user).toString()
+            val out = conv.sendMessage(user).toString()
+            if (LocalTextModel.truncated(conv.getTokenCount())) throw RefineRejectedException(TextRefiner.MSG_TRUNCATED)
+            return out
         } finally {
             slot.leave { conv.close() }
         }
@@ -84,14 +119,6 @@ class LiteRtTextModel(modelPath: String, cacheDir: String) : LocalTextModel {
     override fun cancel() = slot.cancel()
 
     override fun close() = engine.close()
-
-    private companion object {
-        /** KV-Cache fuer Eingabe und Ausgabe zusammen: System-Prompt + Diktat + bearbeiteter Text. */
-        const val MAX_NUM_TOKENS = 4096
-
-        /** Obergrenze der Antwort; ein laengeres Ergebnis waere ohnehin unplausibel ([com.chris.whisperloom.api.TextRefiner.cleanText]). */
-        const val MAX_OUTPUT_TOKENS = 2048
-    }
 }
 
 /**
