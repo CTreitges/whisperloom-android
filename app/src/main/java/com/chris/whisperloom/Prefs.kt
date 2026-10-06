@@ -406,6 +406,7 @@ class Prefs(context: Context) {
         apiKey = llmKey,
         model = llmModel,
         serverModels = modelCache,
+        sttOffline = engine == Engine.OFFLINE,
     )
 
     companion object {

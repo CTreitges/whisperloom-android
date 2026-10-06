@@ -48,6 +48,7 @@ class HomeStatusTest {
     @Test fun textZeileWarntNurBeiGewaehlterStufeOhneMoeglichenChat() {
         assertEquals(Tone.WARNING, HomeStatus.refineTone(RefineMode.POLISH, RefineBlock.NO_CHAT))
         assertEquals(Tone.WARNING, HomeStatus.refineTone(RefineMode.SUMMARIZE, RefineBlock.NO_MODEL))
+        assertEquals(Tone.WARNING, HomeStatus.refineTone(RefineMode.POLISH, RefineBlock.OFFLINE))
         assertEquals(Tone.NEUTRAL, HomeStatus.refineTone(RefineMode.POLISH, null))
         // Stufe "Aus": nichts zu verbessern, also auch nichts zu warnen.
         assertEquals(Tone.NEUTRAL, HomeStatus.refineTone(RefineMode.OFF, RefineBlock.NO_CHAT))

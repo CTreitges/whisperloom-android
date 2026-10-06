@@ -322,6 +322,7 @@ private fun StatusCard(nav: NavState, modelInstalled: Boolean) {
         llm.refineBlock == RefineBlock.NO_CHAT ->
             stringResource(R.string.home_val_refine_no_llm, levelLabel(prefs.refineMode), providerShortName(llm.provider))
         llm.refineBlock == RefineBlock.NO_MODEL -> stringResource(R.string.home_val_refine_no_model, levelLabel(prefs.refineMode))
+        llm.refineBlock == RefineBlock.OFFLINE -> stringResource(R.string.home_val_refine_offline, levelLabel(prefs.refineMode))
         else -> stringResource(R.string.home_val_refine, levelLabel(prefs.refineMode), modelLabel(llm))
     }
     val permTone = HomeStatus.permissionsTone(status.micGranted, status.canDrawOverlays, status.a11yRunning)

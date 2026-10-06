@@ -22,7 +22,7 @@ class TextRefiner(private val access: ApiAccess) {
      *
      * @throws ApiNotConfiguredException wenn die Base-URL leer ist (eigener Server ohne URL) —
      *   sonst ginge die Anfrage an "/chat/completions" ohne Host — oder der Zugang keinen Text
-     *   verbessern kann ([ApiAccess.refineBlock]: [MSG_NO_LLM], [MSG_NO_MODEL]).
+     *   verbessern kann ([ApiAccess.refineBlock]: [MSG_NO_LLM], [MSG_NO_MODEL], [MSG_OFFLINE]).
      * @throws RefineRejectedException wenn das Modell geantwortet hat, statt den Text zu bearbeiten
      *   (Ausgabe weit laenger als das Diktat), oder an seiner Laengengrenze abgebrochen hat ([MSG_TRUNCATED]).
      */
@@ -39,6 +39,7 @@ class TextRefiner(private val access: ApiAccess) {
         when (access.refineBlock) {
             RefineBlock.NO_CHAT -> throw ApiNotConfiguredException(MSG_NO_LLM)
             RefineBlock.NO_MODEL -> throw ApiNotConfiguredException(MSG_NO_MODEL)
+            RefineBlock.OFFLINE -> throw ApiNotConfiguredException(MSG_OFFLINE)
             null -> Unit
         }
         if (access.baseUrl.isBlank()) throw ApiNotConfiguredException()
@@ -110,6 +111,9 @@ class TextRefiner(private val access: ApiAccess) {
 
         /** "Wie Erkennung" bei Together/DeepInfra: der Katalog kennt dort kein Textmodell, eingetragen ist keins. */
         const val MSG_NO_MODEL = "Kein Textmodell eingetragen — unter „Text“ ein Modell eintragen"
+
+        /** "Wie Erkennung" bei Offline-Erkennung: kein Online-Zugang, an den der Text gehen duerfte. */
+        const val MSG_OFFLINE = "Offline-Erkennung ohne Textverbesserung — unter „Text“ einen eigenen Zugang eintragen"
         private const val LENGTH = "length"
 
         /** OpenAI: "Unsupported parameter: 'temperature' is not supported with this model." */

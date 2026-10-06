@@ -2,6 +2,7 @@ package com.chris.whisperloom
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import com.chris.whisperloom.api.RefineBlock
 import com.chris.whisperloom.api.ServerUrlCheck
 import com.chris.whisperloom.ui.nav.SetupFacts
 import com.chris.whisperloom.ui.nav.SetupRouter
@@ -328,6 +329,27 @@ class PrefsTest {
         assertEquals("", llm.apiKey)
         assertEquals("qwen3:8b", llm.model)
         assertEquals("whisper-large-v3-turbo", p.sttAccess().model)
+    }
+
+    @Test fun offlineWieErkennungNimmtNichtDenAltenOnlineZugang() {
+        // Regression: Offline + "wie Erkennung" + noch gespeicherter OpenAI-Key -> der erkannte Text
+        // ging still an OpenAI, waehrend die Karte "Textverbesserung braucht einen Online-Zugang" zeigte.
+        val p = Prefs(ctx)
+        p.sttProviderId = "openai"
+        p.apiKey = "sk-alt"
+        p.engine = Engine.OFFLINE
+        p.refineMode = RefineMode.POLISH
+        val llm = p.llmAccess()
+        assertEquals(RefineBlock.OFFLINE, llm.refineBlock)
+        assertEquals("", llm.apiKey)
+        assertFalse(SetupState.llmReady(llm))
+        val state = PrefsState(p)
+        assertEquals(RefineBlock.OFFLINE, state.llmAccess().refineBlock)
+        state.dispose()
+        // Zurueck auf online: wieder der Erkennungs-Zugang.
+        p.engine = Engine.ONLINE
+        assertNull(p.llmAccess().refineBlock)
+        assertEquals("sk-alt", p.llmAccess().apiKey)
     }
 
     // --- Pro-Funktionen ("Erweitert") -------------------------------------------

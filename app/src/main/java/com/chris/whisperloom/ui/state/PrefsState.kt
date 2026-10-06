@@ -105,6 +105,7 @@ class PrefsState(val prefs: Prefs) {
         apiKey = llmKey,
         model = llmModel,
         serverModels = prefs.modelCache,
+        sttOffline = engine == Engine.OFFLINE,
     )
 
     /** Position des schwebenden Knopfs auf den Default (E3 "Position zuruecksetzen"). */
