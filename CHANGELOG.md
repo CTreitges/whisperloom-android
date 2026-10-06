@@ -2,6 +2,14 @@
 
 Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [Unreleased]
+
+### Behoben
+
+- **Gemma 4 E4B (und E2B) direkt wählbar.** Bisher war ein Textmodell erst nach dem Download wählbar, und ein fertiges E4B blieb ungenutzt, solange E2B gewählt war. Jetzt lädt ein Tipp auf ein passendes, noch nicht geladenes Textmodell es (wie **Laden**, über mobile Daten mit Nachfrage), und ist der Download fertig, ist es gewählt. Zu große Modelle bleiben ausgegraut („Für dieses Gerät zu groß").
+- **Auswahl auch unter Text und im Assistenten.** Die Karte **Offline-Erkennung** zeigt beide Textmodelle statt nur des gewählten, der Assistent (Schritt 2b) nach „Lokales Textmodell" ebenfalls; Standard bleibt Gemma 4 E2B.
+- **Kein stummes „Laden" mehr.** Läuft ein anderer Download, sagt die Textmodell-Zeile „Laden geht, sobald der laufende Download fertig ist."
+
 ## [3.8.5] — 2026-10-06
 
 ### Hinzugefügt
