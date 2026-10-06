@@ -482,6 +482,7 @@
     <string name="models_delete_body">%1$s werden frei. Für die Offline-Erkennung muss dann ein anderes Modell geladen werden.</string>
     <string name="models_delete_active">Dies ist das aktive Modell — Offline ist danach nicht einsatzbereit.</string>
     <string name="models_llm_delete_body">%1$s werden frei. Für die lokale Textverbesserung muss dann wieder ein Textmodell geladen werden.</string>
+    <string name="models_llm_delete_body_cache">%1$s Modell und %2$s Zwischenspeicher werden frei. Für die lokale Textverbesserung muss dann wieder ein Textmodell geladen werden.</string>
     <string name="local_missing_title">Offline ohne Textmodell</string>
     <string name="local_missing_body">Die Textverbesserung braucht offline ein lokales Modell: %1$s (%2$s). Lade es oder überspringe sie — dann kommt der Text ohne KI.</string>
     <!-- Mit eigenem Online-Zugang: Ueberspringen heisst dann "mit Netz online", nicht "ohne KI" -->

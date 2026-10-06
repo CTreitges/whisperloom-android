@@ -95,6 +95,15 @@ class ModelStoreTest {
         assertEquals(1700L, store.usedBytes())
     }
 
+    @Test fun cacheBytesNurDesEigenenCaches() {
+        val e2b = TextModelCatalog.GEMMA4_E2B
+        assertEquals("nie geladen", 0L, store.cacheBytes(e2b))
+        sparse(File(store.cacheDir(e2b), "a.xnnpack_cache"), 700)
+        sparse(File(store.cacheDir(e2b), "sub/b.bin"), 88)
+        sparse(File(store.cacheDir(TextModelCatalog.GEMMA4_E4B), "x.xnnpack_cache"), 5)
+        assertEquals(788L, store.cacheBytes(e2b))
+    }
+
     @Test fun cacheOrdnerJeModellUnterModels() {
         // Unter models/ = Backup-Ausschluss (backup_rules.xml, data_extraction_rules.xml).
         assertEquals(File(store.dir, "llm-cache/gemma4_e2b"), store.cacheDir(TextModelCatalog.GEMMA4_E2B))

@@ -118,6 +118,8 @@ fun ModelListSection(snack: SnackController, showEmptyState: Boolean = true, tex
         DeleteDialog(
             model = model,
             text = text,
+            // Der Zwischenspeicher (XNNPACK-Cache, ~0,8 GB bei E2B) wird mitgeloescht — ehrlich mitzaehlen.
+            cacheBytes = if (text) store.cacheBytes(model) else 0L,
             activeAndOnly = selectedId == model.id && installed.size == 1,
             onConfirm = {
                 store.delete(model)
@@ -341,9 +343,21 @@ private fun MeteredDialog(model: OfflineModel, onConfirm: () -> Unit, onDismiss:
 
 /** D1: Modell loeschen; beim aktiven und einzigen Modell mit Zusatzhinweis. [text] = Textmodell. */
 @Composable
-private fun DeleteDialog(model: OfflineModel, text: Boolean, activeAndOnly: Boolean, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+private fun DeleteDialog(
+    model: OfflineModel,
+    text: Boolean,
+    cacheBytes: Long,
+    activeAndOnly: Boolean,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
     val label = offlineModelLabel(model.id)
-    val body = stringResource(if (text) R.string.models_llm_delete_body else R.string.models_delete_body, fileSize(model.bytes)) +
+    val freed = when {
+        cacheBytes > 0 -> stringResource(R.string.models_llm_delete_body_cache, fileSize(model.bytes), fileSize(cacheBytes))
+        text -> stringResource(R.string.models_llm_delete_body, fileSize(model.bytes))
+        else -> stringResource(R.string.models_delete_body, fileSize(model.bytes))
+    }
+    val body = freed +
         if (activeAndOnly) "\n\n" + stringResource(if (text) R.string.models_llm_delete_active else R.string.models_delete_active) else ""
     AlertDialog(
         onDismissRequest = onDismiss,

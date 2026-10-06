@@ -46,6 +46,8 @@ import com.chris.whisperloom.whisper.ModelDownloadService
 import com.chris.whisperloom.whisper.ModelDownloads
 import com.chris.whisperloom.whisper.ModelStore
 import com.chris.whisperloom.whisper.TextModelCatalog
+import java.io.File
+import java.io.RandomAccessFile
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -159,6 +161,24 @@ class TextModelUiTest {
         compose.onNodeWithText("Löschen").performClick()
         compose.waitForIdle()
         assertEquals(false, ModelStore(ctx).isInstalled(TextModelCatalog.GEMMA4_E2B))
+    }
+
+    @Test fun textmodellLoeschenNenntDateiUndZwischenspeicher() {
+        val e2b = TextModelCatalog.GEMMA4_E2B
+        installSparse(ctx, e2b)
+        // Den Zwischenspeicher legt LiteRT-LM beim ersten Laden an (gemessen 788 MB).
+        val cache = File(ModelStore(ctx).cacheDir(e2b).apply { mkdirs() }, "gemma.xnnpack_cache")
+        RandomAccessFile(cache, "rw").use { it.setLength(788_000_000) }
+        screen(env()) { ModelsScreen(it) }
+        compose.onNodeWithContentDescription("Gemma 4 E2B löschen").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText(
+            "${size(e2b.bytes)} Modell und ${size(788_000_000)} Zwischenspeicher werden frei.",
+            substring = true,
+        ).assertExists()
+        compose.onNodeWithText("Löschen").performClick()
+        compose.waitForIdle()
+        assertEquals(false, cache.exists())
     }
 
     // --- Pflichtkarte "Offline ohne Textmodell" ----------------------------------------------

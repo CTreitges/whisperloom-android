@@ -41,6 +41,9 @@ class ModelStore(val dir: File) {
         return !file(model).exists() && !partFile(model).exists() && !cacheDir(model).exists()
     }
 
+    /** Groesse des Cache-Ordners eines Textmodells in Bytes; 0, solange es nie geladen wurde. */
+    fun cacheBytes(model: OfflineModel): Long = cacheDir(model).walk().filter { it.isFile }.sumOf { it.length() }
+
     /** Belegter Platz (Modelle, Teildateien, Caches der Textmodelle) in Bytes. */
     fun usedBytes(): Long = dir.walk().filter { it.isFile }.sumOf { it.length() }
 
