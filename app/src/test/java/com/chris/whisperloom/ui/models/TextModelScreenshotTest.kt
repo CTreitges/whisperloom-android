@@ -33,7 +33,9 @@ import com.chris.whisperloom.ui.state.AppEnv
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.PrefsState
 import com.chris.whisperloom.ui.theme.WhisperLoomTheme
+import com.chris.whisperloom.whisper.DownloadState
 import com.chris.whisperloom.whisper.ModelCatalog
+import com.chris.whisperloom.whisper.ModelDownloads
 import com.chris.whisperloom.whisper.ModelStore
 import com.chris.whisperloom.whisper.TextModelCatalog
 import java.io.File
@@ -157,6 +159,34 @@ class TextModelScreenshotTest {
         screen(ready) { SetupScreen(SetupRouter.STEP_ACCESS, it) }
         nachOben(hasText("Textverbesserung ohne Netz"), abstandPx = 200f)
         shot("textmodell-assistent-2b")
+    }
+
+    @Test fun textKarteOhnePassendesTextmodell() {
+        // 4-GB-Geraet: offline ja, Gemma nein — die Regel wirkt wie "Ueberspringen".
+        screen(ready.copy(totalRamBytes = 4L shl 30)) { TextSettingsScreen(it) }
+        nachOben(hasText("Offline-Erkennung"))
+        shot("textmodell-text-zu-wenig-ram")
+    }
+
+    @Test fun assistent2bDownloadFehlgeschlagen() {
+        // Nach "Lokales Textmodell" ist "Glaetten" an; der Download scheitert am Speicherplatz.
+        installSparse(ctx, ModelCatalog.SMALL)
+        ModelDownloads.update("gemma4_e2b", DownloadState.Failed("Nicht genug Speicherplatz", retryable = false))
+        try {
+            screen(ready) { SetupScreen(SetupRouter.STEP_ACCESS, it) }
+            nachOben(hasText("Textverbesserung ohne Netz"), abstandPx = 200f)
+            shot("textmodell-assistent-2b-fehlgeschlagen")
+        } finally {
+            ModelDownloads.clear("gemma4_e2b")
+        }
+    }
+
+    @Test fun homeOnlineOhneNetzLokalMitZugangOhneTextmodell() {
+        prefs.offlineRefine = OfflineRefineRule.ONLINE_LOCAL
+        prefs.llmProviderId = "groq"
+        prefs.llmKey = "gsk"
+        screen(ready) { HomeScreen(it) }
+        shot("textmodell-home-online-ohne-modell")
     }
 
     @Config(qualifiers = "w360dp-h891dp-xxhdpi")
