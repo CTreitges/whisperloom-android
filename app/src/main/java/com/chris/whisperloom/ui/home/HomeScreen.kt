@@ -329,7 +329,9 @@ private fun StatusCard(nav: NavState, modelInstalled: Boolean) {
     val llm = prefs.llmAccess()
     val level = levelLabel(prefs.refineMode)
     // Offline erkannt: die Regel entscheidet (lokal, online mit Ausweg, uebersprungen) — "wie Erkennung" zaehlt nie.
-    val offlineRefine = if (prefs.engine == Engine.OFFLINE && prefs.refineMode != RefineMode.OFF) {
+    // Auch wenn nur die Stufe fuer geteilte Sprachnachrichten an ist: fehlt das Modell, warnt die Zeile wie das Banner.
+    val anyStage = prefs.refineMode != RefineMode.OFF || prefs.shareRefineMode != RefineMode.OFF
+    val offlineRefine = if (prefs.engine == Engine.OFFLINE && anyStage) {
         HomeStatus.offlineRefine(offlineRule(prefs, status), SetupState.llmReady(llm), status.textModelReady(prefs.localLlmModel))
     } else {
         null
@@ -337,7 +339,12 @@ private fun StatusCard(nav: NavState, modelInstalled: Boolean) {
     // Gleiches Kriterium wie TextRefiner: ElevenLabs "wie Erkennung" hat keinen Chat, Together/
     // DeepInfra ohne eingetragenes Modell auch nicht — sonst stuende hier "Glaetten · " ohne Modell.
     val refineText = when {
-        prefs.refineMode == RefineMode.OFF -> stringResource(R.string.home_val_refine_off)
+        prefs.refineMode == RefineMode.OFF ->
+            if (offlineRefine != null && HomeStatus.offlineRefineTone(offlineRefine) == Tone.WARNING) {
+                stringResource(R.string.home_val_refine_off_share_missing)
+            } else {
+                stringResource(R.string.home_val_refine_off)
+            }
         offlineRefine != null -> when (offlineRefine) {
             HomeStatus.OfflineRefine.LOCAL -> stringResource(R.string.home_val_refine_local, level, offlineModelLabel(prefs.localLlmModel))
             HomeStatus.OfflineRefine.ONLINE_LOCAL -> stringResource(R.string.home_val_refine_online_local, level, modelLabel(llm))

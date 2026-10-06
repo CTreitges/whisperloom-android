@@ -482,6 +482,24 @@ class TextModelUiTest {
         assertEquals(Screen.TextSettings, nav.current)
     }
 
+    @Test fun homeNurMitShareStufeWarnenZeileUndBannerGemeinsam() {
+        offlineOhneTextmodell()
+        prefs.refineMode = RefineMode.OFF
+        prefs.shareRefineMode = RefineMode.SUMMARIZE
+        screen(env(homeStatus())) { HomeScreen(it) }
+        compose.onNodeWithText("Aus · geteilte Sprachnachrichten: Textmodell fehlt").assertExists()
+        compose.onNodeWithText("Offline ohne Textmodell — der Text kommt ohne KI.").assertExists()
+    }
+
+    @Test fun homeNurMitShareStufeUndTextmodellIstNeutralAus() {
+        offlineOhneTextmodell()
+        prefs.refineMode = RefineMode.OFF
+        prefs.shareRefineMode = RefineMode.SUMMARIZE
+        screen(env(homeStatus(setOf("gemma4_e2b")))) { HomeScreen(it) }
+        compose.onNodeWithText("Aus").assertExists()
+        compose.onNodeWithText("Beheben").assertDoesNotExist()
+    }
+
     @Test fun homeMitGeladenemTextmodellRechnetLokalOhneBanner() {
         offlineOhneTextmodell()
         screen(env(homeStatus(setOf("gemma4_e2b")))) { HomeScreen(it) }

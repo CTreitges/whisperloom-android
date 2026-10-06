@@ -93,6 +93,7 @@
     <string name="home_val_offline">Offline · %1$s (%2$s)</string>
     <string name="home_val_offline_missing">Offline · kein Modell geladen</string>
     <string name="home_val_refine_off">Aus</string>
+    <string name="home_val_refine_off_share_missing">Aus · geteilte Sprachnachrichten: Textmodell fehlt</string>
     <string name="home_val_refine">%1$s · %2$s</string>
     <string name="home_val_refine_no_llm">%1$s · %2$s bietet keine Textverbesserung</string>
     <string name="home_val_refine_no_model">%1$s · kein Textmodell eingetragen</string>
