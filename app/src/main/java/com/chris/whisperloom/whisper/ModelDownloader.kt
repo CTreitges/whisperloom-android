@@ -25,16 +25,17 @@ class DownloadException(
 }
 
 /**
- * Laedt ein Modell per HttpURLConnection in den [ModelStore] — reines Kotlin, ohne Android:
+ * Laedt ein Modell von seiner [OfflineModel.url] per HttpURLConnection in den [ModelStore] — reines
+ * Kotlin, ohne Android:
  *  - Teildatei `<datei>.part`; Fortsetzung per `Range: bytes=n-` (206 + Content-Range), antwortet der
  *    Server mit 200, wird von vorn begonnen
  *  - SHA-256 streamend beim Schreiben; vorhandene Teilbytes werden vorher eingerechnet
  *  - fertig nur bei Groesse == Katalog UND Pruefsumme == Katalog, dann atomares Umbenennen
+ *  - Platzpruefung vorab: Restgroesse plus [OfflineModel.extraDiskBytes] (Cache eines Textmodells)
  *  - Netzfehler: bis zu [retries] Wiederholungen mit verdoppelndem Backoff, jeweils fortgesetzt
  *  - [ProgressListener] hoechstens alle [progressIntervalMs]
  */
 class ModelDownloader(
-    private val baseUrl: String = ModelCatalog.BASE_URL,
     private val connectTimeoutMs: Int = 15_000,
     private val readTimeoutMs: Int = 30_000,
     private val retries: Int = 3,
@@ -56,7 +57,7 @@ class ModelDownloader(
      * @throws DownloadException bei Netz-, Server-, Speicher- oder Pruefsummenfehlern
      */
     fun download(
-        model: WhisperModel,
+        model: OfflineModel,
         store: ModelStore,
         isCancelled: () -> Boolean = { false },
         onProgress: ProgressListener = ProgressListener { _, _, _ -> },
@@ -89,7 +90,7 @@ class ModelDownloader(
     }
 
     private fun tryOnce(
-        model: WhisperModel,
+        model: OfflineModel,
         store: ModelStore,
         isCancelled: () -> Boolean,
         onProgress: ProgressListener,
@@ -101,7 +102,7 @@ class ModelDownloader(
             part.delete() // groesser als das Ziel: kann nicht zu dieser Datei gehoeren
             existing = 0L
         }
-        if (freeSpace(store.dir) < model.bytes - existing) {
+        if (freeSpace(store.dir) < model.bytes + model.extraDiskBytes - existing) {
             throw DownloadException(MSG_STORAGE, retryable = false, kind = DownloadException.Kind.STORAGE)
         }
 
@@ -183,7 +184,7 @@ class ModelDownloader(
         return true
     }
 
-    private fun finish(part: File, target: File, model: WhisperModel, digest: MessageDigest) {
+    private fun finish(part: File, target: File, model: OfflineModel, digest: MessageDigest) {
         if (part.length() != model.bytes) throw DownloadException(MSG_SIZE.format(part.length()), retryable = false)
         val hex = digest.digest().joinToString("") { "%02x".format(it) }
         if (!hex.equals(model.sha256, ignoreCase = true)) {
@@ -195,8 +196,9 @@ class ModelDownloader(
         }
     }
 
-    private fun open(model: WhisperModel, existing: Long): HttpURLConnection {
-        val conn = URL(baseUrl + model.fileName).openConnection() as HttpURLConnection
+    private fun open(model: OfflineModel, existing: Long): HttpURLConnection {
+        // Jedes Mal die Katalog-URL: der CDN-Link hinter der Weiterleitung ist signiert und laeuft ab.
+        val conn = URL(model.url).openConnection() as HttpURLConnection
         conn.connectTimeout = connectTimeoutMs
         conn.readTimeout = readTimeoutMs
         conn.instanceFollowRedirects = true // huggingface.co -> 302 -> CDN

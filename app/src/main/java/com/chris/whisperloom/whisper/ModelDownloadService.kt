@@ -17,9 +17,10 @@ import android.util.Log
 import com.chris.whisperloom.R
 
 /**
- * Laedt genau ein Modell im Vordergrund-Dienst (Typ dataSync), damit der Download weiterlaeuft,
- * wenn der Nutzer den Screen verlaesst. Fortschritt fuer die UI ueber [ModelDownloads.states],
- * fuer den Nutzer ueber die Notification (Aktion "Abbrechen"). Abbruch durch den Nutzer verwirft
+ * Laedt genau ein Modell (whisper oder Textmodell, [findOfflineModel]) im Vordergrund-Dienst
+ * (Typ dataSync), damit der Download weiterlaeuft, wenn der Nutzer den Screen verlaesst.
+ * Fortschritt fuer die UI ueber [ModelDownloads.states], fuer den Nutzer ueber die Notification
+ * (Aktion "Abbrechen"). Abbruch durch den Nutzer verwirft
  * die Teildatei (UX-Spec E4); Fehler lassen sie liegen, damit "Erneut" per Range-Resume fortsetzt.
  *
  * Start: [start] (startForegroundService), Abbruch: [cancel] oder die Notification-Aktion.
@@ -33,7 +34,7 @@ class ModelDownloadService : Service() {
 
     @Volatile private var cancelled = false
     @Volatile private var timedOut = false
-    @Volatile private var current: WhisperModel? = null
+    @Volatile private var current: OfflineModel? = null
     @Volatile private var lastPercent = -1
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -42,7 +43,7 @@ class ModelDownloadService : Service() {
         when (intent?.action) {
             ACTION_START -> {
                 val id = intent.getStringExtra(EXTRA_MODEL_ID)
-                val model = ModelCatalog.find(id)
+                val model = findOfflineModel(id)
                 when {
                     model == null -> {
                         // Vertrag von startForegroundService einhalten, dann sofort wieder weg.
@@ -78,7 +79,7 @@ class ModelDownloadService : Service() {
         super.onDestroy()
     }
 
-    private fun begin(model: WhisperModel) {
+    private fun begin(model: OfflineModel) {
         cancelled = false
         timedOut = false
         lastPercent = -1
@@ -91,7 +92,7 @@ class ModelDownloadService : Service() {
     }
 
     /** Laeuft auf dem Download-Thread. */
-    private fun run(model: WhisperModel, store: ModelStore) {
+    private fun run(model: OfflineModel, store: ModelStore) {
         try {
             val done = ModelDownloader().download(model, store, isCancelled = { cancelled }) { bytes, total, rate ->
                 ModelDownloads.update(model.id, DownloadState.Running(bytes, total, rate))
@@ -137,7 +138,7 @@ class ModelDownloadService : Service() {
 
     private fun notificationManager(): NotificationManager = getSystemService(NotificationManager::class.java)
 
-    private fun startAsForeground(model: WhisperModel?, percent: Int) {
+    private fun startAsForeground(model: OfflineModel?, percent: Int) {
         notificationManager().createNotificationChannel(
             NotificationChannel(CHANNEL_ID, getString(R.string.models_channel), NotificationManager.IMPORTANCE_LOW),
         )
@@ -149,7 +150,7 @@ class ModelDownloadService : Service() {
         }
     }
 
-    private fun notification(model: WhisperModel?, percent: Int): Notification {
+    private fun notification(model: OfflineModel?, percent: Int): Notification {
         val builder = Notification.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_whisperloom)
             .setContentTitle(getString(R.string.models_notif_title))
@@ -197,7 +198,7 @@ class ModelDownloadService : Service() {
         private const val NOTIF_ID = 2201
         private const val NOTIF_RESULT_ID = 2202
 
-        /** Download eines Katalog-Modells starten (aus der UI, App im Vordergrund). */
+        /** Download eines Katalog-Modells (whisper oder Text) starten (aus der UI, App im Vordergrund). */
         fun start(context: Context, modelId: String) {
             context.startForegroundService(startIntent(context, modelId))
         }

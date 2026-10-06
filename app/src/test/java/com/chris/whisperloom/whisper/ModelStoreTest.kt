@@ -65,6 +65,42 @@ class ModelStoreTest {
         assertEquals(1050L, store.usedBytes())
     }
 
+    @Test fun textmodellWirdWieEinWhisperModellErkannt() {
+        val e2b = TextModelCatalog.GEMMA4_E2B
+        assertFalse(store.isInstalled("gemma4_e2b"))
+        sparse(store.file(e2b), e2b.bytes)
+        assertTrue(store.isInstalled(e2b))
+        assertTrue("IDs gelten katalogweit", store.isInstalled("gemma4_e2b"))
+        assertEquals(listOf(e2b), store.installed(TextModelCatalog.models))
+        assertTrue("whisper-Liste bleibt unter sich", store.installed().isEmpty())
+    }
+
+    @Test fun deleteEinesTextmodellsLoeschtAuchDenCache() {
+        val e2b = TextModelCatalog.GEMMA4_E2B
+        sparse(store.file(e2b), e2b.bytes)
+        sparse(File(store.cacheDir(e2b), "gemma-4-E2B-it.litertlm_1_2.xnnpack_cache"), 788)
+        val otherCache = File(store.cacheDir(TextModelCatalog.GEMMA4_E4B), "x.xnnpack_cache")
+        sparse(otherCache, 10)
+        assertTrue(store.delete(e2b))
+        assertFalse(store.file(e2b).exists())
+        assertFalse(store.cacheDir(e2b).exists())
+        assertTrue("Cache des anderen Modells bleibt", otherCache.exists())
+        assertTrue("idempotent", store.delete(e2b))
+    }
+
+    @Test fun usedBytesZaehltDenCacheMit() {
+        val e2b = TextModelCatalog.GEMMA4_E2B
+        sparse(store.file(ModelCatalog.TINY), 1000)
+        sparse(File(store.cacheDir(e2b), "a.xnnpack_cache"), 700)
+        assertEquals(1700L, store.usedBytes())
+    }
+
+    @Test fun cacheOrdnerJeModellUnterModels() {
+        // Unter models/ = Backup-Ausschluss (backup_rules.xml, data_extraction_rules.xml).
+        assertEquals(File(store.dir, "llm-cache/gemma4_e2b"), store.cacheDir(TextModelCatalog.GEMMA4_E2B))
+        assertEquals(File(store.dir, "llm-cache/gemma4_e4b"), store.cacheDir(TextModelCatalog.GEMMA4_E4B))
+    }
+
     @Test fun pfadeUndOrdner() {
         assertEquals("ggml-base-q5_1.bin.part", store.partFile(base).name)
         assertEquals(File(store.dir, "ggml-base-q5_1.bin"), store.file(base))

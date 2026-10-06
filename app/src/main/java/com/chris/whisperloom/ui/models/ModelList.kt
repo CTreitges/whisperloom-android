@@ -58,9 +58,9 @@ import com.chris.whisperloom.whisper.ModelCatalog
 import com.chris.whisperloom.whisper.ModelDownloadService
 import com.chris.whisperloom.whisper.ModelDownloads
 import com.chris.whisperloom.whisper.ModelStore
+import com.chris.whisperloom.whisper.OfflineModel
 import com.chris.whisperloom.whisper.OfflineSupport
 import com.chris.whisperloom.whisper.WhisperEngine
-import com.chris.whisperloom.whisper.WhisperModel
 
 /**
  * Modell-Liste mit Download/Abbruch/Loeschen/Auswahl (E4 und Schritt 2b, Spec §2.7) inkl.
@@ -82,11 +82,11 @@ fun ModelListSection(snack: SnackController, showEmptyState: Boolean = true) {
     LaunchedEffect(installed) {
         if (installed != env.status.installedModels) env.refreshStatus()
     }
-    var pendingDownload by remember { mutableStateOf<WhisperModel?>(null) }
-    var pendingDelete by remember { mutableStateOf<WhisperModel?>(null) }
+    var pendingDownload by remember { mutableStateOf<OfflineModel?>(null) }
+    var pendingDelete by remember { mutableStateOf<OfflineModel?>(null) }
     val anyRunning = states.values.any { it is DownloadState.Running }
 
-    fun startDownload(model: WhisperModel) {
+    fun startDownload(model: OfflineModel) {
         if (OfflineSupport.isMeteredNetwork(ctx)) pendingDownload = model
         else ModelDownloadService.start(ctx, model.id)
     }
@@ -139,7 +139,7 @@ fun ModelListSection(snack: SnackController, showEmptyState: Boolean = true) {
 /** Eine Modell-Zeile: Radio (nur installiert), Label + Details, Trailing je Zustand, Fortschritt. */
 @Composable
 fun ModelRow(
-    model: WhisperModel,
+    model: OfflineModel,
     installed: Boolean,
     selected: Boolean,
     state: DownloadState,
@@ -295,7 +295,7 @@ private fun EmptyModelsState() {
 
 /** D2: vor einem Download ueber gebuehrenpflichtiges Netz. */
 @Composable
-private fun MeteredDialog(model: WhisperModel, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+private fun MeteredDialog(model: OfflineModel, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -308,7 +308,7 @@ private fun MeteredDialog(model: WhisperModel, onConfirm: () -> Unit, onDismiss:
 
 /** D1: Modell loeschen; beim aktiven und einzigen Modell mit Zusatzhinweis. */
 @Composable
-private fun DeleteDialog(model: WhisperModel, activeAndOnly: Boolean, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+private fun DeleteDialog(model: OfflineModel, activeAndOnly: Boolean, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     val label = offlineModelLabel(model.id)
     val body = stringResource(R.string.models_delete_body, fileSize(model.bytes)) +
         if (activeAndOnly) "\n\n" + stringResource(R.string.models_delete_active) else ""

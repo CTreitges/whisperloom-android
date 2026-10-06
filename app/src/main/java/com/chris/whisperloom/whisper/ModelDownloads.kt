@@ -28,7 +28,8 @@ fun percentOf(bytes: Long, total: Long): Int =
 
 /**
  * Prozessweite Sicht auf Modell-Downloads: der [ModelDownloadService] schreibt, die UI liest
- * [states] (Compose: `collectAsStateWithLifecycle`). Schluessel = Modell-ID aus [ModelCatalog].
+ * [states] (Compose: `collectAsStateWithLifecycle`). Schluessel = Modell-ID, katalogweit eindeutig
+ * ([findOfflineModel]: whisper- und Textmodelle).
  */
 object ModelDownloads {
 

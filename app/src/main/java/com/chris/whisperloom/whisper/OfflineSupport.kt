@@ -69,13 +69,13 @@ object OfflineSupport {
     const val MIN_DEVICE_RAM_BYTES = 3L shl 30
 
     /** 10 % Toleranz: ein "6-GB-Geraet" meldet als totalMem meist nur ~5,6 GiB (Kernel-Reserven). */
-    fun fitsDevice(totalRamBytes: Long, model: WhisperModel): Boolean =
+    fun fitsDevice(totalRamBytes: Long, model: OfflineModel): Boolean =
         totalRamBytes >= model.minDeviceRamBytes / 10 * 9
 
     /** Geraet hat genug RAM fuer Offline ueberhaupt (gleiche 10-%-Toleranz wie [fitsDevice]). */
     fun deviceFits(totalRamBytes: Long): Boolean = totalRamBytes >= MIN_DEVICE_RAM_BYTES / 10 * 9
 
-    fun fitsDevice(context: Context, model: WhisperModel): Boolean = fitsDevice(totalRamBytes(context), model)
+    fun fitsDevice(context: Context, model: OfflineModel): Boolean = fitsDevice(totalRamBytes(context), model)
 
     /** Vor grossen Downloads: laeuft das gerade ueber mobile Daten? (UX-Spec Dialog D2) */
     fun isMeteredNetwork(context: Context): Boolean =
