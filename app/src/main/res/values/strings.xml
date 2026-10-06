@@ -469,7 +469,7 @@
     <string name="help_s4_intro">Jeder OpenAI-kompatible Server geht, z. B. speaches, whisper.cpp-server oder LocalAI. Eintragen unter Erkennung → Anbieter „Eigener Server“.</string>
     <string name="help_s4_body">Base-URL eintragen, Key nur falls verlangt. Endpunkte: /v1/audio/transcriptions und /v1/chat/completions.\nTextverbesserung auch über Ollama: lokal ohne Key, Cloud mit Key.\nhttp:// nur im eigenen Netz oder per VPN.</string>
     <string name="help_s5_title">Offline-Modus</string>
-    <string name="help_s5_body">Ein Offline-Modell erkennt Sprache auf dem Gerät, je nach Modell in einigen Sekunden (Small: etwa 5–12 s). Einmal laden (32–574 MB), löschen unter Offline-Modelle. Für Deutsch empfohlen: Small.</string>
+    <string name="help_s5_body">Ein Offline-Modell erkennt Sprache auf dem Gerät (Small: etwa 5–12 s). Einmal laden (32–574 MB), löschen unter Offline-Modelle. Für Deutsch empfohlen: Small.</string>
     <string name="help_widgets_title">Widgets &amp; Pro Widgets</string>
     <string name="help_widgets_intro">Normale Widgets für den Startbildschirm folgen mit einem Update. Pro Widgets gibt es schon: Sprach-Command-Widgets für Entwickler mit eigenem Server.</string>
     <string name="help_widgets_unlock">Freischalten: Einstellungen → Erweitert → Pro Widgets.</string>
