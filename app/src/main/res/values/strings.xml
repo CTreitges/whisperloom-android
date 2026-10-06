@@ -79,6 +79,7 @@
     <string name="home_banner_title">Noch nicht optimal</string>
     <string name="home_banner_a11y">Ohne Bedienungshilfe landet der Text nur in der Zwischenablage.</string>
     <string name="home_banner_model">Offline gewählt, aber kein Modell geladen.</string>
+    <string name="home_banner_text_model">Offline ohne Textmodell — der Text kommt ohne KI.</string>
     <string name="home_banner_notif">Ohne Benachrichtigung kannst du den Knopf nur hier beenden.</string>
     <string name="home_banner_fix">Beheben</string>
     <string name="home_status_title">Status</string>
@@ -94,7 +95,10 @@
     <string name="home_val_refine">%1$s · %2$s</string>
     <string name="home_val_refine_no_llm">%1$s · %2$s bietet keine Textverbesserung</string>
     <string name="home_val_refine_no_model">%1$s · kein Textmodell eingetragen</string>
-    <string name="home_val_refine_offline">%1$s · offline nur mit eigenem Zugang</string>
+    <string name="home_val_refine_local">%1$s · lokal · %2$s</string>
+    <string name="home_val_refine_online_local">%1$s · %2$s · ohne Netz lokal</string>
+    <string name="home_val_refine_skip_offline">%1$s · offline übersprungen</string>
+    <string name="home_val_refine_local_missing">%1$s · Textmodell fehlt — Text ohne KI</string>
     <string name="home_val_perms_ok">Mikrofon ✓ · Über Apps ✓ · Bedienungshilfe ✓</string>
     <string name="home_val_perms_a11y_missing">Mikrofon ✓ · Über Apps ✓ · Bedienungshilfe ✗ (Zwischenablage)</string>
     <string name="home_val_perms_missing">Pflicht-Berechtigung fehlt</string>
@@ -236,6 +240,9 @@
     <string name="settings_rule_fillers">Füllwörter</string>
     <string name="settings_rule_cap">Groß-Schreibung</string>
     <string name="settings_rule_space">Leerzeichen</string>
+    <string name="settings_rule_offline_local">lokal bei Offline</string>
+    <string name="settings_rule_offline_online_local">online, ohne Netz lokal</string>
+    <string name="settings_rule_offline_skip">ohne lokales Modell</string>
     <string name="about_version">Version %1$s</string>
     <string name="about_license">whisper.cpp (MIT) · Jetpack Compose / AndroidX (Apache 2.0) · Kotlin und kotlinx.coroutines (Apache 2.0) · Material Symbols (Apache 2.0)</string>
     <string name="about_source">Quellcode auf GitHub</string>

@@ -26,6 +26,7 @@ import com.chris.whisperloom.OfflineRefineRule
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.llm.installSparse
+import com.chris.whisperloom.ui.home.HomeScreen
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SystemStatus
@@ -56,7 +57,7 @@ import org.robolectric.annotation.Config
 /**
  * Das lokale Textmodell in der Oberflaeche (Spec §4), Compose-Semantik unter Robolectric:
  * E4 Abschnitt Textverbesserung, Pflichtkarte "Offline ohne Textmodell", E2 Karte "Offline-Erkennung"
- * und Online-Zugang je Regel, Hub-Zaehler.
+ * und Online-Zugang je Regel, Home-Zeile und -Banner, Hub-Unterzeilen.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w411dp-h2400dp-xxhdpi")
@@ -340,7 +341,63 @@ class TextModelUiTest {
         compose.onNodeWithText("Offline-Erkennung").assertDoesNotExist()
     }
 
-    // --- Hub und Home zaehlen beide Arten ----------------------------------------------------
+    // --- Home und Hub ------------------------------------------------------------------------
+
+    /** Alles, was Home braucht, offline mit whisper-Modell; [textModels] = geladene Textmodelle. */
+    private fun homeStatus(textModels: Set<String> = emptySet()) = SystemStatus(
+        micGranted = true, canDrawOverlays = true, a11yRunning = true,
+        installedModels = setOf("small"), installedTextModels = textModels,
+    )
+
+    @Test fun homeWarntOhneTextmodellUndDasBannerFuehrtZuText() {
+        offlineOhneTextmodell()
+        val nav = screen(env(homeStatus())) { HomeScreen(it) }
+        compose.onNodeWithText("Glätten · Textmodell fehlt — Text ohne KI").assertExists()
+        compose.onNodeWithText("Offline ohne Textmodell — der Text kommt ohne KI.").assertExists()
+        compose.onNodeWithText("Beheben").performClick()
+        compose.waitForIdle()
+        assertEquals(Screen.TextSettings, nav.current)
+    }
+
+    @Test fun homeMitGeladenemTextmodellRechnetLokalOhneBanner() {
+        offlineOhneTextmodell()
+        screen(env(homeStatus(setOf("gemma4_e2b")))) { HomeScreen(it) }
+        compose.onNodeWithText("Glätten · lokal · Gemma 4 E2B").assertExists()
+        compose.onNodeWithText("Beheben").assertDoesNotExist()
+    }
+
+    @Test fun homeUeberspringenOhneEigenenZugangIstNeutral() {
+        offlineOhneTextmodell(OfflineRefineRule.SKIP)
+        screen(env(homeStatus())) { HomeScreen(it) }
+        compose.onNodeWithText("Glätten · offline übersprungen").assertExists()
+        compose.onNodeWithText("Beheben").assertDoesNotExist()
+    }
+
+    @Test fun homeOnlineOhneNetzLokalNenntDasOnlineModell() {
+        offlineOhneTextmodell(OfflineRefineRule.ONLINE_LOCAL)
+        prefs.llmProviderId = "groq"
+        prefs.llmKey = "gsk"
+        screen(env(homeStatus(setOf("gemma4_e2b")))) { HomeScreen(it) }
+        compose.onNodeWithText(" · ohne Netz lokal", substring = true).assertExists()
+    }
+
+    @Test fun hubNenntDieRegelNurOfflineMitStufe() {
+        offlineOhneTextmodell(OfflineRefineRule.ONLINE_LOCAL)
+        prefs.removeFillers = false
+        prefs.autoCapitalize = false
+        prefs.trailingSpace = false
+        screen(env(homeStatus())) { SettingsHubScreen(it) }
+        compose.onNodeWithText("Glätten · online, ohne Netz lokal").assertExists()
+    }
+
+    @Test fun hubOhneRegelBeiStufeAus() {
+        offlineOhneTextmodell()
+        prefs.refineMode = RefineMode.OFF
+        prefs.removeFillers = true
+        screen(env(homeStatus())) { SettingsHubScreen(it) }
+        compose.onNodeWithText("lokal bei Offline", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Aus · Füllwörter", substring = true).assertExists()
+    }
 
     @Test fun hubZaehltWhisperUndTextmodelle() {
         prefs.engine = Engine.OFFLINE

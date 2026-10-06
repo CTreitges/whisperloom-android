@@ -1,6 +1,8 @@
 package com.chris.whisperloom.ui.home
 
 import com.chris.whisperloom.Engine
+import com.chris.whisperloom.OfflineRefineRule
+import com.chris.whisperloom.RefineDecision
 import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.api.RefineBlock
 import com.chris.whisperloom.ui.components.Tone
@@ -24,6 +26,41 @@ class HomeStatusTest {
         assertEquals(HomeStatus.Banner.MODEL, HomeStatus.banner(true, Engine.OFFLINE, false, true, false))
         assertEquals(HomeStatus.Banner.NOTIF, HomeStatus.banner(true, Engine.OFFLINE, true, true, false))
         assertEquals(HomeStatus.Banner.NONE, HomeStatus.banner(true, Engine.ONLINE, false, false, false))
+    }
+
+    @Test fun bannerTextmodellNachModellUndVorBenachrichtigung() {
+        assertEquals(HomeStatus.Banner.TEXT_MODEL, HomeStatus.banner(true, Engine.OFFLINE, true, true, false, textModelMissing = true))
+        assertEquals(HomeStatus.Banner.MODEL, HomeStatus.banner(true, Engine.OFFLINE, false, true, true, textModelMissing = true))
+        assertEquals(HomeStatus.Banner.A11Y, HomeStatus.banner(false, Engine.OFFLINE, true, true, true, textModelMissing = true))
+        assertEquals(HomeStatus.Banner.NONE, HomeStatus.banner(true, Engine.OFFLINE, true, false, false, textModelMissing = false))
+    }
+
+    @Test fun offlineZeileNachRegelZugangUndModell() {
+        val r = OfflineRefineRule.entries
+        fun zeile(rule: OfflineRefineRule, own: Boolean, local: Boolean) = HomeStatus.offlineRefine(rule, own, local)
+        assertEquals(HomeStatus.OfflineRefine.LOCAL, zeile(OfflineRefineRule.LOCAL, own = true, local = true))
+        assertEquals(HomeStatus.OfflineRefine.MISSING, zeile(OfflineRefineRule.LOCAL, own = true, local = false))
+        assertEquals(HomeStatus.OfflineRefine.ONLINE_LOCAL, zeile(OfflineRefineRule.ONLINE_LOCAL, own = true, local = true))
+        assertEquals(HomeStatus.OfflineRefine.LOCAL, zeile(OfflineRefineRule.ONLINE_LOCAL, own = false, local = true))
+        // Ohne Modell fehlt es auch mit eigenem Zugang: ohne Netz gaebe es keinen Ausweg (Spec §0.4).
+        assertEquals(HomeStatus.OfflineRefine.MISSING, zeile(OfflineRefineRule.ONLINE_LOCAL, own = true, local = false))
+        assertEquals(HomeStatus.OfflineRefine.ONLINE, zeile(OfflineRefineRule.SKIP, own = true, local = false))
+        assertEquals(HomeStatus.OfflineRefine.SKIPPED, zeile(OfflineRefineRule.SKIP, own = false, local = true))
+        // Nur das fehlende Modell warnt.
+        r.forEach { rule ->
+            listOf(true, false).forEach { own ->
+                listOf(true, false).forEach { local ->
+                    val state = zeile(rule, own, local)
+                    val tone = HomeStatus.offlineRefineTone(state)
+                    assertEquals("$rule/$own/$local", if (state == HomeStatus.OfflineRefine.MISSING) Tone.WARNING else Tone.NEUTRAL, tone)
+                    assertEquals(
+                        "Warnung genau wie localModelMissing ($rule/$local)",
+                        RefineDecision.localModelMissing(Engine.OFFLINE, RefineMode.POLISH, RefineMode.OFF, rule, local),
+                        state == HomeStatus.OfflineRefine.MISSING,
+                    )
+                }
+            }
+        }
     }
 
     @Test fun statusFarben() {
