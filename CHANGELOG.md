@@ -7,8 +7,10 @@ Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](ht
 ### Behoben
 
 - **Gemma 4 E4B (und E2B) direkt wählbar.** Bisher war ein Textmodell erst nach dem Download wählbar, und ein fertiges E4B blieb ungenutzt, solange E2B gewählt war. Jetzt lädt ein Tipp auf ein passendes, noch nicht geladenes Textmodell es (wie **Laden**, über mobile Daten mit Nachfrage), und ist der Download fertig, ist es gewählt. Zu große Modelle bleiben ausgegraut („Für dieses Gerät zu groß").
-- **Auswahl auch unter Text und im Assistenten.** Die Karte **Offline-Erkennung** zeigt beide Textmodelle statt nur des gewählten, der Assistent (Schritt 2b) nach „Lokales Textmodell" ebenfalls; Standard bleibt Gemma 4 E2B.
+- **Auswahl auch unter Text und im Assistenten.** Die Karte **Offline-Erkennung** zeigt beide Textmodelle statt nur des gewählten. Im Assistenten (Schritt 2b) lädt „Lokales Textmodell" nichts mehr vorab, wenn auch E4B ins Gerät passt: Erst der Tipp auf E2B oder E4B lädt. Standard bleibt Gemma 4 E2B.
 - **Kein stummes „Laden" mehr.** Läuft ein anderer Download, sagt die Textmodell-Zeile „Laden geht, sobald der laufende Download fertig ist."
+- **Warnkarte nicht mehr doppelt.** Unter Text, in Offline-Modelle und im Assistenten warnt „Offline ohne Textmodell" nur noch und bietet **Überspringen**; Laden, Fortschritt und Fehler stehen einmal, an der Zeile des Modells.
+- **Gewählt bleibt, was da ist.** Ein abgebrochener Download lässt das Textmodell nicht gewählt zurück (es gilt wieder ein geladenes, sonst E2B), und wer das gewählte Textmodell löscht, während ein anderes geladen ist, hat danach das andere.
 
 ## [3.8.5] — 2026-10-06
 

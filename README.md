@@ -140,7 +140,7 @@ Ein persistenter PKCS12-Keystore liegt als GitHub-Secrets `WHISPERLOOM_KEYSTORE_
 
 ## Tests
 
-Alle Tests laufen ohne Gerät und ohne Emulator (`./gradlew testDebugUnitTest`): reine JVM-Tests für die Logik, Robolectric (meist SDK 35) für alles, was Android-Ressourcen, `org.json`, SharedPreferences oder Layout-Inflation braucht. HTTP-Pfade werden gegen einen lokalen JDK-`HttpServer` getestet. Stand 3.8.5 plus [Unreleased]: 129 Testklassen in 128 Dateien, 1561 `@Test`-Methoden. Die Tabelle nennt eine Auswahl:
+Alle Tests laufen ohne Gerät und ohne Emulator (`./gradlew testDebugUnitTest`): reine JVM-Tests für die Logik, Robolectric (meist SDK 35) für alles, was Android-Ressourcen, `org.json`, SharedPreferences oder Layout-Inflation braucht. HTTP-Pfade werden gegen einen lokalen JDK-`HttpServer` getestet. Stand 3.8.5 plus [Unreleased]: 129 Testklassen in 128 Dateien, 1566 `@Test`-Methoden. Die Tabelle nennt eine Auswahl:
 
 | Testklasse | Deckt ab |
 |---|---|
@@ -195,14 +195,14 @@ Alle Tests laufen ohne Gerät und ohne Emulator (`./gradlew testDebugUnitTest`):
 | `ui/patchnotes/PatchnotesScreenTest` | Patchnotes-Screen mit den echten Assets: Hero, Aufklappen, Technik ausgeblendet, „Vor Version 3", Überschriften, Fehlerzustand |
 | `ui/patchnotes/PatchnotesScreenshotTest` | PNGs der Patchnotes, Home-Fußzeile (360 dp) und des Über-Sheets nach `app/build/reports/screenshots/` (Robolectric-Native-Graphics; auf linux-aarch64 übersprungen) |
 | `ui/MainFlowTest` | Oberflächen-Abläufe, u. a. Vokabular-Sheet (Liste, Zeile mit Anzahl und Datei), Absatz-Schalter (an, wirkt nur mit Stufe), Ollama-Masken (Server-Adresse, Modell-Auswahl mit freier Eingabe) |
-| `ui/models/TextModelUiTest`, `ui/nav/SystemStatusTest` | Offline-Modelle mit zwei Abschnitten, E4B unter 8 GB gedimmt, Tipp auf ein nicht geladenes Textmodell lädt es (Hinweis, solange ein anderer Download läuft), Auswahl E2B/E4B in der Text-Karte und in 2b, Pflichtkarte erscheint/verschwindet (Erkennung, Offline-Modelle, Text, Assistent 2b), Knöpfe und Radio setzen die Regel, Karte „Offline-Erkennung“, Online-Zugang offline, Home-Status und Banner, Hub-Kurzform; installierte Whisper- und Textmodelle getrennt |
+| `ui/models/TextModelUiTest`, `ui/nav/SystemStatusTest` | Offline-Modelle mit zwei Abschnitten, E4B unter 8 GB gedimmt, Tipp auf ein nicht geladenes Textmodell lädt es (Hinweis, solange ein anderer Download läuft), Auswahl E2B/E4B in der Text-Karte und in 2b (16 GB: erst der Tipp lädt), Löschen des gewählten wählt das andere geladene, Pflichtkarte erscheint/verschwindet (Erkennung, Offline-Modelle, Text, Assistent 2b; neben der Liste ohne eigenen Laden-Knopf), Knöpfe und Radio setzen die Regel, Karte „Offline-Erkennung“, Online-Zugang offline, Home-Status und Banner, Hub-Kurzform; installierte Whisper- und Textmodelle getrennt |
 | `ui/models/TextModelScreenshotTest` | PNGs der neuen Oberflächen (Offline-Modelle, Pflichtkarte auch bei 360 dp, Karte Offline-Erkennung, Home-Banner, Assistent 2b) nach `app/build/reports/screenshots/` (auf linux-aarch64 übersprungen) |
 | `ui/theme/WhisperLoomThemeTest` | Compose-Smoke, Spec-Tokens im Farbschema, Palette == `colors.xml` |
 | `whisper/DownloadStateTest` | Prozent-Rechnung, Zustands-Map je Modell |
 | `whisper/JniSymbolsTest` | `external fun` ↔ `JNIEXPORT`-Symbole (Name, Präfix, Parameterzahl), kein Asset-Loader |
 | `whisper/ModelCatalogTest` | Bytes/SHA-256/URLs der vier Modelle, Small = Default und Empfehlung |
 | `whisper/TextModelCatalogTest`, `llm/LocalTextEngineTest`, `llm/LocalRefinerTest` | Gemma 4 E2B/E4B: gepinnte URLs, Bytes, SHA-256, Cache-Zuschlag, RAM-Grenzen 6/8 GB mit Toleranz; Halter mit Fake-Modell (Laden, Wechsel, nie `close` mitten in der Rechnung, Leerlauf, Speicherdruck, Vorwärmen, Abbruch); derselbe Auftrag und dieselbe Nacharbeit wie online |
-| `whisper/ModelDownloadServiceTest` | Intents, Sofort-Stopp bei unbekannter ID, Fehlertexte, fertiges Textmodell wird gewählt |
+| `whisper/ModelDownloadServiceTest` | Intents, Sofort-Stopp bei unbekannter ID, Fehlertexte, fertiges Textmodell wird gewählt, abgebrochenes nicht |
 | `whisper/ModelDownloaderTest` | Kompletter Download, Resume (206), Server ohne Range, Checksum-Mismatch, Cancel, Netzabbruch + Retry, 404/503, Speicherplatz |
 | `whisper/ModelStoreTest` | `.part`-Konvention, installierte Modelle, Löschen, belegter Platz |
 | `whisper/OfflineSupportTest` | CPU-Features aus `/proc/cpuinfo`, Performance-Kerne, RAM-Toleranz für Large |
