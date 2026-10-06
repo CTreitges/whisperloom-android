@@ -42,6 +42,8 @@ class PrefsTest {
         assertEquals("same", p.llmProviderId)
         assertEquals("small", p.offlineModel)
         assertTrue(p.offlineAccurate)
+        assertEquals(OfflineRefineRule.LOCAL, p.offlineRefine)
+        assertEquals("gemma4_e2b", p.localLlmModel)
         assertTrue(p.shareHideFillers)
         // Automatische Absaetze an = Verhalten bis 3.4; kein Vokabular, keine Datei.
         assertTrue(p.refineParagraphs)
@@ -220,6 +222,53 @@ class PrefsTest {
         assertTrue(Prefs(ctx).polishReadable)
         Prefs(ctx).polishReadable = false
         assertFalse(state.polishReadable)
+        state.dispose()
+    }
+
+    // --- Lokales Textmodell -----------------------------------------------------
+
+    @Test fun offlineRegelUndTextmodellRundreise() {
+        val p = Prefs(ctx)
+        p.offlineRefine = OfflineRefineRule.SKIP
+        p.localLlmModel = "gemma4_e4b"
+        assertEquals(OfflineRefineRule.SKIP, Prefs(ctx).offlineRefine)
+        assertEquals("gemma4_e4b", Prefs(ctx).localLlmModel)
+        assertEquals("skip", sp.getString("offline_refine", null))
+        assertEquals("gemma4_e4b", sp.getString("local_llm_model", null))
+        p.offlineRefine = OfflineRefineRule.ONLINE_LOCAL
+        assertEquals("online_local", sp.getString("offline_refine", null))
+        assertEquals(OfflineRefineRule.ONLINE_LOCAL, Prefs(ctx).offlineRefine)
+    }
+
+    @Test fun bestandsnutzerMitOfflineUndStufeGiltOhneMigrationAlsLokal() {
+        // Spec §0.5: nichts wird geschrieben — wer vor 3.9 offline mit Stufe erkannt hat, gilt als "lokal".
+        sp.edit().putInt("prefs_version", 4).putString("engine", "offline").putString("refine_mode", "polish").commit()
+        val p = Prefs(ctx)
+        assertEquals(OfflineRefineRule.LOCAL, p.offlineRefine)
+        assertEquals(Prefs.DEFAULT_LOCAL_LLM_MODEL, p.localLlmModel)
+        assertFalse(sp.contains("offline_refine"))
+        assertFalse(sp.contains("local_llm_model"))
+        assertEquals(4, sp.getInt("prefs_version", 0))
+    }
+
+    @Test fun unbekannteOfflineRegelGiltAlsLokal() {
+        sp.edit().putString("offline_refine", "no_net").commit()
+        assertEquals(OfflineRefineRule.LOCAL, Prefs(ctx).offlineRefine)
+    }
+
+    @Test fun offlineRegelUndTextmodellSpiegelnSichInCompose() {
+        val state = PrefsState(Prefs(ctx))
+        assertEquals(OfflineRefineRule.LOCAL, state.offlineRefine)
+        assertEquals("gemma4_e2b", state.localLlmModel)
+        state.offlineRefine = OfflineRefineRule.SKIP
+        state.localLlmModel = "gemma4_e4b"
+        assertEquals(OfflineRefineRule.SKIP, Prefs(ctx).offlineRefine)
+        assertEquals("gemma4_e4b", Prefs(ctx).localLlmModel)
+        // Und andersherum: eine Aenderung von aussen (Tastatur, Pflichtkarte im Dienst) kommt an.
+        Prefs(ctx).offlineRefine = OfflineRefineRule.ONLINE_LOCAL
+        Prefs(ctx).localLlmModel = "gemma4_e2b"
+        assertEquals(OfflineRefineRule.ONLINE_LOCAL, state.offlineRefine)
+        assertEquals("gemma4_e2b", state.localLlmModel)
         state.dispose()
     }
 
