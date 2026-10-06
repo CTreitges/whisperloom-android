@@ -4,11 +4,11 @@ Sprechen statt tippen: WhisperLoom nimmt auf, erkennt den Text und schreibt ihn 
 
 Die Erkennung läuft wahlweise **online** über deinen eigenen Zugang bei einem Anbieter (OpenAI, Groq, Mistral, ElevenLabs, Together AI, DeepInfra, OpenRouter oder ein eigener OpenAI-kompatibler Server) oder **offline** auf dem Gerät mit whisper.cpp und einem einmalig heruntergeladenen Modell. Eine optionale KI-Textverbesserung glättet, verschönert oder fasst zusammen.
 
-Version **3.8.2** — Nutzer-Anleitung: [docs/ANLEITUNG.md](docs/ANLEITUNG.md) · Änderungen: [CHANGELOG.md](CHANGELOG.md) (in der App: **?** neben der Version).
+Version **3.8.3** — Nutzer-Anleitung: [docs/ANLEITUNG.md](docs/ANLEITUNG.md) · Änderungen: [CHANGELOG.md](CHANGELOG.md) (in der App: **?** neben der Version).
 
 Inspiriert von [Wispr Flow](https://wisprflow.ai/) — eigenständige, unabhängige Implementierung.
 
-## Features (3.8.2)
+## Features (3.8.3)
 
 - **Drei Diktat-Wege:** schwebender Mikro-Knopf über allen Apps (Overlay + Bedienungshilfe fügt direkt ins Feld ein, Zwischenablage als Fallback) · Diktat-Tastatur mit Halten-zum-Sprechen, Wisch-Geste (rechts feststellen, links verwerfen), Zauberstab für die Textstufen und Pegelband · Sprachnachrichten aus WhatsApp/Telegram/Signal per Teilen-Menü abtippen (Absätze, Schalter „Füllwörter ausblenden", mehrere Dateien, lange Aufnahmen gestückelt, eigene KI-Stufe Glätten/Verschönern/Zusammenfassen wählbar).
 - **Pro Widgets** (für Entwickler, ab Werk aus, freischaltbar unter Einstellungen → **Erweitert**, braucht eigenen Server): **Sprach-Command-Widgets** schicken ein Diktat an deinen eigenen Agenten. Jedes Widget hat seinen eigenen Namen (steht unter der Kachel, abschaltbar), eigenen Server mit Token und „Verbindung prüfen", Symbol oder Galerie-Bild und Auto-Stopp nach Sprechpause; frei skalierbar 1 × 1 bis 4 × 2, verwaltet unter Einstellungen → Widgets → Tab „Pro Widgets". Gegenstelle auf dem eigenen Server: [hermes-bridge](https://github.com/CTreitges/hermes-bridge). Normale Widgets folgen.
@@ -137,7 +137,7 @@ Ein persistenter PKCS12-Keystore liegt als GitHub-Secrets `WHISPERLOOM_KEYSTORE_
 
 ## Tests
 
-Alle Tests laufen ohne Gerät und ohne Emulator (`./gradlew testDebugUnitTest`): reine JVM-Tests für die Logik, Robolectric (meist SDK 35) für alles, was Android-Ressourcen, `org.json`, SharedPreferences oder Layout-Inflation braucht. HTTP-Pfade werden gegen einen lokalen JDK-`HttpServer` getestet. Stand 3.8.2: 115 Testklassen in 112 Dateien, 1353 `@Test`-Methoden. Die Tabelle nennt eine Auswahl:
+Alle Tests laufen ohne Gerät und ohne Emulator (`./gradlew testDebugUnitTest`): reine JVM-Tests für die Logik, Robolectric (meist SDK 35) für alles, was Android-Ressourcen, `org.json`, SharedPreferences oder Layout-Inflation braucht. HTTP-Pfade werden gegen einen lokalen JDK-`HttpServer` getestet. Stand 3.8.3: 115 Testklassen in 112 Dateien, 1354 `@Test`-Methoden. Die Tabelle nennt eine Auswahl:
 
 | Testklasse | Deckt ab |
 |---|---|
@@ -202,7 +202,7 @@ Nicht durch Tests abgedeckt und nur auf dem Gerät prüfbar: Overlay-/IME-Darste
 
 ## Versionen
 
-Aktuell **3.8.2** (2026-10-05). Alle Änderungen seit 1.0 im [CHANGELOG.md](CHANGELOG.md). Der letzte Stand der ersten Offline-Generation (Modell im APK) liegt als Tag `offline-v1` im Repo.
+Aktuell **3.8.3** (2026-10-06). Alle Änderungen seit 1.0 im [CHANGELOG.md](CHANGELOG.md). Der letzte Stand der ersten Offline-Generation (Modell im APK) liegt als Tag `offline-v1` im Repo.
 
 ## Lizenz / Credits
 
