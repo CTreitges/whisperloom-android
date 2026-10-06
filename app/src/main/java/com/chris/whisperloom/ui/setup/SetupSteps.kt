@@ -19,7 +19,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -31,6 +30,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chris.whisperloom.Engine
 import com.chris.whisperloom.OfflineRefineRule
 import com.chris.whisperloom.R
@@ -214,7 +214,8 @@ private fun modelStep(facts: SetupFacts, actions: StepActions): StepUi {
         if (localModelMissing(prefs, env.status)) {
             LocalModelRequiredCard()
         } else {
-            TextModelChoice(model, choice, busy = states.values.any { it is DownloadState.Running })
+            val otherRunning = states.any { (id, state) -> id != model.id && state is DownloadState.Running }
+            TextModelChoice(model, choice, loading = download != null, busy = otherRunning)
             if (download != null) DownloadProgress(download)
         }
         val hint = when {
@@ -230,11 +231,11 @@ private fun modelStep(facts: SetupFacts, actions: StepActions): StepUi {
 
 /**
  * Die beiden Karten "Lokales Textmodell" / "Ueberspringen" (Muster [EngineOption]). Lokal startet den
- * Download des Textmodells (ist es schon da: nur die Regel); die KI-Stufe aendert der Assistent nicht.
- * [busy]: ein Download laeuft — der Dienst laedt nur eins; laeuft ein anderer, geht "Lokal" erst danach.
+ * Download des Textmodells (ist es schon da oder laedt es: nur die Regel); die KI-Stufe aendert der
+ * Assistent nicht. [busy]: ein anderer Download laeuft — der Dienst laedt nur eins, "Lokal" geht erst danach.
  */
 @Composable
-private fun TextModelChoice(model: OfflineModel, choice: TextChoice?, busy: Boolean) {
+private fun TextModelChoice(model: OfflineModel, choice: TextChoice?, loading: Boolean, busy: Boolean) {
     val env = LocalAppEnv.current
     val prefs = env.prefs
     val load = rememberTextModelLoad()
@@ -242,7 +243,7 @@ private fun TextModelChoice(model: OfflineModel, choice: TextChoice?, busy: Bool
     Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         EngineOption(
             selected = choice == TextChoice.LOCAL,
-            enabled = fits && (choice == TextChoice.LOCAL || !busy),
+            enabled = fits && !busy,
             icon = R.drawable.ic_auto_fix_high,
             iconTint = MaterialTheme.colorScheme.tertiary,
             title = stringResource(R.string.setup_s2b_local),
@@ -250,7 +251,7 @@ private fun TextModelChoice(model: OfflineModel, choice: TextChoice?, busy: Bool
             badge = null,
             unavailable = if (fits) null else stringResource(R.string.models_too_big),
         ) {
-            if (choice == TextChoice.LOCAL || env.status.textModelReady(model.id)) {
+            if (loading || env.status.textModelReady(model.id)) {
                 if (prefs.offlineRefine == OfflineRefineRule.SKIP) prefs.offlineRefine = OfflineRefineRule.LOCAL
             } else {
                 load.start(model)

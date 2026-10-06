@@ -387,6 +387,32 @@ class TextModelUiTest {
         }
     }
 
+    @Test fun schritt2bZurueckZuLokalWaehrendDasTextmodellLaedt() {
+        prefs.offlineRefine = OfflineRefineRule.SKIP
+        ModelDownloads.update("gemma4_e2b", DownloadState.Running(1_000, TextModelCatalog.GEMMA4_E2B.bytes, 500))
+        try {
+            schritt2b()
+            compose.onNode(isSelectable() and hasText("Überspringen")).assertIsSelected()
+            compose.onNode(isSelectable() and hasText("Lokales Textmodell")).assertIsEnabled().performClick()
+            compose.waitForIdle()
+            assertEquals(OfflineRefineRule.LOCAL, Prefs(ctx).offlineRefine)
+            assertEquals("kein zweiter Start, der Download laeuft schon", null, startedService())
+        } finally {
+            ModelDownloads.clear("gemma4_e2b")
+        }
+    }
+
+    @Test fun schritt2bLokalErstNachDemErkennungsmodell() {
+        ModelDownloads.update("small", DownloadState.Running(1_000, ModelCatalog.SMALL.bytes, 500))
+        try {
+            schritt2b(SystemStatus())
+            compose.onNode(isSelectable() and hasText("Lokales Textmodell")).assertIsNotEnabled()
+            compose.onNode(isSelectable() and hasText("Überspringen")).assertIsEnabled()
+        } finally {
+            ModelDownloads.clear("small")
+        }
+    }
+
     @Test fun schritt2bOhneErkennungsmodellBleibtWeiterGesperrt() {
         prefs.offlineRefine = OfflineRefineRule.SKIP
         schritt2b(SystemStatus())
