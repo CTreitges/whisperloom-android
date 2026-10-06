@@ -131,6 +131,12 @@ fun ModelListSection(snack: SnackController, showEmptyState: Boolean = true, tex
             onConfirm = {
                 store.delete(model)
                 ModelDownloads.clear(model.id)
+                // Das gewaehlte Textmodell geloescht, ein anderes liegt da: das andere waehlen — sonst
+                // kaeme der Text offline ohne KI, obwohl ein Modell bereitsteht.
+                if (text && selectedId == model.id) {
+                    models.firstOrNull { it.id != model.id && it.id in installed && OfflineSupport.fitsDevice(env.status.totalRamBytes, it) }
+                        ?.let { prefs.localLlmModel = it.id }
+                }
                 // geladenes Modell aus dem RAM (nie mitten in einer Rechnung)
                 if (text) LocalTextEngine.release() else WhisperEngine.release()
                 storeVersion++

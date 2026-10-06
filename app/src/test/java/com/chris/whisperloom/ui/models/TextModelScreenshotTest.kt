@@ -156,17 +156,26 @@ class TextModelScreenshotTest {
         shot("textmodell-text-auswahl-16gb")
     }
 
-    @Test fun assistent2bNachLokalMitLaufendemDownload() {
-        // Nach "Lokales Textmodell": E2B laedt, E4B wartet mit Hinweis.
-        prefs.refineMode = RefineMode.OFF
+    @Test fun assistent2bNachLokalAuf16Gb() {
+        // Nach "Lokales Textmodell" auf 16 GB: "Glaetten" an, noch nichts geladen — die Pflichtkarte warnt,
+        // geladen wird per Tipp auf E2B oder E4B.
         installSparse(ctx, ModelCatalog.SMALL)
-        ModelDownloads.update("gemma4_e2b", DownloadState.Running(1_294_073_856, TextModelCatalog.GEMMA4_E2B.bytes, 5_000_000))
+        screen(ready.copy(totalRamBytes = 16L shl 30)) { SetupScreen(SetupRouter.STEP_ACCESS, it) }
+        nachOben(hasText("Textverbesserung ohne Netz"), abstandPx = 40f)
+        shot("textmodell-assistent-2b-auswahl")
+    }
+
+    @Test fun assistent2bE4bLaedt() {
+        // E4B getippt: es laedt und ist gewaehlt, E2B wartet mit Hinweis.
+        prefs.localLlmModel = "gemma4_e4b"
+        installSparse(ctx, ModelCatalog.SMALL)
+        ModelDownloads.update("gemma4_e4b", DownloadState.Running(1_829_765_120, TextModelCatalog.GEMMA4_E4B.bytes, 5_000_000))
         try {
             screen(ready.copy(totalRamBytes = 16L shl 30)) { SetupScreen(SetupRouter.STEP_ACCESS, it) }
             nachOben(hasText("Textverbesserung ohne Netz"), abstandPx = 40f)
-            shot("textmodell-assistent-2b-auswahl")
+            shot("textmodell-assistent-2b-laedt")
         } finally {
-            ModelDownloads.clear("gemma4_e2b")
+            ModelDownloads.clear("gemma4_e4b")
         }
     }
 

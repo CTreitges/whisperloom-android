@@ -187,7 +187,7 @@ private fun OfflineRefineCard(snack: SnackController, noAi: Boolean) {
         if (!env.status.textModelFits) {
             LoomRow(headline = stringResource(R.string.text_local_none), supporting = stringResource(R.string.text_local_needs_ram))
         } else {
-            if (localModelMissing(prefs, env.status)) LocalModelRequiredCard(Modifier.padding(vertical = 8.dp))
+            if (localModelMissing(prefs, env.status)) LocalModelRequiredCard(Modifier.padding(vertical = 8.dp), compact = true)
             ModelListSection(snack, showEmptyState = false, text = true, inCard = true)
         }
         Text(
