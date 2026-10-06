@@ -42,8 +42,10 @@ class HomeStatusTest {
         assertEquals(HomeStatus.OfflineRefine.MISSING, zeile(OfflineRefineRule.LOCAL, own = true, local = false))
         assertEquals(HomeStatus.OfflineRefine.ONLINE_LOCAL, zeile(OfflineRefineRule.ONLINE_LOCAL, own = true, local = true))
         assertEquals(HomeStatus.OfflineRefine.LOCAL, zeile(OfflineRefineRule.ONLINE_LOCAL, own = false, local = true))
-        // Ohne Modell fehlt es auch mit eigenem Zugang: ohne Netz gaebe es keinen Ausweg (Spec §0.4).
-        assertEquals(HomeStatus.OfflineRefine.MISSING, zeile(OfflineRefineRule.ONLINE_LOCAL, own = true, local = false))
+        // Ohne Modell fehlt es auch mit eigenem Zugang: ohne Netz gaebe es keinen Ausweg (Spec §0.4) —
+        // mit Netz geht der Text aber online, also nicht "Text ohne KI".
+        assertEquals(HomeStatus.OfflineRefine.ONLINE_MISSING, zeile(OfflineRefineRule.ONLINE_LOCAL, own = true, local = false))
+        assertEquals(HomeStatus.OfflineRefine.MISSING, zeile(OfflineRefineRule.ONLINE_LOCAL, own = false, local = false))
         assertEquals(HomeStatus.OfflineRefine.ONLINE, zeile(OfflineRefineRule.SKIP, own = true, local = false))
         assertEquals(HomeStatus.OfflineRefine.SKIPPED, zeile(OfflineRefineRule.SKIP, own = false, local = true))
         // Nur das fehlende Modell warnt.
@@ -52,11 +54,12 @@ class HomeStatusTest {
                 listOf(true, false).forEach { local ->
                     val state = zeile(rule, own, local)
                     val tone = HomeStatus.offlineRefineTone(state)
-                    assertEquals("$rule/$own/$local", if (state == HomeStatus.OfflineRefine.MISSING) Tone.WARNING else Tone.NEUTRAL, tone)
+                    val missing = state == HomeStatus.OfflineRefine.MISSING || state == HomeStatus.OfflineRefine.ONLINE_MISSING
+                    assertEquals("$rule/$own/$local", if (missing) Tone.WARNING else Tone.NEUTRAL, tone)
                     assertEquals(
                         "Warnung genau wie localModelMissing ($rule/$local)",
                         RefineDecision.localModelMissing(Engine.OFFLINE, RefineMode.POLISH, RefineMode.OFF, rule, local),
-                        state == HomeStatus.OfflineRefine.MISSING,
+                        missing,
                     )
                 }
             }

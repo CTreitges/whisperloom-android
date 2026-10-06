@@ -18,9 +18,10 @@ object HomeStatus {
     /**
      * Textverbesserung bei Offline-Erkennung (Stufe != Aus), wie die Status-Zeile sie meldet:
      * lokal, online mit lokalem Ausweg, online (Ueberspringen mit eigenem Zugang), uebersprungen,
-     * oder das lokale Modell fehlt (Warnung, wie [com.chris.whisperloom.RefineDecision.localModelMissing]).
+     * oder das lokale Modell fehlt (Warnung, wie [com.chris.whisperloom.RefineDecision.localModelMissing]):
+     * [MISSING] = Text ohne KI, [ONLINE_MISSING] = mit Netz online, nur ohne Netz ohne KI.
      */
-    enum class OfflineRefine { LOCAL, ONLINE_LOCAL, ONLINE, SKIPPED, MISSING }
+    enum class OfflineRefine { LOCAL, ONLINE_LOCAL, ONLINE, SKIPPED, MISSING, ONLINE_MISSING }
 
     enum class Keyboard { ACTIVE, ENABLED, OFF }
 
@@ -73,6 +74,8 @@ object HomeStatus {
      * Online-Zugang; [localReady] = gewaehltes Textmodell installiert und passt in den RAM.
      */
     fun offlineRefine(rule: OfflineRefineRule, ownOnlineReady: Boolean, localReady: Boolean): OfflineRefine = when {
+        // "Online, ohne Netz lokal" mit eigenem Zugang: mit Netz geht der Text online — "Text ohne KI" stimmte nicht.
+        rule == OfflineRefineRule.ONLINE_LOCAL && ownOnlineReady && !localReady -> OfflineRefine.ONLINE_MISSING
         rule != OfflineRefineRule.SKIP && !localReady -> OfflineRefine.MISSING
         rule == OfflineRefineRule.LOCAL -> OfflineRefine.LOCAL
         rule == OfflineRefineRule.ONLINE_LOCAL -> if (ownOnlineReady) OfflineRefine.ONLINE_LOCAL else OfflineRefine.LOCAL
@@ -81,7 +84,8 @@ object HomeStatus {
     }
 
     /** Nur das fehlende Textmodell warnt; Ueberspringen ist so gewaehlt (neutral). */
-    fun offlineRefineTone(state: OfflineRefine): Tone = if (state == OfflineRefine.MISSING) Tone.WARNING else Tone.NEUTRAL
+    fun offlineRefineTone(state: OfflineRefine): Tone =
+        if (state == OfflineRefine.MISSING || state == OfflineRefine.ONLINE_MISSING) Tone.WARNING else Tone.NEUTRAL
 
     /** Modelle-Zeile nur, wenn etwas installiert ist oder offline gewaehlt wurde. */
     fun showModelsRow(installedCount: Int, engine: Engine?): Boolean = installedCount > 0 || engine == Engine.OFFLINE

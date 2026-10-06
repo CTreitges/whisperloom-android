@@ -496,6 +496,38 @@ class TextModelUiTest {
         compose.onNodeWithText("Beheben").assertDoesNotExist()
     }
 
+    /** Eigener, vollstaendiger Online-Zugang fuer die Textverbesserung. */
+    private fun eigenerZugang() {
+        prefs.llmProviderId = "groq"
+        prefs.llmKey = "gsk"
+    }
+
+    @Test fun homeOnlineOhneNetzLokalMitZugangOhneTextmodellSagtNichtTextOhneKi() {
+        offlineOhneTextmodell(OfflineRefineRule.ONLINE_LOCAL)
+        eigenerZugang()
+        screen(env(homeStatus())) { HomeScreen(it) }
+        // Mit Netz geht der Text online — nur ohne Netz kommt er ohne KI.
+        compose.onNodeWithText(" · ohne Netz ohne KI", substring = true).assertExists()
+        compose.onNodeWithText("Offline ohne Textmodell — ohne Netz kommt der Text ohne KI.").assertExists()
+        compose.onNodeWithText("Glätten · Textmodell fehlt — Text ohne KI").assertDoesNotExist()
+        compose.onNodeWithText("Offline ohne Textmodell — der Text kommt ohne KI.").assertDoesNotExist()
+    }
+
+    @Test fun pflichtkarteMitEigenemZugangSagtWasUeberspringenBewirkt() {
+        offlineOhneTextmodell(OfflineRefineRule.ONLINE_LOCAL)
+        eigenerZugang()
+        screen(env(SystemStatus(installedModels = setOf("small")))) { RecognitionScreen(it) }
+        compose.onNodeWithText("Mit Netz verbessert dein Online-Zugang, ohne Netz ein lokales Modell:", substring = true).assertExists()
+        compose.onNodeWithText("dann kommt der Text ohne Netz ohne KI.", substring = true).assertExists()
+    }
+
+    @Test fun pflichtkarteLokalMitEigenemZugangUeberspringenGehtOnline() {
+        offlineOhneTextmodell(OfflineRefineRule.LOCAL)
+        eigenerZugang()
+        screen(env(SystemStatus(installedModels = setOf("small")))) { RecognitionScreen(it) }
+        compose.onNodeWithText("dann verbessert mit Netz dein Online-Zugang, sonst kommt der Text ohne KI.", substring = true).assertExists()
+    }
+
     @Test fun homeOnlineOhneNetzLokalNenntDasOnlineModell() {
         offlineOhneTextmodell(OfflineRefineRule.ONLINE_LOCAL)
         prefs.llmProviderId = "groq"

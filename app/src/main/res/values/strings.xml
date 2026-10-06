@@ -80,6 +80,7 @@
     <string name="home_banner_a11y">Ohne Bedienungshilfe landet der Text nur in der Zwischenablage.</string>
     <string name="home_banner_model">Offline gewählt, aber kein Modell geladen.</string>
     <string name="home_banner_text_model">Offline ohne Textmodell — der Text kommt ohne KI.</string>
+    <string name="home_banner_text_model_online">Offline ohne Textmodell — ohne Netz kommt der Text ohne KI.</string>
     <string name="home_banner_notif">Ohne Benachrichtigung kannst du den Knopf nur hier beenden.</string>
     <string name="home_banner_fix">Beheben</string>
     <string name="home_status_title">Status</string>
@@ -99,6 +100,7 @@
     <string name="home_val_refine_online_local">%1$s · %2$s · ohne Netz lokal</string>
     <string name="home_val_refine_skip_offline">%1$s · offline übersprungen</string>
     <string name="home_val_refine_local_missing">%1$s · Textmodell fehlt — Text ohne KI</string>
+    <string name="home_val_refine_online_no_local">%1$s · %2$s · ohne Netz ohne KI</string>
     <string name="home_val_perms_ok">Mikrofon ✓ · Über Apps ✓ · Bedienungshilfe ✓</string>
     <string name="home_val_perms_a11y_missing">Mikrofon ✓ · Über Apps ✓ · Bedienungshilfe ✗ (Zwischenablage)</string>
     <string name="home_val_perms_missing">Pflicht-Berechtigung fehlt</string>
@@ -477,6 +479,9 @@
     <string name="models_llm_delete_body">%1$s werden frei. Für die lokale Textverbesserung muss dann wieder ein Textmodell geladen werden.</string>
     <string name="local_missing_title">Offline ohne Textmodell</string>
     <string name="local_missing_body">Die Textverbesserung braucht offline ein lokales Modell: %1$s (%2$s). Lade es oder überspringe sie — dann kommt der Text ohne KI.</string>
+    <!-- Mit eigenem Online-Zugang: Ueberspringen heisst dann "mit Netz online", nicht "ohne KI" -->
+    <string name="local_missing_body_own">Die Textverbesserung braucht offline ein lokales Modell: %1$s (%2$s). Lade es oder überspringe sie — dann verbessert mit Netz dein Online-Zugang, sonst kommt der Text ohne KI.</string>
+    <string name="local_missing_body_online">Mit Netz verbessert dein Online-Zugang, ohne Netz ein lokales Modell: %1$s (%2$s). Lade es oder überspringe es — dann kommt der Text ohne Netz ohne KI.</string>
     <string name="local_missing_load">Textmodell laden (%1$s)</string>
     <string name="local_missing_skip">Überspringen</string>
     <string name="models_llm_delete_active">Dies ist das aktive Textmodell — offline kommt der Text danach ohne KI.</string>

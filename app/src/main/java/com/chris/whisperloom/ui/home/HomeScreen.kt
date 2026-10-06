@@ -48,6 +48,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.chris.whisperloom.BuildConfig
 import com.chris.whisperloom.Engine
+import com.chris.whisperloom.OfflineRefineRule
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.SetupState
@@ -112,7 +113,9 @@ fun HomeScreen(nav: NavState) {
                 textModelMissing = localModelMissing(prefs, status),
             )
             if (banner != HomeStatus.Banner.NONE) {
-                ReadinessBanner(banner) {
+                // "Online, ohne Netz lokal" mit eigenem Zugang: mit Netz geht der Text online, ohne KI nur ohne Netz.
+                val onlineFirst = offlineRule(prefs, status) == OfflineRefineRule.ONLINE_LOCAL && SetupState.llmReady(prefs.llmAccess())
+                ReadinessBanner(banner, onlineFirst) {
                     when (banner) {
                         HomeStatus.Banner.A11Y -> nav.push(Screen.Setup(SetupRouter.STEP_A11Y))
                         HomeStatus.Banner.MODEL -> nav.push(Screen.Models)
@@ -270,7 +273,7 @@ private fun PulseRing() {
 }
 
 @Composable
-private fun ReadinessBanner(banner: HomeStatus.Banner, onFix: () -> Unit) {
+private fun ReadinessBanner(banner: HomeStatus.Banner, onlineFirst: Boolean, onFix: () -> Unit) {
     val loom = MaterialTheme.loom
     Column(
         Modifier
@@ -287,7 +290,8 @@ private fun ReadinessBanner(banner: HomeStatus.Banner, onFix: () -> Unit) {
                     stringResource(
                         when (banner) {
                             HomeStatus.Banner.MODEL -> R.string.home_banner_model
-                            HomeStatus.Banner.TEXT_MODEL -> R.string.home_banner_text_model
+                            HomeStatus.Banner.TEXT_MODEL ->
+                                if (onlineFirst) R.string.home_banner_text_model_online else R.string.home_banner_text_model
                             HomeStatus.Banner.NOTIF -> R.string.home_banner_notif
                             else -> R.string.home_banner_a11y
                         },
@@ -340,6 +344,7 @@ private fun StatusCard(nav: NavState, modelInstalled: Boolean) {
             HomeStatus.OfflineRefine.ONLINE -> stringResource(R.string.home_val_refine, level, modelLabel(llm))
             HomeStatus.OfflineRefine.SKIPPED -> stringResource(R.string.home_val_refine_skip_offline, level)
             HomeStatus.OfflineRefine.MISSING -> stringResource(R.string.home_val_refine_local_missing, level)
+            HomeStatus.OfflineRefine.ONLINE_MISSING -> stringResource(R.string.home_val_refine_online_no_local, level, modelLabel(llm))
         }
         llm.refineBlock == RefineBlock.NO_CHAT ->
             stringResource(R.string.home_val_refine_no_llm, level, providerShortName(llm.provider))

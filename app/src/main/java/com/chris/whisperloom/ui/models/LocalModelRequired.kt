@@ -28,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chris.whisperloom.OfflineRefineRule
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineDecision
+import com.chris.whisperloom.SetupState
 import com.chris.whisperloom.ui.components.CardShape
 import com.chris.whisperloom.ui.components.LoomIcon
 import com.chris.whisperloom.ui.components.fileSize
@@ -102,6 +103,12 @@ fun LocalModelRequiredCard(modifier: Modifier = Modifier) {
     // Der Dienst laedt immer nur eins: laeuft ein anderer Download, wuerde der Start still ignoriert.
     val busy = states.values.any { it is DownloadState.Running }
     val load = rememberTextModelLoad()
+    // Mit eigenem Online-Zugang ist "ohne KI" nur die halbe Wahrheit: mit Netz wird online verbessert.
+    val body = when {
+        !SetupState.llmReady(prefs.llmAccess()) -> R.string.local_missing_body
+        offlineRule(prefs, env.status) == OfflineRefineRule.ONLINE_LOCAL -> R.string.local_missing_body_online
+        else -> R.string.local_missing_body_own
+    }
 
     Column(
         modifier
@@ -116,7 +123,7 @@ fun LocalModelRequiredCard(modifier: Modifier = Modifier) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(stringResource(R.string.local_missing_title), style = MaterialTheme.typography.titleSmall, color = loom.onWarningContainer)
                 Text(
-                    stringResource(R.string.local_missing_body, offlineModelLabel(model.id), textModelSize(model)),
+                    stringResource(body, offlineModelLabel(model.id), textModelSize(model)),
                     style = MaterialTheme.typography.bodyMedium,
                     color = loom.onWarningContainer,
                 )
