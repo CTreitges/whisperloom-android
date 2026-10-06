@@ -7,7 +7,7 @@ Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](ht
 ### Behoben
 
 - **Vokabular-Hinweis:** Wird von einer gekürzten Liste genau ein Begriff mitgeschickt, heißt es jetzt „1 von 3 Begriffen wird mitgeschickt“ statt „werden“.
-- **Datenschutz-Texte nennen die Ausnahme:** Der Hinweis vor der Mikrofon-Freigabe und „Anleitung & Hilfe“ sagten pauschal „speichert keine Aufnahmen“. Ein Auftrag eines Pro Widgets bleibt aber auf dem Gerät, bis er gesendet ist; das steht jetzt dabei.
+- **Datenschutz-Texte sind genauer:** Der Hinweis vor der Mikrofon-Freigabe und „Anleitung & Hilfe“ sagten pauschal „speichert keine Aufnahmen“. Ein Auftrag eines Pro Widgets bleibt aber auf dem Gerät, bis er gesendet ist; das steht jetzt dabei. Und „offline verlässt nichts das Gerät“ heißt jetzt „die Aufnahme bleibt auf dem Gerät“, denn mit eingeschalteter Textverbesserung geht der erkannte Text auch nach einer Offline-Erkennung an das Sprachmodell.
 - **Hilfe zum Offline-Modus:** Statt „2–10 Sekunden“ steht dort jetzt „Small: etwa 5–12 s“ (wie in der Anleitung), und Small heißt „empfohlen“ statt „am besten“.
 - **Über WhisperLoom** nennt bei den Lizenzen jetzt auch Kotlin und kotlinx.coroutines.
 

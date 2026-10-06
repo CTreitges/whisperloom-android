@@ -42,7 +42,7 @@ Dafür gibt es drei Wege:
 Die Spracherkennung selbst läuft wahlweise
 
 - **online** über einen Dienst deiner Wahl (OpenAI, Groq, Mistral, ElevenLabs, Together AI, DeepInfra, OpenRouter oder ein eigener Server). Du brauchst dafür einmalig einen API-Key des Anbieters; bei Groq ist das kostenlos. Beste Qualität, schnell.
-- **offline** direkt auf dem Gerät mit einem einmalig heruntergeladenen Whisper-Modell (32–574 MB). Nichts verlässt das Telefon, die Erkennung dauert dafür einige Sekunden.
+- **offline** direkt auf dem Gerät mit einem einmalig heruntergeladenen Whisper-Modell (32–574 MB). Die Aufnahme verlässt das Telefon nicht, die Erkennung dauert dafür einige Sekunden.
 
 Dazu kommt eine optionale **Textverbesserung**: Ein Sprachmodell (KI) glättet Zeichensetzung und Groß-/Kleinschreibung, formuliert verständlicher oder fasst zusammen — in vier Stufen von „Aus" bis „Zusammenfassen". Das Sprachmodell kann bei einem Online-Anbieter laufen, bei **Ollama Cloud** oder auf deinem eigenen **Ollama** zu Hause (lokal / Homeserver). Ein **Vokabular** mit Namen und Fachbegriffen — als Liste in der App oder als verknüpfte Textdatei — hilft der Erkennung bei Eigennamen. Unabhängig davon räumt WhisperLoom lokal auf: Füllwörter („ähm", „äh") entfernen, Satzanfänge groß schreiben, ein Leerzeichen anhängen.
 
@@ -99,7 +99,7 @@ Vor dem ersten Schritt begrüßt dich eine Willkommensseite („Diktiere in jede
 Zwei Karten, du wählst eine:
 
 - **Online-Dienst** (Empfohlen) — „Beste Qualität, schnell. Audio wird an den gewählten Anbieter gesendet. Braucht einen API-Key (bei Groq kostenlos)."
-- **Offline auf dem Gerät** — „Alles bleibt auf dem Gerät. Modell einmalig laden (32–574 MB), Erkennung dauert einige Sekunden." Ist dein Gerät nicht geeignet, ist die Karte ausgegraut und trägt den Hinweis „Auf diesem Gerät nicht verfügbar".
+- **Offline auf dem Gerät** — „Die Aufnahme bleibt auf dem Gerät. Modell einmalig laden (32–574 MB), Erkennung dauert einige Sekunden." Ist dein Gerät nicht geeignet, ist die Karte ausgegraut und trägt den Hinweis „Auf diesem Gerät nicht verfügbar".
 
 Du kannst später jederzeit wechseln (Einstellungen → Erkennung). Dann **Weiter**.
 
@@ -705,7 +705,7 @@ WhisperLoom hat keinen eigenen Server, kein Konto, keine Telemetrie. Was mit dei
 
 **Modelle vom Server (Pro):** Ist die Funktion an, fragt WhisperLoom beim Anbieter zusätzlich die Modell-Liste ab (mit deinem Key, ohne Audio oder Text). Auf dem Gerät gespeichert wird nur die Liste.
 
-**Offline:** Nichts verlässt das Gerät — nur der Modell-Download geht ins Netz (zu huggingface.co).
+**Offline:** Die Aufnahme verlässt das Gerät nicht. Ins Netz gehen nur der Modell-Download (zu huggingface.co) und, wenn die Textverbesserung an ist, der erkannte Text an das Sprachmodell.
 
 **Eigener Server:** Audio und Text gehen nur an deinen Server.
 

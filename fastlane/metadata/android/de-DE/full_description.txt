@@ -23,4 +23,4 @@ Pro Widgets für deinen eigenen Agenten: Tippen, sprechen, tippen – ein Sprach
 
 Was neu ist, zeigt das „?“ neben der Versionsnummer direkt in der App.
 
-Datenschutz: Dein API-Key bleibt auf dem Gerät. Online gehen Audio und Vokabular an den von dir gewählten Anbieter, mit Textverbesserung auch der erkannte Text an das gewählte Sprachmodell; offline verlässt nichts das Gerät. Keine Konten, keine Werbung, kein Tracking.
+Datenschutz: Dein API-Key bleibt auf dem Gerät. Online gehen Audio und Vokabular an den von dir gewählten Anbieter; offline verlässt die Aufnahme das Gerät nicht. Mit Textverbesserung geht der erkannte Text in beiden Fällen an das gewählte Sprachmodell. Keine Konten, keine Werbung, kein Tracking.

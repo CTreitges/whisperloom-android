@@ -1,3 +1,2 @@
 WhisperLoom 3.8.3
-• Korrigierte Texte: Vokabular-Hinweis, Datenschutz-Hinweis zu Pro Widgets, Dauer im Offline-Modus
-• Wartung: aktuelle Build-Werkzeuge, aufgeräumter Code, Beschreibungen auf Stand
+• Behoben: Hinweise zu Datenschutz (Pro Widgets, offline mit Textverbesserung), Vokabular und Dauer im Offline-Modus stimmen wieder

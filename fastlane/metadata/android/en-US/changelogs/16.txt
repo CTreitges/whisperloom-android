@@ -1,3 +1,2 @@
 WhisperLoom 3.8.3
-• Corrected texts: vocabulary hint, privacy note on Pro Widgets, offline mode timing
-• Maintenance: current build tools, tidier code, descriptions up to date
+• Fixed: notes on privacy (Pro Widgets, offline with text refinement), vocabulary and offline timing are accurate again

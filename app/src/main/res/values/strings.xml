@@ -145,7 +145,7 @@
     <string name="setup_s1_online_body">Beste Qualität, schnell. Audio wird an den gewählten Anbieter gesendet. Braucht einen API-Key (bei Groq kostenlos).</string>
     <string name="setup_s1_recommended">Empfohlen</string>
     <string name="setup_s1_offline">Offline auf dem Gerät</string>
-    <string name="setup_s1_offline_body">Alles bleibt auf dem Gerät. Modell einmalig laden (32–574 MB), Erkennung dauert einige Sekunden.</string>
+    <string name="setup_s1_offline_body">Die Aufnahme bleibt auf dem Gerät. Modell einmalig laden (32–574 MB), Erkennung dauert einige Sekunden.</string>
     <string name="setup_s1_offline_unavailable">Auf diesem Gerät nicht verfügbar</string>
     <string name="setup_s2a_title">Zugang zum Dienst</string>
     <string name="setup_s2a_body">Wähle den Anbieter und füge deinen API-Key ein. Der Key wird nur auf diesem Gerät gespeichert.</string>
@@ -189,7 +189,7 @@
 
     <!-- Prominent Disclosure (Google-Play-Pflicht: eigener Consent-Hinweis vor Mikrofon-/Bedienungshilfe-Zugriff) -->
     <string name="disclosure_mic_title">Mikrofon &amp; Diktat</string>
-    <string name="disclosure_mic_body">WhisperLoom nimmt beim Diktieren Ton auf, um ihn in Text umzuwandeln. Im Online-Modus wird die Aufnahme zur Erkennung an den von dir gewählten Anbieter gesendet (z. B. OpenAI oder Groq); im Offline-Modus verlässt nichts das Gerät. WhisperLoom speichert keine Aufnahmen; nur der Auftrag eines Pro Widgets bleibt auf dem Gerät, bis er gesendet ist.</string>
+    <string name="disclosure_mic_body">WhisperLoom nimmt beim Diktieren Ton auf, um ihn in Text umzuwandeln. Im Online-Modus wird die Aufnahme zur Erkennung an den von dir gewählten Anbieter gesendet (z. B. OpenAI oder Groq); im Offline-Modus verlässt die Aufnahme das Gerät nicht. WhisperLoom speichert keine Aufnahmen; nur der Auftrag eines Pro Widgets bleibt auf dem Gerät, bis er gesendet ist.</string>
     <string name="disclosure_a11y_title">Bedienungshilfe: Text einfügen</string>
     <string name="disclosure_a11y_body">Die Bedienungshilfe „WhisperLoom Text-Einfügen“ fügt ausschließlich den diktierten Text in das gerade aktive Eingabefeld ein. Sie liest keine Bildschirminhalte mit und speichert nichts, und sie wird nur aktiv, wenn du den Knopf antippst.</string>
     <string name="disclosure_continue">Fortfahren</string>
@@ -264,7 +264,7 @@
     <string name="rec_test_ok">Verbunden · %1$s s</string>
     <string name="rec_test_fail">Fehler: %1$s</string>
     <string name="rec_privacy_online">Audio wird zur Erkennung an %1$s gesendet.</string>
-    <string name="rec_privacy_offline">Alles bleibt auf dem Gerät.</string>
+    <string name="rec_privacy_offline">Die Aufnahme bleibt auf dem Gerät.</string>
     <string name="rec_context_keyterms" formatted="false">Geht als Schlüsselbegriffe an ElevenLabs und hilft bei Eigennamen und Fachwörtern. Vokabular kostet bei ElevenLabs etwa 20 % Aufpreis.</string>
     <string name="rec_context_unsupported">Dieser Anbieter nimmt kein Vokabular entgegen — es wirkt nur bei anderen Anbietern und offline.</string>
     <string name="pref_api_prompt_info">Wird als Prompt mitgeschickt und hilft der Erkennung bei Eigennamen und Fachwörtern. Kostet nichts extra.</string>
@@ -481,7 +481,7 @@
     <string name="help_s6_title">Datenschutz</string>
     <string name="help_s6_intro">WhisperLoom speichert keine Aufnahmen (nur ein Pro-Widget-Auftrag wartet bis zum Senden), und dein Key bleibt auf dem Gerät.</string>
     <string name="help_s6_online">Online: Audio und Vokabular gehen an den gewählten Anbieter, bei Textverbesserung auch der erkannte Text — mit Ollama im eigenen Netz bleibt er dort. Eine Vokabular-Datei wird nur gelesen.</string>
-    <string name="help_s6_offline">Offline: Nichts verlässt das Gerät — nur der Modell-Download geht ins Netz.</string>
+    <string name="help_s6_offline">Offline: Die Aufnahme bleibt auf dem Gerät — ins Netz gehen nur der Modell-Download und, mit Textverbesserung, der erkannte Text.</string>
     <string name="help_s6_a11y">Die Bedienungshilfe liest nichts mit und speichert nichts; sie fügt nur den diktierten Text ein.</string>
     <string name="help_s7_title">Wenn etwas nicht klappt</string>
     <string name="help_s7_intro">Die häufigsten Probleme und wo du sie behebst: Antippen zeigt die Lösung, „Öffnen“ führt direkt hin.</string>

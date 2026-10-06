@@ -23,4 +23,4 @@ Pro Widgets for your own agent: tap, speak, tap – a voice command widget trans
 
 What's new is shown right in the app – tap the “?” next to the version number.
 
-Privacy: your API key never leaves the device. Online, audio and vocabulary go to the provider you chose, and with text refinement the recognised text goes to the language model you chose; offline, nothing leaves the phone. No accounts, no ads, no tracking.
+Privacy: your API key never leaves the device. Online, audio and vocabulary go to the provider you chose; offline, the recording never leaves the phone. With text refinement, the recognised text goes to the language model you chose in either case. No accounts, no ads, no tracking.
