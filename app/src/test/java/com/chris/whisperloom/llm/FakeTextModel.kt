@@ -34,8 +34,11 @@ class FakeTextModel(
     private val slot = CancelSlot<Unit> {
         cancels++
         aborted = true
-        gate.countDown()
+        if (!ignoresCancel) gate.countDown()
     }
+
+    /** Haengt wie LiteRT-LM #2202: cancelProcess beendet die angehaltene Rechnung nicht, erst [proceed]. */
+    @Volatile var ignoresCancel = false
 
     /** Laeuft in [generate] vor dem Eintragen der Rechnung — fuer einen Abbruch genau in dieser Luecke. */
     @Volatile var beforeEnter: () -> Unit = {}
@@ -77,11 +80,21 @@ fun fakeTextModels(answer: (String, String) -> String = { _, user -> user }): Mu
     return made
 }
 
-/** Setzt den Halter nach einem Test zurueck: Modell frei, echte Fabrik, normale Leerlauf-Zeit. */
+/** Die Zeiten des Halters ab Werk — beim ersten Zugriff auf diese Datei festgehalten, vor jedem Test. */
+private val defaultBudget = LocalTextEngine.budget
+private val defaultHungGraceMs = LocalTextEngine.hungGraceMs
+private val defaultLockWaitMs = LocalTextEngine.lockWaitMs
+private val defaultWatchTickMs = LocalTextEngine.watchTickMs
+
+/** Setzt den Halter nach einem Test zurueck: Modell frei, echte Fabrik, normale Zeiten. */
 fun resetTextEngine(original: (File, File) -> LocalTextModel) {
     LocalTextEngine.release()
     LocalTextEngine.factory = original
     LocalTextEngine.idleReleaseMs = 2 * 60_000L
+    LocalTextEngine.budget = defaultBudget
+    LocalTextEngine.hungGraceMs = defaultHungGraceMs
+    LocalTextEngine.lockWaitMs = defaultLockWaitMs
+    LocalTextEngine.watchTickMs = defaultWatchTickMs
 }
 
 /** Sparse-Datei in Katalog-Groesse: fuer isInstalled zaehlen nur Laenge und fehlende .part. */

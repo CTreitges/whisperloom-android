@@ -7,6 +7,7 @@ import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.api.ProviderCatalog
+import com.chris.whisperloom.llm.OfflineRefineFixture
 import com.sun.net.httpserver.HttpServer
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -152,6 +153,27 @@ class VoiceTaskPipelineFactoryTest {
         assertEquals("Kauf milch", gesendet.single())
         assertTrue("Der Ausfall muss vermerkt sein", store.refineSkipped.isNotBlank())
         assertTrue(store.refineSkipped.contains("500"))
+    }
+
+    /**
+     * Review c1: ein abgeloester Auftrag darf das lokale Textmodell nicht weiter belegen — seine
+     * Verbesserung bricht ab, statt den neuen Auftrag dahinter warten zu lassen.
+     */
+    @Test fun einAbgeloesterAuftragRechnetNichtLokalWeiter() {
+        val offline = OfflineRefineFixture(ctx)
+        offline.setUp() // Offline-Erkennung (Fake), Regel "lokal", Glaetten, Textmodell als Fake
+        try {
+            auftrag("2026-09-22T00:00:00Z")
+            val alt = VoiceTaskWorker.pipelineFactory(ctx, store) { false }
+            auftrag("2026-09-22T00:05:00Z") // der neue Auftrag loest den alten ab
+
+            assertTrue(alt.run(null) is TaskOutcome.Superseded)
+
+            assertEquals("die verworfene Verbesserung rechnet nicht", 0, offline.made.sumOf { it.calls.size })
+            assertEquals("kein Hinweis am neuen Auftrag", "", store.refineSkipped)
+        } finally {
+            offline.tearDown()
+        }
     }
 
     // --- Server je Widget (3.7.1) --------------------------------------------------

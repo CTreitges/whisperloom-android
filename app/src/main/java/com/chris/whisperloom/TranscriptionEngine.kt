@@ -91,6 +91,8 @@ object TranscriptionEngine {
     /**
      * @param skip Ausweg waehrend der Textverbesserung: [RefineSkip.skip] liefert sofort den Text
      *   ohne KI (ohne Hinweis — so gewollt). Ohne bleibt die Verbesserung auf dem aufrufenden Thread.
+     * @param cancelled der Auftrag ist hinfaellig (Widget: abgeloest oder verworfen) — die lokale
+     *   Rechnung bricht dann ab, statt das Textmodell fuer den naechsten Auftrag zu blockieren.
      * @param onRefineStart die Textverbesserung beginnt (online oder lokal) — ab jetzt hilft [skip].
      *   Nicht, wenn ohne KI weitergeht (Stufe aus, kein Netz, kein Textmodell, Ueberspringen).
      * @param onRefineNote Hinweis, der den Text nicht betrifft: online gescheitert, lokal verbessert.
@@ -107,6 +109,7 @@ object TranscriptionEngine {
         context: Context,
         samples: FloatArray,
         skip: RefineSkip? = null,
+        cancelled: () -> Boolean = { false },
         onRefineStart: () -> Unit = {},
         onRefineNote: (String) -> Unit = {},
         onRefineSkipped: (String) -> Unit = {},
@@ -123,7 +126,7 @@ object TranscriptionEngine {
 
         val language = effectiveLanguage(prefs.language, result.detectedLanguage)
         val mode = prefs.effective(prefs.refineMode)
-        val refined = refineOrNull(app, prefs, raw, language, mode, skip, onRefineStart, onRefineNote, onRefineSkipped)
+        val refined = refineOrNull(app, prefs, raw, language, mode, skip, cancelled, onRefineStart, onRefineNote, onRefineSkipped)
 
         val options = PolishPlan.options(
             removeFillers = prefs.removeFillers,
@@ -155,6 +158,7 @@ object TranscriptionEngine {
         language: String,
         mode: RefineMode,
         skip: RefineSkip?,
+        cancelled: () -> Boolean,
         onStart: () -> Unit,
         onNote: (String) -> Unit,
         onSkipped: (String) -> Unit,
@@ -167,7 +171,7 @@ object TranscriptionEngine {
         }
         onStart()
         val work = {
-            plan.refine(raw, language, mode, prefs.smartFillers, prefs.refineParagraphs, onNote) { skip?.isSkipped == true }
+            plan.refine(raw, language, mode, prefs.smartFillers, prefs.refineParagraphs, onNote) { skip?.isSkipped == true || cancelled() }
         }
         return try {
             if (skip == null) work() else skip.race(work)

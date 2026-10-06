@@ -190,6 +190,110 @@ class LocalTextEngineTest {
         assertEquals(0, made.size)
     }
 
+    // --- Zeitgrenzen (Review c1) -------------------------------------------------------------
+
+    @Test fun zeitbudgetWaechstMitDerLaengeUndIstGedeckelt() {
+        assertEquals(45_000L, LocalTextEngine.budgetMs(0))
+        assertEquals(105_000L, LocalTextEngine.budgetMs(100))
+        assertEquals(10 * 60_000L, LocalTextEngine.budgetMs(5_000))
+    }
+
+    @Test fun nachDemZeitbudgetBrichtDerWaechterAb() {
+        installSparse(ctx, e2b)
+        LocalTextEngine.generate(e2b.id, "sys", "laden")
+        val model = made[0]
+        model.holdNext() // rechnet, bis abgebrochen wird
+        LocalTextEngine.budget = { 100 }
+        LocalTextEngine.watchTickMs = 20
+
+        val start = System.currentTimeMillis()
+        try {
+            LocalTextEngine.generate(e2b.id, "sys", "lang")
+            fail("Abbruch erwartet")
+        } catch (e: IllegalStateException) {
+            assertTrue(e.message!!, e.message!!.contains("CANCELLED"))
+        }
+        assertTrue("cancelProcess nach dem Budget", model.cancels >= 1)
+        assertTrue("nicht erst nach dem Fake-Timeout", System.currentTimeMillis() - start < 3_000)
+        assertEquals("kein Haenger: das Modell rechnet weiter", "fertig: weiter", LocalTextEngine.generate(e2b.id, "sys", "weiter"))
+        assertEquals(1, made.size)
+    }
+
+    @Test fun einHaengendesModellHaeltDieFolgendenAuftraegeNichtAuf() {
+        installSparse(ctx, e2b)
+        LocalTextEngine.generate(e2b.id, "sys", "laden")
+        val model = made[0]
+        model.ignoresCancel = true // cancelProcess wirkt nicht (LiteRT-LM #2202)
+        model.holdNext()
+        LocalTextEngine.budget = { 100 }
+        LocalTextEngine.hungGraceMs = 100
+        LocalTextEngine.watchTickMs = 20
+        LocalTextEngine.lockWaitMs = 4_000
+        val haengt = thread { runCatching { LocalTextEngine.generate(e2b.id, "sys", "haengt") } }
+        assertTrue(model.started.await(5, TimeUnit.SECONDS))
+
+        // Der naechste Auftrag wartet nicht bis zum Ende der Lock-Wartezeit, sondern gibt auf, sobald das Modell haengt.
+        val start = System.currentTimeMillis()
+        try {
+            LocalTextEngine.generate(e2b.id, "sys", "danach")
+            fail("IllegalStateException erwartet")
+        } catch (e: IllegalStateException) {
+            assertTrue(e.message!!, e.message!!.contains("haengt"))
+        }
+        assertTrue("gab erst nach der Lock-Wartezeit auf", System.currentTimeMillis() - start < 3_000)
+        assertTrue(model.cancels >= 1)
+        // ... und weitere sofort, ohne am Lock zu warten.
+        val sofort = System.currentTimeMillis()
+        assertTrue(runCatching { LocalTextEngine.generate(e2b.id, "sys", "noch eins") }.exceptionOrNull() is IllegalStateException)
+        assertTrue(System.currentTimeMillis() - sofort < 500)
+
+        // Kehrt die Rechnung doch zurueck, wird das Modell neu aufgebaut (nie close mitten in der Rechnung).
+        assertEquals(0, model.closes)
+        model.proceed()
+        haengt.join(5_000)
+        assertEquals(1, model.closes)
+        assertEquals("fertig: wieder da", LocalTextEngine.generate(e2b.id, "sys", "wieder da"))
+        assertEquals("neu geladen", 2, made.size)
+    }
+
+    @Test fun aufDenLockWirdNichtEwigGewartet() {
+        installSparse(ctx, e2b)
+        LocalTextEngine.generate(e2b.id, "sys", "laden")
+        val model = made[0]
+        model.holdNext()
+        LocalTextEngine.lockWaitMs = 100
+        LocalTextEngine.watchTickMs = 20
+        val lang = thread { LocalTextEngine.generate(e2b.id, "sys", "lang") }
+        assertTrue(model.started.await(5, TimeUnit.SECONDS))
+
+        try {
+            LocalTextEngine.generate(e2b.id, "sys", "wartet")
+            fail("IllegalStateException erwartet")
+        } catch (e: IllegalStateException) {
+            assertTrue(e.message!!, e.message!!.contains("belegt"))
+        }
+
+        // Ein abgebrochener Auftrag gibt das Warten sofort auf.
+        LocalTextEngine.lockWaitMs = 4_000
+        var weg = false
+        var aufgegeben = false
+        val wartet = thread {
+            try {
+                LocalTextEngine.generate(e2b.id, "sys", "abgeloest") { weg }
+            } catch (e: CancellationException) {
+                aufgegeben = true
+            }
+        }
+        Thread.sleep(100)
+        weg = true
+        wartet.join(2_000)
+        assertTrue(aufgegeben)
+
+        model.proceed()
+        lang.join(5_000)
+        assertEquals(listOf("sys" to "laden", "sys" to "lang"), model.calls)
+    }
+
     // --- Abbrechen -------------------------------------------------------------------------
 
     @Test fun abbruchTrifftNurDenAbgebrochenenAuftrag() {
