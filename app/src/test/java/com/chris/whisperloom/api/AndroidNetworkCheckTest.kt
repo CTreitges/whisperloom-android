@@ -49,6 +49,7 @@ class AndroidNetworkCheckTest {
         val check = AndroidNetworkCheck(ctx)
         assertFalse(check.availableFor(cloud))
         assertTrue(check.availableFor(lan))
+        assertTrue("nach der Online-Erkennung reicht es", check.availableFor(cloud, proven = true))
     }
 
     // --- VPN (Review c2) -----------------------------------------------------------------------
@@ -91,6 +92,7 @@ class AndroidNetworkCheckTest {
         val check = AndroidNetworkCheck(ctx)
         assertFalse("Funkloch: das VPN meldet trotzdem VALIDATED", check.availableFor(cloud))
         assertFalse(check.availableFor(lan))
+        assertFalse("auch nach einer Online-Erkennung nicht", check.availableFor(cloud, proven = true))
     }
 
     @Test fun vpnUeberValidiertemNetzReichtFuerAlles() {
@@ -112,5 +114,6 @@ class AndroidNetworkCheckTest {
         val check = AndroidNetworkCheck(ctx)
         assertFalse(check.availableFor(cloud))
         assertFalse(check.availableFor(lan))
+        assertFalse(check.availableFor(cloud, proven = true))
     }
 }

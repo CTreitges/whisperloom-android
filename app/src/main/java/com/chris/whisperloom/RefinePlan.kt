@@ -17,7 +17,8 @@ import com.chris.whisperloom.llm.LocalTextEngine
  * der gemeinsame Weg von Diktat ([TranscriptionEngine]) und geteilten Audios ([SharedRefine]).
  * [of] sammelt die Eingaben: Regel, eigener Online-Zugang, Netz und lokales Textmodell. Das Netz
  * wird VOR jeder Online-Anfrage geprueft: ohne Netz geht keine raus, statt dass das Diktat im
- * Connect-Timeout haengt.
+ * Connect-Timeout haengt. Nach einer Online-Erkennung reicht ein aktives Netz — sie hat es gerade
+ * bewiesen; VALIDATED verlangt nur die Offline-Erkennung.
  */
 internal class RefinePlan(
     val route: RefineRoute,
@@ -99,7 +100,7 @@ internal class RefinePlan(
         /** Connect-Timeout, wenn das lokale Modell einspringen kann: lieber frueh lokal als 15 s warten. */
         const val FALLBACK_CONNECT_TIMEOUT_MS = 8_000
 
-        /** Naht fuer Tests: Netz faken. Produktion: aktives Netz + NET_CAPABILITY_VALIDATED. */
+        /** Naht fuer Tests: Netz faken. Produktion: aktives Netz + NET_CAPABILITY_VALIDATED (bzw. die Netze unter einem VPN). */
         @VisibleForTesting
         internal var networkCheck: (Context) -> NetworkCheck = { AndroidNetworkCheck(it) }
 
@@ -117,7 +118,7 @@ internal class RefinePlan(
             // nur ein eigener, vollstaendiger Zugang.
             val ownOnlineReady = SetupState.llmReady(access)
             val network = stageActive && (engine != Engine.OFFLINE || ownOnlineReady) &&
-                networkCheck(context).availableFor(access.baseUrl)
+                networkCheck(context).availableFor(access.baseUrl, proven = engine != Engine.OFFLINE)
             val localModelId = prefs.localLlmModel
             val localReady = stageActive && engine == Engine.OFFLINE && LocalTextEngine.isReady(context, localModelId)
             val route = RefineDecision.route(engine, prefs.offlineRefine, stageActive, ownOnlineReady, network, localReady)

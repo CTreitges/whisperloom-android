@@ -1,9 +1,12 @@
 package com.chris.whisperloom
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.api.Http
 import com.chris.whisperloom.api.NetworkCheck
+import com.chris.whisperloom.api.ProviderCatalog
 import com.chris.whisperloom.api.WavUpload
 import com.chris.whisperloom.llm.FakeTextModel
 import com.chris.whisperloom.llm.LocalTextEngine
@@ -24,7 +27,9 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowNetworkCapabilities
 import java.net.InetSocketAddress
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -94,7 +99,7 @@ class RefinePipelineTest {
         TranscriptionEngine.backendFactory = { p, prompt ->
             if (p.engine == Engine.OFFLINE) OfflineFake() else TranscriptionEngine.backend(p, prompt)
         }
-        RefinePlan.networkCheck = { NetworkCheck { net } }
+        RefinePlan.networkCheck = { NetworkCheck { _, _ -> net } }
         LocalTextEngine.init(ctx)
         made = fakeTextModels { system, user -> localAnswer(system, user) }
 
@@ -373,11 +378,35 @@ class RefinePipelineTest {
         assertEquals(0, chatRequests.get())
     }
 
+    /**
+     * Review c6: WLAN, das Android nicht validiert (Pruef-URL gesperrt), ohne mobile Daten. Die
+     * Online-Erkennung lief gerade darueber — die Verbesserung darf es auch; nur die Offline-Erkennung
+     * verlangt VALIDATED. Mit der echten Netzpruefung, nicht dem Fake.
+     */
+    @Test fun onlineErkennungBrauchtKeinValidiertesNetz() {
+        RefinePlan.networkCheck = originalNetwork
+        val cm = ctx.getSystemService(ConnectivityManager::class.java)
+        shadowOf(cm).setNetworkCapabilities(
+            cm.activeNetwork,
+            ShadowNetworkCapabilities.newInstance().also { shadowOf(it).addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) },
+        )
+        prefs.sttProviderId = ProviderCatalog.OPENAI_ID // Text "wie Erkennung": api.openai.com, nicht im eigenen Netz
+        prefs.apiKey = "sk-test"
+
+        prefs.engine = Engine.ONLINE
+        assertEquals(RefineRoute.Online(fallbackLocal = false), RefinePlan.of(ctx, prefs, RefineMode.POLISH).route)
+
+        offline(OfflineRefineRule.SKIP)
+        prefs.llmProviderId = ProviderCatalog.OPENAI_ID
+        prefs.llmKey = "sk-test"
+        assertEquals(RefineRoute.Raw(RefineHint.NO_NET), RefinePlan.of(ctx, prefs, RefineMode.POLISH).route)
+    }
+
     @Test fun stufeAusFragtWederNetzNochModell() {
         offline(OfflineRefineRule.LOCAL)
         localModel()
         prefs.refineMode = RefineMode.OFF
-        RefinePlan.networkCheck = { NetworkCheck { throw AssertionError("Netz gefragt") } }
+        RefinePlan.networkCheck = { NetworkCheck { _, _ -> throw AssertionError("Netz gefragt") } }
 
         val run = transcribe()
 

@@ -53,6 +53,11 @@ class NetworkCheckTest {
         assertFalse("Captive Portal / WLAN ohne Internet", NetworkCheck.available(activeNetwork = true, validated = false, ownNetwork = false))
     }
 
+    @Test fun nachGelungenerAnfrageReichtEinAktivesNetz() {
+        assertTrue("WLAN ohne VALIDATED, Online-Erkennung lief gerade", NetworkCheck.available(activeNetwork = true, validated = false, ownNetwork = false, proven = true))
+        assertFalse("Netz danach weg", NetworkCheck.available(activeNetwork = false, validated = false, ownNetwork = false, proven = true))
+    }
+
     @Test fun eigenesNetzReichtEinAktivesNetz() {
         assertTrue("Heim-WLAN ohne Internet", NetworkCheck.available(activeNetwork = true, validated = false, ownNetwork = true))
         assertTrue(NetworkCheck.available(activeNetwork = true, validated = true, ownNetwork = true))

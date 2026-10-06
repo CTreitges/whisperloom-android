@@ -12,18 +12,26 @@ import java.net.URI
  */
 fun interface NetworkCheck {
 
-    /** Ist fuer eine Anfrage an [baseUrl] gerade Netz da? Schickt selbst nichts los. */
-    fun availableFor(baseUrl: String): Boolean
+    /**
+     * Ist fuer eine Anfrage an [baseUrl] gerade Netz da? Schickt selbst nichts los.
+     *
+     * @param proven das Netz hat gerade eine Anfrage getragen (Online-Erkennung, Review c6): dann
+     *   reicht ein aktives Netz — auch eins, das Android nicht validiert (Pruef-URL gesperrt).
+     */
+    fun availableFor(baseUrl: String, proven: Boolean): Boolean
+
+    /** Ohne Nachweis durch eine gerade gelungene Anfrage (Offline-Erkennung). */
+    fun availableFor(baseUrl: String): Boolean = availableFor(baseUrl, proven = false)
 
     companion object {
 
         /**
-         * Internet zaehlt erst validiert (Captive Portal, WLAN ohne Internet zaehlen nicht). Fuer einen
-         * Server im eigenen Netz reicht ein aktives Netz: ein Heim-WLAN ohne Internet oder ein VPN
-         * validiert nicht unbedingt, der Server ist trotzdem erreichbar.
+         * Internet zaehlt erst validiert (Captive Portal, WLAN ohne Internet zaehlen nicht) — oder
+         * [proven]. Fuer einen Server im eigenen Netz reicht ein aktives Netz: ein Heim-WLAN ohne
+         * Internet oder ein VPN validiert nicht unbedingt, der Server ist trotzdem erreichbar.
          */
-        fun available(activeNetwork: Boolean, validated: Boolean, ownNetwork: Boolean): Boolean =
-            activeNetwork && (validated || ownNetwork)
+        fun available(activeNetwork: Boolean, validated: Boolean, ownNetwork: Boolean, proven: Boolean = false): Boolean =
+            activeNetwork && (validated || ownNetwork || proven)
 
         /** Server im eigenen Netz: private Adressen wie in [ServerUrlCheck.isPrivateHost], dazu Tailscale-Namen (*.ts.net). */
         fun isOwnNetwork(baseUrl: String): Boolean {
@@ -45,18 +53,18 @@ class AndroidNetworkCheck(context: Context) : NetworkCheck {
 
     private val cm: ConnectivityManager? = context.applicationContext.getSystemService(ConnectivityManager::class.java)
 
-    override fun availableFor(baseUrl: String): Boolean {
+    override fun availableFor(baseUrl: String, proven: Boolean): Boolean {
         val manager = cm ?: return false
         val network = manager.activeNetwork ?: return false
         val own = NetworkCheck.isOwnNetwork(baseUrl)
         val caps = manager.getNetworkCapabilities(network)
         if (caps?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) != true) {
-            return NetworkCheck.available(activeNetwork = true, validated = caps.validated(), ownNetwork = own)
+            return NetworkCheck.available(activeNetwork = true, validated = caps.validated(), ownNetwork = own, proven = proven)
         }
         @Suppress("DEPRECATION") // allNetworks: veraltet seit API 31, ohne Callback aber der einzige Weg zu den Netzen darunter
         val below = manager.allNetworks.mapNotNull { manager.getNetworkCapabilities(it) }
             .filter { it.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN) }
-        return NetworkCheck.available(activeNetwork = below.isNotEmpty(), validated = below.any { it.validated() }, ownNetwork = own)
+        return NetworkCheck.available(below.isNotEmpty(), validated = below.any { it.validated() }, ownNetwork = own, proven = proven)
     }
 
     private fun NetworkCapabilities?.validated(): Boolean =
