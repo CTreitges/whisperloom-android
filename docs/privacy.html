@@ -36,7 +36,7 @@
   <!-- ===================== DEUTSCH ===================== -->
   <section id="de" class="lang active">
     <h1>Datenschutzerklärung – WhisperLoom</h1>
-    <p class="sub">Stand: 24. September 2026 · App-ID <code>com.chris.whisperloom</code></p>
+    <p class="sub">Stand: 5. Oktober 2026 · App-ID <code>com.chris.whisperloom</code></p>
 
     <div class="card">
       <strong>Kurzfassung:</strong> WhisperLoom hat keinen eigenen Server, kein Nutzerkonto, keine Werbung
@@ -52,7 +52,9 @@
     <h3>Audioaufnahmen (Mikrofon)</h3>
     <p>Beim Diktieren nimmt WhisperLoom Ton auf, um ihn in Text umzuwandeln. Die Aufnahme wird nur für
     die laufende Erkennung genutzt und <strong>nicht dauerhaft gespeichert</strong>. Ein fehlgeschlagenes
-    Diktat bleibt nur bis zum erneuten Senden oder Verwerfen im Arbeitsspeicher.</p>
+    Diktat bleibt nur bis zum erneuten Senden oder Verwerfen im Arbeitsspeicher. Einzige Ausnahme sind
+    Pro Widgets (siehe Abschnitt 3): Deren Auftrag bleibt samt Aufnahme auf dem Gerät, bis er gesendet
+    oder verworfen ist.</p>
 
     <h3>Geteilte Audiodateien</h3>
     <p>Teilst du eine Sprachnachricht (z. B. aus WhatsApp, Telegram, Signal) an WhisperLoom, wird die
@@ -63,10 +65,14 @@
       <li>Deine Einstellungen inklusive API-Key im privaten App-Speicher (für andere Apps unzugänglich).</li>
       <li>Die von dir heruntergeladenen Offline-Modelle.</li>
       <li>Die Position des schwebenden Knopfs.</li>
+      <li>Dein Vokabular (eigene Begriffe; bei einer verknüpften Datei nur der Verweis darauf).</li>
+      <li>Die zuletzt geladenen Modell-Listen der Anbieter, ohne Key.</li>
+      <li>Nur mit Pro Widgets: die Widgets mit Name, Server-Adresse, Token und ggf. Galerie-Bild sowie ein
+      noch nicht gesendeter Auftrag (Text und Aufnahme), bis er gesendet oder verworfen ist.</li>
     </ul>
-    <p>Keine Aufnahmen, keine erkannten Texte, keine Verläufe. WhisperLoom ist vom Android-System-Backup
-    ausgenommen (<code>allowBackup=false</code>) – dein Key landet weder im Google-Backup noch im
-    Geräte-zu-Gerät-Transfer.</p>
+    <p>Darüber hinaus keine Aufnahmen, keine erkannten Texte, keine Verläufe. WhisperLoom ist vom
+    Android-System-Backup ausgenommen (<code>allowBackup=false</code>) – dein Key und die Widget-Tokens
+    landen weder im Google-Backup noch im Geräte-zu-Gerät-Transfer.</p>
 
     <h2>3. Wann Daten das Gerät verlassen</h2>
     <h3>Online-Erkennung (optional)</h3>
@@ -77,6 +83,7 @@
       <li>OpenAI (<code>api.openai.com</code>)</li>
       <li>Groq (<code>api.groq.com</code>)</li>
       <li>Mistral (<code>api.mistral.ai</code>)</li>
+      <li>ElevenLabs (<code>api.elevenlabs.io</code>, nur Erkennung)</li>
       <li>Together AI (<code>api.together.ai</code>)</li>
       <li>DeepInfra (<code>api.deepinfra.com</code>)</li>
       <li>OpenRouter (<code>openrouter.ai</code>)</li>
@@ -92,6 +99,11 @@
     bei DeepSeek). Dein API-Key wird ausschließlich zur Authentifizierung beim gewählten Anbieter genutzt
     und verlässt das Gerät sonst nicht.</p>
 
+    <h3>Modell-Listen (optional, ab Werk aus)</h3>
+    <p>Schaltest du unter Einstellungen → Erweitert „Modelle vom Server“ ein, fragt WhisperLoom beim
+    gewählten Anbieter die Liste der verfügbaren Modelle ab – mit deinem Key, sofern der Anbieter einen verlangt, ohne Audio oder Text. Bei
+    Ollama geschieht das auch ohne diese Einstellung.</p>
+
     <h3>Offline-Erkennung</h3>
     <p>Bei der Offline-Erkennung (whisper.cpp auf dem Gerät) verlässt <strong>nichts</strong> das Gerät.
     Lediglich der einmalige Modell-Download erfolgt über das Internet von
@@ -103,8 +115,11 @@
     <h3>Vokabular-Datei</h3>
     <p>Verknüpfst du eine .md- oder .txt-Datei als Vokabular, liest WhisperLoom sie über die Android-Dateiauswahl (nur Lesezugriff auf genau diese Datei) bei jedem Diktat. Die Datei wird weder kopiert noch hochgeladen; mitgeschickt werden nur die daraus gebildeten Begriffe, wie oben beschrieben.</p>
 
-    <h3>Sprachauftrag (optional, ab Werk aus)</h3>
-    <p>Schaltest du unter „Erweiterte Optionen" den Sprachauftrag ein, geht der erkannte Text eines Auftrags an die Server-Adresse, die du dort selbst einträgst (dein eigener Agent), authentifiziert mit deinem Token.</p>
+    <h3>Pro Widgets (optional, ab Werk aus)</h3>
+    <p>Schaltest du unter Einstellungen → Erweitert die Pro Widgets ein, geht der erkannte Text eines
+    Sprach-Command-Widgets mit Auftragskennung, Zeitpunkt und Dauer der Aufnahme an die Server-Adresse,
+    die du in genau diesem Widget selbst einträgst (dein eigener Agent), authentifiziert mit dem Token
+    dieses Widgets. Erkennung und Textverbesserung laufen dabei wie beim Diktat.</p>
 
     <h2>4. Weitergabe an Dritte</h2>
     <p>Eine Weitergabe erfolgt <strong>nur</strong> an den von dir aktiv gewählten Erkennungs-/
@@ -120,7 +135,9 @@
       <li><strong>Internet / Netzwerkstatus</strong> – Online-Erkennung und Modell-Download; Nachfrage vor Downloads über mobile Daten.</li>
       <li><strong>Über anderen Apps anzeigen</strong> – der schwebende Mikro-Knopf.</li>
       <li><strong>Benachrichtigungen</strong> – Beenden-Aktion und Download-Fortschritt.</li>
-      <li><strong>Vordergrund-Dienste</strong> – laufende Aufnahme und Modell-Download.</li>
+      <li><strong>Vordergrund-Dienste</strong> – laufende Aufnahme (Knopf, Pro Widgets) und Modell-Download.</li>
+      <li><strong>Hintergrundaufträge (Android WorkManager)</strong> – nur für Pro Widgets: ein Auftrag
+      wird weiter übertragen, auch wenn der Bildschirm ausgeht.</li>
       <li><strong>Bedienungshilfe („WhisperLoom Text-Einfügen")</strong> – fügt ausschließlich den
       diktierten Text in das gerade fokussierte Eingabefeld ein. Sie liest keine Bildschirminhalte mit
       und speichert nichts. Die Nutzung erfolgt nur nach deiner aktiven Aktion (Antippen des Knopfs).
@@ -143,7 +160,7 @@
   <!-- ===================== ENGLISH ===================== -->
   <section id="en" class="lang">
     <h1>Privacy Policy – WhisperLoom</h1>
-    <p class="sub">Last updated: 24 September 2026 · App ID <code>com.chris.whisperloom</code></p>
+    <p class="sub">Last updated: 5 October 2026 · App ID <code>com.chris.whisperloom</code></p>
 
     <div class="card">
       <strong>In short:</strong> WhisperLoom has no server of its own, no user account, no ads and no
@@ -159,7 +176,8 @@
     <h3>Audio recordings (microphone)</h3>
     <p>When you dictate, WhisperLoom records audio to convert it into text. The recording is used only for
     the current recognition and is <strong>not stored permanently</strong>. A failed dictation stays in
-    memory only until you resend or discard it.</p>
+    memory only until you resend or discard it. The only exception are Pro Widgets (see section 3): their
+    task, including the recording, stays on the device until it has been sent or discarded.</p>
 
     <h3>Shared audio files</h3>
     <p>If you share a voice message (e.g. from WhatsApp, Telegram, Signal) to WhisperLoom, the file is
@@ -170,10 +188,14 @@
       <li>Your settings including the API key, in private app storage (inaccessible to other apps).</li>
       <li>The offline models you downloaded.</li>
       <li>The position of the floating button.</li>
+      <li>Your vocabulary (your own terms; for a linked file only the reference to it).</li>
+      <li>The model lists most recently loaded from the providers, without the key.</li>
+      <li>Only with Pro Widgets: the widgets with name, server address, token and, if chosen, a gallery
+      picture, plus a task not yet sent (text and recording) until it has been sent or discarded.</li>
     </ul>
-    <p>No recordings, no recognised text, no history. WhisperLoom is excluded from Android system backup
-    (<code>allowBackup=false</code>) – your key ends up neither in Google backup nor in device-to-device
-    transfer.</p>
+    <p>Beyond that, no recordings, no recognised text, no history. WhisperLoom is excluded from Android
+    system backup (<code>allowBackup=false</code>) – your key and the widget tokens end up neither in
+    Google backup nor in device-to-device transfer.</p>
 
     <h2>3. When data leaves the device</h2>
     <h3>Online recognition (optional)</h3>
@@ -181,14 +203,19 @@
     to the <strong>provider you selected</strong>. With text enhancement enabled, the recognised text is
     sent to the selected language model. Possible providers:</p>
     <ul>
-      <li>OpenAI, Groq, Mistral, Together AI, DeepInfra, OpenRouter, Anthropic, Google Gemini, DeepSeek,
-      Ollama Cloud (<code>ollama.com</code>, text enhancement only),</li>
+      <li>OpenAI, Groq, Mistral, ElevenLabs (recognition only), Together AI, DeepInfra, OpenRouter,
+      Anthropic, Google Gemini, DeepSeek, Ollama Cloud (<code>ollama.com</code>, text enhancement only),</li>
       <li>or an OpenAI-compatible server or Ollama instance you host yourself (address provided by you).</li>
     </ul>
     <p>Transmission to cloud providers is encrypted (HTTPS); the app only allows plain http:// without a warning for addresses on your own network. What each provider does with the data is governed by
     <strong>that provider's own privacy policy</strong>. WhisperLoom flags notable cases at selection
     time (e.g. training use on Google Gemini's free tier, servers in China for DeepSeek). Your API key is
     used solely to authenticate with the selected provider and does not otherwise leave the device.</p>
+
+    <h3>Model lists (optional, off by default)</h3>
+    <p>If you enable “Models from the server” under Settings → Advanced, WhisperLoom asks the selected
+    provider for its list of available models – with your key where the provider requires one, without audio or text. For Ollama this
+    happens even without that setting.</p>
 
     <h3>Offline recognition</h3>
     <p>With offline recognition (whisper.cpp on-device), <strong>nothing</strong> leaves the device. Only
@@ -200,8 +227,11 @@
     <h3>Vocabulary file</h3>
     <p>If you link a .md or .txt file as vocabulary, WhisperLoom reads it through the Android file picker (read access to that single file only) for every dictation. The file is neither copied nor uploaded; only the terms derived from it are sent, as described above.</p>
 
-    <h3>Voice tasks (optional, off by default)</h3>
-    <p>If you enable voice tasks under “Advanced options", the recognised text of a task is sent to the server address you enter there yourself (your own agent), authenticated with your token.</p>
+    <h3>Pro Widgets (optional, off by default)</h3>
+    <p>If you enable Pro Widgets under Settings → Advanced, the recognised text of a voice command widget,
+    together with a task ID and the time and length of the recording, is sent to the server address you
+    enter in that very widget (your own agent), authenticated with that widget's token. Recognition and
+    text enhancement work just as for dictation.</p>
 
     <h2>4. Sharing with third parties</h2>
     <p>Data is shared <strong>only</strong> with the recognition/language-model provider you actively
@@ -216,7 +246,9 @@
       <li><strong>Internet / network state</strong> – online recognition and model download; prompt before downloads over mobile data.</li>
       <li><strong>Display over other apps</strong> – the floating microphone button.</li>
       <li><strong>Notifications</strong> – stop action and download progress.</li>
-      <li><strong>Foreground services</strong> – ongoing recording and model download.</li>
+      <li><strong>Foreground services</strong> – ongoing recording (button, Pro Widgets) and model download.</li>
+      <li><strong>Background work (Android WorkManager)</strong> – Pro Widgets only: a task keeps being
+      delivered even when the screen turns off.</li>
       <li><strong>Accessibility service (“WhisperLoom text insertion")</strong> – inserts only the dictated
       text into the currently focused input field. It does not read screen content and stores nothing. It
       acts only after your explicit action (tapping the button). It is optional; without it the text is

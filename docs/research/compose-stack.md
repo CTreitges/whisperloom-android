@@ -1,3 +1,5 @@
+> **Historisch — Recherche-Archiv, Stand 2026-09-06.** Keine gepflegte Referenz: maßgeblich sind Code und [CHANGELOG](../../CHANGELOG.md); Einordnung in der [Übersicht](README.md).
+
 # WhisperLoom-Android — Build-Konfiguration für Jetpack Compose + Material 3
 
 Stand: 2026-09-06 · Read-only-Recherche, nichts gebaut, nichts verändert.

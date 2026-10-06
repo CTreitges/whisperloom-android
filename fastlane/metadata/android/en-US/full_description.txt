@@ -19,6 +19,8 @@ Text the way you want it:
 
 Transcribe voice messages: share a message from WhatsApp, Telegram or Signal → WhisperLoom. The text appears in readable paragraphs, verbatim or without fillers, ready to copy or forward. Optionally with its own AI level: polish, rephrase or summarise.
 
-Pro Widgets for your own agent: tap, speak, tap – a voice command widget transcribes and sends the task to a server you run yourself; the reply arrives wherever you normally message your agent. Delivery keeps going with the screen off. Each widget has its own name (shown below the widget, can be hidden), its own server and token, an icon or gallery picture and optional auto-stop after a pause; resizes freely from 1 × 1 to 4 × 2. Unlock them under Settings → Advanced ("Erweitert"). Requires your own server (the open-source counterpart is on GitHub) and stays invisible otherwise.
+Pro Widgets for your own agent: tap, speak, tap – a voice command widget transcribes and sends the task to a server you run yourself; the reply arrives wherever you normally message your agent. Delivery keeps going with the screen off. Each widget has its own name (shown below the widget, can be hidden), its own server and token, an icon or gallery picture and optional auto-stop after a pause; resizes freely from 1 × 1 to 4 × 2. Unlock them under Settings → Advanced ("Erweitert"). Requires your own server (the counterpart's source code is on GitHub) and stays invisible otherwise.
 
-Privacy: your API key never leaves the device. Online, only the audio goes to the provider you chose; offline, nothing leaves the phone. No accounts, no ads, no tracking.
+What's new is shown right in the app – tap the “?” next to the version number.
+
+Privacy: your API key never leaves the device. Online, audio and vocabulary go to the provider you chose, and with text refinement the recognised text goes to the language model you chose; offline, nothing leaves the phone. No accounts, no ads, no tracking.

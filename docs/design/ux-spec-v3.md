@@ -1,4 +1,4 @@
-> **Stand 2026-09-06, Grundlage der v3-Implementierung; Abweichungen siehe CHANGELOG/Code.** Unveränderte Kopie der verbindlichen UX-Spezifikation (Arbeitsstand `research/ux-spec.md`); Fundstellen-Verweise auf `research/*.md` meinen die Reports unter `docs/research/`.
+> **Stand 2026-09-06, Grundlage der v3-Implementierung; Abweichungen siehe CHANGELOG/Code.** Kopie der verbindlichen UX-Spezifikation (Arbeitsstand `research/ux-spec.md`); Fundstellen-Verweise auf `research/*.md` meinen die Reports unter `docs/research/`. Spätere Versionen sind als Nachträge ergänzt (§6.13–§6.17 für 3.4.0 bis 3.8.2, Markierungen `[Stand x.y.z]`); bekannte Abweichung vom Rahmen in §0.2: targetSdk ist seit der Play-Store-Vorbereitung 36.
 
 # WhisperLoom v3 — Verbindliche UX-Spezifikation
 
@@ -21,7 +21,7 @@ Diese Datei ist die **einzige Vorlage** für die Implementierungs-Agenten. Wo di
 
 ### 0.2 Technischer Rahmen (verbindlich, aus `compose-stack.md`)
 
-- Stack: AGP 9.4.0 · Gradle 9.6.1 · JDK 17 · compileSdk 37 · targetSdk 35 · minSdk 26 · Compose BOM **2026.08.00** (ui 1.12.0, **material3 1.4.0**) · activity-compose 1.13.0 · lifecycle-runtime-compose 2.11.0. Quelle: https://developer.android.com/develop/ui/compose/bom/bom-mapping
+- Stack: AGP 9.4.0 · Gradle 9.6.1 · JDK 17 · compileSdk 37 · targetSdk 35 (inzwischen 36, Play-Vorgabe) · minSdk 26 · Compose BOM **2026.08.00** (ui 1.12.0, **material3 1.4.0**) · activity-compose 1.13.0 · lifecycle-runtime-compose 2.11.0. Quelle: https://developer.android.com/develop/ui/compose/bom/bom-mapping
 - **Keine** Navigation-Lib, **keine** `material-icons-*`-Artefakte, **keine** Expressive-APIs (`@ExperimentalMaterial3ExpressiveApi`). Nur stabile material3-1.4.0-Komponenten: `Scaffold`, `TopAppBar`/`LargeTopAppBar`, `ElevatedCard`/`OutlinedCard`, `ListItem`, `Switch`, `RadioButton`, `SingleChoiceSegmentedButtonRow`+`SegmentedButton`, `ExposedDropdownMenuBox`, `Button`/`FilledTonalButton`/`OutlinedButton`/`TextButton`/`IconButton`, `LinearProgressIndicator(progress = { })`, `CircularProgressIndicator`, `ModalBottomSheet`, `AlertDialog`, `AssistChip`/`FilterChip`/`InputChip`, `OutlinedTextField`, `Snackbar`, `HorizontalDivider`, `FlowRow` (foundation).
 - Navigation: `MainActivity` (einzige Compose-Activity) mit `sealed class Screen` + `rememberSaveable` + `BackHandler`. `ShareTranscribeActivity` bleibt als Intent-Ziel (Compose-Inhalt, `excludeFromRecents`). `SetupActivity` und `SettingsActivity` entfallen; `xml/method.xml` `settingsActivity` → `MainActivity` mit Extra `route=settings`.
 - Theme: fest dunkel (`darkColorScheme` aus §3), **kein** Dynamic Color, `enableEdgeToEdge(SystemBarStyle.dark(TRANSPARENT), SystemBarStyle.dark(TRANSPARENT))`, Manifest-Theme `Theme.Material.NoActionBar` mit `windowBackground = @color/loom_background`.

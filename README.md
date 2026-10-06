@@ -8,10 +8,10 @@ Version **3.8.2** — Nutzer-Anleitung: [docs/ANLEITUNG.md](docs/ANLEITUNG.md) �
 
 Inspiriert von [Wispr Flow](https://wisprflow.ai/) — eigenständige, unabhängige Implementierung.
 
-## Features (3.8.0)
+## Features (3.8.2)
 
-- **Drei Diktat-Wege:** schwebender Mikro-Knopf über allen Apps (Overlay + Bedienungshilfe fügt direkt ins Feld ein, Zwischenablage als Fallback) · Diktat-Tastatur mit Halten-zum-Sprechen und Pegelband · Sprachnachrichten aus WhatsApp/Telegram/Signal per Teilen-Menü abtippen (Absätze, Schalter „Füllwörter ausblenden", mehrere Dateien, lange Aufnahmen gestückelt, eigene KI-Stufe Glätten/Verschönern/Zusammenfassen wählbar).
-- **Pro Widgets** (für Entwickler, ab Werk aus, freischaltbar unter Einstellungen → **Erweitert**, braucht eigenen Server): **Sprach-Command-Widgets** schicken ein Diktat an deinen eigenen Agenten. Jedes Widget hat seinen eigenen Namen (steht unter der Kachel, abschaltbar), eigenen Server mit Token und „Verbindung prüfen", Symbol oder Galerie-Bild und Auto-Stopp nach Sprechpause; frei skalierbar 1 × 1 bis 4 × 2, verwaltet unter Einstellungen → Widgets → Tab „Pro Widgets". Normale Widgets folgen.
+- **Drei Diktat-Wege:** schwebender Mikro-Knopf über allen Apps (Overlay + Bedienungshilfe fügt direkt ins Feld ein, Zwischenablage als Fallback) · Diktat-Tastatur mit Halten-zum-Sprechen, Wisch-Geste (rechts feststellen, links verwerfen), Zauberstab für die Textstufen und Pegelband · Sprachnachrichten aus WhatsApp/Telegram/Signal per Teilen-Menü abtippen (Absätze, Schalter „Füllwörter ausblenden", mehrere Dateien, lange Aufnahmen gestückelt, eigene KI-Stufe Glätten/Verschönern/Zusammenfassen wählbar).
+- **Pro Widgets** (für Entwickler, ab Werk aus, freischaltbar unter Einstellungen → **Erweitert**, braucht eigenen Server): **Sprach-Command-Widgets** schicken ein Diktat an deinen eigenen Agenten. Jedes Widget hat seinen eigenen Namen (steht unter der Kachel, abschaltbar), eigenen Server mit Token und „Verbindung prüfen", Symbol oder Galerie-Bild und Auto-Stopp nach Sprechpause; frei skalierbar 1 × 1 bis 4 × 2, verwaltet unter Einstellungen → Widgets → Tab „Pro Widgets". Gegenstelle auf dem eigenen Server: [hermes-bridge](https://github.com/CTreitges/hermes-bridge). Normale Widgets folgen.
 - **Online oder offline:** Anbieter-Katalog (Stand 2026-09-30) mit Modellen, Preisen und Key-Links — neu **ElevenLabs Scribe v2** (und v2 Medical, 90+ Sprachen; Vokabular geht als Schlüsselbegriffe, ca. 20 % Aufpreis; reine Erkennung, Textverbesserung dann über einen eigenen Zugang); Offline-Erkennung mit whisper.cpp v1.9.3 und Modellen Tiny/Base/Small/Large v3 Turbo (Download bei Bedarf mit Fortsetzen und SHA-256-Prüfung, kein Modell im APK).
 - **Modelle vom Server** (Pro-Funktion unter „Erweitert", ab Werk aus): lädt bei jedem Anbieter die aktuelle Modell-Liste für Erkennung und Textverbesserung — Auswahl mit Suche, „Empfohlen" (Katalog) und „Vom Server · Stand …", Knopf „Modelle aktualisieren", stilles Nachladen, wenn die Liste älter als einen Tag ist; Listen ohne Key auf dem Gerät. Für Modelle ohne Katalog-Eintrag leitet WhisperLoom die Parameter ab (kein `temperature` bei Reasoning-Modellen, notfalls ein zweiter Versuch ohne).
 - **Geführte Einrichtung:** bebilderter Assistent mit sieben Schritten (Erkennungsweg, Zugang oder Modell, Mikrofon, Über anderen Apps anzeigen, Bedienungshilfe, Benachrichtigungen, Diktat-Tastatur), „Zugang prüfen", Startbildschirm mit Status und Hinweisen; Einstellungen in vier Gruppen (Grundlagen · Bedienung · Pro · Info), Anleitung & Hilfe mit acht bebilderten Abschnitten.
@@ -19,11 +19,12 @@ Inspiriert von [Wispr Flow](https://wisprflow.ai/) — eigenständige, unabhäng
 - **Eigener Server:** speaches, whisper.cpp-server, LocalAI; Ollama wahlweise als eigener Anbieter (native API) oder über die `/v1`-Schnittstelle — Key optional, `http://` im privaten Netz, 600-s-Timeout, lesbare Netzfehler.
 - **Kein Diktat geht verloren:** Fehlgeschlagene Anfragen bleiben gepuffert, ein Tipp sendet erneut; Ziehen aufs ✕ verwirft.
 - **Vokabular** für Eigennamen und Fachbegriffe (online und offline): Liste in der App plus dauerhaft verknüpfte `.md`-/`.txt`-Datei, die bei jedem Diktat neu gelesen wird; Sprachen de/en/es/fr/it/auto.
+- **Patchnotes in der App:** das **?** neben der Versionsnummer (Startbildschirm, Anleitung & Hilfe, Über WhisperLoom) zeigt das Wichtigste der aktuellen Version, Details zum Aufklappen und frühere Versionen — gelesen aus `CHANGELOG.md` und den Fastlane-Highlights (siehe unten).
 - Dunkles Material-3-Design (Jetpack Compose), adaptives App-Icon, MIT-Lizenz.
 
 ## Schnellstart
 
-1. **APK installieren:** Release von der GitHub-Releases-Seite laden, „Unbekannte Apps installieren" erlauben, öffnen.
+1. **APK installieren:** Release von der [GitHub-Releases-Seite](https://github.com/CTreitges/whisperloom-android/releases) laden, „Unbekannte Apps installieren" erlauben, öffnen — oder über F-Droid (siehe unten), dann kommen Updates automatisch.
 2. **Einrichtung durchlaufen:** Erkennungsweg wählen — *Online-Dienst* (API-Key eintragen, z. B. kostenlos bei Groq) oder *Offline auf dem Gerät* (Modell „Small", 190 MB, laden) — dann Mikrofon, „Über anderen Apps anzeigen" und Bedienungshilfe erlauben.
 3. **Diktieren:** „Knopf starten & los" → in einer beliebigen App den Knopf antippen, sprechen, nochmal antippen. Der Text steht im Feld.
 
@@ -52,18 +53,18 @@ Grundsätze: reine Logik in Android-freien Kotlin-Objekten (JVM-testbar), Compos
 
 | Schicht | Paket / Dateien (`app/src/main/java/com/chris/whisperloom/`) |
 |---|---|
-| Oberfläche | `ui/` — Compose (Material 3, festes dunkles Theme): `MainActivity` mit State-Navigation; Screens Home, Einrichtungs-Assistent, Einstellungen in vier Gruppen (Erkennung, Offline-Modelle, Text · Knopf & Tastatur, Widgets · Erweitert · Anleitung & Hilfe, Über), Tutorials; Farb-Tokens in `ui/theme/Color.kt`, `ui/theme/Theme.kt` (eine Farbwahrheit: `res/values/colors.xml`, Präfix `loom_`) |
+| Oberfläche | `ui/` — Compose (Material 3, festes dunkles Theme): `MainActivity` mit State-Navigation; Screens Home, Einrichtungs-Assistent, Einstellungen in vier Gruppen (Erkennung, Offline-Modelle, Text · Knopf & Tastatur, Widgets · Erweitert · Anleitung & Hilfe, Über), Tutorials, Patchnotes (`ui/patchnotes/`: Parser, Loader, Screen); Modell-Auswahl mit Suche in `ui/access/ModelPickerSheet.kt`; Farb-Tokens in `ui/theme/Color.kt`, `ui/theme/Theme.kt` (eine Farbwahrheit: `res/values/colors.xml`, Präfix `loom_`) |
 | Online-Erkennung / LLM | `api/` — `ProviderCatalog` (Anbieter, Modelle, Flags), `ApiAccess` + `AccessResolver` (getrennte STT-/LLM-Zugänge), `Http` (Bearer nur bei Key, Read-Timeout, GET, eigener User-Agent `WhisperLoom/<Version> (Android)`), `OllamaApi` (native Ollama-API: `POST /api/chat`, Modell-Liste `/api/tags`), `ElevenLabsStt` (ElevenLabs Speech-to-Text: `xi-api-key`, `model_id`, keyterms, rohes PCM), `ModelLists` (Modell-Listen je Anbieter laden und filtern, Flags für Nicht-Katalog-Modelle), `ApiErrors` (lesbare Netz-/Statusfehler, `isRetryable`), `TranscriptionRequest` (Multipart-Felder je Anbieter, `languages[]` bei GPT Transcribe), `ApiTranscriber`, `WavUpload`, `ChatPayload` (`temperature` vs. `reasoning_effort`), `RefinePrompt` (Modi Glätten/Lesbar/Verschönern/Zusammenfassen/Absätze/Prompt, Diktat in `<diktat>`-Markierung), `TextRefiner`, `ServerUrlCheck` (private Hosts, http-Regeln) |
 | Offline-Erkennung | `whisper/` — `WhisperLib` (JNI-Bindings), `WhisperContext` (ein nativer Kontext, Single-Thread), `WhisperEngine` (prozessweit, Modellwechsel, Freigabe bei Speicherdruck), `OfflineBackend`, `OfflineSupport` (CPU-Guard fphp+asimddp, Performance-Kerne, RAM), `ModelCatalog` (Datei, Bytes, SHA-256), `ModelStore` (`filesDir/models`, `.part`), `ModelDownloader` (Range-Resume, SHA-256 streamend, Retry), `ModelDownloads` (StateFlow), `ModelDownloadService` (Foreground-Service `dataSync`); nativ: `app/src/main/cpp/CMakeLists.txt`, `whisper_jni.cpp`; Submodul `whisper.cpp` @ v1.9.3 |
 | Schwebender Knopf | `overlay/` — `FloatingMicService` (Overlay, Drag/Tap, Retry-Puffer, Clipboard-Fallback), `BubbleUi`/`BubbleVisuals`/`BubbleMotion` (Zustände, Timer, Motion — reine Logik), `BubbleRenderer`, `BubbleAnimators`, `MicViews`, `CancelTarget` (Abbrechen-Ziel mit Scrim), `BubblePosition` (Clamping, Magnet-Radius), `BubbleNotification` |
-| Diktat-Tastatur | `ime/` — `WhisperLoomInputMethodService`, `LevelBand` + `LevelBandView` (21-Balken-Pegel), `ImeMetrics` |
+| Diktat-Tastatur | `ime/` — `WhisperLoomInputMethodService`, `LevelBand` + `LevelBandView` (21-Balken-Pegel), `DictationGesture` + `GestureTargets` (Wisch-Geste: feststellen/verwerfen), `RefineBar` (Zauberstab mit den Textstufen), `ImeMetrics` |
 | Text einfügen | `a11y/` — `TextInserterAccessibilityService`, `TextInsertion` (Cursor/Auswahl, leeres Feld) |
-| Pro Widgets | `agent/` — `WidgetKind`/`Tier` (Widget-Typen je Stufe), `WidgetProfile` + `WidgetProfileStore` (Name, Symbol, Auto-Stopp, Server je Widget; einmalige Übernahme des früheren globalen Servers), `VoiceTaskWidget` + `VoiceTaskWidgetView` + `WidgetLayouts` (RemoteViews, Ruhezustand je Widget, Name unter der Kachel), `VoiceTaskTrampolineActivity` (Tipp-Ziele), `VoiceTaskService` (Aufnahme, FGS microphone), `VoiceTaskWorker` + `VoiceTaskPipeline` + `VoiceTaskStore` (WorkManager-Auftrag mit Profil-Id, Retry), `AgentBridge` (Bridge-HTTP), `AutoStopDetector`, `WidgetConfigActivity` (Profilwahl beim Platzieren); Freischalten über `ProFeature` in „Erweitert" |
-| Pipeline & Audio | `TranscriptionEngine` (trimSilence → Backend → Refine → Polish; `SharedAudioTranscriber` für geteilte Audios), `TranscriptionBackend` (`OnlineBackend`), `AudioRecorder`, `AudioUtils`, `WavEncoder`, `AudioDecoder` (MediaCodec → 16 kHz Mono), `AudioConvert`, `AudioChunks` (5-Minuten-Stücke an Sprechpausen), `Formats` |
+| Pro Widgets | `agent/` — `WidgetKind`/`Tier` (Widget-Typen je Stufe), `WidgetProfile` + `WidgetProfileStore` (Name, Symbol, Auto-Stopp, Server je Widget; einmalige Übernahme des früheren globalen Servers), `WidgetIcons` + `WidgetPhoto` (eingebaute Symbole, Galerie-Bild), `VoiceTaskWidget` + `VoiceTaskWidgetView` + `WidgetLayouts` (RemoteViews, Ruhezustand je Widget, Name unter der Kachel), `VoiceTaskTrampolineActivity` (Tipp-Ziele), `VoiceTaskService` (Aufnahme, FGS microphone), `VoiceTaskWorker` + `VoiceTaskPipeline` + `VoiceTaskStore` (WorkManager-Auftrag mit Profil-Id, Retry), `AgentBridge` (Bridge-HTTP), `AutoStopDetector`, `WidgetConfigActivity` (Profilwahl beim Platzieren); Freischalten über `ProFeature` in „Erweitert" |
+| Pipeline & Audio | `TranscriptionEngine` (trimSilence → Backend → Refine → Polish; `SharedAudioTranscriber` für geteilte Audios), `SharedRefine` (eigene KI-Stufe je 5-Minuten-Stück geteilter Audios), `TranscriptionBackend` (`OnlineBackend`), `AudioRecorder`, `AudioUtils`, `WavEncoder`, `AudioDecoder` (MediaCodec → 16 kHz Mono), `AudioConvert`, `AudioChunks` (5-Minuten-Stücke an Sprechpausen), `Formats` |
 | Textveredelung | `TextPolisher` + `PolishPlan` (Füllwörter eingebaut/eigene/abgewählte, Groß-Schreibung, Whitespace), `Paragrapher` (Absatz-Heuristik), `Vocabulary` (eigene Begriffe, Datei-Parser, Kappung auf 800 Zeichen) + `VocabularySource` (verknüpfte Datei, bei jedem Diktat neu gelesen) |
 | Daten & Start | `Prefs` (SharedPreferences, Migration v2 → v3), `ModelCache` (geladene Modell-Listen in eigener Datei `whisperloom_models`, ohne Keys), `SetupState` (Zugang vollständig?; „eingerichtet?" entscheidet `ui/nav/SetupRouter`), `AppNav` (Deep-Link-Intents route/step), `WhisperLoomApplication` (Application: Engine-Init, `onTrimMemory`), `ShareTranscribeActivity` (Teilen-Ziel) |
 
-Weitere Unterlagen: [docs/design/ux-spec-v3.md](docs/design/ux-spec-v3.md) (verbindliche UX-Spezifikation der v3-Oberfläche) und [docs/research/](docs/research/README.md) (Recherche-Reports zu Compose-Stack, Anbietern, whisper.cpp und Self-Hosting).
+Weitere Unterlagen: [docs/design/ux-spec-v3.md](docs/design/ux-spec-v3.md) (verbindliche UX-Spezifikation der v3-Oberfläche) und [docs/research/](docs/research/README.md) (Recherche-Reports zu Compose-Stack, Anbietern, whisper.cpp und Self-Hosting, Stand 3.0.0), dazu [docs/PLAYSTORE-RELEASE.md](docs/PLAYSTORE-RELEASE.md) (Vorbereitung der Play-Store-Veröffentlichung) und [docs/privacy.html](docs/privacy.html) (Datenschutzerklärung DE/EN, veröffentlicht unter https://ctreitges.de/fdroid/privacy.html).
 
 ## Bauen
 
@@ -78,7 +79,7 @@ Weitere Unterlagen: [docs/design/ux-spec-v3.md](docs/design/ux-spec-v3.md) (verb
 | CMake | 3.22.1 — nur für die Offline-Engine |
 | Gradle / AGP | Wrapper 9.6.1 / 9.4.0 (Kotlin 2.2.10 built-in, Compose-Compiler-Plugin 2.2.10) |
 
-Zielplattform: compileSdk 37, targetSdk 35, minSdk 26. Compose BOM 2026.08.00 (ui 1.12.0, material3 1.4.0), activity-compose 1.13.0, lifecycle-runtime-compose 2.11.0.
+Zielplattform: compileSdk 37, targetSdk 36 (Play-Vorgabe seit 31.08.2026), minSdk 26. Compose BOM 2026.08.00 (ui 1.12.0, material3 1.4.0), activity-compose 1.13.0, lifecycle-runtime-compose 2.11.0, WorkManager 2.11.2 (Pro Widgets). Tests: JUnit 4.13.2, Robolectric 4.16.1, androidx.test core 1.7.0 / ext-junit 1.3.0, work-testing 2.11.2.
 
 ### Lokal
 
@@ -120,22 +121,23 @@ zum `versionCode` die Highlight-Datei existieren.
 
 ### CI (GitHub Actions)
 
-`.github/workflows/build.yml` läuft bei jedem Push und Pull Request:
+`.github/workflows/build.yml` läuft bei jedem Push und Pull Request sowie manuell (`workflow_dispatch`); ein neuerer Lauf auf demselben Branch bricht den älteren ab:
 
 1. Checkout mit Submodulen, JDK 17, Gradle-Cache, Android-SDK; `sdkmanager` installiert NDK 28.2.13676358, CMake 3.22.1, Build-Tools 36.0.0 und Platform 37.
 2. CMake-Zwischenstand (`app/.cxx`) wird gecacht (Key: Submodul-Commit + `cpp/**` + `build.gradle.kts`).
 3. `tools/check_jni_symbols.py`, dann `testDebugUnitTest lintDebug`, `assembleDebug`.
 4. Signiertes `assembleRelease` mit dem Keystore aus den Secrets.
 5. Prüfung des Release-APKs: `lib/arm64-v8a/libwhisperloom.so` vorhanden, **kein** `assets/*.bin` (Modelle kommen nur per Download), keine anderen ABIs, `zipalign -P 16` und `llvm-readelf` bestätigen 16-KB-Alignment aller `LOAD`-Segmente.
-6. Artefakte: `whisperloom-debug-apk`, `whisperloom-release-apk`, `whisperloom-release-mapping` (R8-`mapping.txt` zum Entschlüsseln von Stacktraces), `unit-and-lint-reports`.
+6. Signiertes `bundleRelease` (Android App Bundle für den Play Store, gleicher Schlüssel als Upload-Key) mit derselben Prüfung auf Native-Lib, Modelle und ABIs.
+7. Artefakte: `whisperloom-debug-apk`, `whisperloom-release-apk`, `whisperloom-release-mapping` (R8-`mapping.txt` zum Entschlüsseln von Stacktraces), `whisperloom-release-aab`, `unit-and-lint-reports`.
 
 ### Release-Signierung
 
-Ein persistenter PKCS12-Keystore liegt als GitHub-Secrets `WHISPERLOOM_KEYSTORE_B64` (Base64) und `WHISPERLOOM_KEYSTORE_PASSWORD` (nicht im Repo). Die CI dekodiert ihn und signiert `assembleRelease`; derselbe Schlüssel signiert jedes Release, damit Updates über die installierte Version gehen. Für lokale Release-Builds: Keystore unter `keystore/whisperloom-release.p12` ablegen (per `.gitignore` ausgeschlossen) und `WHISPERLOOM_KEYSTORE`, `WHISPERLOOM_KEYSTORE_PASSWORD`, `WHISPERLOOM_KEY_ALIAS` (Standard `whisperloom`) als Umgebungsvariablen setzen — fehlt der Keystore, bleibt das Release-APK unsigniert. Release-Builds laufen mit R8 (Full Mode) und Resource-Shrinking; einzige Keep-Regel: `com.chris.whisperloom.whisper.WhisperLib` (JNI-Symbole).
+Ein persistenter PKCS12-Keystore liegt als GitHub-Secrets `WHISPERLOOM_KEYSTORE_B64` (Base64) und `WHISPERLOOM_KEYSTORE_PASSWORD` (nicht im Repo). Die CI dekodiert ihn und signiert `assembleRelease` und `bundleRelease`; derselbe Schlüssel signiert jedes Release, damit Updates über die installierte Version gehen. Für lokale Release-Builds: Keystore unter `keystore/whisperloom-release.p12` ablegen (per `.gitignore` ausgeschlossen) und `WHISPERLOOM_KEYSTORE`, `WHISPERLOOM_KEYSTORE_PASSWORD`, `WHISPERLOOM_KEY_ALIAS` (Standard `whisperloom`) als Umgebungsvariablen setzen — fehlt der Keystore, bleibt das Release-APK unsigniert. Release-Builds laufen mit R8 (Full Mode) und Resource-Shrinking; einzige Keep-Regel: `com.chris.whisperloom.whisper.WhisperLib` (JNI-Symbole).
 
 ## Tests
 
-Alle Tests laufen ohne Gerät und ohne Emulator (`./gradlew testDebugUnitTest`): reine JVM-Tests für die Logik, Robolectric (SDK 35) für alles, was Android-Ressourcen, `org.json`, SharedPreferences oder Layout-Inflation braucht. HTTP-Pfade werden gegen einen lokalen JDK-`HttpServer` getestet. Stand 3.8.2: 115 Testklassen in 112 Dateien, 1353 `@Test`-Methoden.
+Alle Tests laufen ohne Gerät und ohne Emulator (`./gradlew testDebugUnitTest`): reine JVM-Tests für die Logik, Robolectric (meist SDK 35) für alles, was Android-Ressourcen, `org.json`, SharedPreferences oder Layout-Inflation braucht. HTTP-Pfade werden gegen einen lokalen JDK-`HttpServer` getestet. Stand 3.8.2: 115 Testklassen in 112 Dateien, 1353 `@Test`-Methoden. Die Tabelle nennt eine Auswahl:
 
 | Testklasse | Deckt ab |
 |---|---|
@@ -166,6 +168,13 @@ Alle Tests laufen ohne Gerät und ohne Emulator (`./gradlew testDebugUnitTest`):
 | `api/ServerUrlCheckTest` | Private/öffentliche Hosts, http-Regeln je Anbieter, `/v1`-Hinweis (nicht bei Ollama im Heimnetz), Ollama Cloud nur https, ungültige Eingaben |
 | `api/TranscriptionRequestTest` | Multipart-Felder je Anbieter: `languages[]`, `prompt`, `response_format`, `auto`, Pfad-Override |
 | `api/WavUploadTest` | Upload → Samples (Diktat und gestreamtes Stück) |
+| `api/ElevenLabsSttTest` | ElevenLabs-Felder (`xi-api-key`, `model_id`, Sprache, keyterms nach den Anbieter-Regeln: höchstens 100, die letzten gewinnen, Satzstücke fallen weg), die der Anbieter sonst erst live mit 422 ablehnt |
+| `api/ModelListsTest`, `api/ModelListsLoadTest`, `api/ModelFlagsTest` | „Modelle vom Server": Adressen und Header je Anbieter, Filterregeln, kein Key-Header nach Weiterleitung zu fremdem Host, Parameter-Flags für Modelle ohne Katalog-Eintrag |
+| `api/TextCleanupTest`, `api/TextRefinerRetryTest` | Nacharbeit der KI-Stufen (Markierungen, Vorrede, erfüllte Bitte → Rohtext), genau ein zweiter Versuch ohne `temperature` |
+| `SharedRefineTest` | KI-Stufe für geteilte Sprachnachrichten: welche Stufe gilt, was je Stück ans Modell geht, kein KI-Fehler kostet die Nachricht |
+| `agent/*` (23 Testklassen) | Pro Widgets: Profile und Server je Widget, Auto-Stopp, Aufnahme-Dienst, WorkManager-Auftrag mit Retry, Bridge-HTTP, Widget-Layouts und -Zustände, Profilwahl beim Platzieren |
+| `ime/DictationGestureTest`, `ime/ImeGestureTest`, `ime/ImeWiringTest`, `ime/RefineBarTest` | Wisch-Geste (feststellen, verwerfen), TalkBack-Bedienung der Mikro-Taste, Textstufen-Zeile in der Tastatur |
+| `ui/access/ModelPickerTest` | Modell-Auswahl mit „Empfohlen" und „Vom Server", „Modelle aktualisieren", stilles Nachladen nur bei veralteter Liste |
 | `ime/ImeMetricsTest` | Tastenhöhe ab fontScale 1,3, Level der Mikro-Taste |
 | `ime/KeyboardLayoutTest` | `keyboard_view.xml` inflatet, IDs, keine Emoji, contentDescriptions, vier Zustände, Pegelband |
 | `ime/LevelBandTest` | 21 Balken, Attack 50 ms / Release 250 ms, Wertebereich |
@@ -199,6 +208,7 @@ Aktuell **3.8.2** (2026-10-05). Alle Änderungen seit 1.0 im [CHANGELOG.md](CHAN
 
 - WhisperLoom: **MIT** (siehe [LICENSE](LICENSE)).
 - [whisper.cpp](https://github.com/ggml-org/whisper.cpp) (MIT) — Offline-Erkennung; Modelle aus [huggingface.co/ggerganov/whisper.cpp](https://huggingface.co/ggerganov/whisper.cpp).
-- Jetpack Compose / AndroidX (Apache 2.0).
+- Jetpack Compose / AndroidX inkl. WorkManager, Kotlin-Standardbibliothek und kotlinx.coroutines (Apache 2.0).
 - Icons: [Material Symbols](https://fonts.google.com/icons) (Apache 2.0).
+- Vollständige Liste mit Test-Abhängigkeiten: [THIRD_PARTY.md](THIRD_PARTY.md).
 - Inspiration: Wispr Flow — eigenständige, unabhängige Implementierung.
