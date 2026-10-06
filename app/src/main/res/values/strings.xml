@@ -155,7 +155,14 @@
     <string name="setup_s2a_title">Zugang zum Dienst</string>
     <string name="setup_s2a_body">Wähle den Anbieter und füge deinen API-Key ein. Der Key wird nur auf diesem Gerät gespeichert.</string>
     <string name="setup_s2b_title">Offline-Modell laden</string>
-    <string name="setup_s2b_body">Wähle ein Modell. Empfehlung: Small — gute Qualität für Deutsch bei 190 MB.</string>
+    <string name="setup_s2b_body">Erst das Modell für die Erkennung, dann die Textverbesserung ohne Netz. Empfehlung: Small (190 MB) und Gemma 4 E2B.</string>
+    <string name="setup_s2b_text_title">Textverbesserung ohne Netz</string>
+    <string name="setup_s2b_local">Lokales Textmodell</string>
+    <string name="setup_s2b_local_body">%1$s verbessert den Text auf dem Gerät. Einmal laden: %2$s.</string>
+    <string name="setup_s2b_skip">Überspringen</string>
+    <string name="setup_s2b_skip_body">Nur die Erkennung — offline kommt der Text ohne KI. Ein Textmodell kannst du später unter Offline-Modelle laden.</string>
+    <string name="setup_s2b_text_open">Textmodell laden oder „Überspringen“ wählen.</string>
+    <string name="setup_s2b_text_bg">Lädt im Hintergrund weiter — du kannst schon weitermachen.</string>
     <string name="setup_s3_title">Mikrofon erlauben</string>
     <string name="setup_s3_body">Ohne Mikrofon kein Diktat. Android fragt dich gleich — bitte „Bei Nutzung der App“ wählen.</string>
     <string name="setup_s3_btn">Mikrofon erlauben</string>

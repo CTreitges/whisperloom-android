@@ -28,12 +28,14 @@ import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.llm.installSparse
 import com.chris.whisperloom.ui.home.HomeScreen
 import com.chris.whisperloom.ui.nav.NavState
+import com.chris.whisperloom.ui.nav.SetupRouter
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SystemStatus
 import com.chris.whisperloom.ui.settings.ModelsScreen
 import com.chris.whisperloom.ui.settings.RecognitionScreen
 import com.chris.whisperloom.ui.settings.SettingsHubScreen
 import com.chris.whisperloom.ui.settings.TextSettingsScreen
+import com.chris.whisperloom.ui.setup.SetupScreen
 import com.chris.whisperloom.ui.state.AppEnv
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.PrefsState
@@ -57,7 +59,7 @@ import org.robolectric.annotation.Config
 /**
  * Das lokale Textmodell in der Oberflaeche (Spec §4), Compose-Semantik unter Robolectric:
  * E4 Abschnitt Textverbesserung, Pflichtkarte "Offline ohne Textmodell", E2 Karte "Offline-Erkennung"
- * und Online-Zugang je Regel, Home-Zeile und -Banner, Hub-Unterzeilen.
+ * und Online-Zugang je Regel, Assistent 2b, Home-Zeile und -Banner, Hub-Unterzeilen.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w411dp-h2400dp-xxhdpi")
@@ -339,6 +341,70 @@ class TextModelUiTest {
     @Test fun karteFehltWennOfflineAufDemGeraetNichtGeht() {
         screen(env(SystemStatus(offlineSupported = false))) { TextSettingsScreen(it) }
         compose.onNodeWithText("Offline-Erkennung").assertDoesNotExist()
+    }
+
+    // --- Assistent 2b ------------------------------------------------------------------------
+
+    private fun schritt2b(status: SystemStatus = SystemStatus(installedModels = setOf("small"))) {
+        prefs.welcomeSeen = true
+        prefs.engine = Engine.OFFLINE
+        screen(env(status)) { SetupScreen(SetupRouter.STEP_ACCESS, it) }
+    }
+
+    @Test fun schritt2bWeiterErstNachDerWahl() {
+        schritt2b()
+        compose.onNodeWithText("Textverbesserung ohne Netz").assertExists()
+        compose.onNodeWithText("Textmodell laden oder „Überspringen“ wählen.").assertExists()
+        compose.onNodeWithText("Weiter").assertIsNotEnabled()
+        compose.onNode(isSelectable() and hasText("Überspringen")).performClick()
+        compose.waitForIdle()
+        assertEquals(OfflineRefineRule.SKIP, Prefs(ctx).offlineRefine)
+        compose.onNode(isSelectable() and hasText("Überspringen")).assertIsSelected()
+        compose.onNodeWithText("Weiter").assertIsEnabled()
+    }
+
+    @Test fun schritt2bLokalStartetDenDownloadUndAendertDieStufeNicht() {
+        prefs.offlineRefine = OfflineRefineRule.SKIP
+        schritt2b()
+        compose.onNode(isSelectable() and hasText("Lokales Textmodell")).performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Laden").performClick() // D2
+        compose.waitForIdle()
+        assertEquals("gemma4_e2b", startedService()?.getStringExtra(ModelDownloadService.EXTRA_MODEL_ID))
+        assertEquals("Klick ist die Wahl", OfflineRefineRule.LOCAL, Prefs(ctx).offlineRefine)
+        assertEquals("Stufe bleibt", RefineMode.OFF, Prefs(ctx).refineMode)
+    }
+
+    @Test fun schritt2bWeiterWaehrendDasTextmodellImHintergrundLaedt() {
+        ModelDownloads.update("gemma4_e2b", DownloadState.Running(1_000, TextModelCatalog.GEMMA4_E2B.bytes, 500))
+        try {
+            schritt2b()
+            compose.onNode(isSelectable() and hasText("Lokales Textmodell")).assertIsSelected()
+            compose.onNodeWithText("Lädt im Hintergrund weiter — du kannst schon weitermachen.").assertExists()
+            compose.onNodeWithText("Weiter").assertIsEnabled()
+        } finally {
+            ModelDownloads.clear("gemma4_e2b")
+        }
+    }
+
+    @Test fun schritt2bOhneErkennungsmodellBleibtWeiterGesperrt() {
+        prefs.offlineRefine = OfflineRefineRule.SKIP
+        schritt2b(SystemStatus())
+        compose.onNodeWithText("Weiter").assertIsNotEnabled()
+    }
+
+    @Test fun schritt2bMitStufeZeigtDiePflichtkarte() {
+        prefs.refineMode = RefineMode.POLISH
+        schritt2b()
+        pflichtkarte.assertCountEquals(1)
+        compose.onNode(isSelectable() and hasText("Lokales Textmodell")).assertDoesNotExist()
+        compose.onNodeWithText("Weiter").assertIsNotEnabled()
+    }
+
+    @Test fun schritt2bZuWenigRamNurUeberspringen() {
+        schritt2b(SystemStatus(installedModels = setOf("small"), totalRamBytes = 4L shl 30))
+        compose.onNode(isSelectable() and hasText("Lokales Textmodell")).assertIsNotEnabled()
+        compose.onNode(isSelectable() and hasText("Überspringen")).assertIsEnabled()
     }
 
     // --- Home und Hub ------------------------------------------------------------------------

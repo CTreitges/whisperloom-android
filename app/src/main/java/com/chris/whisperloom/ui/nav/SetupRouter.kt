@@ -1,12 +1,16 @@
 package com.chris.whisperloom.ui.nav
 
 import com.chris.whisperloom.Engine
+import com.chris.whisperloom.OfflineRefineRule
 import com.chris.whisperloom.SetupState
 import com.chris.whisperloom.api.ServerUrlCheck
 import com.chris.whisperloom.ui.state.PrefsState
 
 /** Zustand eines Assistenten-Schritts (Status-Chip, UX-Spec §2.2). */
 enum class StepState { DONE, OPEN, OPTIONAL, SKIPPED }
+
+/** Wahl in Schritt 2b: lokales Textmodell oder Textverbesserung ohne Netz ueberspringen. */
+enum class TextChoice { LOCAL, SKIP }
 
 /** Womit die App startet (Router, UX-Spec §1.2). */
 sealed class Start {
@@ -143,6 +147,17 @@ object SetupRouter {
 
     fun doneCount(f: SetupFacts): Int =
         visibleSteps(f).count { stepState(it, f) == StepState.DONE || stepState(it, f) == StepState.SKIPPED }
+
+    /**
+     * Schritt 2b, Textverbesserung ohne Netz (Spec §4): "Ueberspringen" = Regel skip; "Lokales
+     * Textmodell" = das Modell ist bereit oder laedt (Weiter schon waehrend des Downloads). null =
+     * noch offen, Weiter gesperrt. Weich: [isSetUp] haengt nicht davon ab.
+     */
+    fun textChoice(rule: OfflineRefineRule, localReady: Boolean, localLoading: Boolean): TextChoice? = when {
+        rule == OfflineRefineRule.SKIP -> TextChoice.SKIP
+        localReady || localLoading -> TextChoice.LOCAL
+        else -> null
+    }
 
     private fun done(isDone: Boolean) = if (isDone) StepState.DONE else StepState.OPEN
 
