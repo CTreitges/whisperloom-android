@@ -1,6 +1,6 @@
 # WhisperLoom — Anleitung
 
-Version 3.9.0 · Stand 2026-10-06 · Für Android 8.0 (API 26) und neuer
+Version 3.8.5 · Stand 2026-10-06 · Für Android 8.0 (API 26) und neuer
 
 Diese Anleitung richtet sich an Anwender, die WhisperLoom installieren, einrichten und im Alltag nutzen wollen. Entwickler finden Bau- und Architektur-Hinweise in der [README](../README.md); was sich von Version zu Version geändert hat, steht im [CHANGELOG](../CHANGELOG.md).
 
@@ -72,7 +72,7 @@ WhisperLoom liegt in einem eigenen F-Droid-Repository. Damit bekommst du Updates
 
 ### 2.3 APK installieren
 
-1. Auf der [Releases-Seite](https://github.com/CTreitges/whisperloom-android/releases) des Projekts das neueste Release (aktuell **3.9.0**) öffnen und die APK-Datei auf das Telefon laden (direkt im Browser des Telefons ist am einfachsten).
+1. Auf der [Releases-Seite](https://github.com/CTreitges/whisperloom-android/releases) des Projekts das neueste Release (aktuell **3.8.5**) öffnen und die APK-Datei auf das Telefon laden (direkt im Browser des Telefons ist am einfachsten).
 2. Die heruntergeladene Datei antippen. Android fragt beim ersten Mal, ob der Browser (bzw. der Dateimanager) **unbekannte Apps installieren** darf — das Wording heißt je nach Hersteller „Unbekannte Apps installieren", „Aus dieser Quelle zulassen" oder „Unbekannte Quellen". Erlauben, zurück, erneut „Installieren" antippen.
 3. Google Play Protect prüft die App ggf. beim Installieren. Das ist normal für Apps außerhalb des Play Stores.
 4. Nach der Installation **WhisperLoom** öffnen — der Einrichtungs-Assistent startet ([Kapitel 3](#3-erste-einrichtung--der-assistent-schritt-für-schritt)).

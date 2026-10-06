@@ -1,4 +1,4 @@
-> **Stand 2026-09-06, Grundlage der v3-Implementierung; Abweichungen siehe CHANGELOG/Code.** Kopie der verbindlichen UX-Spezifikation (Arbeitsstand `research/ux-spec.md`); Fundstellen-Verweise auf `research/*.md` meinen die Reports unter `docs/research/`. Spätere Versionen sind als Nachträge ergänzt (§6.13–§6.18 für 3.4.0 bis 3.9.0, Markierungen `[Stand x.y.z]`); bekannte Abweichung vom Rahmen in §0.2: targetSdk ist seit der Play-Store-Vorbereitung 36.
+> **Stand 2026-09-06, Grundlage der v3-Implementierung; Abweichungen siehe CHANGELOG/Code.** Kopie der verbindlichen UX-Spezifikation (Arbeitsstand `research/ux-spec.md`); Fundstellen-Verweise auf `research/*.md` meinen die Reports unter `docs/research/`. Spätere Versionen sind als Nachträge ergänzt (§6.13–§6.18 für 3.4.0 bis 3.8.5, Markierungen `[Stand x.y.z]`); bekannte Abweichung vom Rahmen in §0.2: targetSdk ist seit der Play-Store-Vorbereitung 36.
 
 # WhisperLoom v3 — Verbindliche UX-Spezifikation
 
@@ -66,7 +66,7 @@ Diese Datei ist die **einzige Vorlage** für die Implementierungs-Agenten. Wo di
 
 > **Nachtrag Patchnotes:** P ist neu, H, E5 und E6 haben ein „?“ neben der Versionsnummer — siehe [§6.17](#617-nachtrag-patchnotes-p).
 
-> **Nachtrag 3.9.0:** E4 hat einen zweiten Abschnitt TEXTVERBESSERUNG, E2 die Karte „Offline-Erkennung“, H/E/W2b/V1/V2 kennen das lokale Textmodell — siehe [§6.18](#618-nachtrag-390-lokales-textmodell).
+> **Nachtrag 3.8.5:** E4 hat einen zweiten Abschnitt TEXTVERBESSERUNG, E2 die Karte „Offline-Erkennung“, H/E/W2b/V1/V2 kennen das lokale Textmodell — siehe [§6.18](#618-nachtrag-390-lokales-textmodell).
 
 ### 1.2 Startlogik (Router) — präzise Bedingung „eingerichtet"
 
@@ -1594,7 +1594,7 @@ contentDescription `cd_patchnotes`:
 | `patchnotes_unavailable_body` | In dieser App-Version fehlen die Patchnotes. Alle Änderungen stehen auf GitHub. |
 | `patchnotes_unavailable_action` | Auf GitHub ansehen |
 
-### 6.18 Nachtrag 3.9.0: Lokales Textmodell
+### 6.18 Nachtrag 3.8.5: Lokales Textmodell
 
 Ergänzt §2.1 (H), §2.2 (W2b), §2.4 (E1), §2.5 (E2), §2.7 (E4), §2.9 (S), §5 (V1, V2) und §6.5/§6.6/§6.8; wo sie widersprechen, gilt dieser
 Abschnitt. Kein neuer Screen, keine neue Navigationsebene. Nutzer-Sicht: `docs/ANLEITUNG.md` 3 (Schritt 2b), 8.2, 9.6,

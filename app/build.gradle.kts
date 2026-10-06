@@ -28,7 +28,7 @@ android {
         // (erzwungenes edge-to-edge — App nutzt enableEdgeToEdge — u.a.) am Geraet gegenpruefen.
         targetSdk = 36
         versionCode = 17
-        versionName = "3.9.0"
+        versionName = "3.8.5"
 
         if (!skipNative) {
             externalNativeBuild {

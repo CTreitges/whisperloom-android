@@ -55,7 +55,7 @@ class AnleitungsTexteTest {
     }
 
     @Test fun lizenzenNennenDasLokaleTextmodell() {
-        // 3.9.0: LiteRT-LM (mit Gson) steckt im APK, Gemma 4 wird nachgeladen — beides gehoert in "Ueber" und die Hilfe.
+        // 3.8.5: LiteRT-LM (mit Gson) steckt im APK, Gemma 4 wird nachgeladen — beides gehoert in "Ueber" und die Hilfe.
         val lizenz = texte.getValue("about_license")
         listOf("LiteRT-LM", "Gson", "Gemma 4").forEach { assertTrue("$it fehlt: $lizenz", lizenz.contains(it)) }
     }
