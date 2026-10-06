@@ -72,6 +72,7 @@ import com.chris.whisperloom.ui.components.offlineModelLabel
 import com.chris.whisperloom.ui.components.providerShortName
 import com.chris.whisperloom.ui.components.rememberSnack
 import com.chris.whisperloom.ui.models.localModelMissing
+import com.chris.whisperloom.ui.models.offlineRule
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SetupRouter
@@ -325,7 +326,7 @@ private fun StatusCard(nav: NavState, modelInstalled: Boolean) {
     val level = levelLabel(prefs.refineMode)
     // Offline erkannt: die Regel entscheidet (lokal, online mit Ausweg, uebersprungen) — "wie Erkennung" zaehlt nie.
     val offlineRefine = if (prefs.engine == Engine.OFFLINE && prefs.refineMode != RefineMode.OFF) {
-        HomeStatus.offlineRefine(prefs.offlineRefine, SetupState.llmReady(llm), status.textModelReady(prefs.localLlmModel))
+        HomeStatus.offlineRefine(offlineRule(prefs, status), SetupState.llmReady(llm), status.textModelReady(prefs.localLlmModel))
     } else {
         null
     }

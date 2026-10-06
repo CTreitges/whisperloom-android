@@ -347,6 +347,7 @@
     <string name="text_card_offline">Offline-Erkennung</string>
     <string name="text_local_loaded">Geladen · %1$s</string>
     <string name="text_local_none">Kein Textmodell geladen</string>
+    <string name="text_local_needs_ram">Für ein lokales Textmodell braucht das Gerät mindestens 6 GB RAM.</string>
     <string name="text_rule_title">Textverbesserung bei Offline-Erkennung</string>
     <string name="text_rule_local">Lokales Textmodell</string>
     <string name="text_rule_local_sub">Standard — offline erkannter Text wird auf dem Gerät verbessert, nie online.</string>

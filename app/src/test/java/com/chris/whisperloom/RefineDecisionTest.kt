@@ -3,7 +3,10 @@ package com.chris.whisperloom
 import com.chris.whisperloom.OfflineRefineRule.LOCAL
 import com.chris.whisperloom.OfflineRefineRule.ONLINE_LOCAL
 import com.chris.whisperloom.OfflineRefineRule.SKIP
+import com.chris.whisperloom.whisper.TextModelCatalog
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -146,5 +149,15 @@ class RefineDecisionTest {
         for (r in OfflineRefineRule.entries) assertEquals(r, OfflineRefineRule.fromKey(r.key))
         assertEquals(LOCAL, OfflineRefineRule.fromKey(null))
         assertEquals(LOCAL, OfflineRefineRule.fromKey("no_net"))
+    }
+
+    @Test fun passtKeinTextmodellInsGeraetWirktJedeRegelWieUeberspringen() {
+        for (r in OfflineRefineRule.entries) assertEquals(r, r.effective(textModelFits = true))
+        for (r in OfflineRefineRule.entries) assertEquals(SKIP, r.effective(textModelFits = false))
+        // E2B ab 6 GiB mit 10 % Toleranz: ein "6-GB-Geraet" passt, ein 4-GB-Geraet nicht.
+        assertTrue(TextModelCatalog.anyFits(6L shl 30))
+        assertTrue(TextModelCatalog.anyFits((6L shl 30) / 10 * 9))
+        assertFalse(TextModelCatalog.anyFits((6L shl 30) / 10 * 9 - 1))
+        assertFalse(TextModelCatalog.anyFits(4L shl 30))
     }
 }

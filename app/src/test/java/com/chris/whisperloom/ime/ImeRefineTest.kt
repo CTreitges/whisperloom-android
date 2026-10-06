@@ -130,8 +130,18 @@ class ImeRefineTest {
         assertEquals(app.getString(R.string.kb_refine_needs_llm), statusText)
     }
 
-    @Test fun offlineZuWenigRamFuerDasTextmodellIstNichtBereit() {
+    @Test fun offlineZuWenigRamFuerJedesTextmodellFehltDerZugangNichtDasModell() {
+        // 4-GB-Geraet: kein Textmodell passt, die Regel wirkt wie "Ueberspringen" — kein "tippe zum Laden".
         deviceRam(app, 4)
+        root.findViewById<View>(R.id.key_refine).performClick()
+        assertFalse(refineKey(R.id.refine_polish).isEnabled)
+        assertEquals(app.getString(R.string.kb_refine_needs_llm), statusText)
+    }
+
+    @Test fun offlineZuGrossesGewaehltesTextmodellFuehrtZumLaden() {
+        // 6 GB, E4B gewaehlt: E2B passt, also fehlt das Textmodell weiter.
+        deviceRam(app, 6)
+        Prefs(app).localLlmModel = TextModelCatalog.GEMMA4_E4B.id
         root.findViewById<View>(R.id.key_refine).performClick()
         assertFalse(refineKey(R.id.refine_polish).isEnabled)
         assertEquals(app.getString(R.string.kb_refine_needs_local), statusText)

@@ -38,6 +38,7 @@ import com.chris.whisperloom.overlay.BubbleState
 import com.chris.whisperloom.overlay.BubbleVisuals
 import com.chris.whisperloom.overlay.MicIcon
 import com.chris.whisperloom.overlay.MicRings
+import com.chris.whisperloom.whisper.OfflineSupport
 import java.util.concurrent.Executors
 import kotlin.math.abs
 
@@ -499,9 +500,11 @@ class WhisperLoomInputMethodService : InputMethodService() {
         val offline = prefs.engine == Engine.OFFLINE
         val localReady = offline && LocalTextEngine.isReady(this, prefs.localLlmModel)
         val onlineReady = SetupState.llmReady(prefs.llmAccess())
+        // Passt kein Textmodell ins Geraet, gilt "Ueberspringen": dann fehlt der Zugang, nicht das Modell.
+        val rule = prefs.offlineRefine.effective(OfflineSupport.textModelFits(this))
         return when {
-            RefineDecision.stagesReady(prefs.engine, prefs.offlineRefine, onlineReady, localReady) -> null
-            offline && prefs.offlineRefine != OfflineRefineRule.SKIP -> Status.NEEDS_LOCAL
+            RefineDecision.stagesReady(prefs.engine, rule, onlineReady, localReady) -> null
+            offline && rule != OfflineRefineRule.SKIP -> Status.NEEDS_LOCAL
             else -> Status.NEEDS_LLM
         }
     }

@@ -262,6 +262,36 @@ class TextModelUiTest {
         }
     }
 
+    // --- Geraet, auf das kein Textmodell passt (4 GB: offline ja, Gemma nein) -----------------
+
+    private val vierGb = 4L shl 30
+
+    @Test fun passtKeinTextmodellGibtEsKeinePflichtkarte() {
+        offlineOhneTextmodell()
+        screen(env(SystemStatus(installedModels = setOf("small"), totalRamBytes = vierGb))) { RecognitionScreen(it) }
+        pflichtkarte.assertCountEquals(0)
+    }
+
+    @Test fun passtKeinTextmodellWarntHomeNicht() {
+        offlineOhneTextmodell()
+        screen(env(homeStatus().copy(totalRamBytes = vierGb))) { HomeScreen(it) }
+        compose.onNodeWithText("Glätten · offline übersprungen").assertExists()
+        compose.onNodeWithText("Beheben").assertDoesNotExist()
+    }
+
+    @Test fun passtKeinTextmodellSindDieLokalenRegelnMitGrundGesperrt() {
+        offlineOhneTextmodell()
+        screen(env(SystemStatus(installedModels = setOf("small"), totalRamBytes = vierGb))) { TextSettingsScreen(it) }
+        pflichtkarte.assertCountEquals(0)
+        compose.onNodeWithText("Für ein lokales Textmodell braucht das Gerät mindestens 6 GB RAM.").assertExists()
+        compose.onNodeWithText("Laden (${size(TextModelCatalog.GEMMA4_E2B.bytes)})").assertDoesNotExist()
+        compose.onNode(isSelectable() and hasText("Lokales Textmodell")).assertIsNotEnabled()
+        compose.onNode(isSelectable() and hasText("Online, ohne Netz lokal")).assertIsNotEnabled()
+        compose.onNode(isSelectable() and hasText("Überspringen")).assertIsEnabled().assertIsSelected()
+        // Der Online-Zugang erklaert "Ueberspringen", nicht das lokale Textmodell.
+        compose.onNodeWithText("Ohne eigenen Zugang kommt der Text bei Offline-Erkennung ohne KI.", substring = true).assertExists()
+    }
+
     // --- E2 Text: Karte "Offline-Erkennung" und Online-Zugang ---------------------------------
 
     @Test fun karteOfflineErkennungStehtZwischenShareUndOnlineZugang() {
@@ -427,10 +457,11 @@ class TextModelUiTest {
         compose.onNodeWithText("Weiter").assertIsNotEnabled()
     }
 
-    @Test fun schritt2bZuWenigRamNurUeberspringen() {
+    @Test fun schritt2bZuWenigRamNurUeberspringenUndDasIstSchonGewaehlt() {
         schritt2b(SystemStatus(installedModels = setOf("small"), totalRamBytes = 4L shl 30))
         compose.onNode(isSelectable() and hasText("Lokales Textmodell")).assertIsNotEnabled()
-        compose.onNode(isSelectable() and hasText("Überspringen")).assertIsEnabled()
+        compose.onNode(isSelectable() and hasText("Überspringen")).assertIsEnabled().assertIsSelected()
+        compose.onNodeWithText("Weiter").assertIsEnabled()
     }
 
     // --- Home und Hub ------------------------------------------------------------------------

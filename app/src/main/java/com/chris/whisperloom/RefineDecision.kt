@@ -14,6 +14,12 @@ enum class OfflineRefineRule(val key: String) {
     /** Mit eigenem Online-Zugang und Netz online; sonst Text ohne KI (nur die Regeln ohne KI). */
     SKIP("skip");
 
+    /**
+     * Die Regel, die wirkt: Passt kein Textmodell ins Geraet ([textModelFits] false, unter etwa 6 GB
+     * RAM), gilt jede Regel als [SKIP] — laden liesse sich dort keins, die Warnung bliebe fuer immer.
+     */
+    fun effective(textModelFits: Boolean): OfflineRefineRule = if (textModelFits) this else SKIP
+
     companion object {
         /**
          * Ungespeichert und Unbekanntes gilt als [LOCAL] — auch fuer Bestandsnutzer, die schon

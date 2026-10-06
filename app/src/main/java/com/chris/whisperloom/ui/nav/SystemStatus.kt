@@ -43,6 +43,9 @@ data class SystemStatus(
     fun textModelReady(id: String): Boolean =
         TextModelCatalog.find(id)?.let { it.id in installedTextModels && OfflineSupport.fitsDevice(totalRamBytes, it) } ?: false
 
+    /** Passt ueberhaupt ein Textmodell ins Geraet ([TextModelCatalog.anyFits])? Sonst wirkt die Regel wie "Ueberspringen". */
+    val textModelFits: Boolean get() = TextModelCatalog.anyFits(totalRamBytes)
+
     /** Wie viele Offline-Modelle insgesamt geladen sind (whisper- und Textmodelle). */
     val installedCount: Int get() = installedModels.size + installedTextModels.size
 

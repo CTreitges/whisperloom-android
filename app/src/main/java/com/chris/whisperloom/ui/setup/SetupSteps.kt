@@ -53,6 +53,7 @@ import com.chris.whisperloom.ui.models.DownloadProgress
 import com.chris.whisperloom.ui.models.LocalModelRequiredCard
 import com.chris.whisperloom.ui.models.ModelListSection
 import com.chris.whisperloom.ui.models.localModelMissing
+import com.chris.whisperloom.ui.models.offlineRule
 import com.chris.whisperloom.ui.models.rememberTextModelLoad
 import com.chris.whisperloom.ui.models.textModelToLoad
 import com.chris.whisperloom.ui.nav.SetupFacts
@@ -199,7 +200,8 @@ private fun modelStep(facts: SetupFacts, actions: StepActions): StepUi {
     val states by ModelDownloads.states.collectAsStateWithLifecycle()
     val model = textModelToLoad(prefs.localLlmModel, env.status.totalRamBytes)
     val download = states[model.id] as? DownloadState.Running
-    val choice = SetupRouter.textChoice(prefs.offlineRefine, env.status.textModelReady(model.id), download != null)
+    // Passt kein Textmodell ins Geraet, ist "Ueberspringen" schon gewaehlt (die einzige Wahl).
+    val choice = SetupRouter.textChoice(offlineRule(prefs, env.status), env.status.textModelReady(model.id), download != null)
     return StepUi(
         image = R.drawable.ill_help_offline,
         imageText = R.string.img_help_offline,

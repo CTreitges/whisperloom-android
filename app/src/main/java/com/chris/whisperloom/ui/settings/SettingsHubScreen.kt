@@ -44,6 +44,7 @@ import com.chris.whisperloom.ui.components.levelLabel
 import com.chris.whisperloom.ui.components.modelLabel
 import com.chris.whisperloom.ui.components.offlineModelLabel
 import com.chris.whisperloom.ui.components.offlineRuleShort
+import com.chris.whisperloom.ui.models.offlineRule
 import com.chris.whisperloom.ui.components.providerShortName
 import com.chris.whisperloom.ui.components.rememberSnack
 import com.chris.whisperloom.ui.nav.NavState
@@ -80,7 +81,7 @@ fun SettingsHubScreen(nav: NavState) {
     // Offline erkannt mit KI-Stufe: die Regel dazu, als Kurzform ("Glaetten · lokal bei Offline").
     val level = listOfNotNull(
         levelLabel(prefs.refineMode),
-        if (prefs.engine == Engine.OFFLINE && prefs.refineMode != RefineMode.OFF) offlineRuleShort(prefs.offlineRefine) else null,
+        if (prefs.engine == Engine.OFFLINE && prefs.refineMode != RefineMode.OFF) offlineRuleShort(offlineRule(prefs, status)) else null,
     ).joinToString(" · ")
     val text = if (rules.isEmpty()) level else stringResource(R.string.settings_val_text, level, rules.joinToString(" · "))
     val button = stringResource(if (status.bubbleRunning) R.string.settings_val_bubble_on else R.string.settings_val_bubble_off) +

@@ -47,6 +47,12 @@ import com.chris.whisperloom.whisper.TextModelCatalog
 const val LOCAL_MODEL_REQUIRED_TAG = "local-model-required"
 
 /**
+ * Die Regel, die wirkt ([OfflineRefineRule.effective]): passt kein Textmodell ins Geraet
+ * ([SystemStatus.textModelFits]), "Ueberspringen" — fuer alles, was die Regel anzeigt.
+ */
+fun offlineRule(prefs: PrefsState, status: SystemStatus): OfflineRefineRule = prefs.offlineRefine.effective(status.textModelFits)
+
+/**
  * "Offline ohne Textmodell" fuer die UI: [RefineDecision.localModelMissing] mit dem Systemstatus
  * ([SystemStatus.textModelReady]) statt Dateizugriff — dieselbe Wahrheit fuer Pflichtkarte, Home und Assistent.
  */
@@ -54,7 +60,7 @@ fun localModelMissing(prefs: PrefsState, status: SystemStatus): Boolean = Refine
     engine = prefs.engine,
     dictationMode = prefs.refineMode,
     shareMode = prefs.shareRefineMode,
-    rule = prefs.offlineRefine,
+    rule = offlineRule(prefs, status),
     localReady = status.textModelReady(prefs.localLlmModel),
 )
 

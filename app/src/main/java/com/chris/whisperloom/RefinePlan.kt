@@ -11,6 +11,7 @@ import com.chris.whisperloom.api.RefineRejectedException
 import com.chris.whisperloom.api.TextRefiner
 import com.chris.whisperloom.llm.LocalRefiner
 import com.chris.whisperloom.llm.LocalTextEngine
+import com.chris.whisperloom.whisper.OfflineSupport
 
 /**
  * Die Textverbesserung eines Auftrags, wie [RefineDecision] sie entscheidet, samt Ausfuehrung —
@@ -121,7 +122,9 @@ internal class RefinePlan(
                 networkCheck(context).availableFor(access.baseUrl, proven = engine != Engine.OFFLINE)
             val localModelId = prefs.localLlmModel
             val localReady = stageActive && engine == Engine.OFFLINE && LocalTextEngine.isReady(context, localModelId)
-            val route = RefineDecision.route(engine, prefs.offlineRefine, stageActive, ownOnlineReady, network, localReady)
+            // Passt kein Textmodell ins Geraet, wirkt jede Regel wie "Ueberspringen".
+            val rule = prefs.offlineRefine.effective(OfflineSupport.textModelFits(context))
+            val route = RefineDecision.route(engine, rule, stageActive, ownOnlineReady, network, localReady)
             return RefinePlan(route, access, localModelId)
         }
 

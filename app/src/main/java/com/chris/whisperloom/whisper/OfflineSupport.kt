@@ -77,6 +77,9 @@ object OfflineSupport {
 
     fun fitsDevice(context: Context, model: OfflineModel): Boolean = fitsDevice(totalRamBytes(context), model)
 
+    /** Passt ein Textmodell in den RAM dieses Geraets ([TextModelCatalog.anyFits])? */
+    fun textModelFits(context: Context): Boolean = TextModelCatalog.anyFits(totalRamBytes(context))
+
     /** Vor grossen Downloads: laeuft das gerade ueber mobile Daten? (UX-Spec Dialog D2) */
     fun isMeteredNetwork(context: Context): Boolean =
         context.getSystemService(ConnectivityManager::class.java)?.isActiveNetworkMetered ?: false

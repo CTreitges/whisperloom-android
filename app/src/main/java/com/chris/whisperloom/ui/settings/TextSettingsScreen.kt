@@ -15,6 +15,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -38,6 +39,7 @@ import com.chris.whisperloom.ui.components.rememberSnack
 import com.chris.whisperloom.ui.models.DownloadProgress
 import com.chris.whisperloom.ui.models.LocalModelRequiredCard
 import com.chris.whisperloom.ui.models.localModelMissing
+import com.chris.whisperloom.ui.models.offlineRule
 import com.chris.whisperloom.ui.models.rememberModelDownload
 import com.chris.whisperloom.ui.models.textModelToLoad
 import com.chris.whisperloom.ui.nav.NavState
@@ -204,12 +206,16 @@ private fun OfflineRefineCard(nav: NavState, noAi: Boolean) {
         )
         Column(Modifier.selectableGroup()) {
             OfflineRefineRule.entries.forEach { rule ->
-                val selected = prefs.offlineRefine == rule
+                // Passt kein Textmodell ins Geraet, bleibt nur "Ueberspringen" (der Grund steht darueber).
+                val enabled = env.status.textModelFits || rule == OfflineRefineRule.SKIP
+                val selected = offlineRule(prefs, env.status) == rule
                 LoomRow(
                     headline = offlineRuleLabel(rule),
                     supporting = offlineRuleDetails(rule),
-                    modifier = Modifier.selectable(selected = selected, role = Role.RadioButton) { prefs.offlineRefine = rule },
-                    trailing = { RadioButton(selected = selected, onClick = null) },
+                    modifier = Modifier
+                        .selectable(selected = selected, enabled = enabled, role = Role.RadioButton) { prefs.offlineRefine = rule }
+                        .alpha(if (enabled) 1f else 0.38f),
+                    trailing = { RadioButton(selected = selected, onClick = null, enabled = enabled) },
                 )
             }
         }
@@ -225,7 +231,8 @@ private fun OfflineRefineCard(nav: NavState, noAi: Boolean) {
 
 /**
  * Das gewaehlte Textmodell: geladen mit [Aendern] (-> Offline-Modelle), sonst "Kein Textmodell
- * geladen" mit [Laden]. Der Knopf laedt nur — die Regel waehlt man darunter.
+ * geladen" mit [Laden]. Der Knopf laedt nur — die Regel waehlt man darunter. Passt kein
+ * Textmodell ins Geraet, steht statt des Knopfs der Grund.
  */
 @Composable
 private fun LocalModelRow(nav: NavState) {
@@ -233,7 +240,9 @@ private fun LocalModelRow(nav: NavState) {
     val prefs = env.prefs
     val states by ModelDownloads.states.collectAsStateWithLifecycle()
     val download = rememberModelDownload { prefs.localLlmModel = it.id }
-    if (prefs.localLlmModel in env.status.installedTextModels) {
+    if (!env.status.textModelFits) {
+        LoomRow(headline = stringResource(R.string.text_local_none), supporting = stringResource(R.string.text_local_needs_ram))
+    } else if (prefs.localLlmModel in env.status.installedTextModels) {
         val model = TextModelCatalog.byId(prefs.localLlmModel)
         LoomRow(
             headline = offlineModelLabel(model.id),

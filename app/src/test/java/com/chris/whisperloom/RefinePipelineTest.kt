@@ -105,6 +105,7 @@ class RefinePipelineTest {
 
         prefs.language = "de"
         prefs.refineMode = RefineMode.POLISH
+        deviceRam(ctx, 8) // Robolectric meldet sonst 0 Byte RAM: kein Textmodell passte, jede Regel wirkte wie "Ueberspringen"
     }
 
     @After fun abbau() {
@@ -125,10 +126,9 @@ class RefinePipelineTest {
         prefs.offlineRefine = rule
     }
 
-    /** Lokales Textmodell geladen, Geraet mit 8 GB RAM. */
+    /** Lokales Textmodell geladen (das Geraet hat 8 GB RAM, siehe [aufbau]). */
     private fun localModel() {
         installSparse(ctx, e2b)
-        deviceRam(ctx, 8)
     }
 
     /** Eigener Online-Zugang fuer die Textverbesserung: der lokale HttpServer. */
@@ -191,11 +191,28 @@ class RefinePipelineTest {
         assertEquals("nichts geladen", 0, made.size)
     }
 
-    @Test fun offlineLokalMitZuWenigRamGiltAlsFehlend() {
+    @Test fun offlineLokalMitZuGrossemModellGiltAlsFehlend() {
+        // E4B gewaehlt und geladen, das Geraet hat nur 6 GB: E2B passt, also fehlt das Modell (Pflichtkarte laedt E2B).
+        offline(OfflineRefineRule.LOCAL)
+        prefs.localLlmModel = TextModelCatalog.GEMMA4_E4B.id
+        installSparse(ctx, TextModelCatalog.GEMMA4_E4B)
+        deviceRam(ctx, 6)
+        assertEquals(RefinePlan.MSG_LOCAL_MISSING, transcribe().skipped)
+        assertEquals(0, made.size)
+    }
+
+    @Test fun passtKeinTextmodellInsGeraetWirktDieRegelWieUeberspringen() {
+        // 4-GB-Geraet: offline geht, aber kein Textmodell passt — kein "Textmodell laden"-Hinweis.
         offline(OfflineRefineRule.LOCAL)
         installSparse(ctx, e2b)
         deviceRam(ctx, 4)
-        assertEquals(RefinePlan.MSG_LOCAL_MISSING, transcribe().skipped)
+        val run = transcribe()
+        assertNull("so gewaehlt, kein Hinweis", run.skipped)
+        assertEquals(0, made.size)
+        // Mit eigenem Zugang und Netz wie "Ueberspringen": online.
+        ownAccess()
+        assertEquals("Online verbessert.", transcribe().text)
+        assertEquals(1, chatRequests.get())
         assertEquals(0, made.size)
     }
 

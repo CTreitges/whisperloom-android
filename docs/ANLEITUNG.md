@@ -127,7 +127,7 @@ Darunter unter **Textverbesserung ohne Netz** zwei Karten:
 - **Lokales Textmodell** — „Gemma 4 E2B verbessert den Text auf dem Gerät. Einmal laden: 2,6 GB · +800 MB beim ersten Start." Ein Tipp startet den Download des Textmodells ([9.7](#97-lokales-textmodell-gemma-4)).
 - **Überspringen** — „Nur die Erkennung — offline kommt der Text ohne KI. Ein Textmodell kannst du später unter Offline-Modelle laden."
 
-**Weiter** wird aktiv, sobald das Whisper-Modell geladen ist und du eine der beiden Karten gewählt hast. Das Textmodell muss dafür nicht fertig sein: „Lädt im Hintergrund weiter — du kannst schon weitermachen." Ist offline schon eine KI-Stufe eingeschaltet, steht an Stelle der beiden Karten die Karte **Offline ohne Textmodell** mit denselben zwei Möglichkeiten ([9.7](#97-lokales-textmodell-gemma-4)). Auf Geräten mit weniger als 6 GB Arbeitsspeicher ist „Lokales Textmodell" ausgegraut („Für dieses Gerät zu groß").
+**Weiter** wird aktiv, sobald das Whisper-Modell geladen ist und du eine der beiden Karten gewählt hast. Das Textmodell muss dafür nicht fertig sein: „Lädt im Hintergrund weiter — du kannst schon weitermachen." Ist offline schon eine KI-Stufe eingeschaltet, steht an Stelle der beiden Karten die Karte **Offline ohne Textmodell** mit denselben zwei Möglichkeiten ([9.7](#97-lokales-textmodell-gemma-4)). Auf Geräten mit weniger als 6 GB Arbeitsspeicher ist „Lokales Textmodell" ausgegraut („Für dieses Gerät zu groß") und „Überspringen" schon gewählt: Dort passt kein Textmodell, die Regel wirkt wie „Überspringen" ([9.7](#97-lokales-textmodell-gemma-4)).
 
 ### Schritt 3 — Mikrofon erlauben (Pflicht)
 
@@ -612,7 +612,7 @@ Erkennst du offline und ist eine KI-Stufe an (fürs Diktat oder für geteilte Sp
 - **Online, ohne Netz lokal** — „Mit eigenem Online-Zugang und Netz online. Ohne Netz, ohne eigenen Zugang oder bei einem Fehler lokal."
 - **Überspringen** — „Kein lokales Modell. Mit eigenem Online-Zugang und Netz online, sonst kommt der Text ohne KI."
 
-Darüber steht das gewählte Textmodell: geladen „Gemma 4 E2B · Geladen · 2,6 GB" mit **Ändern** (führt zu den Offline-Modellen), sonst „Kein Textmodell geladen" mit **Laden (2,6 GB)**. Dieser Knopf lädt nur; die Regel wählst du darunter. Stehen die Stufen fürs Diktat und für geteilte Sprachnachrichten beide auf „Aus", wirkt die Regel nicht. „Eigener Online-Zugang" heißt: Unter „Online-Zugang für die Textverbesserung" ist **Eigenen Zugang verwenden** an und vollständig eingetragen ([8.2](#82-online-zugang-für-die-textverbesserung)). „Wie Erkennung" zählt bei Offline-Erkennung nie.
+Darüber steht das gewählte Textmodell: geladen „Gemma 4 E2B · Geladen · 2,6 GB" mit **Ändern** (führt zu den Offline-Modellen), sonst „Kein Textmodell geladen" mit **Laden (2,6 GB)**. Dieser Knopf lädt nur; die Regel wählst du darunter. Passt kein Textmodell ins Gerät (unter 6 GB RAM), steht dort statt des Knopfs „Für ein lokales Textmodell braucht das Gerät mindestens 6 GB RAM."; „Lokales Textmodell" und „Online, ohne Netz lokal" sind dann gesperrt, und die Regel wirkt wie „Überspringen". Stehen die Stufen fürs Diktat und für geteilte Sprachnachrichten beide auf „Aus", wirkt die Regel nicht. „Eigener Online-Zugang" heißt: Unter „Online-Zugang für die Textverbesserung" ist **Eigenen Zugang verwenden** an und vollständig eingetragen ([8.2](#82-online-zugang-für-die-textverbesserung)). „Wie Erkennung" zählt bei Offline-Erkennung nie.
 
 **Was passiert wann** — bei Offline-Erkennung und einer KI-Stufe über „Aus":
 
@@ -632,7 +632,7 @@ Darüber steht das gewählte Textmodell: geladen „Gemma 4 E2B · Geladen · 2,
 
 Bis dahin kommt der Text offline **sofort** ohne KI — WhisperLoom wartet nie auf ein fehlendes Modell. Der Startbildschirm zeigt die Zeile Textverbesserung in Warnfarbe („Glätten · Textmodell fehlt — Text ohne KI") und das Banner „Offline ohne Textmodell — der Text kommt ohne KI." mit **Beheben** (führt zu Text). In der Tastatur sind die KI-Stufen ausgegraut („Offline ohne Textmodell — tippe zum Laden").
 
-**Update von 3.8.x:** Umgestellt wird nichts, die Regel steht für alle auf „Lokales Textmodell". Wer schon offline mit einer KI-Stufe diktiert, sieht deshalb die Warnkarte, bis er das Modell lädt oder „Überspringen" wählt. Mit „Überspringen" und eigenem Online-Zugang bleibt alles wie bisher: Online verbessert wird, solange Netz da ist — ohne Netz kommt der Text jetzt sofort statt nach einer Zeitüberschreitung.
+**Update von 3.8.x:** Umgestellt wird nichts, die Regel steht für alle auf „Lokales Textmodell". Wer schon offline mit einer KI-Stufe diktiert, sieht deshalb die Warnkarte, bis er das Modell lädt oder „Überspringen" wählt. Auf Geräten unter 6 GB RAM passt kein Textmodell: Dort wirkt die Regel von selbst wie „Überspringen" — ohne Warnkarte, ohne Banner, und die Tastatur bietet kein Laden an. Mit „Überspringen" und eigenem Online-Zugang bleibt alles wie bisher: Online verbessert wird, solange Netz da ist — ohne Netz kommt der Text jetzt sofort statt nach einer Zeitüberschreitung.
 
 **Anzeige:** Auf dem Startbildschirm steht bei Offline-Erkennung in der Zeile Textverbesserung, was passiert: „Glätten · lokal · Gemma 4 E2B", „Glätten · GPT-4o mini · ohne Netz lokal", „Glätten · offline übersprungen" oder, bei „Überspringen" mit eigenem Zugang, das Online-Modell wie gewohnt. In den Einstellungen zeigt die Zeile **Text** die Kurzform: „lokal bei Offline", „online, ohne Netz lokal" oder „ohne lokales Modell". Die Zeile **Offline-Modelle** zählt Whisper- und Textmodelle zusammen.
 
@@ -843,7 +843,7 @@ Beim Anbieter „Ollama (lokal / Homeserver)": Auf dem Server muss `OLLAMA_HOST=
 Ein kleineres Modell wählen (Base oder Small) oder auf den Online-Dienst wechseln. Auch andere gleichzeitig laufende Apps bremsen — die Erkennung nutzt alle Performance-Kerne.
 
 **„Offline ohne Textmodell" / „Textverbesserung übersprungen: Kein Textmodell geladen — …".**
-Offline ist eine KI-Stufe an, aber das lokale Textmodell fehlt. In der Warnkarte (oder unter Text → Offline-Erkennung) **Textmodell laden** antippen — oder **Überspringen**, wenn offline keine KI rechnen soll ([9.7](#97-lokales-textmodell-gemma-4)).
+Offline ist eine KI-Stufe an, aber das lokale Textmodell fehlt. In der Warnkarte (oder unter Text → Offline-Erkennung) **Textmodell laden** antippen — oder **Überspringen**, wenn offline keine KI rechnen soll ([9.7](#97-lokales-textmodell-gemma-4)). Auf Geräten unter 6 GB RAM kommt beides nicht vor: Dort passt kein Textmodell, und die Regel wirkt wie „Überspringen".
 
 **„Textverbesserung übersprungen: Lokales Textmodell fehlgeschlagen".**
 Das Textmodell ließ sich nicht laden oder rechnen, meist weil gerade zu wenig Arbeitsspeicher frei ist. Andere Apps schließen und erneut diktieren; hilft das nicht, Gemma 4 E2B statt E4B wählen. Kommt der Fehler gleich beim ersten Diktat nach dem Download, das Textmodell unter Offline-Modelle löschen und neu laden.

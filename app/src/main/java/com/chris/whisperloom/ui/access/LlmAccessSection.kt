@@ -42,6 +42,7 @@ import com.chris.whisperloom.ui.components.LoomPickerField
 import com.chris.whisperloom.ui.components.modelLabel
 import com.chris.whisperloom.ui.components.providerLabel
 import com.chris.whisperloom.ui.components.providerShortName
+import com.chris.whisperloom.ui.models.offlineRule
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.theme.loom
 
@@ -53,6 +54,7 @@ import com.chris.whisperloom.ui.theme.loom
 @Composable
 fun LlmAccessSection(snack: SnackController) {
     val prefs = LocalAppEnv.current.prefs
+    val status = LocalAppEnv.current.status
     val stt = prefs.sttAccess()
     val llm = prefs.llmAccess()
     val provider = llm.provider
@@ -163,7 +165,7 @@ fun LlmAccessSection(snack: SnackController) {
         }
 
         when {
-            offlineWithoutOwn -> OfflineAccessNote(prefs.offlineRefine) { switchToOwn() }
+            offlineWithoutOwn -> OfflineAccessNote(offlineRule(prefs, status)) { switchToOwn() }
             noChatWithoutOwn -> InfoCard(
                 text = stringResource(R.string.text_no_llm, providerShortName(stt.provider)),
                 icon = R.drawable.ic_warning,

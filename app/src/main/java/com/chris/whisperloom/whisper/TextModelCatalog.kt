@@ -44,4 +44,7 @@ object TextModelCatalog {
     fun find(id: String?): OfflineModel? = models.firstOrNull { it.id == id }
 
     fun byId(id: String?): OfflineModel = find(id) ?: DEFAULT
+
+    /** Passt wenigstens ein Textmodell in den RAM? Sonst wirkt die Regel wie "Ueberspringen" (OfflineRefineRule.effective). */
+    fun anyFits(totalRamBytes: Long): Boolean = models.any { OfflineSupport.fitsDevice(totalRamBytes, it) }
 }
