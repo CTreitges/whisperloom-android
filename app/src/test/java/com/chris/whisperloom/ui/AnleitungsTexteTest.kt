@@ -47,6 +47,18 @@ class AnleitungsTexteTest {
         assertEquals(emptyMap<String, Int>(), zuLang(mapOf("one" to eins, "other" to mehr), 200))
     }
 
+    @Test fun lizenzenNennenDasLokaleTextmodell() {
+        // 3.9.0: LiteRT-LM (mit Gson) steckt im APK, Gemma 4 wird nachgeladen — beides gehoert in "Ueber" und die Hilfe.
+        val lizenz = texte.getValue("about_license")
+        listOf("LiteRT-LM", "Gson", "Gemma 4").forEach { assertTrue("$it fehlt: $lizenz", lizenz.contains(it)) }
+    }
+
+    @Test fun datenschutzOfflineNenntDasLokaleTextmodell() {
+        // Offline verbessert ab Werk das lokale Textmodell: "mit Textverbesserung geht der Text ins Netz" stimmt nicht mehr.
+        val offline = texte.getValue("help_s6_offline")
+        assertTrue(offline, offline.contains("lokalen Textmodell"))
+    }
+
     @Test fun tutorialSeitenHabenHoechstens180Zeichen() {
         val seiten = texte.filterKeys { it.matches(Regex("tutorial_(pro_)?p\\d+_body")) }
         assertEquals("4 Einsteiger- und 6 Pro-Widgets-Seiten", 10, seiten.size)
