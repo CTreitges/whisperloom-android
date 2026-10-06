@@ -4,6 +4,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -161,6 +163,7 @@ fun rememberModelDownload(onStarted: (OfflineModel) -> Unit = {}): ModelDownload
 }
 
 /** Eine Modell-Zeile: Radio (nur installiert), Label + Details, Trailing je Zustand, Fortschritt. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ModelRow(
     model: OfflineModel,
@@ -204,8 +207,13 @@ fun ModelRow(
                 ) {
                     RadioButton(selected = selected, onClick = null, enabled = installed)
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(label, style = MaterialTheme.typography.titleMedium)
+                        // FlowRow: neben "Gemma 4 E2B" und dem Laden-Knopf passt "Empfohlen" nicht immer —
+                        // dann in die naechste Zeile statt zusammengedrueckt.
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Text(label, style = MaterialTheme.typography.titleMedium, modifier = Modifier.align(Alignment.CenterVertically))
                             if (model.recommended) {
                                 StatusChip(
                                     stringResource(R.string.models_recommended), R.drawable.ic_check,
