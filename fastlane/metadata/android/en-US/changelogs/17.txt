@@ -1,0 +1,6 @@
+WhisperLoom 3.9.0
+• New: text refinement offline too – Gemma 4 runs on the device, the text never leaves the phone
+• New: rule for offline recognition – local text model, online with local fallback, or skip
+• New: tap during text refinement to insert the text right away without AI
+• Fixed: offline-recognised text was silently sent to the old online account
+• Fixed: without network, text refinement no longer waits for a timeout
