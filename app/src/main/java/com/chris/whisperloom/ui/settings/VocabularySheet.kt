@@ -167,7 +167,7 @@ fun VocabularySheet(snack: SnackController, onDismiss: () -> Unit) {
 
         if (prompt.total > 0) {
             Text(
-                if (prompt.truncated) stringResource(R.string.vocab_usage_truncated, prompt.used, prompt.total)
+                if (prompt.truncated) pluralStringResource(R.plurals.vocab_usage_truncated, prompt.used, prompt.used, prompt.total)
                 else pluralStringResource(R.plurals.vocab_usage, prompt.total, prompt.total),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

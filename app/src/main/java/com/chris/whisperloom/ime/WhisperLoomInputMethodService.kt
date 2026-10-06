@@ -125,7 +125,9 @@ class WhisperLoomInputMethodService : InputMethodService() {
     // performClick() aus onTouch heraus zu rufen (was Lint verlangt) wuerde hier doppelt
     // feuern: der Touch-Pfad bedient die Aufnahme bereits, und der OnClickListener ist
     // ausdruecklich nur fuer Bedienungshilfen da (siehe unten).
-    @SuppressLint("ClickableViewAccessibility")
+    // inflate ohne Elternteil: das System haengt die Tastatur selbst ein und setzt dabei eigene
+    // LayoutParams — ein Elternteil gibt es vor setInputView nicht.
+    @SuppressLint("ClickableViewAccessibility", "InflateParams")
     override fun onCreateInputView(): View {
         val root = layoutInflater.inflate(R.layout.keyboard_view, null)
         statusView = root.findViewById(R.id.status)

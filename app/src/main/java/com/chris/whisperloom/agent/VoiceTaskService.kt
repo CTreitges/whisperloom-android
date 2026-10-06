@@ -1,5 +1,6 @@
 package com.chris.whisperloom.agent
 
+import android.annotation.SuppressLint
 import android.app.Service
 import android.appwidget.AppWidgetManager
 import android.content.Intent
@@ -75,6 +76,9 @@ class VoiceTaskService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    // MICROPHONE (API 30) wird als Zahl eingebaut; ServiceCompat reicht den Typ erst ab Android 10
+    // weiter, und dort entspricht er dem foregroundServiceType="microphone" aus dem Manifest.
+    @SuppressLint("InlinedApi")
     override fun onCreate() {
         super.onCreate()
         store = VoiceTaskStore(this)

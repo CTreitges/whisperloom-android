@@ -15,6 +15,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
+import androidx.core.graphics.createBitmap
 import java.io.File
 
 /**
@@ -143,7 +144,7 @@ object WidgetPhoto {
                 postScale(scale, scale)
             })
         }
-        val out = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888)
+        val out = createBitmap(SIZE, SIZE)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG).apply { this.shader = shader }
         Canvas(out).drawCircle(SIZE / 2f, SIZE / 2f, SIZE / 2f, paint)
         return out

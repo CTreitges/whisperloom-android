@@ -2,6 +2,7 @@ package com.chris.whisperloom
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import com.chris.whisperloom.api.AccessResolver
 import com.chris.whisperloom.api.ApiAccess
 import com.chris.whisperloom.api.Provider
@@ -101,12 +102,13 @@ class Prefs(context: Context) {
     private fun migrate() {
         val version = sp.getInt(KEY_PREFS_VERSION, 0)
         if (version >= PREFS_VERSION) return
-        val e = sp.edit()
-        if (version < 3) migrateToV3(e)
-        if (version < 4 && sp.getString(KEY_LLM_PROVIDER, "") == GEMINI_ID && sp.getString(KEY_LLM_MODEL, "").isNullOrBlank()) {
-            e.putString(KEY_LLM_MODEL, GEMINI_LEGACY_DEFAULT)
+        sp.edit {
+            if (version < 3) migrateToV3(this)
+            if (version < 4 && sp.getString(KEY_LLM_PROVIDER, "") == GEMINI_ID && sp.getString(KEY_LLM_MODEL, "").isNullOrBlank()) {
+                putString(KEY_LLM_MODEL, GEMINI_LEGACY_DEFAULT)
+            }
+            putInt(KEY_PREFS_VERSION, PREFS_VERSION)
         }
-        e.putInt(KEY_PREFS_VERSION, PREFS_VERSION).apply()
     }
 
     private fun migrateToV3(e: SharedPreferences.Editor) {
@@ -135,14 +137,14 @@ class Prefs(context: Context) {
     /** Erkennungssprache: "auto" oder ISO-Code ("de", "en", "es", "fr", "it"). Default: Deutsch. */
     var language: String
         get() = sp.getString(KEY_LANGUAGE, "de") ?: "de"
-        set(v) = sp.edit().putString(KEY_LANGUAGE, v).apply()
+        set(v) = sp.edit { putString(KEY_LANGUAGE, v) }
 
     /** null = noch nicht gewaehlt (Setup zeigen). */
     var engine: Engine?
         get() = Engine.fromKey(sp.getString(KEY_ENGINE, null))
         set(v) {
-            if (v == null) sp.edit().remove(KEY_ENGINE).apply()
-            else sp.edit().putString(KEY_ENGINE, v.key).apply()
+            if (v == null) sp.edit { remove(KEY_ENGINE) }
+            else sp.edit { putString(KEY_ENGINE, v.key) }
         }
 
     // --- Transkriptions-API --------------------------------------------------
@@ -150,21 +152,21 @@ class Prefs(context: Context) {
     /** Provider-ID aus [ProviderCatalog]; Nutzer von vor v3 haben keine -> OpenAI. */
     var sttProviderId: String
         get() = sp.getString(KEY_STT_PROVIDER, ProviderCatalog.OPENAI_ID) ?: ProviderCatalog.OPENAI_ID
-        set(v) = sp.edit().putString(KEY_STT_PROVIDER, v).apply()
+        set(v) = sp.edit { putString(KEY_STT_PROVIDER, v) }
 
     val sttProvider: Provider get() = ProviderCatalog.byId(sttProviderId)
 
     var apiBaseUrl: String
         get() = sp.getString(KEY_API_URL, "") ?: ""
-        set(v) = sp.edit().putString(KEY_API_URL, v).apply()
+        set(v) = sp.edit { putString(KEY_API_URL, v) }
 
     var apiKey: String
         get() = sp.getString(KEY_API_KEY, "") ?: ""
-        set(v) = sp.edit().putString(KEY_API_KEY, v).apply()
+        set(v) = sp.edit { putString(KEY_API_KEY, v) }
 
     var apiModel: String
         get() = sp.getString(KEY_API_MODEL, "") ?: ""
-        set(v) = sp.edit().putString(KEY_API_MODEL, v).apply()
+        set(v) = sp.edit { putString(KEY_API_MODEL, v) }
 
     /**
      * Vokabular fuer die Erkennung (Eigennamen, Fachbegriffe, gewuenschte Schreibweisen), ein
@@ -173,24 +175,24 @@ class Prefs(context: Context) {
      */
     var apiPrompt: String
         get() = sp.getString(KEY_API_PROMPT, "") ?: ""
-        set(v) = sp.edit().putString(KEY_API_PROMPT, v).apply()
+        set(v) = sp.edit { putString(KEY_API_PROMPT, v) }
 
     /** content://-URI der verknuepften .md/.txt-Datei ("" = keine), siehe [VocabularySource]. */
     var vocabFileUri: String
         get() = sp.getString(KEY_VOCAB_FILE_URI, "") ?: ""
-        set(v) = sp.edit().putString(KEY_VOCAB_FILE_URI, v).apply()
+        set(v) = sp.edit { putString(KEY_VOCAB_FILE_URI, v) }
 
     /** Anzeigename der verknuepften Datei (z. B. "namen.md"). */
     var vocabFileName: String
         get() = sp.getString(KEY_VOCAB_FILE_NAME, "") ?: ""
-        set(v) = sp.edit().putString(KEY_VOCAB_FILE_NAME, v).apply()
+        set(v) = sp.edit { putString(KEY_VOCAB_FILE_NAME, v) }
 
     /** Read-Timeout in Sekunden; 0 = Anbieter-Default (90, eigener Server 600). */
     var apiReadTimeoutSec: Int
         get() = sp.getInt(KEY_READ_TIMEOUT, 0)
         set(v) {
-            if (v <= 0) sp.edit().remove(KEY_READ_TIMEOUT).apply()
-            else sp.edit().putInt(KEY_READ_TIMEOUT, v.coerceIn(MIN_TIMEOUT_SEC, MAX_TIMEOUT_SEC)).apply()
+            if (v <= 0) sp.edit { remove(KEY_READ_TIMEOUT) }
+            else sp.edit { putInt(KEY_READ_TIMEOUT, v.coerceIn(MIN_TIMEOUT_SEC, MAX_TIMEOUT_SEC)) }
         }
 
     // --- Textverbesserung (LLM) ----------------------------------------------
@@ -198,19 +200,19 @@ class Prefs(context: Context) {
     /** [AccessResolver.LLM_SAME] = Transkriptions-Zugang wiederverwenden, sonst Provider-ID. */
     var llmProviderId: String
         get() = sp.getString(KEY_LLM_PROVIDER, AccessResolver.LLM_SAME) ?: AccessResolver.LLM_SAME
-        set(v) = sp.edit().putString(KEY_LLM_PROVIDER, v).apply()
+        set(v) = sp.edit { putString(KEY_LLM_PROVIDER, v) }
 
     var llmUrl: String
         get() = sp.getString(KEY_LLM_URL, "") ?: ""
-        set(v) = sp.edit().putString(KEY_LLM_URL, v).apply()
+        set(v) = sp.edit { putString(KEY_LLM_URL, v) }
 
     var llmKey: String
         get() = sp.getString(KEY_LLM_KEY, "") ?: ""
-        set(v) = sp.edit().putString(KEY_LLM_KEY, v).apply()
+        set(v) = sp.edit { putString(KEY_LLM_KEY, v) }
 
     var llmModel: String
         get() = sp.getString(KEY_LLM_MODEL, "") ?: ""
-        set(v) = sp.edit().putString(KEY_LLM_MODEL, v).apply()
+        set(v) = sp.edit { putString(KEY_LLM_MODEL, v) }
 
     /**
      * Gespeicherte Stufe. "Prompt" gilt nur, solange sie eingeschaltet ist — sonst waere sie
@@ -220,7 +222,7 @@ class Prefs(context: Context) {
         get() = RefineMode.fromKey(sp.getString(KEY_REFINE_MODE, null)).let {
             if (it == RefineMode.PROMPT && !promptLevelEnabled) RefineMode.POLISH else it
         }
-        set(v) = sp.edit().putString(KEY_REFINE_MODE, v.key).apply()
+        set(v) = sp.edit { putString(KEY_REFINE_MODE, v.key) }
 
     /** Pro-Funktion ([ProFeature.PROMPT]): Stufe "Prompt" in Tastatur und Einstellungen anbieten. */
     var promptLevelEnabled: Boolean
@@ -234,7 +236,7 @@ class Prefs(context: Context) {
      */
     var smartFillers: Boolean
         get() = sp.getBoolean(KEY_SMART_FILLERS, false)
-        set(v) = sp.edit().putBoolean(KEY_SMART_FILLERS, v).apply()
+        set(v) = sp.edit { putBoolean(KEY_SMART_FILLERS, v) }
 
     /**
      * Das Sprachmodell gliedert laengere Diktate in Absaetze (Default, bisheriges Verhalten).
@@ -242,7 +244,7 @@ class Prefs(context: Context) {
      */
     var refineParagraphs: Boolean
         get() = sp.getBoolean(KEY_REFINE_PARAGRAPHS, true)
-        set(v) = sp.edit().putBoolean(KEY_REFINE_PARAGRAPHS, v).apply()
+        set(v) = sp.edit { putBoolean(KEY_REFINE_PARAGRAPHS, v) }
 
     /**
      * "Lesbarer glaetten": "Glaetten" repariert auch den Satzbau (Satzabbrueche, Wiederholungen,
@@ -251,7 +253,7 @@ class Prefs(context: Context) {
      */
     var polishReadable: Boolean
         get() = sp.getBoolean(KEY_POLISH_READABLE, false)
-        set(v) = sp.edit().putBoolean(KEY_POLISH_READABLE, v).apply()
+        set(v) = sp.edit { putBoolean(KEY_POLISH_READABLE, v) }
 
     /**
      * Die Stufe, die wirklich an das Sprachmodell geht: [mode] (die gespeicherte Wahl) mit
@@ -264,72 +266,72 @@ class Prefs(context: Context) {
 
     var removeFillers: Boolean
         get() = sp.getBoolean(KEY_REMOVE_FILLERS, true)
-        set(v) = sp.edit().putBoolean(KEY_REMOVE_FILLERS, v).apply()
+        set(v) = sp.edit { putBoolean(KEY_REMOVE_FILLERS, v) }
 
     var autoCapitalize: Boolean
         get() = sp.getBoolean(KEY_AUTO_CAP, true)
-        set(v) = sp.edit().putBoolean(KEY_AUTO_CAP, v).apply()
+        set(v) = sp.edit { putBoolean(KEY_AUTO_CAP, v) }
 
     /** Nach jedem Diktat ein Leerzeichen anhaengen (fluessiges Weiterdiktieren). */
     var trailingSpace: Boolean
         get() = sp.getBoolean(KEY_TRAILING_SPACE, true)
-        set(v) = sp.edit().putBoolean(KEY_TRAILING_SPACE, v).apply()
+        set(v) = sp.edit { putBoolean(KEY_TRAILING_SPACE, v) }
 
     /** Eigene Fuellwoerter zusaetzlich zur Sprachliste — klein geschrieben, ohne Duplikate. */
     var customFillers: Set<String>
         get() = sp.getStringSet(KEY_CUSTOM_FILLERS, null)?.toSet().orEmpty()
-        set(v) = sp.edit().putStringSet(KEY_CUSTOM_FILLERS, PolishPlan.normalizeFillers(v)).apply()
+        set(v) = sp.edit { putStringSet(KEY_CUSTOM_FILLERS, PolishPlan.normalizeFillers(v)) }
 
     /** Woerter der eingebauten Sprachliste, die NICHT gefiltert werden sollen. */
     var disabledFillers: Set<String>
         get() = sp.getStringSet(KEY_DISABLED_FILLERS, null)?.toSet().orEmpty()
-        set(v) = sp.edit().putStringSet(KEY_DISABLED_FILLERS, PolishPlan.normalizeFillers(v)).apply()
+        set(v) = sp.edit { putStringSet(KEY_DISABLED_FILLERS, PolishPlan.normalizeFillers(v)) }
 
     // --- Setup-Fortschritt (reine Flags fuer das UI) --------------------------
 
     var welcomeSeen: Boolean
         get() = sp.getBoolean(KEY_WELCOME_SEEN, false)
-        set(v) = sp.edit().putBoolean(KEY_WELCOME_SEEN, v).apply()
+        set(v) = sp.edit { putBoolean(KEY_WELCOME_SEEN, v) }
 
     var overlaySkipped: Boolean
         get() = sp.getBoolean(KEY_OVERLAY_SKIPPED, false)
-        set(v) = sp.edit().putBoolean(KEY_OVERLAY_SKIPPED, v).apply()
+        set(v) = sp.edit { putBoolean(KEY_OVERLAY_SKIPPED, v) }
 
     var a11ySkipped: Boolean
         get() = sp.getBoolean(KEY_A11Y_SKIPPED, false)
-        set(v) = sp.edit().putBoolean(KEY_A11Y_SKIPPED, v).apply()
+        set(v) = sp.edit { putBoolean(KEY_A11Y_SKIPPED, v) }
 
     var notifSkipped: Boolean
         get() = sp.getBoolean(KEY_NOTIF_SKIPPED, false)
-        set(v) = sp.edit().putBoolean(KEY_NOTIF_SKIPPED, v).apply()
+        set(v) = sp.edit { putBoolean(KEY_NOTIF_SKIPPED, v) }
 
     var keyboardSkipped: Boolean
         get() = sp.getBoolean(KEY_KEYBOARD_SKIPPED, false)
-        set(v) = sp.edit().putBoolean(KEY_KEYBOARD_SKIPPED, v).apply()
+        set(v) = sp.edit { putBoolean(KEY_KEYBOARD_SKIPPED, v) }
 
     /** Das Tutorial nach der Einrichtung wurde einmal gezeigt (oder uebersprungen). */
     var tutorialSeen: Boolean
         get() = sp.getBoolean(KEY_TUTORIAL_SEEN, false)
-        set(v) = sp.edit().putBoolean(KEY_TUTORIAL_SEEN, v).apply()
+        set(v) = sp.edit { putBoolean(KEY_TUTORIAL_SEEN, v) }
 
     // --- Offline-Erkennung (whisper.cpp, WP3) --------------------------------
 
     /** ModelCatalog-ID (WP3 definiert den Katalog: tiny/base/small/large-v3-turbo). */
     var offlineModel: String
         get() = sp.getString(KEY_OFFLINE_MODEL, DEFAULT_OFFLINE_MODEL) ?: DEFAULT_OFFLINE_MODEL
-        set(v) = sp.edit().putString(KEY_OFFLINE_MODEL, v).apply()
+        set(v) = sp.edit { putString(KEY_OFFLINE_MODEL, v) }
 
     /** Beam-Search (genauer, langsamer) statt Greedy. */
     var offlineAccurate: Boolean
         get() = sp.getBoolean(KEY_OFFLINE_ACCURATE, true)
-        set(v) = sp.edit().putBoolean(KEY_OFFLINE_ACCURATE, v).apply()
+        set(v) = sp.edit { putBoolean(KEY_OFFLINE_ACCURATE, v) }
 
     // --- Geteilte Audios -----------------------------------------------------
 
     /** Schalter "Fuellwoerter ausblenden" in der Share-Ansicht. */
     var shareHideFillers: Boolean
         get() = sp.getBoolean(KEY_SHARE_HIDE_FILLERS, true)
-        set(v) = sp.edit().putBoolean(KEY_SHARE_HIDE_FILLERS, v).apply()
+        set(v) = sp.edit { putBoolean(KEY_SHARE_HIDE_FILLERS, v) }
 
     /**
      * KI-Stufe fuer geteilte Sprachnachrichten — unabhaengig von [refineMode] und ab Werk aus
@@ -339,25 +341,25 @@ class Prefs(context: Context) {
     var shareRefineMode: RefineMode
         get() = RefineMode.fromKey(sp.getString(KEY_SHARE_REFINE_MODE, null))
             .takeIf { it in RefineMode.SETTINGS } ?: RefineMode.OFF
-        set(v) = sp.edit().putString(KEY_SHARE_REFINE_MODE, v.key).apply()
+        set(v) = sp.edit { putString(KEY_SHARE_REFINE_MODE, v.key) }
 
     // --- Schwebender Knopf ---------------------------------------------------
 
     /** Zuletzt gemerkte Position des schwebenden Knopfs (Bildschirm-Pixel). */
     var floatX: Int
         get() = sp.getInt(KEY_FLOAT_X, DEFAULT_FLOAT_X)
-        set(v) = sp.edit().putInt(KEY_FLOAT_X, v).apply()
+        set(v) = sp.edit { putInt(KEY_FLOAT_X, v) }
 
     var floatY: Int
         get() = sp.getInt(KEY_FLOAT_Y, DEFAULT_FLOAT_Y)
-        set(v) = sp.edit().putInt(KEY_FLOAT_Y, v).apply()
+        set(v) = sp.edit { putInt(KEY_FLOAT_Y, v) }
 
     // --- Pro-Funktionen ("Erweitert") ----------------------------------------
 
     /** Default aus: wer eine Pro-Funktion nicht nutzt, soll sie nirgends bemerken. */
     fun isEnabled(feature: ProFeature): Boolean = sp.getBoolean(keyOf(feature), false)
 
-    fun setEnabled(feature: ProFeature, on: Boolean) = sp.edit().putBoolean(keyOf(feature), on).apply()
+    fun setEnabled(feature: ProFeature, on: Boolean) = sp.edit { putBoolean(keyOf(feature), on) }
 
     /**
      * Pro Widgets (Sprach-Command-Widgets mit eigenem Server). Server und Token stehen seit 3.7.1
@@ -378,7 +380,7 @@ class Prefs(context: Context) {
     /** Eigenes Flag: [tutorialSeen] bedeutet weiterhin "Einsteiger-Tutorial gesehen". */
     var agentTutorialSeen: Boolean
         get() = sp.getBoolean(KEY_AGENT_TUTORIAL_SEEN, false)
-        set(v) = sp.edit().putBoolean(KEY_AGENT_TUTORIAL_SEEN, v).apply()
+        set(v) = sp.edit { putBoolean(KEY_AGENT_TUTORIAL_SEEN, v) }
 
     private fun keyOf(feature: ProFeature): String = when (feature) {
         ProFeature.WIDGETS -> KEY_PRO_WIDGETS

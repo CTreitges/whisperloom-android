@@ -2,6 +2,7 @@ package com.chris.whisperloom.agent
 
 import android.content.Context
 import android.util.Log
+import androidx.core.content.edit
 import java.io.File
 import java.util.UUID
 
@@ -28,22 +29,22 @@ class VoiceTaskStore(context: Context) {
     var state: VoiceTaskState
         get() = runCatching { VoiceTaskState.valueOf(sp.getString(KEY_STATE, null) ?: "") }
             .getOrDefault(VoiceTaskState.READY)
-        set(v) = sp.edit().putString(KEY_STATE, v.name).apply()
+        set(v) = sp.edit { putString(KEY_STATE, v.name) }
 
     /** Bleibt ueber alle Wiederholungen gleich — darauf baut die Idempotenz der Bridge. */
     var requestId: String
         get() = sp.getString(KEY_REQUEST_ID, "") ?: ""
-        private set(v) = sp.edit().putString(KEY_REQUEST_ID, v).apply()
+        private set(v) = sp.edit { putString(KEY_REQUEST_ID, v) }
 
     /** Erkannter Text, sobald er da ist: ein Wiederholungsversuch soll nicht erneut transkribieren. */
     var text: String
         get() = sp.getString(KEY_TEXT, "") ?: ""
-        set(v) = sp.edit().putString(KEY_TEXT, v).apply()
+        set(v) = sp.edit { putString(KEY_TEXT, v) }
 
     /** Anzeigetext des Widgets (Fehlergrund bzw. Erfolgsmeldung). */
     var message: String
         get() = sp.getString(KEY_MESSAGE, "") ?: ""
-        set(v) = sp.edit().putString(KEY_MESSAGE, v).apply()
+        set(v) = sp.edit { putString(KEY_MESSAGE, v) }
 
     /**
      * Grund, warum die Textverbesserung ausgefallen ist ("" = alles normal gelaufen).
@@ -54,11 +55,11 @@ class VoiceTaskStore(context: Context) {
      */
     var refineSkipped: String
         get() = sp.getString(KEY_REFINE_SKIPPED, "") ?: ""
-        set(v) = sp.edit().putString(KEY_REFINE_SKIPPED, v).apply()
+        set(v) = sp.edit { putString(KEY_REFINE_SKIPPED, v) }
 
     var durationMs: Long
         get() = sp.getLong(KEY_DURATION, 0)
-        private set(v) = sp.edit().putLong(KEY_DURATION, v).apply()
+        private set(v) = sp.edit { putLong(KEY_DURATION, v) }
 
     /**
      * Widget-Profil, das den Auftrag aufgenommen hat — sein Server bekommt ihn ([VoiceTaskWorker]).
@@ -67,12 +68,12 @@ class VoiceTaskStore(context: Context) {
      */
     var profileId: String
         get() = sp.getString(KEY_PROFILE_ID, "") ?: ""
-        private set(v) = sp.edit().putString(KEY_PROFILE_ID, v).apply()
+        private set(v) = sp.edit { putString(KEY_PROFILE_ID, v) }
 
     /** ISO-8601, geht als `recorded_at` an die Bridge. */
     var recordedAt: String
         get() = sp.getString(KEY_RECORDED_AT, "") ?: ""
-        private set(v) = sp.edit().putString(KEY_RECORDED_AT, v).apply()
+        private set(v) = sp.edit { putString(KEY_RECORDED_AT, v) }
 
     /**
      * Beginn des aktuellen Versuchs (`SystemClock.elapsedRealtime`, 0 = unbekannt). Grundlage
@@ -82,7 +83,7 @@ class VoiceTaskStore(context: Context) {
      */
     var attemptStartedAt: Long
         get() = sp.getLong(KEY_ATTEMPT_STARTED, 0)
-        set(v) = sp.edit().putLong(KEY_ATTEMPT_STARTED, v).apply()
+        set(v) = sp.edit { putLong(KEY_ATTEMPT_STARTED, v) }
 
     /**
      * Rechnet gerade die Offline-Erkennung fuer diesen Auftrag? Dann ersetzt ein Tipp den Lauf
@@ -93,7 +94,7 @@ class VoiceTaskStore(context: Context) {
      */
     var offlineRecognition: Boolean
         get() = sp.getBoolean(KEY_OFFLINE_RECOGNITION, false)
-        set(v) = sp.edit().putBoolean(KEY_OFFLINE_RECOGNITION, v).apply()
+        set(v) = sp.edit { putBoolean(KEY_OFFLINE_RECOGNITION, v) }
 
     /** Ob ein Auftrag auf Erledigung wartet (Audio oder bereits erkannter Text). */
     val hasWork: Boolean get() = requestId.isNotEmpty() && (text.isNotEmpty() || audioFile.isFile)
@@ -120,16 +121,16 @@ class VoiceTaskStore(context: Context) {
     /** Auftrag erledigt (oder endgueltig aufgegeben): Audio und Merker weg. */
     fun clear() {
         runCatching { audioFile.delete() }
-        sp.edit()
-            .remove(KEY_REQUEST_ID)
-            .remove(KEY_TEXT)
-            .remove(KEY_DURATION)
-            .remove(KEY_RECORDED_AT)
-            .remove(KEY_PROFILE_ID)
-            .remove(KEY_REFINE_SKIPPED)
-            .remove(KEY_ATTEMPT_STARTED)
-            .remove(KEY_OFFLINE_RECOGNITION)
-            .apply()
+        sp.edit {
+            remove(KEY_REQUEST_ID)
+            remove(KEY_TEXT)
+            remove(KEY_DURATION)
+            remove(KEY_RECORDED_AT)
+            remove(KEY_PROFILE_ID)
+            remove(KEY_REFINE_SKIPPED)
+            remove(KEY_ATTEMPT_STARTED)
+            remove(KEY_OFFLINE_RECOGNITION)
+        }
     }
 
     companion object {

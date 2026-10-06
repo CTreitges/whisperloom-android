@@ -1,7 +1,9 @@
 package com.chris.whisperloom.agent
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import com.chris.whisperloom.Prefs
 import java.util.UUID
 
@@ -50,9 +52,7 @@ class WidgetProfileStore(context: Context) {
     fun adopt(widgetIds: IntArray) {
         val loose = widgetIds.filterNot(::isBound)
         if (loose.isEmpty()) return
-        val e = sp.edit()
-        loose.forEach { e.putString(bindingKey(it), WidgetProfile.DEFAULT_ID) }
-        e.apply()
+        sp.edit { loose.forEach { putString(bindingKey(it), WidgetProfile.DEFAULT_ID) } }
     }
 
     /** Neues Profil mit Defaults hinten anfuegen. */
@@ -83,21 +83,20 @@ class WidgetProfileStore(context: Context) {
         val profiles = all()
         val gone = profiles.firstOrNull { it.id == id } ?: return 0
         val rebound = bindings().filterValues { it == id }.keys
-        val e = sp.edit().putString(KEY_PROFILES, WidgetProfile.encodeAll(profiles - gone))
-        rebound.forEach { e.putString(bindingKey(it), WidgetProfile.DEFAULT_ID) }
-        e.apply()
+        sp.edit {
+            putString(KEY_PROFILES, WidgetProfile.encodeAll(profiles - gone))
+            rebound.forEach { putString(bindingKey(it), WidgetProfile.DEFAULT_ID) }
+        }
         (gone.icon as? ProfileIcon.Photo)?.let { WidgetPhoto.delete(app, it.fileName) }
         return rebound.size
     }
 
     fun bind(widgetId: Int, profileId: String) {
-        sp.edit().putString(bindingKey(widgetId), profileId).apply()
+        sp.edit { putString(bindingKey(widgetId), profileId) }
     }
 
     fun unbind(widgetIds: IntArray) {
-        val e = sp.edit()
-        widgetIds.forEach { e.remove(bindingKey(it)) }
-        e.apply()
+        sp.edit { widgetIds.forEach { remove(bindingKey(it)) } }
     }
 
     /**
@@ -106,11 +105,11 @@ class WidgetProfileStore(context: Context) {
      */
     fun remap(oldIds: IntArray, newIds: IntArray) {
         val current = bindings()
-        val e = sp.edit()
-        oldIds.forEach { e.remove(bindingKey(it)) }
-        // Nach den remove-Aufrufen: im selben Editor gewinnt der letzte Aufruf je Schluessel.
-        oldIds.zip(newIds).forEach { (old, new) -> current[old]?.let { e.putString(bindingKey(new), it) } }
-        e.apply()
+        sp.edit {
+            oldIds.forEach { remove(bindingKey(it)) }
+            // Nach den remove-Aufrufen: im selben Editor gewinnt der letzte Aufruf je Schluessel.
+            oldIds.zip(newIds).forEach { (old, new) -> current[old]?.let { putString(bindingKey(new), it) } }
+        }
     }
 
     /** Bindungen verschwundener Widgets entfernen — nicht jeder Launcher meldet onDeleted. */
@@ -118,9 +117,7 @@ class WidgetProfileStore(context: Context) {
         val live = liveIds.toSet()
         val dead = bindings().keys.filter { it !in live }
         if (dead.isEmpty()) return
-        val e = sp.edit()
-        dead.forEach { e.remove(bindingKey(it)) }
-        e.apply()
+        sp.edit { dead.forEach { remove(bindingKey(it)) } }
     }
 
     /** Fotos loeschen, die kein Profil nutzt und die kein laufender Import mehr braucht ([WidgetPhoto.sweep]). */
@@ -137,6 +134,7 @@ class WidgetProfileStore(context: Context) {
      *
      * Idempotent: ohne alte Werte passiert nichts, der Speicher bleibt unberuehrt ("Lesen schreibt nie").
      */
+    @SuppressLint("UseKtx") // edit {} liefert kein Ergebnis; hier entscheidet das von commit() ueber das Weitermachen.
     fun migrateLegacyServer(prefs: SharedPreferences, defaultName: String) {
         val url = prefs.getString(Prefs.LEGACY_KEY_AGENT_URL, "").orEmpty().trim()
         val token = prefs.getString(Prefs.LEGACY_KEY_AGENT_TOKEN, "").orEmpty()
@@ -146,7 +144,10 @@ class WidgetProfileStore(context: Context) {
             if (p.serverUrl.isEmpty() && p.serverToken.isEmpty()) named.copy(serverUrl = url, serverToken = token) else named
         }
         if (!sp.edit().putString(KEY_PROFILES, WidgetProfile.encodeAll(migrated)).commit()) return
-        prefs.edit().remove(Prefs.LEGACY_KEY_AGENT_URL).remove(Prefs.LEGACY_KEY_AGENT_TOKEN).commit()
+        prefs.edit {
+            remove(Prefs.LEGACY_KEY_AGENT_URL)
+            remove(Prefs.LEGACY_KEY_AGENT_TOKEN)
+        }
     }
 
     /** Wie viele Widgets ausdruecklich an dieses Profil gebunden sind (ungebundene zaehlen nicht). */
@@ -158,7 +159,7 @@ class WidgetProfileStore(context: Context) {
     }.toMap()
 
     private fun write(profiles: List<WidgetProfile>) {
-        sp.edit().putString(KEY_PROFILES, WidgetProfile.encodeAll(profiles)).apply()
+        sp.edit { putString(KEY_PROFILES, WidgetProfile.encodeAll(profiles)) }
     }
 
     companion object {

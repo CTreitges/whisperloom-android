@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Texte laut UX-Spec §6 (verbindlich). Anfuehrungszeichen „…“, Ellipsen als …, Platzhalter %1$s / %1$d. -->
+    <!-- tools:ignore="PluralsCandidate": das Wort nach der Zahl ("von", "geladen") bleibt im Deutschen
+         gleich, "Dateien" steht nur bei mindestens zwei Dateien. Wo es sich aendert: <plurals>. -->
 
     <!-- §6.1 Allgemein / gemeinsam -->
     <string name="app_name">WhisperLoom</string>
     <string name="ime_label">WhisperLoom Diktat</string>
     <string name="subtype_de">Deutsch</string>
     <string name="subtype_en">Englisch</string>
-    <string name="common_next">Weiter</string>
-    <string name="common_back">Zurück</string>
     <string name="common_close">Schließen</string>
     <string name="common_cancel">Abbrechen</string>
     <string name="common_done">Fertig</string>
@@ -100,7 +100,7 @@
     <string name="home_val_kb_active">Aktiv</string>
     <string name="home_val_kb_enabled">Aktiviert, nicht ausgewählt</string>
     <string name="home_val_kb_off">Nicht aktiviert (optional)</string>
-    <string name="home_val_models">%1$d geladen · %2$s belegt</string>
+    <string name="home_val_models" tools:ignore="PluralsCandidate">%1$d geladen · %2$s belegt</string>
     <string name="home_val_models_none">Keins geladen</string>
     <string name="home_share_hint">Sprachnachrichten abtippen: in WhatsApp lange drücken → Teilen → WhisperLoom.</string>
     <string name="home_rerun_setup">Einrichtung erneut öffnen</string>
@@ -111,7 +111,7 @@
     <!-- §6.3 Einrichtungs-Assistent (W) -->
     <string name="setup_title">Einrichtung</string>
     <string name="setup_cd_overview">Alle Schritte anzeigen</string>
-    <string name="setup_progress">Schritt %1$d von %2$d</string>
+    <string name="setup_progress" tools:ignore="PluralsCandidate">Schritt %1$d von %2$d</string>
     <string name="setup_chip_done">Erledigt</string>
     <string name="setup_chip_open">Fehlt noch</string>
     <string name="setup_chip_optional">Optional</string>
@@ -198,7 +198,7 @@
     <string name="tutorial_skip">Überspringen</string>
     <string name="tutorial_next">Weiter</string>
     <string name="tutorial_start">Los geht\'s</string>
-    <string name="tutorial_cd_page">Seite %1$d von %2$d</string>
+    <string name="tutorial_cd_page" tools:ignore="PluralsCandidate">Seite %1$d von %2$d</string>
     <string name="tutorial_p1_title">Diktieren mit dem Knopf</string>
     <string name="tutorial_p1_body">Tippe den schwebenden Knopf an: Er wird rot und nimmt auf. Nochmal antippen — der Text landet im aktiven Feld. Auf ✕ ziehen verwirft. Rot mit ↻: antippen versucht es erneut.</string>
     <string name="tutorial_p2_title">Diktier-Tastatur</string>
@@ -299,13 +299,14 @@
         <item quantity="one">%d Begriff wird mitgeschickt.</item>
         <item quantity="other">Alle %d Begriffe werden mitgeschickt.</item>
     </plurals>
-    <string name="vocab_usage_truncated">%1$d von %2$d Begriffen werden mitgeschickt: Whisper beachtet nur rund 200 Wörter Kontext. Eigene Begriffe haben Vorrang vor der Datei.</string>
+    <plurals name="vocab_usage_truncated">
+        <item quantity="one">%1$d von %2$d Begriffen wird mitgeschickt: Whisper beachtet nur rund 200 Wörter Kontext. Eigene Begriffe haben Vorrang vor der Datei.</item>
+        <item quantity="other">%1$d von %2$d Begriffen werden mitgeschickt: Whisper beachtet nur rund 200 Wörter Kontext. Eigene Begriffe haben Vorrang vor der Datei.</item>
+    </plurals>
     <string name="vocab_clear">Eigene löschen</string>
-    <string name="pref_language">Sprache</string>
     <string name="model_custom_title">Eigenes Modell</string>
     <string name="model_custom_hint">Modell-ID</string>
     <string name="model_custom_info">Genau so, wie der Anbieter die ID nennt.</string>
-    <string name="model_deprecated_suffix">(Auslauf %1$s)</string>
     <string name="key_sheet_title">Wo bekomme ich einen Key?</string>
 
     <!-- §6.6 Text (E2) und Füllwörter-Sheet (B3) -->
@@ -496,7 +497,6 @@
     <string name="help_p5_body">Ein kleineres Modell wählen (Base oder Small) oder auf den Online-Dienst wechseln.</string>
 
     <!-- §6.10 Transkription (S) — bestehende Keys; der Share-Screen (WP5) ergaenzt die neuen. -->
-    <string name="api_not_configured">Anbieter nicht eingerichtet — Base-URL und API-Key in den Einstellungen prüfen</string>
     <string name="share_label">Mit WhisperLoom transkribieren</string>
     <string name="share_title">Transkription</string>
     <string name="share_starting">Wird vorbereitet …</string>
@@ -504,8 +504,7 @@
     <string name="share_sending">Wird übertragen …</string>
     <string name="share_refining">Text wird verbessert …</string>
     <string name="share_refine_note">Textverbesserung: %1$s · änderbar unter Einstellungen › Text</string>
-    <string name="share_refine_partly">Textverbesserung: %1$s · bei %2$d von %3$d Dateien übersprungen: %4$s</string>
-    <string name="share_file_of">Datei %1$d/%2$d</string>
+    <string name="share_refine_partly" tools:ignore="PluralsCandidate">Textverbesserung: %1$s · bei %2$d von %3$d Dateien übersprungen: %4$s</string>
     <string name="share_copy">Kopieren</string>
     <string name="share_forward">Teilen</string>
     <string name="share_copied">In die Zwischenablage kopiert</string>
@@ -514,9 +513,9 @@
     <string name="share_nothing_recognised">(nichts erkannt)</string>
     <string name="share_one_failed">Fehlgeschlagen: %1$s</string>
     <string name="share_unknown_source">Sprachnachricht</string>
-    <string name="share_progress">Datei %1$d von %2$d · Stück %3$d von %4$d · %5$s</string>
+    <string name="share_progress" tools:ignore="PluralsCandidate">Datei %1$d von %2$d · Stück %3$d von %4$d · %5$s</string>
     <string name="share_head_single">%1$s · 1 Datei</string>
-    <string name="share_head_multi">%1$d Dateien · %2$s gesamt</string>
+    <string name="share_head_multi" tools:ignore="PluralsCandidate">%1$d Dateien · %2$s gesamt</string>
     <string name="share_section">%1$s · %2$s</string>
     <string name="share_no_audio_body">Teile eine Audiodatei oder Sprachnachricht mit WhisperLoom.</string>
     <string name="share_all_failed">Transkription fehlgeschlagen</string>
@@ -574,6 +573,8 @@
     <string name="kb_level_prompt">Prompt</string>
     <string name="refine_skipped">Textverbesserung übersprungen: %1$s</string>
     <string name="kb_space">Leer</string>
+    <string name="kb_comma">,</string>
+    <string name="kb_period">.</string>
     <string name="cd_mic">Diktat-Mikrofon — antippen zum Starten, gedrückt halten zum Sprechen</string>
     <string name="cd_kb_switch">Eingabemethode wechseln</string>
     <string name="cd_kb_comma">Komma</string>

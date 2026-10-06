@@ -1,6 +1,7 @@
 package com.chris.whisperloom
 
 import android.content.Context
+import androidx.core.content.edit
 import com.chris.whisperloom.api.ApiAccess
 import com.chris.whisperloom.api.ModelKind
 import com.chris.whisperloom.api.ModelLists
@@ -50,7 +51,10 @@ class ModelCache(context: Context, private val now: () -> Long = System::current
     fun put(access: ApiAccess, kind: ModelKind, models: List<RemoteModel>): Entry {
         val entry = Entry(now(), models)
         val key = key(access.provider.id, kind, access.baseUrl)
-        sp.edit().putString(key, encode(entry)).remove(FAILED_PREFIX + key).apply()
+        sp.edit {
+            putString(key, encode(entry))
+            remove(FAILED_PREFIX + key)
+        }
         return entry
     }
 
@@ -63,7 +67,7 @@ class ModelCache(context: Context, private val now: () -> Long = System::current
         val models = try {
             ModelLists.load(access, kind)
         } catch (e: Exception) {
-            sp.edit().putLong(FAILED_PREFIX + key(access.provider.id, kind, access.baseUrl), now()).apply()
+            sp.edit { putLong(FAILED_PREFIX + key(access.provider.id, kind, access.baseUrl), now()) }
             throw e
         }
         return put(access, kind, models)

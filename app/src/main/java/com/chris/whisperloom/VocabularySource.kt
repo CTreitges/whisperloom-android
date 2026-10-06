@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.util.Log
+import androidx.core.net.toUri
 
 /**
  * Liest das Vokabular samt verknuepfter .md/.txt-Datei. Die Datei bleibt ueber eine
@@ -29,7 +30,7 @@ object VocabularySource {
     fun fileTerms(context: Context, uri: String): List<String>? {
         if (uri.isBlank()) return emptyList()
         return try {
-            context.contentResolver.openInputStream(Uri.parse(uri))?.use { input ->
+            context.contentResolver.openInputStream(uri.toUri())?.use { input ->
                 Vocabulary.parseFile(decode(input.readNBytesCompat(Vocabulary.MAX_FILE_BYTES)))
             }
         } catch (e: Exception) {
@@ -90,7 +91,7 @@ object VocabularySource {
 
     private fun release(context: Context, uri: String) {
         runCatching {
-            context.contentResolver.releasePersistableUriPermission(Uri.parse(uri), Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            context.contentResolver.releasePersistableUriPermission(uri.toUri(), Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
     }
 
