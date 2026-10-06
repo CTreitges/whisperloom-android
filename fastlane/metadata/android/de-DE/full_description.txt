@@ -14,6 +14,7 @@ Erkennung nach Wahl:
 Text nach Bedarf:
 • Füllwörter entfernen (Liste selbst anpassbar), automatische Groß-Schreibung.
 • Optionale Textverbesserung per Sprachmodell in drei Stufen: Glätten (auf Wunsch „lesbarer“, mit deinen Wörtern und deinem Ton), Verschönern, Zusammenfassen – mit eigenem oder dem Erkennungs-Zugang, auch über Ollama: lokal auf deinem Homeserver ohne Key (der Text verlässt dein Netz nicht) oder über Ollama Cloud. Die Modell-Liste kommt direkt vom Server.
+• Auch offline mit KI: Gemma 4 verbessert offline erkannten Text direkt auf dem Gerät – ohne Netz, der Text verlässt das Handy nicht. Das Modell lädst du einmalig nach (E2B 2,6 GB ab 6 GB RAM, E4B 3,7 GB ab 8 GB).
 • Für KI-Nutzer, unter „Erweitert“ einschaltbar: die Stufe „Prompt“ formt ein Diktat zu einem gut gegliederten Prompt für ChatGPT, Claude & Co.
 • Schalter „Automatische Absätze“: Die KI gliedert längere Diktate in Absätze – oder, ausgeschaltet, alles als ein durchgehender Text.
 
@@ -23,4 +24,4 @@ Pro Widgets für deinen eigenen Agenten: Tippen, sprechen, tippen – ein Sprach
 
 Was neu ist, zeigt das „?“ neben der Versionsnummer direkt in der App.
 
-Datenschutz: Dein API-Key bleibt auf dem Gerät. Online gehen Audio und Vokabular an den von dir gewählten Anbieter; offline verlässt die Aufnahme das Gerät nicht. Mit Textverbesserung geht der erkannte Text in beiden Fällen an das gewählte Sprachmodell. Keine Konten, keine Werbung, kein Tracking.
+Datenschutz: Dein API-Key bleibt auf dem Gerät. Online gehen Audio und Vokabular an den von dir gewählten Anbieter; offline verlässt die Aufnahme das Gerät nicht, und das lokale Textmodell verbessert den Text auf dem Gerät. Mit Online-Textverbesserung geht der erkannte Text an das gewählte Sprachmodell. Keine Konten, keine Werbung, kein Tracking.

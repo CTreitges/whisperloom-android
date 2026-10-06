@@ -1,1 +1,1 @@
-Diktieren in jede App – online per eigenem API-Key oder offline mit Whisper
+Diktieren in jede App – online per eigenem Key oder offline mit Whisper & Gemma
