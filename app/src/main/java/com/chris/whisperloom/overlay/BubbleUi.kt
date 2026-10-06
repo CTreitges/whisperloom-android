@@ -14,7 +14,7 @@ enum class BubbleState {
     /** Nimmt auf. Tippen beendet und sendet, Ziehen auf das Abbrechen-Ziel verwirft. */
     RECORDING,
 
-    /** Anfrage laeuft. Tippen tut nichts. */
+    /** Anfrage laeuft. Tippen tut nichts — ausser in der Textverbesserung: dann Text ohne KI. */
     SENDING,
 
     /** Fehlgeschlagen, Audio ist gepuffert. Tippen versucht es erneut. */

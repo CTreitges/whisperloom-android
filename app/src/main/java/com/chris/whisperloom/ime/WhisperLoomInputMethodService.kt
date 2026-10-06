@@ -23,6 +23,7 @@ import com.chris.whisperloom.Formats
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.RefineSkip
 import com.chris.whisperloom.SetupState
 import com.chris.whisperloom.TranscriptionEngine
 import com.chris.whisperloom.api.ApiNotConfiguredException
@@ -47,7 +48,9 @@ import kotlin.math.abs
  * [DictationGesture].
  *
  * Scheitert die Anfrage (kein Netz, Server-Aussetzer), bleibt das Audio gepuffert und
- * die Wiederholen-Taste erscheint — sonst waere ein langes Diktat verloren.
+ * die Wiederholen-Taste erscheint — sonst waere ein langes Diktat verloren. Laeuft die
+ * Textverbesserung, fuegt ein Tipp (Mikro-Taste oder Statuszeile) den erkannten Text sofort
+ * ohne KI ein ([RefineSkip]).
  */
 class WhisperLoomInputMethodService : InputMethodService() {
 
@@ -62,6 +65,12 @@ class WhisperLoomInputMethodService : InputMethodService() {
 
     /** Audio des letzten fehlgeschlagenen Versuchs. */
     private var pendingSamples: FloatArray? = null
+
+    /** Ausweg der laufenden Uebertragung; null = keine. */
+    @Volatile private var refineSkip: RefineSkip? = null
+
+    /** SENDING in der Textverbesserung: ein Tipp fuegt den Text ohne KI ein. */
+    private var refining = false
 
     private var statusView: TextView? = null
     private var levelBand: LevelBandView? = null
@@ -114,7 +123,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
     /** Statuszeile: Farbe und Tipp-Ziel je Art (UX-Spec §5.3). */
     private enum class Status {
         HINT, LISTENING, LOCK_ARMED, CANCEL_ARMED, LOCKED, DISCARDED,
-        TRANSCRIBING, ERROR, NEED_PERMISSION, NOT_CONFIGURED, NEEDS_LLM,
+        TRANSCRIBING, REFINING, ERROR, NEED_PERMISSION, NOT_CONFIGURED, NEEDS_LLM,
     }
 
     override fun onCreate() {
@@ -351,7 +360,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
     private fun onMicClick() {
         when {
             locked || state == BubbleState.RECORDING -> stopDictation()
-            state == BubbleState.SENDING -> Unit
+            state == BubbleState.SENDING -> skipRefine()
             state == BubbleState.ERROR -> retry()
             else -> {
                 startDictation()
@@ -486,7 +495,11 @@ class WhisperLoomInputMethodService : InputMethodService() {
     // --- Diktat -------------------------------------------------------------
 
     private fun startDictation() {
-        if (state == BubbleState.SENDING) return // vorheriges Diktat wird noch uebertragen
+        if (state == BubbleState.SENDING) {
+            // Vorheriges Diktat wird noch uebertragen. In der Textverbesserung ist der Tipp der Ausweg.
+            skipRefine()
+            return
+        }
         if (!hasMicPermission()) {
             showStatus(Status.NEED_PERMISSION)
             startActivity(AppNav.setup(this, SETUP_STEP_MIC))
@@ -506,6 +519,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
             applyState(BubbleState.RECORDING)
             showStatus(Status.LISTENING)
             haptic(BubbleMotion.Haptic.CONFIRM)
+            TranscriptionEngine.warmUp(this) // lokales Textmodell parallel zur Aufnahme laden
         } else {
             showStatus(Status.ERROR)
         }
@@ -563,11 +577,35 @@ class WhisperLoomInputMethodService : InputMethodService() {
         runIo { send(samples) }
     }
 
+    /** Tipp waehrend der Textverbesserung: den erkannten Text sofort ohne KI einfuegen. */
+    private fun skipRefine() {
+        if (!refining) return
+        refineSkip?.skip()
+        haptic(BubbleMotion.Haptic.CONFIRM)
+    }
+
+    /** Main-Thread: die Uebertragung ist in der Textverbesserung angekommen — Statuszeile nennt den Ausweg. */
+    private fun showRefining(skip: RefineSkip) {
+        if (refineSkip !== skip || state != BubbleState.SENDING) return
+        refining = true
+        showStatus(Status.REFINING)
+        updateMicDescription()
+    }
+
     /** Laeuft auf dem io-Thread. */
     private fun send(samples: FloatArray) {
+        val skip = RefineSkip()
+        refineSkip = skip
         try {
             var refineSkipped: String? = null
-            val text = TranscriptionEngine.transcribe(applicationContext, samples) { refineSkipped = it }
+            var refineNote: String? = null
+            val text = TranscriptionEngine.transcribe(
+                applicationContext,
+                samples,
+                skip = skip,
+                onRefineStart = { main.post { showRefining(skip) } },
+                onRefineNote = { refineNote = it },
+            ) { refineSkipped = it }
             pendingSamples = null
             main.post {
                 commitDictation(text)
@@ -576,6 +614,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
                 showIdleStatus()
                 // Text ist eingefuegt, nur die Veredelung fiel aus — Hinweis statt Fehlerzustand.
                 refineSkipped?.let { showStatus(Status.ERROR, getString(R.string.refine_skipped, it)) }
+                    ?: refineNote?.let { showStatus(Status.HINT, it) }
             }
         } catch (e: ApiNotConfiguredException) {
             pendingSamples = null
@@ -593,6 +632,8 @@ class WhisperLoomInputMethodService : InputMethodService() {
                 if (!reduceMotion()) micZone?.let { BubbleAnimators.shake(it).start() }
                 haptic(BubbleMotion.Haptic.REJECT)
             }
+        } finally {
+            refineSkip = null
         }
     }
 
@@ -601,6 +642,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
     /** Mikro-Taste (Fuellung, Icon, Ringe), Wiederholen-Taste und Pegelband auf [next] setzen. */
     private fun applyState(next: BubbleState, animate: Boolean = true) {
         state = next
+        if (next != BubbleState.SENDING) refining = false
         val visual = BubbleVisuals.visualFor(next, reduceMotion = reduceMotion())
         micButton?.let {
             it.background.level = ImeMetrics.micFillLevel(visual)
@@ -628,6 +670,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
         mic.contentDescription = when {
             locked -> getString(R.string.cd_mic_locked, Formats.duration(elapsedMs()))
             state == BubbleState.RECORDING -> getString(R.string.cd_mic_recording, Formats.duration(elapsedMs()))
+            state == BubbleState.SENDING && refining -> getString(R.string.cd_mic_refining)
             state == BubbleState.SENDING -> getString(R.string.cd_mic_sending)
             state == BubbleState.ERROR -> getString(R.string.cd_mic_error)
             else -> getString(R.string.cd_mic)
@@ -644,7 +687,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
      */
     private fun restoreStatus() = when {
         locked -> showLockedStatus(elapsedMs())
-        state == BubbleState.SENDING -> showStatus(Status.TRANSCRIBING)
+        state == BubbleState.SENDING -> showStatus(if (refining) Status.REFINING else Status.TRANSCRIBING)
         state == BubbleState.RECORDING -> showStatus(Status.LISTENING)
         else -> showIdleStatus()
     }
@@ -669,6 +712,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
                 Status.LOCKED -> R.string.kb_locked
                 Status.DISCARDED -> R.string.kb_discarded
                 Status.TRANSCRIBING -> R.string.kb_transcribing
+                Status.REFINING -> R.string.kb_refining
                 Status.ERROR -> R.string.kb_error
                 Status.NEED_PERMISSION -> R.string.kb_need_permission
                 Status.NOT_CONFIGURED -> R.string.kb_not_configured
@@ -680,7 +724,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
                 when (kind) {
                     Status.HINT, Status.TRANSCRIBING, Status.DISCARDED -> R.color.loom_onSurfaceVariant
                     Status.LISTENING, Status.LOCKED -> R.color.loom_recordingText
-                    Status.LOCK_ARMED -> R.color.loom_primary
+                    Status.LOCK_ARMED, Status.REFINING -> R.color.loom_primary
                     Status.CANCEL_ARMED, Status.ERROR -> R.color.loom_error
                     Status.NEED_PERMISSION, Status.NOT_CONFIGURED, Status.NEEDS_LLM -> R.color.loom_warning
                 },
@@ -692,10 +736,12 @@ class WhisperLoomInputMethodService : InputMethodService() {
             Status.NOT_CONFIGURED -> v.setOnClickListener { startActivity(AppNav.setup(this)) }
             // Der KI-Zugang wird in den Text-Einstellungen eingerichtet, nicht im Assistenten.
             Status.NEEDS_LLM -> v.setOnClickListener { startActivity(AppNav.settings(this)) }
+            // Ausweg waehrend der Textverbesserung: Text sofort ohne KI einfuegen.
+            Status.REFINING -> v.setOnClickListener { skipRefine() }
             else -> v.setOnClickListener(null)
         }
         v.isClickable = kind == Status.NEED_PERMISSION || kind == Status.NOT_CONFIGURED ||
-            kind == Status.NEEDS_LLM
+            kind == Status.NEEDS_LLM || kind == Status.REFINING
     }
 
     private fun reduceMotion() = BubbleAnimators.reduceMotion(this)

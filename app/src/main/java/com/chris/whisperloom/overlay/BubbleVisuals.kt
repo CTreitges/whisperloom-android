@@ -27,13 +27,13 @@ data class BubbleVisual(
     enum class IconTint { PRIMARY, ON_RECORDING, ON_PRIMARY_CONTAINER, ON_ERROR_CONTAINER }
 
     /** TIMER = "● m:ss" (Text kommt aus BubbleUi.timerText), Rest sind feste Strings. */
-    enum class Label { NONE, TIMER, SENDING, RETRY_HINT, COPIED }
+    enum class Label { NONE, TIMER, SENDING, REFINING, RETRY_HINT, COPIED }
 
     /** Pillen-Grund + Textfarbe des Labels. */
     enum class LabelStyle { NEUTRAL, RECORDING, ERROR }
 
     /** contentDescription (cd_bubble_*). */
-    enum class Description { IDLE, RECORDING, SENDING, ERROR }
+    enum class Description { IDLE, RECORDING, SENDING, REFINING, ERROR }
 }
 
 object BubbleVisuals {
@@ -47,11 +47,13 @@ object BubbleVisuals {
     /**
      * @param copiedHint IDLE-Hinweis "Kopiert — einfuegen" (nur ohne Bedienungshilfe, 2 s nach dem Senden)
      * @param reduceMotion Animator-Dauer-Skalierung 0: statischer Ring statt Puls
+     * @param refining SENDING in der Textverbesserung: das Label nennt den Ausweg (Tippen = ohne KI)
      */
     fun visualFor(
         state: BubbleState,
         copiedHint: Boolean = false,
         reduceMotion: Boolean = false,
+        refining: Boolean = false,
     ): BubbleVisual = when (state) {
         BubbleState.IDLE -> BubbleVisual(
             fill = BubbleVisual.Fill.SURFACE,
@@ -79,9 +81,9 @@ object BubbleVisuals {
             icon = BubbleVisual.Icon.MIC,
             iconTint = BubbleVisual.IconTint.ON_PRIMARY_CONTAINER,
             iconAlpha = SENDING_ICON_ALPHA,
-            label = BubbleVisual.Label.SENDING,
+            label = if (refining) BubbleVisual.Label.REFINING else BubbleVisual.Label.SENDING,
             labelStyle = BubbleVisual.LabelStyle.NEUTRAL,
-            description = BubbleVisual.Description.SENDING,
+            description = if (refining) BubbleVisual.Description.REFINING else BubbleVisual.Description.SENDING,
         )
         BubbleState.ERROR -> BubbleVisual(
             fill = BubbleVisual.Fill.ERROR_CONTAINER,

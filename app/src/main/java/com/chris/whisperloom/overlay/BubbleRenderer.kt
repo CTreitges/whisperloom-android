@@ -142,6 +142,7 @@ class BubbleRenderer(root: View, private val reduceMotion: () -> Boolean) {
             }
             BubbleVisual.Label.TIMER -> label.text = timerSpan(elapsedMs)
             BubbleVisual.Label.SENDING -> label.setText(R.string.float_sending)
+            BubbleVisual.Label.REFINING -> label.setText(R.string.float_refining)
             BubbleVisual.Label.RETRY_HINT -> label.setText(R.string.float_retry_hint)
             BubbleVisual.Label.COPIED -> label.setText(R.string.float_copied_short)
         }
@@ -177,6 +178,7 @@ class BubbleRenderer(root: View, private val reduceMotion: () -> Boolean) {
             BubbleVisual.Description.RECORDING ->
                 ctx.getString(R.string.cd_bubble_recording, BubbleUi.formatDuration(elapsedMs))
             BubbleVisual.Description.SENDING -> ctx.getString(R.string.cd_bubble_sending)
+            BubbleVisual.Description.REFINING -> ctx.getString(R.string.cd_bubble_refining)
             BubbleVisual.Description.ERROR -> ctx.getString(R.string.cd_bubble_error)
         }
     }

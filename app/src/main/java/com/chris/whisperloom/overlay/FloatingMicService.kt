@@ -29,6 +29,7 @@ import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.AudioRecorder
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
+import com.chris.whisperloom.RefineSkip
 import com.chris.whisperloom.TranscriptionEngine
 import com.chris.whisperloom.a11y.TextInserterAccessibilityService
 import com.chris.whisperloom.api.ApiNotConfiguredException
@@ -44,7 +45,8 @@ import kotlin.math.abs
  * Der Knopf zeigt vier Zustaende ([BubbleState]), weil die Transkription ueber das Netz
  * laeuft und spuerbar dauert: bereit, nimmt auf (mit Timer), sendet, fehlgeschlagen.
  * Ein fehlgeschlagenes Diktat bleibt gepuffert und kann per Tippen erneut gesendet
- * werden; Ziehen auf das Abbrechen-Ziel am unteren Rand verwirft es.
+ * werden; Ziehen auf das Abbrechen-Ziel am unteren Rand verwirft es. Laeuft die
+ * Textverbesserung, fuegt ein Tipp den erkannten Text sofort ohne KI ein ([RefineSkip]).
  *
  * Optik: [BubbleVisuals] beschreibt den Zustand, [BubbleRenderer] zeichnet ihn,
  * [CancelTarget] ist das Abbrechen-Ziel, [BubbleNotification] die Foreground-Notification.
@@ -71,6 +73,12 @@ class FloatingMicService : Service() {
 
     /** Audio des letzten fehlgeschlagenen Versuchs — Grundlage fuer den Wiederholen-Tipp. */
     private var pendingSamples: FloatArray? = null
+
+    /** Ausweg der laufenden Uebertragung; null = keine. */
+    @Volatile private var refineSkip: RefineSkip? = null
+
+    /** SENDING in der Textverbesserung: Tippen fuegt den Text ohne KI ein. */
+    private var refining = false
 
     private var recordingStartedAt = 0L
 
@@ -282,7 +290,7 @@ class FloatingMicService : Service() {
     private fun onTap() = when (state) {
         BubbleState.IDLE -> startRec()
         BubbleState.RECORDING -> stopRec()
-        BubbleState.SENDING -> Unit // laeuft schon
+        BubbleState.SENDING -> skipRefine() // laeuft schon; nur in der Textverbesserung gibt es den Ausweg
         BubbleState.ERROR -> retry()
     }
 
@@ -291,7 +299,7 @@ class FloatingMicService : Service() {
     private fun elapsedMs() = SystemClock.elapsedRealtime() - recordingStartedAt
 
     private fun render() {
-        val visual = BubbleVisuals.visualFor(state, copiedHint, BubbleAnimators.reduceMotion(this))
+        val visual = BubbleVisuals.visualFor(state, copiedHint, BubbleAnimators.reduceMotion(this), refining)
         renderer?.render(visual, elapsedMs())
     }
 
@@ -302,6 +310,7 @@ class FloatingMicService : Service() {
     private fun applyState(next: BubbleState, copied: Boolean = false) {
         val previous = state
         state = next
+        if (next != BubbleState.SENDING) refining = false
         copiedHint = copied
         main.removeCallbacks(tick)
         main.removeCallbacks(clearCopiedHint)
@@ -330,6 +339,7 @@ class FloatingMicService : Service() {
             pendingSamples = null
             applyState(BubbleState.RECORDING)
             renderer?.haptic(BubbleMotion.Haptic.CONFIRM)
+            TranscriptionEngine.warmUp(this) // lokales Textmodell parallel zur Aufnahme laden
         } else {
             toast(getString(R.string.kb_error))
         }
@@ -389,11 +399,35 @@ class FloatingMicService : Service() {
         toast(getString(R.string.float_discarded))
     }
 
+    /** Tipp waehrend der Textverbesserung: den erkannten Text sofort ohne KI einfuegen. */
+    private fun skipRefine() {
+        if (!refining) return
+        refineSkip?.skip()
+        renderer?.haptic(BubbleMotion.Haptic.CONFIRM)
+    }
+
+    /** Main-Thread: die Uebertragung ist in der Textverbesserung angekommen — Label und Ansage nennen den Ausweg. */
+    private fun showRefining(skip: RefineSkip) {
+        if (refineSkip !== skip || state != BubbleState.SENDING) return
+        refining = true
+        render()
+        renderer?.announce()
+    }
+
     /** Laeuft auf dem io-Thread. */
     private fun send(samples: FloatArray) {
+        val skip = RefineSkip()
+        refineSkip = skip
         try {
             var refineSkipped: String? = null
-            val text = TranscriptionEngine.transcribe(applicationContext, samples) { refineSkipped = it }
+            var refineNote: String? = null
+            val text = TranscriptionEngine.transcribe(
+                applicationContext,
+                samples,
+                skip = skip,
+                onRefineStart = { main.post { showRefining(skip) } },
+                onRefineNote = { refineNote = it },
+            ) { refineSkipped = it }
             val out = if (prefs.trailingSpace && text.isNotEmpty()) "$text " else text
             pendingSamples = null
             main.post {
@@ -404,7 +438,7 @@ class FloatingMicService : Service() {
                 }
                 applyState(BubbleState.IDLE, copied = copied)
                 renderer?.flashSuccess()
-                refineSkipped?.let { toast(getString(R.string.refine_skipped, it)) }
+                refineSkipped?.let { toast(getString(R.string.refine_skipped, it)) } ?: refineNote?.let { toast(it) }
             }
         } catch (e: ApiNotConfiguredException) {
             pendingSamples = null
@@ -425,6 +459,8 @@ class FloatingMicService : Service() {
                 renderer?.shake()
                 renderer?.haptic(BubbleMotion.Haptic.REJECT)
             }
+        } finally {
+            refineSkip = null
         }
     }
 

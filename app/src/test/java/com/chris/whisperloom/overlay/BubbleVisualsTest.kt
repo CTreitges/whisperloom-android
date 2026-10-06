@@ -94,6 +94,19 @@ class BubbleVisualsTest {
         }
     }
 
+    @Test fun textverbesserungAendertNurLabelUndBeschreibungVonSending() {
+        val v = BubbleVisuals.visualFor(BubbleState.SENDING, refining = true)
+        assertEquals(BubbleVisual.Label.REFINING, v.label)
+        assertEquals(BubbleVisual.Description.REFINING, v.description)
+        assertEquals(
+            BubbleVisuals.visualFor(BubbleState.SENDING).copy(label = v.label, description = v.description),
+            v,
+        )
+        for (s in listOf(BubbleState.IDLE, BubbleState.RECORDING, BubbleState.ERROR)) {
+            assertEquals(BubbleVisuals.visualFor(s), BubbleVisuals.visualFor(s, refining = true))
+        }
+    }
+
     @Test fun nurSendingDimmtDasIcon() {
         for ((s, v) in all) {
             if (s == BubbleState.SENDING) assertEquals(0.5f, v.iconAlpha) else assertEquals(1f, v.iconAlpha)

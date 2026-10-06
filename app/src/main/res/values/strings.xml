@@ -541,6 +541,7 @@
     <string name="float_clipboard_fallback">Text kopiert — Bedienungshilfe aktivieren zum automatischen Einfügen</string>
     <string name="float_copied_short">Kopiert — einfügen</string>
     <string name="float_sending">sendet …</string>
+    <string name="float_refining">verbessert … tippen = ohne KI</string>
     <string name="float_retry_hint">tippen = erneut</string>
     <string name="float_discarded">Diktat verworfen</string>
     <string name="float_cancel_label">Verwerfen</string>
@@ -549,6 +550,7 @@
     <string name="cd_bubble_idle">Diktat starten</string>
     <string name="cd_bubble_recording">Aufnahme läuft, %1$s — antippen zum Beenden</string>
     <string name="cd_bubble_sending">Wird übertragen</string>
+    <string name="cd_bubble_refining">Text wird verbessert. Antippen fügt ihn ohne KI ein</string>
     <string name="cd_bubble_error">Fehler — antippen für erneuten Versuch</string>
     <string name="cd_cancel">Diktat verwerfen</string>
 
@@ -556,6 +558,7 @@
     <string name="kb_hint_hold">Halte das Mikrofon gedrückt und sprich</string>
     <string name="kb_listening">Höre zu … rechts wischen stellt fest</string>
     <string name="kb_transcribing">Wird übertragen …</string>
+    <string name="kb_refining">Text wird verbessert … antippen = ohne KI einfügen</string>
     <string name="kb_need_permission">Mikrofon-Berechtigung fehlt — tippe zum Einrichten</string>
     <string name="kb_not_configured">Kein Zugang eingerichtet — tippe zum Einrichten</string>
     <string name="kb_error">Fehler bei der Erkennung — erneut versuchen</string>
@@ -593,6 +596,7 @@
     <string name="cd_mic_recording">Aufnahme läuft, %1$s — antippen zum Senden</string>
     <string name="cd_mic_locked">Aufnahme festgestellt, %1$s — antippen zum Senden</string>
     <string name="cd_mic_sending">Wird übertragen</string>
+    <string name="cd_mic_refining">Text wird verbessert. Antippen fügt ihn ohne KI ein</string>
     <string name="cd_mic_error">Fehler — antippen für erneuten Versuch</string>
 
     <!-- ==== Sprach-Command-Widget (Paket B) ======================================= -->
