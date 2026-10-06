@@ -33,7 +33,14 @@ fun interface NetworkCheck {
     }
 }
 
-/** Android: aktives Netz und NET_CAPABILITY_VALIDATED (Berechtigung ACCESS_NETWORK_STATE). */
+/**
+ * Android: aktives Netz und NET_CAPABILITY_VALIDATED (Berechtigung ACCESS_NETWORK_STATE).
+ *
+ * Ist das aktive Netz ein VPN (Tailscale, WireGuard, NetGuard, RethinkDNS …), zaehlen die Netze
+ * darunter: ein VPN gilt ohne eigene Pruefung immer als VALIDATED (VpnService.Builder.setRequiresValidation,
+ * Standard aus) — im Funkloch ginge sonst doch eine Anfrage raus und haengte im Timeout (Review c2).
+ * NetworkCapabilities.underlyingNetworks ist keine oeffentliche API; deshalb alle Netze ohne VPN.
+ */
 class AndroidNetworkCheck(context: Context) : NetworkCheck {
 
     private val cm: ConnectivityManager? = context.applicationContext.getSystemService(ConnectivityManager::class.java)
@@ -41,8 +48,17 @@ class AndroidNetworkCheck(context: Context) : NetworkCheck {
     override fun availableFor(baseUrl: String): Boolean {
         val manager = cm ?: return false
         val network = manager.activeNetwork ?: return false
-        val validated = manager.getNetworkCapabilities(network)
-            ?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
-        return NetworkCheck.available(activeNetwork = true, validated = validated, ownNetwork = NetworkCheck.isOwnNetwork(baseUrl))
+        val own = NetworkCheck.isOwnNetwork(baseUrl)
+        val caps = manager.getNetworkCapabilities(network)
+        if (caps?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) != true) {
+            return NetworkCheck.available(activeNetwork = true, validated = caps.validated(), ownNetwork = own)
+        }
+        @Suppress("DEPRECATION") // allNetworks: veraltet seit API 31, ohne Callback aber der einzige Weg zu den Netzen darunter
+        val below = manager.allNetworks.mapNotNull { manager.getNetworkCapabilities(it) }
+            .filter { it.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN) }
+        return NetworkCheck.available(activeNetwork = below.isNotEmpty(), validated = below.any { it.validated() }, ownNetwork = own)
     }
+
+    private fun NetworkCapabilities?.validated(): Boolean =
+        this?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
 }
