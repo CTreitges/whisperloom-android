@@ -330,7 +330,17 @@
     <string name="text_card_share">Geteilte Sprachnachrichten</string>
     <string name="text_share_intro">Für Audios, die du per Teilen an WhisperLoom schickst (z. B. aus WhatsApp). Eigene Stufe, unabhängig vom Diktat; bei „Aus“ bleibt der Text wortgetreu.</string>
     <string name="text_share_off_sub">Wortgetreu, Füllwörter per Schalter ausblendbar. Keine zweite Anfrage.</string>
-    <string name="text_card_access">Zugang für die Textverbesserung</string>
+    <string name="text_card_offline">Offline-Erkennung</string>
+    <string name="text_local_loaded">Geladen · %1$s</string>
+    <string name="text_local_none">Kein Textmodell geladen</string>
+    <string name="text_rule_title">Textverbesserung bei Offline-Erkennung</string>
+    <string name="text_rule_local">Lokales Textmodell</string>
+    <string name="text_rule_local_sub">Standard — offline erkannter Text wird auf dem Gerät verbessert, nie online.</string>
+    <string name="text_rule_online_local">Online, ohne Netz lokal</string>
+    <string name="text_rule_online_local_sub">Mit eigenem Online-Zugang und Netz online. Ohne Netz, ohne eigenen Zugang oder bei einem Fehler lokal.</string>
+    <string name="text_rule_skip">Überspringen</string>
+    <string name="text_rule_skip_sub">Kein lokales Modell. Mit eigenem Online-Zugang und Netz online, sonst kommt der Text ohne KI.</string>
+    <string name="text_card_access">Online-Zugang für die Textverbesserung</string>
     <string name="text_own_access">Eigenen Zugang verwenden</string>
     <string name="text_own_access_off">Nutzt Anbieter und Key der Erkennung (%1$s).</string>
     <string name="text_own_access_on">Eigener Anbieter, Key und Modell.</string>
@@ -361,7 +371,9 @@
         <item quantity="other">%d Modelle gefunden</item>
     </plurals>
     <string name="models_load_failed">Modelle nicht geladen: %1$s</string>
-    <string name="text_needs_online">Textverbesserung braucht einen Online-Zugang.</string>
+    <string name="text_access_offline_local">Bei Offline-Erkennung verbessert das lokale Textmodell — dafür brauchst du keinen Online-Zugang.</string>
+    <string name="text_access_offline_online_local">Ohne eigenen Zugang verbessert bei Offline-Erkennung das lokale Textmodell. Mit eigenem Zugang geht es online, solange Netz da ist.</string>
+    <string name="text_access_offline_skip">Ohne eigenen Zugang kommt der Text bei Offline-Erkennung ohne KI. Mit eigenem Zugang wird online verbessert, solange Netz da ist.</string>
     <string name="text_no_llm">%1$s erkennt nur Sprache und bietet keine Textverbesserung.</string>
     <string name="text_add_access">Eigenen Zugang eintragen</string>
     <string name="text_test">Zugang prüfen</string>

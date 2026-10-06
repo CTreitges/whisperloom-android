@@ -4,6 +4,7 @@ import android.text.format.Formatter
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import com.chris.whisperloom.OfflineRefineRule
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
@@ -71,6 +72,21 @@ fun levelLabel(mode: RefineMode): String = when (mode) {
     RefineMode.BEAUTIFY -> stringResource(R.string.level_beautify)
     RefineMode.SUMMARIZE -> stringResource(R.string.level_summarize)
     RefineMode.PROMPT -> stringResource(R.string.level_prompt)
+}
+
+/** Optionen der Regel "Textverbesserung bei Offline-Erkennung" (E2): Titel und Unterzeile. */
+@Composable
+fun offlineRuleLabel(rule: OfflineRefineRule): String = when (rule) {
+    OfflineRefineRule.LOCAL -> stringResource(R.string.text_rule_local)
+    OfflineRefineRule.ONLINE_LOCAL -> stringResource(R.string.text_rule_online_local)
+    OfflineRefineRule.SKIP -> stringResource(R.string.text_rule_skip)
+}
+
+@Composable
+fun offlineRuleDetails(rule: OfflineRefineRule): String = when (rule) {
+    OfflineRefineRule.LOCAL -> stringResource(R.string.text_rule_local_sub)
+    OfflineRefineRule.ONLINE_LOCAL -> stringResource(R.string.text_rule_online_local_sub)
+    OfflineRefineRule.SKIP -> stringResource(R.string.text_rule_skip_sub)
 }
 
 @Composable

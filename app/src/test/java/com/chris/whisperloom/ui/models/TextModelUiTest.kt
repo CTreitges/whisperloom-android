@@ -32,6 +32,7 @@ import com.chris.whisperloom.ui.nav.SystemStatus
 import com.chris.whisperloom.ui.settings.ModelsScreen
 import com.chris.whisperloom.ui.settings.RecognitionScreen
 import com.chris.whisperloom.ui.settings.SettingsHubScreen
+import com.chris.whisperloom.ui.settings.TextSettingsScreen
 import com.chris.whisperloom.ui.state.AppEnv
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.PrefsState
@@ -54,7 +55,8 @@ import org.robolectric.annotation.Config
 
 /**
  * Das lokale Textmodell in der Oberflaeche (Spec §4), Compose-Semantik unter Robolectric:
- * E4 Abschnitt Textverbesserung, Pflichtkarte "Offline ohne Textmodell", Hub-Zaehler.
+ * E4 Abschnitt Textverbesserung, Pflichtkarte "Offline ohne Textmodell", E2 Karte "Offline-Erkennung"
+ * und Online-Zugang je Regel, Hub-Zaehler.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w411dp-h2400dp-xxhdpi")
@@ -255,6 +257,87 @@ class TextModelUiTest {
         } finally {
             ModelDownloads.clear("small")
         }
+    }
+
+    // --- E2 Text: Karte "Offline-Erkennung" und Online-Zugang ---------------------------------
+
+    @Test fun karteOfflineErkennungStehtZwischenShareUndOnlineZugang() {
+        screen(env()) { TextSettingsScreen(it) }
+        val reihenfolge = listOf("Geteilte Sprachnachrichten", "Offline-Erkennung", "Online-Zugang für die Textverbesserung", "Regeln ohne KI")
+        val oben = reihenfolge.map { compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
+        assertEquals("Von oben nach unten: $reihenfolge", oben.sorted(), oben)
+        compose.onNodeWithText("Textverbesserung bei Offline-Erkennung").assertExists()
+    }
+
+    @Test fun regelStandardIstLokalUndDasRadioSchreibtDiePref() {
+        screen(env()) { TextSettingsScreen(it) }
+        compose.onNode(isSelectable() and hasText("Lokales Textmodell")).assertIsSelected()
+        compose.onNode(isSelectable() and hasText("Online, ohne Netz lokal")).performClick()
+        compose.waitForIdle()
+        assertEquals(OfflineRefineRule.ONLINE_LOCAL, Prefs(ctx).offlineRefine)
+        compose.onNode(isSelectable() and hasText("Überspringen")).performClick()
+        compose.waitForIdle()
+        assertEquals(OfflineRefineRule.SKIP, Prefs(ctx).offlineRefine)
+        compose.onNode(isSelectable() and hasText("Überspringen")).assertIsSelected()
+    }
+
+    @Test fun textKarteZeigtDiePflichtkarteStattDerModellzeile() {
+        offlineOhneTextmodell()
+        screen(env(SystemStatus(installedModels = setOf("small")))) { TextSettingsScreen(it) }
+        pflichtkarte.assertCountEquals(1)
+        compose.onNodeWithText("Kein Textmodell geladen").assertDoesNotExist()
+    }
+
+    @Test fun ohnePflichtLaedtDieModellzeileOhneDieRegelZuAendern() {
+        offlineOhneTextmodell(OfflineRefineRule.SKIP)
+        screen(env(SystemStatus(installedModels = setOf("small")))) { TextSettingsScreen(it) }
+        pflichtkarte.assertCountEquals(0)
+        compose.onNodeWithText("Kein Textmodell geladen").assertExists()
+        compose.onNodeWithText("Laden (${size(TextModelCatalog.GEMMA4_E2B.bytes)})").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Laden").performClick() // D2
+        compose.waitForIdle()
+        assertEquals("gemma4_e2b", startedService()?.getStringExtra(ModelDownloadService.EXTRA_MODEL_ID))
+        assertEquals("Regel bleibt, wie gewaehlt", OfflineRefineRule.SKIP, Prefs(ctx).offlineRefine)
+    }
+
+    @Test fun geladenesTextmodellMitAendernZuDenOfflineModellen() {
+        prefs.engine = Engine.OFFLINE
+        val nav = screen(env(SystemStatus(installedModels = setOf("small"), installedTextModels = setOf("gemma4_e2b")))) {
+            TextSettingsScreen(it)
+        }
+        compose.onNodeWithText("Gemma 4 E2B").assertExists()
+        compose.onNodeWithText("Geladen · ${size(TextModelCatalog.GEMMA4_E2B.bytes)}").assertExists()
+        compose.onNodeWithText("Ändern").performClick()
+        compose.waitForIdle()
+        assertEquals(Screen.Models, nav.current)
+    }
+
+    @Test fun onlineZugangOfflineMitLokalBrauchtKeinenZugang() {
+        prefs.engine = Engine.OFFLINE
+        screen(env()) { TextSettingsScreen(it) }
+        compose.onNodeWithText("Bei Offline-Erkennung verbessert das lokale Textmodell — dafür brauchst du keinen Online-Zugang.")
+            .assertExists()
+        compose.onNodeWithText("Eigenen Zugang eintragen").assertDoesNotExist()
+    }
+
+    @Test fun onlineZugangOfflineMitOnlineLokalOderUeberspringenBietetEigenenZugangAn() {
+        prefs.engine = Engine.OFFLINE
+        prefs.offlineRefine = OfflineRefineRule.ONLINE_LOCAL
+        screen(env()) { TextSettingsScreen(it) }
+        compose.onNodeWithText("Ohne eigenen Zugang verbessert bei Offline-Erkennung das lokale Textmodell.", substring = true)
+            .assertExists()
+        compose.onNode(isSelectable() and hasText("Überspringen")).performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Ohne eigenen Zugang kommt der Text bei Offline-Erkennung ohne KI.", substring = true).assertExists()
+        compose.onNodeWithText("Eigenen Zugang eintragen").performClick()
+        compose.waitForIdle()
+        assertEquals("eigener Zugang an", true, PrefsState(Prefs(ctx)).llmUseOwn)
+    }
+
+    @Test fun karteFehltWennOfflineAufDemGeraetNichtGeht() {
+        screen(env(SystemStatus(offlineSupported = false))) { TextSettingsScreen(it) }
+        compose.onNodeWithText("Offline-Erkennung").assertDoesNotExist()
     }
 
     // --- Hub und Home zaehlen beide Arten ----------------------------------------------------
