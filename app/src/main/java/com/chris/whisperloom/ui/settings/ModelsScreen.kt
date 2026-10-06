@@ -67,7 +67,7 @@ fun ModelsScreen(nav: NavState) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            if (localModelMissing(env.prefs, env.status)) LocalModelRequiredCard()
+            if (localModelMissing(env.prefs, env.status)) LocalModelRequiredCard(compact = true)
             ModelListSection(snack, showEmptyState = false, text = true)
             Text(
                 stringResource(R.string.models_llm_source),

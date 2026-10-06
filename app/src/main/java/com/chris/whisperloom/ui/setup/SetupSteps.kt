@@ -50,7 +50,6 @@ import com.chris.whisperloom.ui.components.offlineModelLabel
 import com.chris.whisperloom.ui.components.openOrSnack
 import com.chris.whisperloom.ui.components.textModelSize
 import com.chris.whisperloom.ui.components.rememberPermissionRequest
-import com.chris.whisperloom.ui.models.DownloadProgress
 import com.chris.whisperloom.ui.models.LocalModelRequiredCard
 import com.chris.whisperloom.ui.models.ModelListSection
 import com.chris.whisperloom.ui.models.localModelMissing
@@ -67,6 +66,7 @@ import com.chris.whisperloom.whisper.DownloadState
 import com.chris.whisperloom.whisper.ModelDownloads
 import com.chris.whisperloom.whisper.OfflineModel
 import com.chris.whisperloom.whisper.OfflineSupport
+import com.chris.whisperloom.whisper.TextModelCatalog
 
 /** Baut die Seite zu Schritt [step] (UX-Spec §2.2, Schritte 1–7). */
 @Composable
@@ -213,14 +213,20 @@ private fun modelStep(facts: SetupFacts, actions: StepActions): StepUi {
     ) {
         ModelListSection(actions.snack, showEmptyState = false)
         Text(stringResource(R.string.setup_s2b_text_title), style = MaterialTheme.typography.titleMedium)
-        // Ist offline schon eine KI-Stufe an, stellt die Pflichtkarte dieselbe Wahl (Spec §4). Laeuft der
-        // Download, bleibt die getroffene Wahl stehen; scheitert er, zeigt die Pflichtkarte den Grund.
-        if (localModelMissing(prefs, env.status) && download == null) {
-            LocalModelRequiredCard()
+        // Ist offline schon eine KI-Stufe an, stellt die Pflichtkarte dieselbe Wahl (Spec §4) — geladen wird
+        // in den Zeilen darunter. Laeuft der Download, bleibt die getroffene Wahl stehen; scheitert er,
+        // zeigt die Zeile den Grund.
+        val required = localModelMissing(prefs, env.status) && download == null
+        if (required) {
+            LocalModelRequiredCard(compact = true)
         } else {
             val otherRunning = states.any { (id, state) -> id != model.id && state is DownloadState.Running }
             TextModelChoice(model, choice, loading = download != null, busy = otherRunning)
-            if (download != null) DownloadProgress(download)
+        }
+        // Nach der Wahl "Lokales Textmodell" (mit Pflichtkarte gilt sie schon) die Textmodelle selbst:
+        // E2B empfohlen, E4B, wenn es ins Geraet passt. Der Fortschritt steht in der Zeile.
+        if (required || choice == TextChoice.LOCAL || download != null) {
+            ModelListSection(actions.snack, showEmptyState = false, text = true)
         }
         val hint = when {
             choice == null -> R.string.setup_s2b_text_open
@@ -235,9 +241,12 @@ private fun modelStep(facts: SetupFacts, actions: StepActions): StepUi {
 
 /**
  * Die beiden Karten "Lokales Textmodell" / "Ueberspringen" (Muster [EngineOption]). Lokal startet den
- * Download des Textmodells (ist es schon da oder laedt es: nur die Regel). Stehen beide KI-Stufen auf
- * "Aus" (ab Werk), schaltet Lokal "Glaetten" ein und sagt das — sonst bewirkte das Modell nichts; eine
- * gewaehlte Stufe bleibt. [busy]: ein anderer Download laeuft — der Dienst laedt nur eins, "Lokal" geht erst danach.
+ * Download des Textmodells (ist es schon da oder laedt es: nur die Regel). Passt mehr als ein Textmodell
+ * ins Geraet, laedt Lokal noch nichts: Die Pflichtkarte erscheint mit beiden Textmodellen darunter, und
+ * der Tipp auf E2B oder E4B laedt — sonst liefe E2B schon, und E4B waere bis zum Ende gesperrt.
+ * Stehen beide KI-Stufen auf "Aus" (ab Werk), schaltet Lokal "Glaetten" ein und sagt das — sonst
+ * bewirkte das Modell nichts; eine gewaehlte Stufe bleibt. [busy]: ein anderer Download laeuft — der
+ * Dienst laedt nur eins, "Lokal" geht erst danach.
  */
 @Composable
 private fun TextModelChoice(model: OfflineModel, choice: TextChoice?, loading: Boolean, busy: Boolean) {
@@ -249,6 +258,7 @@ private fun TextModelChoice(model: OfflineModel, choice: TextChoice?, loading: B
     }
     val load = rememberTextModelLoad { polishIfNoStage() }
     val fits = OfflineSupport.fitsDevice(env.status.totalRamBytes, model)
+    val pickInList = TextModelCatalog.models.count { OfflineSupport.fitsDevice(env.status.totalRamBytes, it) } > 1
     Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         EngineOption(
             selected = choice == TextChoice.LOCAL,
@@ -264,7 +274,7 @@ private fun TextModelChoice(model: OfflineModel, choice: TextChoice?, loading: B
             badge = null,
             unavailable = if (fits) null else stringResource(R.string.models_too_big),
         ) {
-            if (loading || env.status.textModelReady(model.id)) {
+            if (loading || env.status.textModelReady(model.id) || pickInList) {
                 if (prefs.offlineRefine == OfflineRefineRule.SKIP) prefs.offlineRefine = OfflineRefineRule.LOCAL
                 polishIfNoStage()
             } else {

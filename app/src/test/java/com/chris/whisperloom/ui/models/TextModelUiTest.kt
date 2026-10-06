@@ -11,12 +11,14 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -123,6 +125,9 @@ class TextModelUiTest {
         compose.onNodeWithContentDescription("Gemma 4 E2B herunterladen").assertIsEnabled()
         compose.onNodeWithContentDescription("Gemma 4 E4B herunterladen").assertIsNotEnabled()
         compose.onNodeWithText("Für dieses Gerät zu groß").assertExists()
+        // Auch ein Tipp auf die Zeile laedt das zu grosse Modell nicht.
+        compose.onNode(isSelectable() and hasText("Gemma 4 E2B")).assertIsEnabled()
+        compose.onNode(isSelectable() and hasText("Gemma 4 E4B")).assertIsNotEnabled()
     }
 
     @Test fun ladenStartetDenDownloadDesTextmodellsNachDemDialogFuerMobileDaten() {
@@ -142,11 +147,56 @@ class TextModelUiTest {
     @Test fun installiertesTextmodellIstWaehlbarUndSetztDasLokaleModell() {
         installSparse(ctx, TextModelCatalog.GEMMA4_E4B)
         screen(env()) { ModelsScreen(it) }
-        compose.onNode(isSelectable() and hasText("Gemma 4 E2B")).assertIsNotEnabled().assertIsSelected() // Standard, nicht geladen
+        compose.onNode(isSelectable() and hasText("Gemma 4 E2B")).assertIsEnabled().assertIsSelected() // Standard, nicht geladen: Tipp laedt
         compose.onNode(isSelectable() and hasText("Gemma 4 E4B")).assertIsEnabled().performClick()
         compose.waitForIdle()
         assertEquals("gemma4_e4b", Prefs(ctx).localLlmModel)
         assertEquals("whisper-Auswahl unberuehrt", "small", Prefs(ctx).offlineModel)
+    }
+
+    /** Der Fall des Nutzers (16 GB): E4B war erst nach einem Download per Radio waehlbar. */
+    @Test fun e4bIstAufGrossemGeraetTippbarUndDerTippLaedtEs() {
+        installSparse(ctx, TextModelCatalog.GEMMA4_E2B)
+        screen(env(SystemStatus(installedTextModels = setOf("gemma4_e2b"), totalRamBytes = 16L shl 30))) { ModelsScreen(it) }
+        compose.onNode(isSelectable() and hasText("Gemma 4 E4B")).assertIsEnabled().assertIsNotSelected().performClick()
+        compose.waitForIdle()
+        // wie "Laden": ueber mobile Daten erst D2
+        compose.onNodeWithText("${size(TextModelCatalog.GEMMA4_E4B.bytes)} werden heruntergeladen. Im WLAN ist das kostenlos.").assertExists()
+        compose.onNodeWithText("Laden").performClick()
+        compose.waitForIdle()
+        assertEquals("gemma4_e4b", startedService()?.getStringExtra(ModelDownloadService.EXTRA_MODEL_ID))
+        assertEquals("das geladene E2B bleibt aktiv, bis E4B fertig ist", "gemma4_e2b", Prefs(ctx).localLlmModel)
+    }
+
+    @Test fun ohneGeladenesTextmodellWaehltDerTippDasLadendeSofort() {
+        screen(env(SystemStatus(totalRamBytes = 16L shl 30))) { ModelsScreen(it) }
+        compose.onNode(isSelectable() and hasText("Gemma 4 E4B")).performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Laden").performClick() // D2
+        compose.waitForIdle()
+        assertEquals("gemma4_e4b", startedService()?.getStringExtra(ModelDownloadService.EXTRA_MODEL_ID))
+        assertEquals("gemma4_e4b", Prefs(ctx).localLlmModel)
+        compose.onNode(isSelectable() and hasText("Gemma 4 E4B")).assertIsSelected()
+    }
+
+    @Test fun laeuftEinAndererDownloadSagtDieTextzeileWarumLadenGesperrtIst() {
+        ModelDownloads.update("small", DownloadState.Running(1_000, ModelCatalog.SMALL.bytes, 500))
+        try {
+            screen(env(SystemStatus(totalRamBytes = 16L shl 30))) { ModelsScreen(it) }
+            compose.onNodeWithContentDescription("Gemma 4 E4B herunterladen").assertIsNotEnabled()
+            compose.onNode(isSelectable() and hasText("Gemma 4 E4B")).assertIsNotEnabled()
+            // Je Textzeile (E2B, E4B) ein Hinweis; die whisper-Liste bleibt, wie sie war.
+            compose.onAllNodesWithText("Laden geht, sobald der laufende Download fertig ist.").assertCountEquals(2)
+            compose.onNode(isSelectable() and hasText("Base")).assertIsNotEnabled()
+        } finally {
+            ModelDownloads.clear("small")
+        }
+    }
+
+    @Test fun whisperZeileWirdErstNachDemLadenWaehlbar() {
+        screen(env()) { ModelsScreen(it) }
+        compose.onNode(isSelectable() and hasText("Base")).assertIsNotEnabled()
+        compose.onNodeWithText("Laden geht, sobald der laufende Download fertig ist.").assertDoesNotExist()
     }
 
     @Test fun textmodellLoeschenSagtWasOfflineDannPassiert() {
@@ -161,6 +211,30 @@ class TextModelUiTest {
         compose.onNodeWithText("Löschen").performClick()
         compose.waitForIdle()
         assertEquals(false, ModelStore(ctx).isInstalled(TextModelCatalog.GEMMA4_E2B))
+    }
+
+    /** Systemstatus wie in der App aus den Dateien — nach dem Loeschen zieht die Liste ihn nach. */
+    private fun statusAusDateien(store: ModelStore) = SystemStatus(
+        installedModels = setOf("small"),
+        installedTextModels = TextModelCatalog.models.filter { store.isInstalled(it) }.map { it.id }.toSet(),
+        totalRamBytes = 16L shl 30,
+    )
+
+    /** E2B und E4B geladen, E4B gewaehlt und geloescht: E2B gilt, offline nicht ohne KI. */
+    @Test fun gewaehltesTextmodellLoeschenWaehltDasAndereGeladene() {
+        offlineOhneTextmodell()
+        prefs.localLlmModel = "gemma4_e4b"
+        installSparse(ctx, TextModelCatalog.GEMMA4_E2B)
+        installSparse(ctx, TextModelCatalog.GEMMA4_E4B)
+        val store = ModelStore(ctx)
+        screen(AppEnv(PrefsState(prefs), statusAusDateien(store)) { statusAusDateien(store) }) { TextSettingsScreen(it) }
+        compose.onNodeWithContentDescription("Gemma 4 E4B löschen").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Löschen").performClick()
+        compose.waitForIdle()
+        assertEquals("gemma4_e2b", Prefs(ctx).localLlmModel)
+        compose.onNode(isSelectable() and hasText("Gemma 4 E2B")).assertIsSelected()
+        pflichtkarte.assertCountEquals(0)
     }
 
     @Test fun textmodellLoeschenNenntDateiUndZwischenspeicher() {
@@ -243,6 +317,16 @@ class TextModelUiTest {
         prefs.shareRefineMode = RefineMode.SUMMARIZE
         screen(env(SystemStatus(installedModels = setOf("small")))) { ModelsScreen(it) }
         pflichtkarte.assertCountEquals(1)
+    }
+
+    /** Stehen die Textmodelle direkt darunter, laedt deren Zeile — die Pflichtkarte warnt nur. */
+    @Test fun offlineModellePflichtkarteOhneEigenenLadenKnopf() {
+        offlineOhneTextmodell()
+        screen(env(SystemStatus(installedModels = setOf("small")))) { ModelsScreen(it) }
+        pflichtkarte.assertCountEquals(1)
+        compose.onNodeWithText("Überspringen").assertIsEnabled()
+        compose.onNodeWithText("Textmodell laden (${size(TextModelCatalog.GEMMA4_E2B.bytes)})").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Gemma 4 E2B herunterladen").assertIsEnabled()
     }
 
     @Test fun pflichtkarteLaedtDasEmpfohleneWennDasGewaehlteZuGrossIst() {
@@ -334,19 +418,34 @@ class TextModelUiTest {
         compose.onNode(isSelectable() and hasText("Überspringen")).assertIsSelected()
     }
 
-    @Test fun textKarteZeigtDiePflichtkarteStattDerModellzeile() {
+    @Test fun textKarteZeigtPflichtkarteUndBeideTextmodelle() {
         offlineOhneTextmodell()
         screen(env(SystemStatus(installedModels = setOf("small")))) { TextSettingsScreen(it) }
         pflichtkarte.assertCountEquals(1)
-        compose.onNodeWithText("Kein Textmodell geladen").assertDoesNotExist()
+        compose.onNode(isSelectable() and hasText("Gemma 4 E2B")).assertIsEnabled().assertIsSelected()
+        compose.onNode(isSelectable() and hasText("Gemma 4 E4B")).assertIsEnabled()
+        // Laden nur an der Zeile, nicht doppelt in der Pflichtkarte.
+        compose.onNodeWithText("Textmodell laden (${size(TextModelCatalog.GEMMA4_E2B.bytes)})").assertDoesNotExist()
+        compose.onAllNodesWithText("Laden (${size(TextModelCatalog.GEMMA4_E2B.bytes)})").assertCountEquals(1)
+    }
+
+    @Test fun textKarteZeigtDenFortschrittNurEinmal() {
+        offlineOhneTextmodell()
+        ModelDownloads.update("gemma4_e2b", DownloadState.Running(1_294_073_856, TextModelCatalog.GEMMA4_E2B.bytes, 5_000_000))
+        try {
+            screen(env(SystemStatus(installedModels = setOf("small")))) { TextSettingsScreen(it) }
+            pflichtkarte.assertCountEquals(0)
+            compose.onAllNodesWithText("50 %", substring = true).assertCountEquals(1)
+        } finally {
+            ModelDownloads.clear("gemma4_e2b")
+        }
     }
 
     @Test fun ohnePflichtLaedtDieModellzeileOhneDieRegelZuAendern() {
         offlineOhneTextmodell(OfflineRefineRule.SKIP)
         screen(env(SystemStatus(installedModels = setOf("small")))) { TextSettingsScreen(it) }
         pflichtkarte.assertCountEquals(0)
-        compose.onNodeWithText("Kein Textmodell geladen").assertExists()
-        compose.onNodeWithText("Laden (${size(TextModelCatalog.GEMMA4_E2B.bytes)})").performClick()
+        compose.onNodeWithContentDescription("Gemma 4 E2B herunterladen").performClick()
         compose.waitForIdle()
         compose.onNodeWithText("Laden").performClick() // D2
         compose.waitForIdle()
@@ -354,16 +453,29 @@ class TextModelUiTest {
         assertEquals("Regel bleibt, wie gewaehlt", OfflineRefineRule.SKIP, Prefs(ctx).offlineRefine)
     }
 
-    @Test fun geladenesTextmodellMitAendernZuDenOfflineModellen() {
+    @Test fun textKarteZeigtBeideTextmodelleUndE4bIstWaehlbar() {
         prefs.engine = Engine.OFFLINE
-        val nav = screen(env(SystemStatus(installedModels = setOf("small"), installedTextModels = setOf("gemma4_e2b")))) {
-            TextSettingsScreen(it)
-        }
-        compose.onNodeWithText("Gemma 4 E2B").assertExists()
-        compose.onNodeWithText("Geladen · ${size(TextModelCatalog.GEMMA4_E2B.bytes)}").assertExists()
-        compose.onNodeWithText("Ändern").performClick()
+        installSparse(ctx, TextModelCatalog.GEMMA4_E2B)
+        installSparse(ctx, TextModelCatalog.GEMMA4_E4B)
+        val status = SystemStatus(installedModels = setOf("small"), installedTextModels = setOf("gemma4_e2b", "gemma4_e4b"), totalRamBytes = 16L shl 30)
+        screen(env(status)) { TextSettingsScreen(it) }
+        compose.onNode(isSelectable() and hasText("Gemma 4 E2B")).assertIsSelected()
+        compose.onNode(isSelectable() and hasText("Gemma 4 E4B")).assertIsEnabled().performClick()
         compose.waitForIdle()
-        assertEquals(Screen.Models, nav.current)
+        assertEquals("gemma4_e4b", Prefs(ctx).localLlmModel)
+        assertEquals("geladen: kein Download", null, startedService())
+    }
+
+    @Test fun textKarteLaedtE4bPerTipp() {
+        prefs.engine = Engine.OFFLINE
+        installSparse(ctx, TextModelCatalog.GEMMA4_E2B)
+        val status = SystemStatus(installedModels = setOf("small"), installedTextModels = setOf("gemma4_e2b"), totalRamBytes = 16L shl 30)
+        screen(env(status)) { TextSettingsScreen(it) }
+        compose.onNode(isSelectable() and hasText("Gemma 4 E4B")).performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Laden").performClick() // D2
+        compose.waitForIdle()
+        assertEquals("gemma4_e4b", startedService()?.getStringExtra(ModelDownloadService.EXTRA_MODEL_ID))
     }
 
     @Test fun onlineZugangOfflineMitLokalBrauchtKeinenZugang() {
@@ -414,6 +526,9 @@ class TextModelUiTest {
         screen(env(status)) { SetupScreen(SetupRouter.STEP_ACCESS, it) }
     }
 
+    /** 6 GB: nur E2B passt — "Lokales Textmodell" laedt es gleich. */
+    private val nurE2b = SystemStatus(installedModels = setOf("small"), totalRamBytes = 6L shl 30)
+
     @Test fun schritt2bWeiterErstNachDerWahl() {
         schritt2b()
         compose.onNodeWithText("Textverbesserung ohne Netz").assertExists()
@@ -429,7 +544,7 @@ class TextModelUiTest {
     @Test fun schritt2bLokalStartetDenDownloadUndSchaltetGlaettenEin() {
         // Neuinstallation: beide Stufen ab Werk "Aus" — ohne Stufe bewirkte das Textmodell nichts.
         prefs.offlineRefine = OfflineRefineRule.SKIP
-        schritt2b()
+        schritt2b(nurE2b)
         compose.onNodeWithText("verbessert den Text auf dem Gerät und schaltet „Glätten“ ein.", substring = true).assertExists()
         compose.onNode(isSelectable() and hasText("Lokales Textmodell")).performClick()
         compose.waitForIdle()
@@ -445,7 +560,7 @@ class TextModelUiTest {
         // Nur die Stufe fuer geteilte Sprachnachrichten ist an: die Diktat-Stufe bleibt "Aus".
         prefs.offlineRefine = OfflineRefineRule.SKIP
         prefs.shareRefineMode = RefineMode.SUMMARIZE
-        schritt2b()
+        schritt2b(nurE2b)
         compose.onNodeWithText("schaltet „Glätten“ ein", substring = true).assertDoesNotExist()
         compose.onNode(isSelectable() and hasText("Lokales Textmodell")).performClick()
         compose.waitForIdle()
@@ -466,7 +581,7 @@ class TextModelUiTest {
     }
 
     @Test fun schritt2bGescheiterterDownloadZeigtDenGrundUndErneutLaden() {
-        schritt2b()
+        schritt2b(nurE2b)
         compose.onNode(isSelectable() and hasText("Lokales Textmodell")).performClick()
         compose.waitForIdle()
         compose.onNodeWithText("Laden").performClick() // D2
@@ -474,13 +589,58 @@ class TextModelUiTest {
         try {
             ModelDownloads.update("gemma4_e2b", DownloadState.Failed("Nicht genug Speicherplatz", retryable = false))
             compose.waitForIdle()
-            compose.onNodeWithText("Fehlgeschlagen: Nicht genug Speicherplatz").assertExists()
-            compose.onNodeWithText("Textmodell laden (${size(TextModelCatalog.GEMMA4_E2B.bytes)})").assertIsEnabled()
+            // Grund und "Erneut" einmal, in der Zeile von E2B; die Pflichtkarte warnt nur.
+            compose.onAllNodesWithText("Fehlgeschlagen: Nicht genug Speicherplatz").assertCountEquals(1)
+            compose.onNodeWithText("Erneut").assertIsEnabled()
+            compose.onNodeWithText("Textmodell laden (${size(TextModelCatalog.GEMMA4_E2B.bytes)})").assertDoesNotExist()
             compose.onNodeWithText("Überspringen").assertIsEnabled()
             compose.onNodeWithText("Weiter").assertIsNotEnabled()
         } finally {
             ModelDownloads.clear("gemma4_e2b")
         }
+    }
+
+    /**
+     * 2b auf 16 GB: "Lokales Textmodell" laedt noch nichts, sondern zeigt beide Textmodelle — erst der
+     * Tipp auf E2B oder E4B laedt (vorher lud E2B sofort, und E4B war bis zum Ende gesperrt).
+     */
+    @Test fun schritt2bLokalAuf16GbLaedtErstDasGetippteTextmodell() {
+        schritt2b(SystemStatus(installedModels = setOf("small"), totalRamBytes = 16L shl 30))
+        compose.onNode(isSelectable() and hasText("Gemma 4 E2B")).assertDoesNotExist() // erst nach der Wahl
+        compose.onNode(isSelectable() and hasText("Lokales Textmodell")).performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Laden").assertDoesNotExist() // kein D2: es startet noch kein Download
+        assertEquals(null, startedService())
+        assertEquals(OfflineRefineRule.LOCAL, Prefs(ctx).offlineRefine)
+        assertEquals("Glätten", RefineMode.POLISH, Prefs(ctx).refineMode)
+        compose.onNode(isSelectable() and hasText("Gemma 4 E2B")).assertIsEnabled().assertIsSelected()
+        compose.onNode(isSelectable() and hasText("Gemma 4 E4B")).assertIsEnabled()
+        compose.onNodeWithText("Weiter").assertIsNotEnabled()
+
+        compose.onNode(isSelectable() and hasText("Gemma 4 E4B")).performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Laden").performClick() // D2
+        compose.waitForIdle()
+        assertEquals("gemma4_e4b", startedService()?.getStringExtra(ModelDownloadService.EXTRA_MODEL_ID))
+        assertEquals("das ladende E4B ist gewaehlt", "gemma4_e4b", Prefs(ctx).localLlmModel)
+        try {
+            ModelDownloads.update("gemma4_e4b", DownloadState.Running(1_000, TextModelCatalog.GEMMA4_E4B.bytes, 500))
+            compose.waitForIdle()
+            compose.onNode(isSelectable() and hasText("Lokales Textmodell")).assertIsSelected()
+            compose.onNode(isSelectable() and hasText("Gemma 4 E4B")).assertIsSelected()
+            compose.onNodeWithText("Weiter").assertIsEnabled()
+        } finally {
+            ModelDownloads.clear("gemma4_e4b")
+        }
+    }
+
+    @Test fun schritt2bE4bUnter8GbNichtWaehlbar() {
+        prefs.refineMode = RefineMode.POLISH // Pflichtkarte: die Wahl gilt schon, die Zeilen stehen darunter
+        schritt2b(SystemStatus(installedModels = setOf("small"), totalRamBytes = 6L shl 30))
+        pflichtkarte.assertCountEquals(1)
+        compose.onNode(isSelectable() and hasText("Gemma 4 E2B")).assertIsEnabled()
+        compose.onNode(isSelectable() and hasText("Gemma 4 E4B")).assertIsNotEnabled()
+        compose.onNodeWithText("Für dieses Gerät zu groß").assertExists()
     }
 
     @Test fun schritt2bMitStufeBleibtDieWahlWaehrendDesDownloads() {

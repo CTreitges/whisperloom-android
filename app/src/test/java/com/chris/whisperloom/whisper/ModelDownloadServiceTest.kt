@@ -45,25 +45,49 @@ class ModelDownloadServiceTest {
         assertTrue(shadowOf(service).isStoppedBySelf)
     }
 
-    /** Review d1: E4B aus der Liste geladen, gewaehlt war das nicht installierte E2B. */
-    @Test fun einFertigesTextmodellWirdGewaehltWennDasGewaehlteFehlt() {
+    /** Der Nutzer hat es gezielt geladen: E4B fertig, waehrend E2B geladen und gewaehlt ist -> E4B. */
+    @Test fun einFertigesTextmodellWirdImmerGewaehlt() {
         ctx.getSharedPreferences(Prefs.FILE, Context.MODE_PRIVATE).edit().clear().commit()
         val prefs = Prefs(ctx)
         val e2b = TextModelCatalog.GEMMA4_E2B
         val e4b = TextModelCatalog.GEMMA4_E4B
         try {
             assertEquals("ab Werk E2B", e2b.id, prefs.localLlmModel)
-            installSparse(ctx, e4b)
-            ModelDownloadService.selectIfMissing(ctx, e4b)
-            assertEquals(e4b.id, prefs.localLlmModel)
-
             installSparse(ctx, e2b)
-            ModelDownloadService.selectIfMissing(ctx, e2b)
-            assertEquals("das gewaehlte ist installiert: bleibt", e4b.id, prefs.localLlmModel)
+            installSparse(ctx, e4b)
+            ModelDownloadService.selectTextModel(ctx, e4b)
+            assertEquals("auch wenn das gewaehlte E2B geladen ist", e4b.id, prefs.localLlmModel)
 
-            ModelStore(ctx).delete(e4b)
-            ModelDownloadService.selectIfMissing(ctx, ModelCatalog.SMALL)
-            assertEquals("ein whisper-Modell waehlt kein Textmodell", e4b.id, prefs.localLlmModel)
+            ModelDownloadService.selectTextModel(ctx, e2b)
+            assertEquals(e2b.id, prefs.localLlmModel)
+
+            ModelDownloadService.selectTextModel(ctx, ModelCatalog.SMALL)
+            assertEquals("ein whisper-Modell waehlt kein Textmodell", e2b.id, prefs.localLlmModel)
+        } finally {
+            ModelStore(ctx).dir.deleteRecursively()
+        }
+    }
+
+    /**
+     * Abbruch: Ein Textmodell, das nur gewaehlt war, weil es lud, bleibt es nicht — sonst boeten Pflichtkarte,
+     * Assistent und Home das abgebrochene E4B statt des empfohlenen E2B an. Es gilt ein geladenes, sonst der Standard.
+     */
+    @Test fun einAbgebrochenesTextmodellBleibtNichtGewaehlt() {
+        ctx.getSharedPreferences(Prefs.FILE, Context.MODE_PRIVATE).edit().clear().commit()
+        val prefs = Prefs(ctx)
+        val e2b = TextModelCatalog.GEMMA4_E2B
+        val e4b = TextModelCatalog.GEMMA4_E4B
+        try {
+            prefs.localLlmModel = e4b.id
+            ModelDownloadService.resetCancelledTextModel(ctx, e4b)
+            assertEquals("nichts geladen: der Standard", e2b.id, prefs.localLlmModel)
+
+            installSparse(ctx, e4b)
+            ModelDownloadService.resetCancelledTextModel(ctx, e2b)
+            assertEquals("ein geladenes vor dem Standard", e4b.id, prefs.localLlmModel)
+
+            ModelDownloadService.resetCancelledTextModel(ctx, e2b)
+            assertEquals("ein anderes gewaehltes bleibt", e4b.id, prefs.localLlmModel)
         } finally {
             ModelStore(ctx).dir.deleteRecursively()
         }

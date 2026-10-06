@@ -105,13 +105,14 @@ class ModelDownloadService : Service() {
             }
             when {
                 done -> {
-                    selectIfMissing(this, model)
+                    selectTextModel(this, model)
                     ModelDownloads.update(model.id, DownloadState.Done)
                     showResult(getString(R.string.models_notif_done, model.label))
                 }
                 timedOut -> ModelDownloads.update(model.id, DownloadState.Failed(MSG_TIMEOUT, retryable = true))
                 else -> {
                     store.partFile(model).delete() // Abbruch durch den Nutzer verwirft die Teildatei
+                    resetCancelledTextModel(this, model)
                     ModelDownloads.update(model.id, DownloadState.Idle)
                 }
             }
@@ -217,15 +218,24 @@ class ModelDownloadService : Service() {
             Intent(context, ModelDownloadService::class.java).setAction(ACTION_CANCEL)
 
         /**
-         * Ein fertig geladenes Textmodell wird gewaehlt, wenn das gewaehlte nicht installiert ist —
-         * sonst blieben Pflichtkarte und Banner, und Diktate kaemen ohne KI, obwohl ein Textmodell
-         * da ist (Review d1: E4B aus der Liste geladen, gewaehlt blieb E2B). Ein installiertes
-         * gewaehltes bleibt gewaehlt; ein whisper-Modell aendert nichts.
+         * Ein fertig geladenes Textmodell wird immer gewaehlt — der Nutzer hat es gezielt geladen
+         * (vorher blieb E2B aktiv, wenn E4B aus der Liste fertig wurde, und E4B war erst per Radio
+         * waehlbar). Ein whisper-Modell aendert nichts.
          */
-        internal fun selectIfMissing(context: Context, model: OfflineModel) {
-            if (TextModelCatalog.find(model.id) == null) return
+        internal fun selectTextModel(context: Context, model: OfflineModel) {
+            if (TextModelCatalog.find(model.id) != null) Prefs(context).localLlmModel = model.id
+        }
+
+        /**
+         * Abbruch: Ein Textmodell, das nur gewaehlt war, weil es lud (ModelListSection, Pflichtkarte), bleibt
+         * es nicht — sonst boeten Pflichtkarte, Assistent und Home weiter das abgebrochene an. Es gilt ein
+         * geladenes Textmodell, sonst der Standard ([TextModelCatalog.DEFAULT]).
+         */
+        internal fun resetCancelledTextModel(context: Context, model: OfflineModel) {
             val prefs = Prefs(context)
-            if (!ModelStore(context).isInstalled(prefs.localLlmModel)) prefs.localLlmModel = model.id
+            val store = ModelStore(context)
+            if (prefs.localLlmModel != model.id || store.isInstalled(model)) return
+            prefs.localLlmModel = (TextModelCatalog.models.firstOrNull { store.isInstalled(it) } ?: TextModelCatalog.DEFAULT).id
         }
 
         /** Nutzertext zu einem Download-Fehler (err_* aus der UX-Spec, sonst die Meldung des Downloaders). */

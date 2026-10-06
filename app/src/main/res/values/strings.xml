@@ -351,7 +351,6 @@
     <string name="text_share_intro">Für Audios, die du per Teilen an WhisperLoom schickst (z. B. aus WhatsApp). Eigene Stufe, unabhängig vom Diktat; bei „Aus“ bleibt der Text wortgetreu.</string>
     <string name="text_share_off_sub">Wortgetreu, Füllwörter per Schalter ausblendbar. Keine zweite Anfrage.</string>
     <string name="text_card_offline">Offline-Erkennung</string>
-    <string name="text_local_loaded">Geladen · %1$s</string>
     <string name="text_local_none">Kein Textmodell geladen</string>
     <string name="text_local_needs_ram">Für ein lokales Textmodell braucht das Gerät mindestens 6 GB RAM.</string>
     <string name="text_rule_title">Textverbesserung bei Offline-Erkennung</string>
@@ -453,6 +452,7 @@
     <string name="models_progress_unknown">%1$s geladen</string>
     <string name="models_failed">Fehlgeschlagen: %1$s</string>
     <string name="models_too_big">Für dieses Gerät zu groß</string>
+    <string name="models_wait_other">Laden geht, sobald der laufende Download fertig ist.</string>
     <string name="models_recommended">Empfohlen</string>
     <string name="models_installed">Geladen</string>
     <string name="models_tiny">Tiny</string>

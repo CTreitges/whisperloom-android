@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -36,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -74,7 +76,7 @@ import com.chris.whisperloom.whisper.WhisperEngine
  * vor ModelDownloads (laedt/fehlgeschlagen), siehe wp3-notes §4.
  */
 @Composable
-fun ModelListSection(snack: SnackController, showEmptyState: Boolean = true, text: Boolean = false) {
+fun ModelListSection(snack: SnackController, showEmptyState: Boolean = true, text: Boolean = false, inCard: Boolean = false) {
     val ctx = LocalContext.current
     val env = LocalAppEnv.current
     val prefs = env.prefs
@@ -91,7 +93,10 @@ fun ModelListSection(snack: SnackController, showEmptyState: Boolean = true, tex
         val known = if (text) env.status.installedTextModels else env.status.installedModels
         if (installed != known) env.refreshStatus()
     }
-    val download = rememberModelDownload()
+    // Textmodell: Ist das gewaehlte nicht geladen, gilt das ladende sofort als gewaehlt (Pflichtkarte und
+    // Assistent zeigen dann seinen Fortschritt). Sonst bleibt das geladene aktiv, bis der Download fertig
+    // ist — dann waehlt ModelDownloadService.selectTextModel das neue.
+    val download = rememberModelDownload { model -> if (text && selectedId !in installed) prefs.localLlmModel = model.id }
     var pendingDelete by remember { mutableStateOf<OfflineModel?>(null) }
     val anyRunning = states.values.any { it is DownloadState.Running }
 
@@ -110,6 +115,8 @@ fun ModelListSection(snack: SnackController, showEmptyState: Boolean = true, tex
                 onCancel = { ModelDownloadService.cancel(ctx) },
                 onDelete = { pendingDelete = model },
                 onRetry = { download.start(model) },
+                text = text,
+                inCard = inCard,
             )
         }
     }
@@ -124,6 +131,12 @@ fun ModelListSection(snack: SnackController, showEmptyState: Boolean = true, tex
             onConfirm = {
                 store.delete(model)
                 ModelDownloads.clear(model.id)
+                // Das gewaehlte Textmodell geloescht, ein anderes liegt da: das andere waehlen — sonst
+                // kaeme der Text offline ohne KI, obwohl ein Modell bereitsteht.
+                if (text && selectedId == model.id) {
+                    models.firstOrNull { it.id != model.id && it.id in installed && OfflineSupport.fitsDevice(env.status.totalRamBytes, it) }
+                        ?.let { prefs.localLlmModel = it.id }
+                }
                 // geladenes Modell aus dem RAM (nie mitten in einer Rechnung)
                 if (text) LocalTextEngine.release() else WhisperEngine.release()
                 storeVersion++
@@ -164,7 +177,13 @@ fun rememberModelDownload(onStarted: (OfflineModel) -> Unit = {}): ModelDownload
     return remember { ModelDownload { model -> if (OfflineSupport.isMeteredNetwork(ctx)) pending = model else begin(model) } }
 }
 
-/** Eine Modell-Zeile: Radio (nur installiert), Label + Details, Trailing je Zustand, Fortschritt. */
+/**
+ * Eine Modell-Zeile: Radio, Label + Details, Trailing je Zustand, Fortschritt. Waehlbar sind geladene
+ * Modelle. Textmodelle ([text]): ein Tipp auf ein nicht geladenes, passendes Modell laedt es wie
+ * "Laden" (gewaehlt ist es, wenn der Download fertig ist), und laeuft ein anderer Download, sagt die
+ * Zeile, warum "Laden" gesperrt ist. [inCard]: in einer Einstellungskarte (Text) ohne eigene Flaeche,
+ * Rand und Seitenabstand — sonst bliebe neben "Laden" kaum Platz fuer Titel und Details.
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ModelRow(
@@ -179,11 +198,16 @@ fun ModelRow(
     onCancel: () -> Unit,
     onDelete: () -> Unit,
     onRetry: () -> Unit,
+    text: Boolean = false,
+    inCard: Boolean = false,
 ) {
     val label = offlineModelLabel(model.id)
     val running = if (!installed) state as? DownloadState.Running else null
     val failed = if (!installed) state as? DownloadState.Failed else null
-    val border = if (failed != null) Modifier.border(1.dp, MaterialTheme.colorScheme.error, CardShape) else Modifier
+    // Der Dienst laedt immer nur eins: waehrend ein anderer Download laeuft, ginge ein Start still verloren.
+    val waiting = busy && fits && !installed && running == null
+    val tappable = installed || (text && fits && !busy && running == null)
+    val border = if (failed != null && !inCard) Modifier.border(1.dp, MaterialTheme.colorScheme.error, CardShape) else Modifier
 
     ElevatedCard(
         modifier = Modifier
@@ -191,10 +215,15 @@ fun ModelRow(
             .alpha(if (fits) 1f else DIMMED_ALPHA)
             .then(border),
         shape = CardShape,
-        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = if (inCard) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
+        ),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp),
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(
+            Modifier.padding(if (inCard) PaddingValues(vertical = 4.dp) else PaddingValues(16.dp)),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 // Radio + Titel + Details als EIN auswaehlbares Element (Spec §5.6): TalkBack liest
                 // "Small, Optionsfeld, ausgewaehlt" statt viermal nur "Optionsfeld". Die Trailing-Knoepfe
@@ -202,12 +231,17 @@ fun ModelRow(
                 Row(
                     modifier = Modifier
                         .weight(1f)
-                        .selectable(selected = selected, enabled = installed, role = Role.RadioButton, onClick = onSelect)
+                        .selectable(
+                            selected = selected,
+                            enabled = tappable,
+                            role = Role.RadioButton,
+                            onClick = if (installed) onSelect else onLoad,
+                        )
                         .semantics(mergeDescendants = true) {},
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    RadioButton(selected = selected, onClick = null, enabled = installed)
+                    RadioButton(selected = selected, onClick = null, enabled = tappable)
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         // FlowRow: neben "Gemma 4 E2B" und dem Laden-Knopf passt "Empfohlen" nicht immer —
                         // dann in die naechste Zeile statt zusammengedrueckt.
@@ -263,6 +297,13 @@ fun ModelRow(
                 }
             }
             if (running != null) DownloadProgress(running)
+            if (text && waiting) {
+                Text(
+                    stringResource(R.string.models_wait_other),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             if (failed != null) {
                 Text(
                     stringResource(R.string.models_failed, failed.message),

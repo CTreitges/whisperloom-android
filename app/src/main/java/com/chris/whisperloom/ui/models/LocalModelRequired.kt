@@ -90,17 +90,20 @@ fun rememberTextModelLoad(onStarted: () -> Unit = {}): ModelDownload {
  * Pflichtkarte "Offline ohne Textmodell" (Spec §4) — ueberall dieselbe: Erkennung bei Offline,
  * Offline-Modelle (Textverbesserung), Text (Karte Offline-Erkennung), Assistent 2b. Der Aufrufer
  * zeigt sie genau dann, wenn [localModelMissing] gilt. Warnfarbe wie das Home-Banner; waehrend
- * der Download laeuft, Fortschritt statt Knoepfe.
+ * der Download laeuft, Fortschritt statt Knoepfe. [compact]: die Textmodelle stehen direkt darunter
+ * (Offline-Modelle, Text, Assistent) — Laden, Fortschritt und Fehler zeigt dann deren Zeile, die Karte
+ * warnt nur und bietet "Ueberspringen"; solange das Modell laedt, fehlt sie ganz.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun LocalModelRequiredCard(modifier: Modifier = Modifier) {
+fun LocalModelRequiredCard(modifier: Modifier = Modifier, compact: Boolean = false) {
     val env = LocalAppEnv.current
     val prefs = env.prefs
     val loom = MaterialTheme.loom
     val model = textModelToLoad(prefs.localLlmModel, env.status.totalRamBytes)
     val states by ModelDownloads.states.collectAsStateWithLifecycle()
     val state = states[model.id] ?: DownloadState.Idle
+    if (compact && state is DownloadState.Running) return
     // Der Dienst laedt immer nur eins: laeuft ein anderer Download, wuerde der Start still ignoriert.
     val busy = states.values.any { it is DownloadState.Running }
     val load = rememberTextModelLoad()
@@ -133,7 +136,7 @@ fun LocalModelRequiredCard(modifier: Modifier = Modifier) {
         if (state is DownloadState.Running) {
             DownloadProgress(state)
         } else {
-            if (state is DownloadState.Failed) {
+            if (state is DownloadState.Failed && !compact) {
                 Text(
                     stringResource(R.string.models_failed, state.message),
                     style = MaterialTheme.typography.labelSmall,
@@ -150,10 +153,12 @@ fun LocalModelRequiredCard(modifier: Modifier = Modifier) {
                     onClick = { prefs.offlineRefine = OfflineRefineRule.SKIP },
                     colors = ButtonDefaults.textButtonColors(contentColor = loom.onWarningContainer),
                 ) { Text(stringResource(R.string.local_missing_skip)) }
-                FilledTonalButton(
-                    onClick = { load.start(model) },
-                    enabled = !busy && OfflineSupport.fitsDevice(env.status.totalRamBytes, model),
-                ) { Text(stringResource(R.string.local_missing_load, fileSize(model.bytes))) }
+                if (!compact) {
+                    FilledTonalButton(
+                        onClick = { load.start(model) },
+                        enabled = !busy && OfflineSupport.fitsDevice(env.status.totalRamBytes, model),
+                    ) { Text(stringResource(R.string.local_missing_load, fileSize(model.bytes))) }
+                }
             }
         }
     }
