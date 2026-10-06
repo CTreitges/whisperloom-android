@@ -3,9 +3,10 @@ package com.chris.whisperloom
 import android.content.Context
 import android.provider.OpenableColumns
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import com.chris.whisperloom.api.ApiNotConfiguredException
-import com.chris.whisperloom.api.TextRefiner
 import com.chris.whisperloom.api.WavUpload
+import com.chris.whisperloom.llm.LocalTextEngine
 import com.chris.whisperloom.whisper.OfflineBackend
 import com.chris.whisperloom.whisper.OfflineNotAvailableException
 import com.chris.whisperloom.whisper.OfflineStatus
@@ -17,7 +18,8 @@ import java.io.RandomAccessFile
  *
  *  1. Stille am Anfang/Ende wegschneiden (kleinerer Upload)
  *  2. Erkennung ueber das gewaehlte Backend (Anbieter-API oder offline)
- *  3. optional: Sprachmodell bearbeitet den Text (Modus aus den Einstellungen)
+ *  3. optional: Sprachmodell bearbeitet den Text (Modus aus den Einstellungen) — online oder mit
+ *     dem lokalen Textmodell, wie [RefinePlan] es nach Regel, Netz und Modell entscheidet
  *  4. Nachbearbeitung (Fuellwoerter, Gross-Schreibung, Whitespace)
  *
  * Blockierend — immer aus einem Hintergrund-Thread aufrufen.
@@ -61,70 +63,120 @@ object TranscriptionEngine {
         null -> throw ApiNotConfiguredException()
     }
 
+    /**
+     * Naht fuer Tests: Offline-Erkennung ohne libwhisperloom.so simulieren (Fake-Backend). Die
+     * Pruefung "eingerichtet" und alles nach der Erkennung laufen trotzdem wie im Betrieb.
+     */
+    @VisibleForTesting
+    internal var backendFactory: (Prefs, String) -> TranscriptionBackend = { prefs, prompt -> backend(prefs, prompt) }
+
+    /**
+     * Aufnahmestart (Tastatur, schwebender Knopf, Widget): wird das Diktat gleich lokal verbessert,
+     * laedt das Textmodell schon jetzt im Hintergrund — parallel zu Aufnahme und Erkennung statt
+     * danach (Init Sekunden bis gut 30 s). Kehrt sofort zurueck.
+     */
+    fun warmUp(context: Context) {
+        val app = context.applicationContext
+        val prefs = Prefs(app)
+        if (prefs.engine != Engine.OFFLINE) return
+        if (RefinePlan.of(app, prefs, prefs.effective(prefs.refineMode)).route == RefineRoute.Local) {
+            LocalTextEngine.warmUp(prefs.localLlmModel)
+        }
+    }
+
     /** Bei "auto" die vom Erkenner gemeldete Sprache nehmen — sonst bleibt "auto". */
     internal fun effectiveLanguage(configured: String, detected: String?): String =
         if (configured == "auto" && !detected.isNullOrBlank()) detected else configured
 
     /**
-     * @param onRefineSkipped wird gerufen, wenn die Textverbesserung (Schritt 3) scheitert —
-     *   der erkannte Text kommt dann unveraendert durch die Nachbearbeitung; die Meldung
-     *   (z. B. "API-Fehler 401 …") kann der Aufrufer als Hinweis zeigen.
+     * @param skip Ausweg waehrend der Textverbesserung: [RefineSkip.skip] liefert sofort den Text
+     *   ohne KI (ohne Hinweis — so gewollt). Ohne bleibt die Verbesserung auf dem aufrufenden Thread.
+     * @param onRefineStart die Textverbesserung beginnt (online oder lokal) — ab jetzt hilft [skip].
+     *   Nicht, wenn ohne KI weitergeht (Stufe aus, kein Netz, kein Textmodell, Ueberspringen).
+     * @param onRefineNote Hinweis, der den Text nicht betrifft: online gescheitert, lokal verbessert.
+     * @param onRefineSkipped wird gerufen, wenn die Textverbesserung (Schritt 3) scheitert oder nach
+     *   der Regel nicht moeglich ist (kein Netz, kein Textmodell) — der erkannte Text kommt dann
+     *   unveraendert durch die Nachbearbeitung; die Meldung (z. B. "API-Fehler 401 …") kann der
+     *   Aufrufer als Hinweis zeigen.
      * @throws ApiNotConfiguredException wenn keine Engine gewaehlt oder der Zugang unvollstaendig ist.
      * @throws OfflineNotAvailableException wenn offline gewaehlt ist, aber kein Modell da.
      * @throws com.chris.whisperloom.api.ApiNetworkException bei Netzproblemen (Erkennung).
      * @throws com.chris.whisperloom.api.ApiHttpException bei Fehlerstatus der API (Erkennung).
      */
-    fun transcribe(context: Context, samples: FloatArray, onRefineSkipped: (String) -> Unit = {}): String {
+    fun transcribe(
+        context: Context,
+        samples: FloatArray,
+        skip: RefineSkip? = null,
+        onRefineStart: () -> Unit = {},
+        onRefineNote: (String) -> Unit = {},
+        onRefineSkipped: (String) -> Unit = {},
+    ): String {
         val app = context.applicationContext
         val prefs = Prefs(app)
         requireConfigured(app, prefs)
 
         val trimmed = AudioUtils.trimSilence(samples)
-        val result = backend(prefs, VocabularySource.prompt(app, prefs).text)
+        val result = backendFactory(prefs, VocabularySource.prompt(app, prefs).text)
             .transcribe(WavUpload.fromSamples(trimmed), prefs.language)
         val raw = result.text
         if (raw.isBlank()) return ""
 
         val language = effectiveLanguage(prefs.language, result.detectedLanguage)
         val mode = prefs.effective(prefs.refineMode)
-        var refineFailed = false
-        val refined = if (mode != RefineMode.OFF) {
-            refineOrRaw(raw, language, mode, prefs) {
-                refineFailed = true
-                onRefineSkipped(it)
-            }
-        } else {
-            raw
-        }
+        val refined = refineOrNull(app, prefs, raw, language, mode, skip, onRefineStart, onRefineNote, onRefineSkipped)
 
         val options = PolishPlan.options(
             removeFillers = prefs.removeFillers,
             autoCapitalize = prefs.autoCapitalize,
             language = language,
-            // Gescheitert = Rohtext, den keine KI bearbeitet hat: volle Regeln, sonst blieben
-            // mit "Fuellwoerter intelligent entfernen" (oder bei "Prompt") die "ähm"s stehen.
-            refineMode = if (refineFailed) RefineMode.OFF else mode,
+            // Ohne KI (aus, gescheitert, uebersprungen) = Rohtext, den keine KI bearbeitet hat: volle
+            // Regeln, sonst blieben mit "Fuellwoerter intelligent entfernen" (oder bei "Prompt") die "ähm"s stehen.
+            refineMode = if (refined == null) RefineMode.OFF else mode,
             smartFillers = prefs.smartFillers,
             customFillers = prefs.customFillers,
             disabledFillers = prefs.disabledFillers,
             paragraphs = prefs.refineParagraphs,
         )
-        return TextPolisher.polish(refined, options)
+        return TextPolisher.polish(refined ?: raw, options)
     }
 
     /**
      * Die Veredelung darf ein bereits erkanntes (und ggf. bezahltes) Diktat nie verschlucken:
      * scheitert das Sprachmodell (falsches Modell, 401/429, eigener Server aus, Base-URL leer,
-     * unbrauchbare Antwort), kommt der Rohtext durch — nur mit Hinweis statt Fehler.
+     * unbrauchbare Antwort, lokales Modell), kommt der Rohtext durch — nur mit Hinweis statt Fehler.
+     * Ohne Netz geht gar keine Anfrage raus ([RefinePlan]): sofort ohne KI statt im Timeout zu haengen.
+     *
+     * @return der bearbeitete Text; null = ohne KI (Stufe aus, so gewollt, nicht moeglich, gescheitert, uebersprungen).
      */
-    private fun refineOrRaw(raw: String, language: String, mode: RefineMode, prefs: Prefs, onSkipped: (String) -> Unit): String =
-        try {
-            TextRefiner(prefs.llmAccess()).refine(raw, language, mode, prefs.smartFillers, prefs.refineParagraphs)
+    private fun refineOrNull(
+        app: Context,
+        prefs: Prefs,
+        raw: String,
+        language: String,
+        mode: RefineMode,
+        skip: RefineSkip?,
+        onStart: () -> Unit,
+        onNote: (String) -> Unit,
+        onSkipped: (String) -> Unit,
+    ): String? {
+        val plan = RefinePlan.of(app, prefs, mode)
+        val route = plan.route
+        if (route is RefineRoute.Raw) {
+            route.hint?.let { onSkipped(RefinePlan.message(it)) }
+            return null
+        }
+        onStart()
+        val work = {
+            plan.refine(raw, language, mode, prefs.smartFillers, prefs.refineParagraphs, onNote) { skip?.isSkipped == true }
+        }
+        return try {
+            if (skip == null) work() else skip.race(work)
         } catch (e: Exception) {
             Log.w(TAG, "Textverbesserung uebersprungen: ${e.message}", e)
             onSkipped(e.message ?: e.javaClass.simpleName)
-            raw
+            null
         }
+    }
 
     private const val TAG = "TranscriptionEngine"
 }
@@ -225,7 +277,7 @@ object SharedAudioTranscriber {
             val paragraphsVerbatim = paragraphsForChunks(parts.map { TextPolisher.polish(it, verbatimOptions) })
             val paragraphsCleaned = paragraphsForChunks(parts.map { TextPolisher.polish(it, cleanedOptions) })
 
-            val refined = SharedRefine.run(prefs, parts, language, isCancelled, onStart = {
+            val refined = SharedRefine.run(app, prefs, parts, language, isCancelled, onStart = {
                 onProgress(chunks.size, chunks.size, app.getString(R.string.share_refining))
             })
             return SharedTranscript(

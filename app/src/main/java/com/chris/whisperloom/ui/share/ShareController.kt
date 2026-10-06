@@ -14,6 +14,7 @@ import com.chris.whisperloom.R
 import com.chris.whisperloom.SharedAudioTranscriber
 import com.chris.whisperloom.SharedTranscript
 import com.chris.whisperloom.api.ApiNotConfiguredException
+import com.chris.whisperloom.llm.LocalTextEngine
 import com.chris.whisperloom.whisper.OfflineNotAvailableException
 import com.chris.whisperloom.whisper.WhisperEngine
 import java.util.concurrent.Executor
@@ -93,11 +94,14 @@ class ShareController(
     fun plainText(emptyText: String = ""): String =
         ShareText.plain(state.results, state.hideFillers, withHeadings = uris.size > 1, emptyText = emptyText)
 
-    /** Laufende Arbeit abbrechen (Schliessen); Offline-Erkennung wird sofort unterbrochen. */
+    /** Laufende Arbeit abbrechen (Schliessen); Offline-Erkennung und lokale Textverbesserung werden sofort unterbrochen. */
     fun cancel() {
         cancelled = true
         runId++
-        if (prefs.engine == Engine.OFFLINE) WhisperEngine.abort()
+        if (prefs.engine == Engine.OFFLINE) {
+            WhisperEngine.abort()
+            LocalTextEngine.cancel()
+        }
     }
 
     fun dispose() {

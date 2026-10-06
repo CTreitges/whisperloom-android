@@ -12,7 +12,11 @@ import org.json.JSONObject
  * Spricht POST /chat/completions des [ApiAccess] bzw. bei Ollama POST /api/chat — das kann
  * ein anderer Anbieter als bei der Transkription sein (z. B. Groq-STT + Ollama-LLM).
  */
-class TextRefiner(private val access: ApiAccess) {
+class TextRefiner(
+    private val access: ApiAccess,
+    /** Kuerzer, wenn eine lokale Ausweichloesung bereitsteht (Regel "Online, ohne Netz lokal"). */
+    private val connectTimeoutMs: Int = Http.CONNECT_TIMEOUT_MS,
+) {
 
     /**
      * Liefert den bearbeiteten Text. Bei leerer Eingabe, [RefineMode.OFF] oder leerer
@@ -75,6 +79,7 @@ class TextRefiner(private val access: ApiAccess) {
             apiKey = access.apiKey,
             contentType = "application/json",
             readTimeoutMs = access.readTimeoutMs,
+            connectTimeoutMs = connectTimeoutMs,
         ) { os -> os.write(payload.toByteArray(Charsets.UTF_8)) }
     }
 
@@ -86,6 +91,7 @@ class TextRefiner(private val access: ApiAccess) {
             apiKey = access.apiKey,
             contentType = "application/json",
             readTimeoutMs = access.readTimeoutMs,
+            connectTimeoutMs = connectTimeoutMs,
         ) { os -> os.write(payload.toByteArray(Charsets.UTF_8)) }
         if (JSONObject(body).optString("done_reason") == LENGTH) throw RefineRejectedException(MSG_TRUNCATED)
         return OllamaApi.parseChat(body)
