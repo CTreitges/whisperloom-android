@@ -9,6 +9,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.RefineWay
+import com.chris.whisperloom.history.Processing
+import com.chris.whisperloom.history.History as HistoryStore
 import com.chris.whisperloom.ui.tutorial.TutorialKind
 
 /** Die Screens der MainActivity (UX-Spec §1.1). [key] ist stabil je Screen-Typ (Uebergangs-Animation). */
@@ -64,6 +66,26 @@ sealed class Screen(val key: String) {
      */
     data class Widgets(val tab: WidgetTab? = null, val edit: String? = null) : Screen("widgets")
 
+    /** Verlauf (3.9.0): die Liste der Diktate, aus Home und dem Hub. */
+    data object History : Screen("history")
+
+    /**
+     * Ein Eintrag des Verlaufs. [show] = sichtbare Fassung: ein Processing-Schluessel, [ORIGIN] fuer
+     * den Ursprung oder null fuer die damals erzeugte. Ein Chip-Wechsel ersetzt den Eintrag im
+     * Back-Stack (wie ein Tab-Wechsel bei [Widgets]). Die Id enthaelt kein ":".
+     */
+    data class HistoryDetail(val id: String, val show: String? = null) : Screen("history-entry") {
+        companion object {
+            const val ORIGIN = "raw"
+        }
+    }
+
+    /** Bearbeiten-Fenster einer Fassung; [processing] = EDITED ist der bearbeitete Ursprung. */
+    data class HistoryEdit(val id: String, val processing: Processing) : Screen("history-edit")
+
+    /** Verlauf-Einstellungen (ueber ⋮ in der Liste). */
+    data object HistorySettings : Screen("history-settings")
+
     /** Patchnotes (P): "?" neben der Versionsnummer in Home, Hilfe und Ueber-Sheet. */
     data object Patchnotes : Screen("patchnotes")
 
@@ -90,6 +112,8 @@ sealed class Screen(val key: String) {
         is Help -> "$key:$section"
         is Widgets -> "$key:${tab?.key.orEmpty()}:${edit.orEmpty()}"
         is Tutorial -> "$key:$startPage:${if (startBubbleAfter) 1 else 0}:${kind.key}"
+        is HistoryDetail -> "$key:$id:${show.orEmpty()}"
+        is HistoryEdit -> "$key:$id:${processing.key}"
         else -> key
     }
 
@@ -122,6 +146,15 @@ sealed class Screen(val key: String) {
                 "advanced", "agent" -> Advanced
                 "widgets" -> Widgets(WidgetTab.fromKey(parts.getOrNull(1)), parts.getOrNull(2)?.ifEmpty { null })
                 "help" -> Help(arg ?: 1)
+                "history" -> History
+                // Eine kaputte Id fuehrt zur Liste; eine unbekannte merkt erst der Eintrag selbst (dann ebenfalls zur Liste).
+                "history-entry" -> historyId(parts.getOrNull(1))?.let { id ->
+                    HistoryDetail(id, parts.getOrNull(2)?.takeIf { it == HistoryDetail.ORIGIN || Processing.fromKey(it) != null })
+                } ?: History
+                "history-edit" -> historyId(parts.getOrNull(1))?.let { id ->
+                    Processing.fromKey(parts.getOrNull(2))?.let { HistoryEdit(id, it) } ?: HistoryDetail(id)
+                } ?: History
+                "history-settings" -> HistorySettings
                 "patchnotes" -> Patchnotes
                 "tutorial" -> Tutorial(
                     arg ?: 0,
@@ -131,6 +164,8 @@ sealed class Screen(val key: String) {
                 else -> Home
             }
         }
+
+        private fun historyId(s: String?): String? = s?.takeIf { HistoryStore.isId(it) }
     }
 }
 

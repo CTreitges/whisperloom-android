@@ -187,7 +187,7 @@ internal fun cleanupLabel(cleanup: PolishCleanup): Int = when (cleanup) {
     PolishCleanup.READABLE -> R.string.stage_cleanup_readable
 }
 
-private fun cleanupSubtitle(cleanup: PolishCleanup): Int = when (cleanup) {
+internal fun cleanupSubtitle(cleanup: PolishCleanup): Int = when (cleanup) {
     PolishCleanup.PLAIN -> R.string.stage_cleanup_plain_sub
     PolishCleanup.CLEAN -> R.string.stage_cleanup_clean_sub
     PolishCleanup.READABLE -> R.string.stage_cleanup_readable_sub

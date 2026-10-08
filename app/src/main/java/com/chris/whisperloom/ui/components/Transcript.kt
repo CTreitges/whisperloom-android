@@ -5,6 +5,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.FlowRowScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -174,32 +177,35 @@ fun FillerToggleBar(hideFillers: Boolean, onChange: (Boolean) -> Unit) {
     }
 }
 
-/** Untere Aktionsleiste auf surfaceContainer; traegt den Nav-Inset ([modifier] z. B. imePadding fuer ein Textfeld darueber). */
+/**
+ * Untere Aktionsleiste auf surfaceContainer; traegt den Nav-Inset ([modifier] z. B. imePadding fuer
+ * ein Textfeld darueber). Passen die Knoepfe bei grosser Schrift nicht nebeneinander, stehen sie
+ * untereinander, statt Woerter zu zerbrechen.
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun TranscriptActionBar(modifier: Modifier = Modifier, content: @Composable RowScope.() -> Unit) {
+fun TranscriptActionBar(modifier: Modifier = Modifier, content: @Composable FlowRowScope.() -> Unit) {
     Surface(modifier = modifier, color = MaterialTheme.colorScheme.surfaceContainer) {
-        Row(
+        FlowRow(
             modifier = Modifier
                 .navigationBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            itemVerticalAlignment = Alignment.CenterVertically,
             content = content,
         )
     }
 }
 
-/**
- * Knopf der Aktionsleiste: halbe Breite, mindestens 56 dp hoch (bei grosser Schrift darf der Text
- * umbrechen), Icon + Text. [primary] gefuellt, sonst tonal.
- */
+/** Knopf der Aktionsleiste: teilt sich die Breite, mindestens 56 dp hoch, Icon + Text. [primary] gefuellt, sonst tonal. */
 @Composable
 fun RowScope.ActionBarButton(@DrawableRes icon: Int, text: String, onClick: () -> Unit, primary: Boolean = false, enabled: Boolean = true) {
     val modifier = Modifier.weight(1f).heightIn(min = 56.dp)
     val content: @Composable RowScope.() -> Unit = {
         Icon(painter = painterResource(icon), contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
         Spacer(Modifier.width(ButtonDefaults.IconSpacing))
-        Text(text)
+        Text(text, maxLines = 1)
     }
     if (primary) Button(onClick = onClick, modifier = modifier, enabled = enabled, content = content)
     else FilledTonalButton(onClick = onClick, modifier = modifier, enabled = enabled, content = content)

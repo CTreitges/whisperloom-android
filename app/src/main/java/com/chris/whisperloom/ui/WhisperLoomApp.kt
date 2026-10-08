@@ -15,6 +15,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.overlay.FloatingMicService
+import com.chris.whisperloom.ui.history.HistoryDetailScreen
+import com.chris.whisperloom.ui.history.HistoryEditScreen
+import com.chris.whisperloom.ui.history.HistoryListScreen
+import com.chris.whisperloom.ui.history.HistorySettingsScreen
 import com.chris.whisperloom.ui.home.HomeScreen
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.RouteRequest
@@ -101,6 +105,11 @@ fun WhisperLoomApp(env: AppEnv, route: RouteRequest? = null, onRouteConsumed: ()
                 is Screen.Widgets -> WidgetsScreen(nav, tab = screen.tab, edit = screen.edit)
                 is Screen.Help -> HelpScreen(section = (nav.current as? Screen.Help)?.section ?: screen.section, nav = nav)
                 Screen.Patchnotes -> PatchnotesScreen(nav)
+                Screen.History -> HistoryListScreen(nav)
+                // Ein Chip-Wechsel ersetzt den Eintrag ohne Screen-Wechsel: die sichtbare Fassung aus nav lesen.
+                is Screen.HistoryDetail -> HistoryDetailScreen((nav.current as? Screen.HistoryDetail)?.takeIf { it.id == screen.id } ?: screen, nav)
+                is Screen.HistoryEdit -> HistoryEditScreen(screen.id, screen.processing, nav)
+                Screen.HistorySettings -> HistorySettingsScreen(nav)
                 is Screen.Tutorial -> TutorialScreen(
                     startPage = screen.startPage,
                     kind = screen.kind,

@@ -8,6 +8,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.RefineWay
+import com.chris.whisperloom.history.Processing
 import com.chris.whisperloom.ui.tutorial.TutorialKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -112,6 +113,27 @@ class RouteRequestTest {
             "stage:readable:dictation", "stage:paragraphs:dictation", "stage:prompt:share",
         ).forEach { assertEquals(it, Screen.Refine, Screen.decode(it)) }
         assertEquals(null, Screen.Stage.of(RefineMode.PROMPT, RefineWay.SHARE))
+    }
+
+    @Test fun verlaufScreensUeberstehenDenProzesstod() {
+        val id = "1791456000000-0a1b2c3d"
+        val screens = listOf(
+            Screen.History, Screen.HistorySettings, Screen.HistoryDetail(id), Screen.HistoryDetail(id, Screen.HistoryDetail.ORIGIN),
+            Screen.HistoryDetail(id, "polish_readable"), Screen.HistoryEdit(id, Processing.SUMMARIZE), Screen.HistoryEdit(id, Processing.EDITED),
+        )
+        screens.forEach { assertEquals(it, Screen.decode(it.encode())) }
+        assertEquals("history-entry:$id:raw", Screen.HistoryDetail(id, Screen.HistoryDetail.ORIGIN).encode())
+        assertEquals("history-edit:$id:edited", Screen.HistoryEdit(id, Processing.EDITED).encode())
+        // Ein Chip-Wechsel ersetzt den Eintrag: derselbe Schluessel, keine Uebergangsanimation.
+        assertEquals(Screen.HistoryDetail(id).key, Screen.HistoryDetail(id, "summarize").key)
+    }
+
+    @Test fun kaputteVerlaufSchluesselFuehrenZurListe() {
+        val id = "1791456000000-0a1b2c3d"
+        listOf("history-entry", "history-entry:", "history-entry:abc", "history-entry:1791456000000-XYZ", "history-edit:abc:summarize")
+            .forEach { assertEquals(it, Screen.History, Screen.decode(it)) }
+        assertEquals("unbekannte Fassung: die damalige", Screen.HistoryDetail(id), Screen.decode("history-entry:$id:fax"))
+        assertEquals("unbekannte Fassung im Editor: der Eintrag", Screen.HistoryDetail(id), Screen.decode("history-edit:$id:fax"))
     }
 
     @Test fun alteBackStacksBleibenLesbar() {

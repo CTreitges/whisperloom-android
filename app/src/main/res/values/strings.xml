@@ -952,4 +952,84 @@
     <string name="patchnotes_unavailable_title">Patchnotes nicht verfügbar</string>
     <string name="patchnotes_unavailable_body">In dieser App-Version fehlen die Patchnotes. Alle Änderungen stehen auf GitHub.</string>
     <string name="patchnotes_unavailable_action">Auf GitHub ansehen</string>
+    <!-- Verlauf (3.9.0, Plan §6): Liste, Eintrag, Andere Stufe, Bearbeiten, Verlauf-Einstellungen.
+         Nie Diktat-Text in Benachrichtigungen oder Logs — hier stehen nur Bezeichnungen. -->
+    <string name="cd_more">Weitere Optionen</string>
+    <string name="history_title">Verlauf</string>
+    <string name="history_today">Heute</string>
+    <string name="history_yesterday">Gestern</string>
+    <string name="history_source_keyboard">Tastatur</string>
+    <string name="history_source_bubble">Knopf</string>
+    <!-- Zeile der Liste: Uhrzeit · Quelle · Dauer -->
+    <string name="history_meta">%1$s · %2$s · %3$s</string>
+    <string name="history_failed">ohne KI</string>
+    <string name="history_empty">Noch keine Diktate</string>
+    <string name="history_empty_body">Was du mit der Diktat-Tastatur oder dem schwebenden Knopf diktierst, erscheint hier.</string>
+    <string name="history_off">Verlauf ist aus</string>
+    <string name="history_off_body">Diktate werden nicht gespeichert.</string>
+    <string name="history_turn_on">Einschalten</string>
+    <string name="history_clear">Alle löschen</string>
+    <string name="history_clear_title">Alle Einträge löschen?</string>
+    <string name="history_clear_body">Der ganze Verlauf wird gelöscht. Das lässt sich nicht rückgängig machen.</string>
+    <string name="history_deleted">Eintrag gelöscht</string>
+    <string name="history_undo">Rückgängig</string>
+    <string name="history_entry_title">Diktat</string>
+    <!-- Kopfkarte: "Heute, 14:32" und "Tastatur · 0:41 · 86 Wörter" -->
+    <string name="history_when">%1$s, %2$s</string>
+    <string name="history_head">%1$s · %2$s · %3$s</string>
+    <plurals name="history_words">
+        <item quantity="one">%d Wort</item>
+        <item quantity="other">%d Wörter</item>
+    </plurals>
+    <string name="history_origin">Ursprung</string>
+    <string name="history_version_off">Ohne KI</string>
+    <string name="history_version_edited">Bearbeitet</string>
+    <!-- Glätten mit Bereinigung: "Glätten · Lesbar" -->
+    <string name="history_version_polish">%1$s · %2$s</string>
+    <string name="history_busy">wird verarbeitet</string>
+    <!-- Hinweiszeile: "Zusammenfassen · Claude Sonnet 5.5" -->
+    <string name="history_note">%1$s · %2$s</string>
+    <string name="history_note_failed">%1$s · ohne KI: %2$s</string>
+    <string name="history_note_failed_plain">%1$s · ohne KI</string>
+    <string name="history_note_edited">%1$s · bearbeitet</string>
+    <string name="history_note_off">Ohne KI · nur die festen Regeln</string>
+    <string name="history_note_edited_origin">Bearbeiteter Ursprung</string>
+    <string name="history_cd_edit">Bearbeiten</string>
+    <string name="history_other_stage">Andere Stufe …</string>
+    <string name="history_reprocess_failed">%1$s · Eintrag unverändert</string>
+    <string name="history_reprocess_failed_plain">Ohne KI · Eintrag unverändert</string>
+    <string name="history_sheet_title">Andere Stufe</string>
+    <string name="history_sheet_hint">Aus dem Ursprung mit deinen aktuellen Einstellungen: eine Text-Anfrage, keine neue Erkennung. Deine eingestellte Stufe bleibt.</string>
+    <string name="history_sheet_more">Weitere Stufen</string>
+    <string name="history_sheet_existing">vorhanden</string>
+    <string name="history_replace_title">Bearbeitete Fassung ersetzen?</string>
+    <string name="history_replace_body">Deine Änderungen an „%1$s“ gehen dabei verloren.</string>
+    <string name="history_replace">Ersetzen</string>
+    <string name="history_edit_title">Bearbeiten</string>
+    <string name="history_edit_of">Fassung: %1$s</string>
+    <string name="history_save">Speichern</string>
+    <string name="history_cd_undo">Rückgängig</string>
+    <string name="history_cd_redo">Wiederholen</string>
+    <string name="history_discard_title">Änderungen verwerfen?</string>
+    <string name="history_discard_body">Was du hier geändert hast, wird nicht gespeichert.</string>
+    <string name="history_discard">Verwerfen</string>
+    <string name="history_keep_editing">Weiter bearbeiten</string>
+    <string name="history_settings_title">Verlauf-Einstellungen</string>
+    <string name="history_save_switch">Verlauf speichern</string>
+    <string name="history_save_switch_sub">Diktate aus Tastatur und Knopf, nichts aus Passwort- und Inkognito-Feldern</string>
+    <string name="history_size">Größe</string>
+    <plurals name="history_entries">
+        <item quantity="one">%d Eintrag</item>
+        <item quantity="other">%d Einträge</item>
+    </plurals>
+    <string name="history_shrink_title">Verlauf verkleinern?</string>
+    <plurals name="history_shrink_body">
+        <item quantity="one">Der älteste Eintrag wird gelöscht.</item>
+        <item quantity="other">Die %d ältesten Einträge werden gelöscht.</item>
+    </plurals>
+    <string name="history_shrink_confirm">Verkleinern</string>
+    <string name="history_off_title">Verlauf ausschalten?</string>
+    <string name="history_off_confirm_body">Alle Einträge werden gelöscht, neue Diktate nicht mehr gespeichert.</string>
+    <string name="history_off_confirm">Ausschalten</string>
+    <string name="history_settings_hint">Der Verlauf liegt nur auf diesem Gerät und kommt nie in ein Backup. Audio wird nicht gespeichert.</string>
 </resources>

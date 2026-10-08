@@ -47,6 +47,9 @@ object History {
 
     fun dir(context: Context): File = File(context.applicationContext.noBackupFilesDir, DIR)
 
+    /** Hat [s] die Form einer Eintrags-Id? Fuer Back-Stack-Schluessel, die von aussen kommen. */
+    fun isId(s: String): Boolean = ID.matches(s)
+
     /**
      * Ein Diktat aufzeichnen — VOR dem Einfuegen, damit auch ein Text, der in kein Feld mehr kommt,
      * erhalten bleibt. Leere Erkennungen, Verlauf aus: nichts. Ein Fehler (Speicher voll, IO) bricht
