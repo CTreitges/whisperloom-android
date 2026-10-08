@@ -186,6 +186,27 @@ class AccessResolverTest {
         assertTrue(lookup.asked.isEmpty())
     }
 
+    /** Merkt sich temperature-Ablehnungen wie der ModelCache: Schluessel Anbieter|Adresse|Modell. */
+    private class RejectingLookup(private vararg val rejected: String) : ServerModelLookup {
+        override fun find(providerId: String, kind: ModelKind, baseUrl: String, id: String): RemoteModel? = null
+        override fun rejectsTemperature(providerId: String, baseUrl: String, id: String) = "$providerId|$baseUrl|$id" in rejected
+    }
+
+    @Test fun abgelehnteTemperatureGiltAuchFuerKatalogModelle() {
+        val lookup = RejectingLookup("openai|https://api.openai.com/v1|gpt-4o-mini", "openai|https://api.openai.com/v1|gpt-neu")
+        val katalog = AccessResolver.resolveLlm(stt, "same", "", "", "gpt-4o-mini", lookup)
+        assertFalse(katalog.modelOption!!.temperatureSupported)
+        assertEquals("GPT-4o mini", katalog.modelOption!!.label)
+        assertNull(ChatPayload.sampling(katalog).temperature)
+        // Frei getippt: eine Option nur fuer das Flag.
+        val frei = AccessResolver.resolveLlm(stt, "same", "", "", "gpt-neu", lookup)
+        assertEquals(ModelOption("gpt-neu", "gpt-neu", temperatureSupported = false), frei.modelOption)
+        // Nicht gemerkt bleibt es beim Katalog.
+        assertTrue(AccessResolver.resolveLlm(stt, "same", "", "", "gpt-4.1-mini", lookup).modelOption!!.temperatureSupported)
+        // Die Erkennung kennt kein temperature-Merken.
+        assertNull(AccessResolver.resolveStt("openai", "", "k", "gpt-neu", 0, lookup).modelOption)
+    }
+
     @Test fun erkennungsModellVomServerMitHeuristik() {
         val lookup = FakeLookup { RemoteModel(it) }
         val a = AccessResolver.resolveStt("openai", "", "k", "gpt-transcribe-2026-08-01", 0, lookup)

@@ -140,6 +140,36 @@ class ModelCacheTest {
         assertEquals("OpenAI: GPT-6.1 Sol", prefs.llmAccess().modelOption!!.label)
     }
 
+    // --- Abgelehnte temperature (3.8.6, Doppelanfrage) -------------------------------------
+
+    @Test fun abgelehnteTemperatureWirdJeAnbieterAdresseUndModellGemerkt() {
+        val access = AccessResolver.resolveLlm(stt("groq"), "anthropic", " https://api.anthropic.com/v1/ ", "sk-streng-geheim", "claude-neu")
+        assertFalse(cache.rejectsTemperature("anthropic", "https://api.anthropic.com/v1", "claude-neu"))
+        cache.rememberNoTemperature(access)
+        // Adresse ohne Leerraum und Schraegstrich am Ende — wie der Listen-Schluessel.
+        assertTrue(sp.contains("noTemp|anthropic|https://api.anthropic.com/v1|claude-neu"))
+        assertTrue(cache.rejectsTemperature("anthropic", "https://api.anthropic.com/v1/", "claude-neu"))
+        assertFalse("anderes Modell", cache.rejectsTemperature("anthropic", "https://api.anthropic.com/v1", "claude-alt"))
+        assertFalse("anderer Anbieter", cache.rejectsTemperature("openrouter", "https://api.anthropic.com/v1", "claude-neu"))
+        assertFalse("andere Adresse", cache.rejectsTemperature("anthropic", "https://proxy/v1", "claude-neu"))
+        // Kein Key in der Datei, die Einstellungen bleiben unberuehrt.
+        assertFalse(sp.all.entries.any { (k, v) -> "sk-streng-geheim" in k || "sk-streng-geheim" in v.toString() })
+        assertTrue(settings.all.isEmpty())
+    }
+
+    /** Die Einstellungen fragen ohne temperature, sobald das Modell sie abgelehnt hat — auch ein Katalog-Modell. */
+    @Test fun gemerktesModellGehtOhneTemperatureRaus() {
+        val prefs = Prefs(ctx)
+        prefs.engine = Engine.ONLINE
+        prefs.llmProviderId = "openai"
+        prefs.llmKey = "sk"
+        prefs.llmModel = "gpt-4o-mini"
+        assertTrue(prefs.llmAccess().modelOption!!.temperatureSupported)
+        prefs.modelCache.rememberNoTemperature(prefs.llmAccess())
+        assertFalse(Prefs(ctx).llmAccess().modelOption!!.temperatureSupported)
+        assertEquals("GPT-4o mini", Prefs(ctx).llmAccess().modelOption!!.label)
+    }
+
     @Test fun aktualisierenLaedtUndLegtAb() {
         val access = stt("groq", "http://127.0.0.1:${server.address.port}/v1")
         val entry = cache.refresh(access, ModelKind.STT)

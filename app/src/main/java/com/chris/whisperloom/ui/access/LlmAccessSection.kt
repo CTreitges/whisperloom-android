@@ -231,7 +231,7 @@ fun LlmAccessSection(snack: SnackController) {
 
         // Ohne Modell (Together/DeepInfra "wie Erkennung") ginge die Pruefung ins Leere.
         TestAccessRow(label = stringResource(R.string.text_test), enabled = !noLlmWithoutOwn && llm.refineBlock == null) {
-            AccessTest.llm(prefs.llmAccess(), prefs.language)
+            AccessTest.llm(prefs.llmAccess(), prefs.language, prefs.prefs.modelCache::rememberNoTemperature)
         }
     }
 

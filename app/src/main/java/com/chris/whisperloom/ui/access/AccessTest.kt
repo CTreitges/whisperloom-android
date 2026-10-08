@@ -47,9 +47,12 @@ object AccessTest {
     fun stt(access: ApiAccess, prompt: String, language: String): Outcome =
         timed { OnlineBackend(access, prompt).transcribe(silence(), language) }
 
-    /** LLM-Zugang: kurzer Testsatz per Chat-Completion. */
-    fun llm(access: ApiAccess, language: String): Outcome =
-        timed { TextRefiner(access).refine(PROBE_TEXT, language, RefineMode.POLISH, smartFillers = false) }
+    /**
+     * LLM-Zugang: kurzer Testsatz per Chat-Completion. Lehnt das Modell `temperature` ab, merkt
+     * [onTemperatureRejected] es sich (ModelCache) — wie beim Diktat.
+     */
+    fun llm(access: ApiAccess, language: String, onTemperatureRejected: (ApiAccess) -> Unit = {}): Outcome =
+        timed { TextRefiner(access, onTemperatureRejected = onTemperatureRejected).refine(PROBE_TEXT, language, RefineMode.POLISH, smartFillers = false) }
 
     /**
      * Sprachauftrag-Bridge: ein leeres Transkript, das die Bridge mit 400 beantwortet —

@@ -1,6 +1,10 @@
 package com.chris.whisperloom.api
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
+import com.chris.whisperloom.ModelCache
 import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.ui.access.AccessTest
 import com.sun.net.httpserver.HttpServer
 import org.json.JSONObject
 import org.junit.After
@@ -49,12 +53,16 @@ class TextRefinerRetryTest {
         server.stop(0)
     }
 
-    private fun refiner(model: String): TextRefiner {
+    /** Zugaenge, deren zweiter Versuch geklappt hat ([TextRefiner] onTemperatureRejected). */
+    private val rejected = mutableListOf<ApiAccess>()
+
+    private fun access(model: String, lookup: ServerModelLookup = ServerModelLookup.NONE): ApiAccess {
         val stt = AccessResolver.resolveStt("groq", "", "gsk", "")
-        return TextRefiner(AccessResolver.resolveLlm(stt, "openai", "http://127.0.0.1:${server.address.port}/v1", "sk", model))
+        return AccessResolver.resolveLlm(stt, "openai", "http://127.0.0.1:${server.address.port}/v1", "sk", model, lookup)
     }
 
-    private fun refine(model: String) = refiner(model).refine("hallo welt", "de", RefineMode.POLISH, smartFillers = false)
+    private fun refine(model: String) =
+        TextRefiner(access(model), onTemperatureRejected = { rejected += it }).refine("hallo welt", "de", RefineMode.POLISH, smartFillers = false)
 
     @Test fun abgelehnteTemperatureEinmalOhneWiederholen() {
         assertEquals("Hallo Welt.", refine("gpt-neu-2026"))
@@ -70,6 +78,33 @@ class TextRefinerRetryTest {
         val e = assertThrows(ApiHttpException::class.java) { refine("gpt-neu-2026") }
         assertEquals(400, e.code)
         assertEquals(2, bodies.size)
+        assertTrue("ohne Erfolg nichts merken", rejected.isEmpty())
+    }
+
+    @Test fun geklappterZweiterVersuchWirdGenauEinmalGemeldet() {
+        refine("gpt-neu-2026")
+        assertEquals(1, rejected.size)
+        assertEquals("gpt-neu-2026", rejected[0].model)
+        assertFalse(rejected[0].modelOption!!.temperatureSupported)
+        assertEquals("http://127.0.0.1:${server.address.port}/v1", rejected[0].baseUrl)
+    }
+
+    @Test fun ohneAbgelehnteTemperatureKeineMeldung() {
+        answer = { 200 to """{"choices":[{"message":{"content":"Hallo Welt."},"finish_reason":"stop"}]}""" }
+        refine("gpt-neu-2026")
+        assertEquals(1, bodies.size)
+        assertTrue(rejected.isEmpty())
+    }
+
+    /** "Zugang pruefen" merkt sich die Ablehnung wie das Diktat — danach fragt der Zugang ohne temperature. */
+    @Test fun zugangPruefenMerktDieAbgelehnteTemperature() {
+        val cache = ModelCache(ApplicationProvider.getApplicationContext<Context>().also {
+            it.getSharedPreferences(ModelCache.FILE, Context.MODE_PRIVATE).edit().clear().commit()
+        })
+        assertTrue(AccessTest.llm(access("gpt-neu-2026", cache), "de", cache::rememberNoTemperature) is AccessTest.Outcome.Ok)
+        assertEquals(2, bodies.size)
+        assertFalse(access("gpt-neu-2026", cache).modelOption!!.temperatureSupported)
+        assertTrue("anderes Modell unberuehrt", access("gpt-anders", cache).modelOption == null)
     }
 
     @Test fun andererFehlerOhneWiederholen() {
@@ -78,6 +113,7 @@ class TextRefinerRetryTest {
         answer = { 500 to """{"error":{"message":"temperature service down"}}""" }
         assertThrows(ApiHttpException::class.java) { refine("gpt-neu-2026") }
         assertEquals(2, bodies.size)
+        assertTrue(rejected.isEmpty())
     }
 
     @Test fun ohneTemperatureGesendetKeinZweiterVersuch() {

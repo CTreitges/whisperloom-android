@@ -133,7 +133,11 @@ object AccessResolver {
         )
     }
 
-    /** Katalog zuerst; nur ohne Treffer den Cache fragen (der liest JSON) und Flags ableiten. */
+    /**
+     * Katalog zuerst; nur ohne Treffer den Cache fragen (der liest JSON) und Flags ableiten. Hat ein
+     * Textmodell `temperature` schon einmal abgelehnt (gemerkt in [serverModels]), geht es ohne raus —
+     * auch ein Katalog-Modell, der Katalog darf irren (Claude Sonnet 5 bis 3.8.5).
+     */
     private fun option(
         provider: Provider,
         kind: ModelKind,
@@ -142,8 +146,14 @@ object AccessResolver {
         serverModels: ServerModelLookup,
     ): ModelOption? {
         val catalog = if (kind == ModelKind.STT) provider.sttModel(id) else provider.llmModel(id)
-        if (catalog != null || id.isBlank()) return catalog
-        return ModelLists.optionFor(provider, kind, id, serverModels.find(provider.id, kind, url, id))
+        val option = if (catalog != null || id.isBlank()) {
+            catalog
+        } else {
+            ModelLists.optionFor(provider, kind, id, serverModels.find(provider.id, kind, url, id))
+        }
+        val rejected = kind == ModelKind.LLM && id.isNotBlank() && option?.temperatureSupported != false &&
+            serverModels.rejectsTemperature(provider.id, url, id)
+        return if (rejected) (option ?: ModelOption(id, id)).copy(temperatureSupported = false) else option
     }
 
     private fun timeoutMs(seconds: Int, provider: Provider): Int =

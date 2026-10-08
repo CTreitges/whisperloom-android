@@ -16,6 +16,12 @@ class TextRefiner(
     private val access: ApiAccess,
     /** Kuerzer, wenn eine lokale Ausweichloesung bereitsteht (Regel "Online, ohne Netz lokal"). */
     private val connectTimeoutMs: Int = Http.CONNECT_TIMEOUT_MS,
+    /**
+     * Das Modell hat `temperature` abgelehnt, der zweite Versuch ohne hat geklappt — mit dem Zugang
+     * dieses Versuchs. Der Aufrufer merkt es sich (ModelCache), damit der naechste Auftrag gleich
+     * richtig fragt statt wieder doppelt.
+     */
+    private val onTemperatureRejected: (ApiAccess) -> Unit = {},
 ) {
 
     /**
@@ -57,7 +63,8 @@ class TextRefiner(
      *
      * Sicherheitsnetz fuer Modelle, deren Flags niemand kennt (vom Server, frei getippt): lehnt der
      * Server `temperature` mit 400 ab, folgt genau ein zweiter Versuch ohne — wie bei
-     * Reasoning-Modellen mit `max_completion_tokens`.
+     * Reasoning-Modellen mit `max_completion_tokens`. Erst wenn der klappt, ist die Ablehnung
+     * bewiesen und geht an [onTemperatureRejected].
      */
     private fun openAi(systemPrompt: String, raw: String): String? {
         val body = try {
@@ -65,7 +72,8 @@ class TextRefiner(
         } catch (e: ApiHttpException) {
             if (!rejectsTemperature(e) || ChatPayload.sampling(access).temperature == null) throw e
             val option = access.modelOption ?: ModelOption(access.model, access.model)
-            chat(access.copy(modelOption = option.copy(temperatureSupported = false)), systemPrompt, raw)
+            val withoutTemperature = access.copy(modelOption = option.copy(temperatureSupported = false))
+            chat(withoutTemperature, systemPrompt, raw).also { onTemperatureRejected(withoutTemperature) }
         }
         val choice = JSONObject(body).optJSONArray("choices")?.optJSONObject(0)
         if (choice?.optString("finish_reason") == LENGTH) throw RefineRejectedException(MSG_TRUNCATED)
@@ -115,7 +123,7 @@ class TextRefiner(
         const val MSG_OFFLINE = "Offline-Erkennung ohne Textverbesserung — unter „Text“ einen eigenen Zugang eintragen"
         private const val LENGTH = "length"
 
-        /** OpenAI: "Unsupported parameter: 'temperature' is not supported with this model." */
+        /** OpenAI: "Unsupported parameter: 'temperature' is not supported with this model." Claude 5.x ebenso mit 400. */
         private fun rejectsTemperature(e: ApiHttpException): Boolean =
             e.code == 400 && e.detail.contains("temperature", ignoreCase = true)
 

@@ -23,8 +23,11 @@ import com.chris.whisperloom.whisper.OfflineSupport
  */
 internal class RefinePlan(
     val route: RefineRoute,
-    private val access: ApiAccess,
+    /** Nach einer abgelehnten temperature die Kopie ohne: weitere Stuecke (geteilte Audios) fragen gleich richtig. */
+    @Volatile private var access: ApiAccess,
     private val localModelId: String,
+    /** Merkt ein Modell, das temperature abgelehnt hat — dauerhaft je Anbieter, Adresse und Modell (ModelCache). */
+    private val rememberNoTemperature: (ApiAccess) -> Unit = {},
 ) {
 
     /** Einmal online gescheitert: weitere Stuecke (geteilte Audios) gleich lokal statt wieder in den Timeout. */
@@ -55,7 +58,7 @@ internal class RefinePlan(
             local(raw, language, mode, smartFillers, paragraphs, cancelled)
         } else {
             try {
-                TextRefiner(access, connectTimeoutMs(route)).refine(raw, language, mode, smartFillers, paragraphs)
+                TextRefiner(access, connectTimeoutMs(route), ::temperatureRejected).refine(raw, language, mode, smartFillers, paragraphs)
             } catch (e: Exception) {
                 if (!route.fallbackLocal || cancelled()) throw e
                 Log.w(TAG, "Online gescheitert, verbessere lokal: ${e.message}", e)
@@ -63,6 +66,11 @@ internal class RefinePlan(
                 local(raw, language, mode, smartFillers, paragraphs, cancelled).also { onNote(MSG_ONLINE_FAILED_LOCAL) }
             }
         }
+    }
+
+    private fun temperatureRejected(withoutTemperature: ApiAccess) {
+        rememberNoTemperature(withoutTemperature)
+        access = withoutTemperature
     }
 
     /** Init, nativer Fehler, Speicher: als [MSG_LOCAL_FAILED]. Eine unplausible Antwort behaelt ihre eigene Meldung. */
@@ -125,7 +133,7 @@ internal class RefinePlan(
             // Passt kein Textmodell ins Geraet, wirkt jede Regel wie "Ueberspringen".
             val rule = prefs.offlineRefine.effective(OfflineSupport.textModelFits(context))
             val route = RefineDecision.route(engine, rule, stageActive, ownOnlineReady, network, localReady)
-            return RefinePlan(route, access, localModelId)
+            return RefinePlan(route, access, localModelId, prefs.modelCache::rememberNoTemperature)
         }
 
         fun message(hint: RefineHint): String = when (hint) {
