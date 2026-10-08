@@ -1,6 +1,7 @@
 package com.chris.whisperloom.ime
 
 import android.app.Application
+import android.content.ClipboardManager
 import android.inputmethodservice.InputMethodService
 import android.text.InputType
 import android.view.MotionEvent
@@ -19,12 +20,15 @@ import com.chris.whisperloom.llm.OfflineRefineFixture
 import com.chris.whisperloom.whisper.TextModelCatalog
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.util.concurrent.TimeUnit
 
@@ -105,6 +109,12 @@ class ImeHistoryTest {
         mic.dispatchTouchEvent(ev)
         ev.recycle()
     }
+
+    /** Hintergrund des Zustandsrings: zeigt kurz den Erfolgs-Ring, wenn der Text angekommen ist. */
+    private fun ring(): Int = shadowOf(root.findViewById<View>(R.id.mic_ring).background).createdFromResId
+
+    private fun clipboard(): String? =
+        app.getSystemService(ClipboardManager::class.java).primaryClip?.getItemAt(0)?.text?.toString()
 
     /** Halten, sprechen, loslassen — und warten, bis der Text eingefuegt ist. */
     private fun diktieren() {
@@ -194,6 +204,7 @@ class ImeHistoryTest {
         fixture.waitFor("kein Hinweis auf den Verlauf") { statusText == hinweis }
 
         assertEquals("Lokal verbessert.", History.list(app).single().versions.getValue(Processing.POLISH_PLAIN).text)
+        assertEquals("Der Text ist sicher: Erfolg", R.drawable.bubble_ring_success, ring())
         service.onStartInputView(EditorInfo(), false)
         assertEquals("auch im naechsten Feld", hinweis, statusText)
 
@@ -201,5 +212,35 @@ class ImeHistoryTest {
         touch(MotionEvent.ACTION_DOWN)
         touch(MotionEvent.ACTION_UP)
         fixture.waitFor("Hinweis bleibt stehen") { statusText == app.getString(R.string.kb_hint_hold) }
+    }
+
+    /** N2 ohne Verlauf: der Text geht in die Zwischenablage, und die Zeile sagt es — kein Erfolgs-Ring. */
+    @Test fun verlaufAusUndFeldWegLegtDenTextInDieZwischenablage() {
+        History.setEnabled(app, false)
+        verbinden(null)
+        touch(MotionEvent.ACTION_DOWN)
+        fixture.awaitRecorded()
+        touch(MotionEvent.ACTION_UP)
+        val hinweis = app.getString(R.string.kb_only_in_clipboard)
+        fixture.waitFor("kein Hinweis auf die Zwischenablage") { statusText == hinweis }
+
+        assertEquals("Lokal verbessert.", clipboard())
+        assertNotEquals(R.drawable.bubble_ring_success, ring())
+        service.onStartInputView(EditorInfo(), false)
+        assertEquals("auch im naechsten Feld", hinweis, statusText)
+    }
+
+    /** Aus einem Passwortfeld: weder Verlauf noch Zwischenablage — nur der Hinweis, dass nichts eingefuegt wurde. */
+    @Test fun privatesFeldWegSagtNurDassNichtsEingefuegtWurde() {
+        feld(InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD)
+        verbinden(null)
+        touch(MotionEvent.ACTION_DOWN)
+        fixture.awaitRecorded()
+        touch(MotionEvent.ACTION_UP)
+        fixture.waitFor("kein Hinweis") { statusText == app.getString(R.string.kb_not_inserted) }
+
+        assertNull(clipboard())
+        assertEquals(0, History.count(app))
+        assertNotEquals(R.drawable.bubble_ring_success, ring())
     }
 }

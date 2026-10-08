@@ -695,6 +695,10 @@
     <!-- Das Feld war beim Einfügen weg (App gewechselt, Tastatur zu): der fertige Text ging
          nirgends hin, liegt aber im Verlauf. Steht bis zum nächsten Diktat. -->
     <string name="kb_only_in_history">Feld nicht mehr da — Text liegt im Verlauf</string>
+    <!-- Dasselbe ohne Verlauf (ausgeschaltet): der Text liegt in der Zwischenablage. Aus einem
+         Passwort- oder Inkognito-Feld nicht — dort sagt die Zeile nur, dass nichts eingefügt wurde. -->
+    <string name="kb_only_in_clipboard">Feld nicht mehr da — Text in der Zwischenablage</string>
+    <string name="kb_not_inserted">Feld nicht mehr da — Text nicht eingefügt</string>
     <string name="kb_refine_set">Textverbesserung: %1$s</string>
     <string name="kb_refine_needs_llm">KI-Zugang fehlt — tippe zum Einrichten</string>
     <string name="kb_refine_needs_local">Offline ohne Textmodell — tippe zum Laden</string>

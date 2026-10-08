@@ -90,8 +90,11 @@ class WhisperLoomInputMethodService : InputMethodService() {
      */
     private var privateField = false
 
-    /** Der letzte Text kam in kein Feld mehr, liegt aber im Verlauf — die Ruhe-Statuszeile sagt es bis zum naechsten Diktat. */
-    private var onlyInHistory = false
+    /**
+     * Der letzte Text kam in kein Feld mehr: wo er geblieben ist ([FieldGone]) — die Ruhe-Statuszeile
+     * sagt es bis zum naechsten Diktat. null = er wurde eingefuegt.
+     */
+    private var fieldGone: Int? = null
 
     private var statusView: TextView? = null
     private var levelBand: LevelBandView? = null
@@ -631,7 +634,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
             session.hold()
             pendingSamples = null
             privateField = HistoryPolicy.isPrivateField(currentInputEditorInfo)
-            onlyInHistory = false
+            fieldGone = null
             // Sonst bliebe die Leiste offen, waehrend ihr Ausloeser verschwindet.
             closeRefineBar()
             applyState(BubbleState.RECORDING)
@@ -744,12 +747,14 @@ class WhisperLoomInputMethodService : InputMethodService() {
             val inHistory = !privateField && History.record(applicationContext, HistorySource.KEYBOARD, dictation)
             pendingSamples = null
             main.post {
-                if (!commitDictation(dictation.text) && inHistory) onlyInHistory = true
+                val gone = if (commitDictation(dictation.text)) null else FieldGone.keep(this, dictation.text, inHistory, privateField)
+                fieldGone = gone
                 applyState(BubbleState.IDLE)
-                rings?.flashSuccess()
+                // Erfolg nur, wenn der Text sicher liegt: im Feld oder im Verlauf.
+                if (gone == null || inHistory) rings?.flashSuccess()
                 showIdleStatus()
                 // Text ist eingefuegt, nur die Veredelung fiel aus — Hinweis statt Fehlerzustand.
-                if (!onlyInHistory) {
+                if (gone == null) {
                     dictation.result.skipped?.let { showStatus(Status.ERROR, getString(R.string.refine_skipped, it)) }
                         ?: dictation.result.note?.let { showStatus(Status.HINT, it) }
                 }
@@ -853,11 +858,14 @@ class WhisperLoomInputMethodService : InputMethodService() {
     }
 
     /** Ruhe-Statuszeile: Hinweis oder Warnung (fehlende Berechtigung / kein Zugang). */
-    private fun showIdleStatus() = when {
-        !hasMicPermission() -> showStatus(Status.NEED_PERMISSION)
-        !TranscriptionEngine.isConfigured(this) -> showStatus(Status.NOT_CONFIGURED)
-        onlyInHistory -> showStatus(Status.HINT, getString(R.string.kb_only_in_history))
-        else -> showStatus(Status.HINT)
+    private fun showIdleStatus() {
+        val gone = fieldGone
+        when {
+            !hasMicPermission() -> showStatus(Status.NEED_PERMISSION)
+            !TranscriptionEngine.isConfigured(this) -> showStatus(Status.NOT_CONFIGURED)
+            gone != null -> showStatus(Status.HINT, getString(gone))
+            else -> showStatus(Status.HINT)
+        }
     }
 
     private fun showStatus(kind: Status, text: CharSequence? = null) {
