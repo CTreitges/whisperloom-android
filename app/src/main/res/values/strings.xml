@@ -353,6 +353,8 @@
     <string name="text_share_intro">Für Audios, die du per Teilen an WhisperLoom schickst (z. B. aus WhatsApp). Eigene Stufe, unabhängig vom Diktat; bei „Aus“ bleibt der Text wortgetreu.</string>
     <string name="text_share_off_sub">Wortgetreu, Füllwörter per Schalter ausblendbar. Keine zweite Anfrage.</string>
     <string name="refine_offline">Bei Offline-Erkennung</string>
+    <!-- Stufen-Zeile (3.9.0): der Text öffnet die Seite der Stufe, die Zone rechts wählt sie -->
+    <string name="stage_open_settings">Einstellungen öffnen</string>
     <string name="text_local_needs_ram">Für ein lokales Textmodell braucht das Gerät mindestens 6 GB RAM.</string>
     <string name="text_rule_title">Textverbesserung bei Offline-Erkennung</string>
     <string name="text_rule_local">Lokales Textmodell</string>
