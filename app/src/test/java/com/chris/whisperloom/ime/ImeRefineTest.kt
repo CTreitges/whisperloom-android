@@ -130,6 +130,16 @@ class ImeRefineTest {
         assertEquals(app.getString(R.string.kb_refine_needs_llm), statusText)
     }
 
+    /** 3.9.0: der Hinweis fuehrt direkt zum KI-Zugang (bis 3.8.6 nur in den Hub). */
+    @Test fun fehltDerZugangFuehrtDerHinweisZumKiZugang() {
+        Prefs(app).offlineRefine = OfflineRefineRule.SKIP
+        root.findViewById<View>(R.id.key_refine).performClick()
+        assertEquals(app.getString(R.string.kb_refine_needs_llm), statusText)
+        status.performClick()
+        val started = shadowOf(app).nextStartedActivity
+        assertEquals(AppNav.ROUTE_LLM_ACCESS, started?.getStringExtra(AppNav.EXTRA_ROUTE))
+    }
+
     @Test fun offlineZuWenigRamFuerJedesTextmodellFehltDerZugangNichtDasModell() {
         // 4-GB-Geraet: kein Textmodell passt, die Regel wirkt wie "Ueberspringen" — kein "tippe zum Laden".
         deviceRam(app, 4)

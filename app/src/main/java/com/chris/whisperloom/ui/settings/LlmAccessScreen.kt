@@ -4,23 +4,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chris.whisperloom.R
+import com.chris.whisperloom.RefineWay
 import com.chris.whisperloom.ui.access.LlmAccessSection
 import com.chris.whisperloom.ui.access.StageModelsSection
 import com.chris.whisperloom.ui.components.SectionCard
 import com.chris.whisperloom.ui.nav.NavState
+import com.chris.whisperloom.ui.nav.Screen
 
 /**
- * Text › Online-Zugang & Modelle (3.8.6): der Zugang fuer die Textverbesserung und darunter
- * "Modell je Stufe" — die Modellwahl an einem Ort.
+ * KI-Zugang (3.9.0, vorher Text › Online-Zugang & Modelle): der Zugang fuer die Textverbesserung und
+ * darunter die Uebersicht "Modell je Stufe" — gilt fuer Diktat und Sprachnachrichten, die Zeilen
+ * fuehren auf die Stufen-Seiten des Diktats.
  */
 @Composable
-fun TextAccessScreen(nav: NavState) {
-    TextPageScaffold(R.string.text_hub_access, nav) { snack ->
+fun LlmAccessScreen(nav: NavState) {
+    SettingsPageScaffold(R.string.settings_group_llm, nav) { snack ->
         SectionCard(title = stringResource(R.string.text_card_access)) {
             LlmAccessSection(snack)
         }
         SectionCard(title = stringResource(R.string.text_models_title), gap = 4.dp) {
-            StageModelsSection()
+            StageModelsSection { stage -> nav.push(Screen.Stage(stage, RefineWay.DICTATION)) }
         }
     }
 }

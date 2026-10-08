@@ -95,17 +95,6 @@ fun SkeletonLines(modifier: Modifier = Modifier) {
     }
 }
 
-/** Ein Transkript-Absatz: bodyLarge 16/24 sp, onSurface (Spec §3.2). */
-@Composable
-fun ParagraphText(text: String, modifier: Modifier = Modifier) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.onSurface,
-        modifier = modifier,
-    )
-}
-
 /** Primaerer Button nach Spec §1.3: 56 dp hoch, volle Breite. */
 @Composable
 fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {

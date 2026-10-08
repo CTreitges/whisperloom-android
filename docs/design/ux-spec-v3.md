@@ -1,4 +1,4 @@
-> **Stand 2026-09-06, Grundlage der v3-Implementierung; Abweichungen siehe CHANGELOG/Code.** Kopie der verbindlichen UX-Spezifikation (Arbeitsstand `research/ux-spec.md`); Fundstellen-Verweise auf `research/*.md` meinen die Reports unter `docs/research/`. Spätere Versionen sind als Nachträge ergänzt (§6.13–§6.18 für 3.4.0 bis 3.8.5, Markierungen `[Stand x.y.z]`); bekannte Abweichung vom Rahmen in §0.2: targetSdk ist seit der Play-Store-Vorbereitung 36.
+> **Stand 2026-09-06, Grundlage der v3-Implementierung; Abweichungen siehe CHANGELOG/Code.** Kopie der verbindlichen UX-Spezifikation (Arbeitsstand `research/ux-spec.md`); Fundstellen-Verweise auf `research/*.md` meinen die Reports unter `docs/research/`. Spätere Versionen sind als Nachträge ergänzt (§6.13–§6.19 für 3.4.0 bis 3.9.0, Markierungen `[Stand x.y.z]`); bekannte Abweichung vom Rahmen in §0.2: targetSdk ist seit der Play-Store-Vorbereitung 36.
 
 # WhisperLoom v3 — Verbindliche UX-Spezifikation
 
@@ -1619,6 +1619,53 @@ Abschnitt. Kein neuer Screen, keine neue Navigationsebene. Nutzer-Sicht: `docs/A
 - **V1/V2:** Phase Textverbesserung sichtbar (`float_refining`, `cd_bubble_refining`, `kb_refining`, `cd_mic_refining`),
   Tipp = ohne KI einfügen. V2 Stufenleiste: offline nach Regel bereit, sonst `kb_refine_needs_local` → E4.
 - **S:** `share_refining_local`, `share_refine_local_fallback`.
+
+### 6.19 Nachtrag 3.9.0: Neuordnung, Stufen-Seiten, Pause, Verlauf
+
+Ergänzt §2.1 (H), §2.3 (E), §2.5 (E2, ersetzt), §2.6 (E3), §2.7 (E4), §5.3 (V2) und §6.4–§6.8, §6.12; wo sie widersprechen,
+gilt dieser Abschnitt. Nutzer-Sicht: `docs/ANLEITUNG.md` 3, 5.3, **8**, **11**, 12. Herleitung: Plan „Pause, Stufen-Einstellungen,
+Neuordnung, Verlauf“ (2026-10-08, außerhalb des Repos).
+
+- **E (Hub):** Gruppen nach Gegenständen: `settings_section_text` (Textverbesserung, Wörterbuch & Regeln) ·
+  `settings_section_models` (Spracherkennung, KI-Zugang, Offline-Modelle) · `settings_section_controls` (Knopf & Tastatur,
+  Widgets) · `settings_section_history` (Verlauf) · Pro · Info. Unterzeile = aktueller Wert, Zeilenname = Seitentitel.
+  Alte Schlüssel bildet `Screen.decode` ab (`text` → Refine, `text-page:access|offline|rules|dictation|share`).
+- **E2 Textverbesserung** (`Screen.Refine`, ersetzt Text-Hub und Text › Diktat/Sprachnachrichten): Karten „Beim Diktieren“ und
+  „Bei geteilten Sprachnachrichten“ mit je einer `StageRow` pro Stufe; unter dem Diktat Kostenzeile und Link Wörterbuch &
+  Regeln; nur bei `offlineSupported` die Zeile „Bei Offline-Erkennung“ → E4. Die Schalter „Lesbarer glätten“,
+  „Füllwörter intelligent“ und „Automatische Absätze“ entfallen.
+- **StageRow** (`ui/components/StageRow.kt`): zwei Ziele. Tipp auf den Punkt wählt die Stufe, Tipp auf die Zeile öffnet ihre
+  Einstellungen (erkennbar am ›). Die Zone um den Punkt ist eine eigene `selectable`-Fläche (72 dp × volle Zeilenhöhe,
+  `RadioButton(onClick = null)` darin, begrenzte Ripple), ohne sichtbare Tönung; die Zeile ist eine Schaltfläche
+  „Einstellungen öffnen“. Auch „Aus“ hat beide Ziele und eine eigene kleine Seite. Listeninfo für TalkBack selbst gesetzt
+  (`stageList`/`stageListItem`). Die Schnellwahl der Tastatur (V2) bleibt unverändert.
+- **Stufen-Seite** (`Screen.Stage(stage, way)`, Schlüssel `stage:<stufe>:<weg>`, `StageScreen`): oben Karte des Wegs mit
+  Kurzbeschreibung und „Beim Diktat/Bei Sprachnachrichten aktiv“ bzw. „Für … verwenden“. Diktat: Glätten Bereinigung
+  (`stage_cleanup_plain|clean|readable`) + Absätze + Modell · Verschönern Absätze + Modell · Zusammenfassen Form
+  (`stage_form_auto|prose`) + Modell · Prompt Modell · Aus feste Regeln mit Link. Sprachnachrichten: eigene Bereinigung bzw.
+  Form, Absätze nur als Hinweis (immer gegliedert), Modell als „Wie beim Diktat · …“ mit Link zur Diktat-Seite (ein Satz
+  Stufen-Modelle für beide Wege), kein Prompt.
+- **Wörterbuch & Regeln** (`Screen.Dictionary`): Karte „Wörterbuch“ (Vokabular, bisher E1) und „Feste Regeln“ (Füllwörter
+  mit Liste, immer bedienbar; Groß-Schreibung). „Leerzeichen nach Diktat“ → E3 Karte „Einfügen“. **KI-Zugang**
+  (`Screen.LlmAccess`): Zugangskarte wie bisher, darunter die Übersicht „Modell je Stufe“, Zeilen → Stufen-Seite Diktat.
+  **E4:** Karte „Textverbesserung bei Offline-Erkennung“ unter den Textmodellen (E2-Karte Offline-Erkennung entfällt).
+  **E3:** oben Schwebender Knopf (Textausgabe antippbar), Diktat-Tastatur, Einfügen; unten Berechtigungen.
+- **V2 Pause:** Nur im festgestellten Zustand ist die Mikro-Taste Pause (`ic_pause`) bzw. Weiter (Mikrofon); Senden nur über
+  ➤ (der frühere Tipp aufs Mikro = senden entfällt). Status `kb_locked`/`kb_paused`, in der Pause Pegelband und Uhr still,
+  Zauberstab verborgen. TalkBack: `cd_mic_locked`/`cd_mic_paused`, Aktionen `cd_kb_send`/`cd_kb_discard` an der Mikro-Taste.
+  Globus gesperrt, solange ein Diktat offen ist (`cd_kb_switch_blocked`, Tipp → `kb_finish_first`). Online: `kb_long` ab
+  10 min, bei 12 min Auto-Pause `kb_capped`, Weiter gesperrt. `BubbleState` bleibt bei vier Werten (`DictationSession` hält
+  NONE/HOLDING/LOCKED/PAUSED). Feld weg beim Einfügen: Ruhe-Status `kb_only_in_history`.
+- **Verlauf (neu):** Einstiege H-Titelleiste (`ic_history`, `home_cd_history`, vor ? und ⚙) und Hub-Zeile („An · 12 von 50“ /
+  „Aus“), beide → Liste. Liste (`Screen.History`): klassische Detailseite, Abschnitte Heute/Gestern/Datum, Zeile = Ursprung in
+  bis zu drei Zeilen, `history_meta`, Etikett der Stufe bzw. `history_failed`; Wischen löscht mit Snackbar „Rückgängig“,
+  TalkBack-Aktion Löschen; ⋮ Verlauf-Einstellungen / Alle löschen; Leer- und Aus-Zustand. Eintrag (`HistoryDetail`): Aufbau des
+  Sprachnachrichten-Fensters (Kopfkarte, Chips Ursprung + Fassungen, markierbarer Text, Hinweiszeile, beim Ursprung
+  „Füllwörter ausblenden“), untere Leiste Kopieren / „Andere Stufe …“ (Sheet `StageSheet`: Glätten mit Bereinigungen,
+  „Weitere Stufen“, „vorhanden“), ✎ → Bearbeiten (`HistoryEdit`, Vollbild-Dialog, Speichern, Rückgängig/Wiederholen,
+  Kopieren/Teilen, Rückfrage beim Verwerfen), ⋮ Teilen/Löschen. Verlauf-Einstellungen (`HistorySettings`): Speichern
+  an/aus (aus löscht nach Rückfrage), Größe 10–500 (Rückfrage beim Verkleinern), Alle löschen, Hinweis „nur auf diesem
+  Gerät“. Untere Aktionsleiste stapelt die Knöpfe bei großer Schrift.
 
 ---
 

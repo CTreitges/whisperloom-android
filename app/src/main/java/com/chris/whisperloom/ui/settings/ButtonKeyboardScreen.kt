@@ -24,6 +24,7 @@ import com.chris.whisperloom.ui.components.OutlinedSection
 import com.chris.whisperloom.ui.components.ScrollColumn
 import com.chris.whisperloom.ui.components.SectionCard
 import com.chris.whisperloom.ui.components.StatusIcon
+import com.chris.whisperloom.ui.components.SwitchRow
 import com.chris.whisperloom.ui.components.SystemIntents
 import com.chris.whisperloom.ui.components.Tone
 import com.chris.whisperloom.ui.components.LoomIcon
@@ -41,7 +42,10 @@ import com.chris.whisperloom.ui.setup.HowToRow
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.theme.loom
 
-/** E3 — Knopf & Tastatur (UX-Spec §2.6): Kurzanleitung mit Illustration, Knopf, Berechtigungen, Diktier-Tastatur. */
+/**
+ * E3 — Knopf & Tastatur (UX-Spec §2.6): Kurzanleitung mit Illustration, dann die Einstellungen
+ * (Schwebender Knopf, Diktat-Tastatur, Einfuegen), unten die Berechtigungen als Status (3.9.0).
+ */
 @Composable
 fun ButtonKeyboardScreen(nav: NavState) {
     val ctx = LocalContext.current
@@ -104,10 +108,29 @@ fun ButtonKeyboardScreen(nav: NavState) {
                         snack.show(positionReset)
                     },
                 )
+                // Fuehrt zur Bedienungshilfe: einschalten mit Hinweis vorab (Play-Pflicht), ausschalten direkt.
                 LoomRow(
                     headline = stringResource(R.string.button_text_output),
                     supporting = stringResource(if (status.a11yRunning) R.string.button_text_output_a11y else R.string.button_text_output_clip),
                     leading = { StatusIcon(if (status.a11yRunning) Tone.SUCCESS else Tone.WARNING) },
+                    trailing = { LoomIcon(R.drawable.ic_open_in_new, null, Modifier.size(24.dp), MaterialTheme.colorScheme.onSurfaceVariant) },
+                    onClick = {
+                        if (status.a11yRunning) openOrSnack(ctx, SystemIntents.accessibility(), snack) else a11yGate.request()
+                    },
+                )
+            }
+
+            SectionCard(title = stringResource(R.string.button_card_keyboard), gap = 8.dp) {
+                Text(stringResource(R.string.button_keyboard_intro), style = MaterialTheme.typography.bodyMedium)
+                KeyboardRows(tryFieldMinLines = 3, snack = snack)
+            }
+
+            // Einfuege-Verhalten von Tastatur und Knopf (bis 3.8.6 unter Text › Regeln ohne KI).
+            SectionCard(title = stringResource(R.string.button_card_insert), gap = 4.dp) {
+                SwitchRow(
+                    headline = stringResource(R.string.pref_trailing_space),
+                    checked = prefs.trailingSpace,
+                    onCheckedChange = { prefs.trailingSpace = it },
                 )
             }
 
@@ -123,11 +146,6 @@ fun ButtonKeyboardScreen(nav: NavState) {
                 if (status.notifNeeded) {
                     PermissionRow(stringResource(R.string.perm_notif), status.notifGranted, stringResource(R.string.perm_allow), onAction = notif.request)
                 }
-            }
-
-            SectionCard(title = stringResource(R.string.button_card_keyboard), gap = 8.dp) {
-                Text(stringResource(R.string.button_keyboard_intro), style = MaterialTheme.typography.bodyMedium)
-                KeyboardRows(tryFieldMinLines = 3, snack = snack)
             }
         }
     }

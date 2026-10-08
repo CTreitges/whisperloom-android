@@ -15,6 +15,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.overlay.FloatingMicService
+import com.chris.whisperloom.ui.history.HistoryDetailScreen
+import com.chris.whisperloom.ui.history.HistoryEditScreen
+import com.chris.whisperloom.ui.history.HistoryListScreen
+import com.chris.whisperloom.ui.history.HistorySettingsScreen
 import com.chris.whisperloom.ui.home.HomeScreen
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.RouteRequest
@@ -27,12 +31,14 @@ import com.chris.whisperloom.ui.nav.rememberNavState
 import com.chris.whisperloom.ui.patchnotes.PatchnotesScreen
 import com.chris.whisperloom.ui.settings.AdvancedScreen
 import com.chris.whisperloom.ui.settings.ButtonKeyboardScreen
+import com.chris.whisperloom.ui.settings.DictionaryScreen
 import com.chris.whisperloom.ui.settings.HelpScreen
+import com.chris.whisperloom.ui.settings.LlmAccessScreen
 import com.chris.whisperloom.ui.settings.ModelsScreen
 import com.chris.whisperloom.ui.settings.RecognitionScreen
+import com.chris.whisperloom.ui.settings.RefineScreen
 import com.chris.whisperloom.ui.settings.SettingsHubScreen
-import com.chris.whisperloom.ui.settings.TextPageScreen
-import com.chris.whisperloom.ui.settings.TextSettingsScreen
+import com.chris.whisperloom.ui.settings.StageScreen
 import com.chris.whisperloom.ui.settings.WidgetsScreen
 import com.chris.whisperloom.ui.setup.SetupScreen
 import com.chris.whisperloom.ui.state.AppEnv
@@ -88,15 +94,22 @@ fun WhisperLoomApp(env: AppEnv, route: RouteRequest? = null, onRouteConsumed: ()
                 // Schrittwechsel aendern den Zustand ohne Screen-Wechsel: aktuellen Schritt aus nav lesen.
                 is Screen.Setup -> SetupScreen(step = (nav.current as? Screen.Setup)?.step ?: screen.step, nav = nav)
                 Screen.SettingsHub -> SettingsHubScreen(nav)
+                Screen.Refine -> RefineScreen(nav)
+                is Screen.Stage -> StageScreen(screen.stage, screen.way, nav)
+                Screen.Dictionary -> DictionaryScreen(nav)
                 Screen.Recognition -> RecognitionScreen(nav)
-                Screen.TextSettings -> TextSettingsScreen(nav)
-                is Screen.TextPage -> TextPageScreen(screen.section, nav)
+                Screen.LlmAccess -> LlmAccessScreen(nav)
                 Screen.ButtonKeyboard -> ButtonKeyboardScreen(nav)
                 Screen.Models -> ModelsScreen(nav)
                 Screen.Advanced -> AdvancedScreen(nav)
                 is Screen.Widgets -> WidgetsScreen(nav, tab = screen.tab, edit = screen.edit)
                 is Screen.Help -> HelpScreen(section = (nav.current as? Screen.Help)?.section ?: screen.section, nav = nav)
                 Screen.Patchnotes -> PatchnotesScreen(nav)
+                Screen.History -> HistoryListScreen(nav)
+                // Ein Chip-Wechsel ersetzt den Eintrag ohne Screen-Wechsel: die sichtbare Fassung aus nav lesen.
+                is Screen.HistoryDetail -> HistoryDetailScreen((nav.current as? Screen.HistoryDetail)?.takeIf { it.id == screen.id } ?: screen, nav)
+                is Screen.HistoryEdit -> HistoryEditScreen(screen.id, screen.processing, nav)
+                Screen.HistorySettings -> HistorySettingsScreen(nav)
                 is Screen.Tutorial -> TutorialScreen(
                     startPage = screen.startPage,
                     kind = screen.kind,
@@ -137,7 +150,8 @@ fun finishTutorial(nav: NavState, kind: TutorialKind) {
 }
 
 /**
- * Deep-Link anwenden: `home` (Notification), `settings` (IME-Zahnrad), `models` (IME, Textmodell fehlt), `setup[+step]` (IME/Overlay/Share),
+ * Deep-Link anwenden: `home` (Notification), `settings` (IME-Zahnrad), `models` (IME, Textmodell fehlt),
+ * `llm-access` (IME, KI-Zugang fehlt), `refine` (Sprachnachrichten-Fenster), `setup[+step]` (IME/Overlay/Share),
  * `advanced` und `widgets[+profile]` (Widget-Tipp, der nicht aufnehmen kann; Aufnahme-Notification).
  */
 fun applyRoute(nav: NavState, route: RouteRequest, facts: SetupFacts) {
@@ -146,6 +160,10 @@ fun applyRoute(nav: NavState, route: RouteRequest, facts: SetupFacts) {
         AppNav.ROUTE_SETTINGS -> nav.replaceAll(startScreen(facts), Screen.SettingsHub)
         // Tastatur: offline ohne Textmodell.
         AppNav.ROUTE_MODELS -> nav.replaceAll(startScreen(facts), Screen.SettingsHub, Screen.Models)
+        // Tastatur: Zugang fehlt fuer die KI-Stufen.
+        AppNav.ROUTE_LLM_ACCESS -> nav.replaceAll(startScreen(facts), Screen.SettingsHub, Screen.LlmAccess)
+        // Sprachnachrichten-Fenster: "aenderbar unter Einstellungen › Textverbesserung".
+        AppNav.ROUTE_REFINE -> nav.replaceAll(startScreen(facts), Screen.SettingsHub, Screen.Refine)
         // Pro Widgets aus. "agent" kommt noch aus Intents von 3.7.0.
         AppNav.ROUTE_ADVANCED, AppNav.ROUTE_AGENT -> nav.replaceAll(startScreen(facts), Screen.SettingsHub, Screen.Advanced)
         // Kein Mikrofon oder Aufnahme-Notification; mit Profil: dessen Server fehlt, der Editor oeffnet sich.

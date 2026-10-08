@@ -147,6 +147,17 @@ Drei Wege:
       **deckungsgleich** mit der Datenschutzerklärung sein (Abweichung = Ablehnung). Inzwischen
       zusätzlich bedenken: ElevenLabs als Erkennungs-Anbieter und Pro Widgets (erkannter Text geht an
       den Server, den der Nutzer im Widget selbst einträgt).
+      - **Text an Sprachmodelle (N6, Stand 3.9.0):** Mit eingeschalteter Textverbesserung geht der
+        erkannte Text an das gewählte Sprachmodell (online-Anbieter oder eigenes Ollama), ebenso beim
+        Neu-Verarbeiten eines Verlauf-Eintrags („Andere Stufe …“) und bei Pro Widgets an den eigenen
+        Server. Der Text verlässt damit das Gerät und ist im Formular wie das Audio als **erhoben** (optional,
+        Zweck App-Funktionalität; bei Anbietern mit Trainingsnutzung ebenso als „geteilt“) anzugeben —
+        passende Kategorie beim Ausfüllen prüfen (naheliegend „Sonstige von Nutzern erstellte Inhalte“). Die bisherige Fassung nannte nur „Audio recordings“.
+      - **Verlauf (3.9.0):** Die Diktat-Texte bleiben nur auf dem Gerät (`noBackupFilesDir/history/`,
+        nie im Backup oder Geräteumzug). Laut Play-Definition sind Daten, die nur lokal auf dem Gerät
+        verarbeitet werden und es nicht verlassen, **keine „erhobenen“ Daten** — der Verlauf selbst
+        gehört also nicht ins Formular; die Datenschutzerklärung beschreibt ihn trotzdem (Abschnitt 2).
+        Ins Formular gehört nur, was beim Neu-Verarbeiten an den Anbieter geht (siehe oben).
 - [ ] **Foreground-Service-Deklaration**: Typ `microphone` (laufende Aufnahme: schwebender Knopf und
       Pro-Widget-Aufnahme) und `dataSync`
       (Modell-Download) je begründen, mit **Demo-Video** des nutzer-initiierten Einsatzes. Hinweis:

@@ -189,11 +189,14 @@ class PatchnotesScreenshotTest {
         val env = env()
         themed { CompositionLocalProvider(LocalAppEnv provides env) { SettingsHubScreen(nav) } }
         compose.waitForIdle()
+        // Seit der Neuordnung (3.9.0) steht "Über WhisperLoom" unterhalb des Fensters: die LazyColumn
+        // komponiert die Zeile erst, wenn sie hineingescrollt ist.
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Über WhisperLoom"))
         compose.onNodeWithText("Über WhisperLoom").performClick()
         compose.waitForIdle()
         // Das Sheet ist ein eigener Dialog. captureToImage liefert unter Robolectric auch fuer dessen Wurzel nur
         // das Activity-Fenster: den Hub aufnehmen und das Dialog-Fenster darueber zeichnen.
-        val hub = compose.onAllNodes(isRoot()).filterToOne(hasAnyDescendant(hasText("Erkennung")))
+        val hub = compose.onAllNodes(isRoot()).filterToOne(hasAnyDescendant(hasText("Anleitung & Hilfe")))
         val bitmap = hub.captureToImage().asAndroidBitmap().copy(Bitmap.Config.ARGB_8888, true)
         ShadowDialog.getLatestDialog().window!!.decorView.draw(Canvas(bitmap))
         save("about-sheet", bitmap)

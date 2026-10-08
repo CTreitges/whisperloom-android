@@ -25,6 +25,7 @@ import android.view.View
 import android.view.ViewConfiguration
 import android.view.WindowManager
 import android.widget.Toast
+import androidx.annotation.VisibleForTesting
 import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.AudioRecorder
 import com.chris.whisperloom.Prefs
@@ -34,6 +35,8 @@ import com.chris.whisperloom.TranscriptionEngine
 import com.chris.whisperloom.a11y.TextInserterAccessibilityService
 import com.chris.whisperloom.api.ApiNotConfiguredException
 import com.chris.whisperloom.api.isRetryable
+import com.chris.whisperloom.history.History
+import com.chris.whisperloom.history.HistorySource
 import java.util.concurrent.Executors
 import kotlin.math.abs
 
@@ -86,6 +89,12 @@ class FloatingMicService : Service() {
     private val tick = object : Runnable {
         override fun run() {
             if (state != BubbleState.RECORDING) return
+            // Der Aufnahme-Thread ist an einem Fehler gestorben: senden, was schon aufgenommen ist,
+            // statt ins geschlossene Mikrofon weiterzuzaehlen.
+            if (!recorder.isRecording) {
+                stopRec()
+                return
+            }
             val elapsed = elapsedMs()
             renderer?.updateTimer(elapsed)
             main.postDelayed(this, BubbleUi.DOT_PERIOD_MS - elapsed % BubbleUi.DOT_PERIOD_MS)
@@ -419,16 +428,16 @@ class FloatingMicService : Service() {
         val skip = RefineSkip()
         refineSkip = skip
         try {
-            var refineSkipped: String? = null
-            var refineNote: String? = null
-            val text = TranscriptionEngine.transcribe(
+            val dictation = TranscriptionEngine.transcribe(
                 applicationContext,
                 samples,
                 skip = skip,
                 onRefineStart = { main.post { showRefining(skip) } },
-                onRefineNote = { refineNote = it },
-            ) { refineSkipped = it }
+            )
+            val text = dictation.text
             val out = if (prefs.trailingSpace && text.isNotEmpty()) "$text " else text
+            // Vor dem Einfuegen, nie aus einem Passwortfeld (Ziel = Fokusfeld der Bedienungshilfe).
+            if (!targetIsPassword()) History.record(applicationContext, HistorySource.BUBBLE, dictation)
             pendingSamples = null
             main.post {
                 var copied = false
@@ -438,7 +447,8 @@ class FloatingMicService : Service() {
                 }
                 applyState(BubbleState.IDLE, copied = copied)
                 renderer?.flashSuccess()
-                refineSkipped?.let { toast(getString(R.string.refine_skipped, it)) } ?: refineNote?.let { toast(it) }
+                dictation.result.skipped?.let { toast(getString(R.string.refine_skipped, it)) }
+                    ?: dictation.result.note?.let { toast(it) }
             }
         } catch (e: ApiNotConfiguredException) {
             pendingSamples = null
@@ -485,7 +495,7 @@ class FloatingMicService : Service() {
         renderer = null
         runCatching { bubbleView?.let { wm.removeView(it) } }
         bubbleView = null
-        if (recorder.isRecording) recorder.cancel()
+        if (recorder.hasSession) recorder.cancel()
         io.shutdown()
         super.onDestroy()
     }
@@ -496,6 +506,13 @@ class FloatingMicService : Service() {
         /** Assistenten-Schritt "Mikrofon erlauben" (UX-Spec §2.2). */
         private const val SETUP_STEP_MIC = 3
         const val ACTION_STOP = "com.chris.whisperloom.STOP_FLOAT"
+
+        /**
+         * Naht fuer Tests: ist das Zielfeld ein Passwortfeld? Robolectric hat kein aktives Fenster
+         * fuer die Bedienungshilfe. Ohne Bedienungshilfe ist das Ziel unbekannt (false).
+         */
+        @VisibleForTesting
+        internal var targetIsPassword: () -> Boolean = TextInserterAccessibilityService::focusedIsPassword
 
         /** Ob der schwebende Knopf aktuell laeuft (fuer die Setup-Statusanzeige). */
         @Volatile

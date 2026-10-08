@@ -25,4 +25,28 @@ class ImeMetricsTest {
         assertEquals(3, ImeMetrics.micFillLevel(BubbleVisuals.visualFor(BubbleState.ERROR)))
         assertEquals(4, BubbleVisual.Fill.values().size)
     }
+
+    @Test fun pausiertRuhigMitMikrofonZumWeitersprechen() {
+        val v = ImeMetrics.micVisual(BubbleState.RECORDING, paused = true, reduceMotion = false)
+        assertEquals(BubbleVisual.Fill.SURFACE, v.fill)
+        assertEquals("Kein Puls in der Pause", BubbleVisual.Ring.RECORDING_STATIC, v.ring)
+        assertEquals(BubbleVisual.Icon.MIC, v.icon)
+        assertEquals(BubbleVisual.IconTint.PRIMARY, v.iconTint)
+    }
+
+    @Test fun ohnePauseWieDerKnopf() {
+        for (state in BubbleState.values()) {
+            for (reduce in listOf(false, true)) {
+                assertEquals(
+                    BubbleVisuals.visualFor(state, reduceMotion = reduce),
+                    ImeMetrics.micVisual(state, paused = false, reduceMotion = reduce),
+                )
+            }
+        }
+        // Gesendet oder verworfen wird aus der Pause heraus: dann gilt wieder der geteilte Zustand.
+        assertEquals(
+            BubbleVisuals.visualFor(BubbleState.SENDING),
+            ImeMetrics.micVisual(BubbleState.SENDING, paused = true, reduceMotion = false),
+        )
+    }
 }

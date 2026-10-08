@@ -25,10 +25,9 @@ import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SetupRouter
 import com.chris.whisperloom.ui.nav.SystemStatus
+import com.chris.whisperloom.ui.settings.LlmAccessScreen
 import com.chris.whisperloom.ui.settings.ModelsScreen
 import com.chris.whisperloom.ui.settings.RecognitionScreen
-import com.chris.whisperloom.ui.settings.TextAccessScreen
-import com.chris.whisperloom.ui.settings.TextOfflineScreen
 import com.chris.whisperloom.ui.setup.SetupScreen
 import com.chris.whisperloom.ui.state.AppEnv
 import com.chris.whisperloom.ui.state.LocalAppEnv
@@ -141,22 +140,27 @@ class TextModelScreenshotTest {
         shot("textmodell-offline-modelle-pflichtkarte")
     }
 
-    @Test fun textSeiteOfflineErkennungMitPflichtkarte() {
-        screen(ready) { TextOfflineScreen(it) }
-        shot("textmodell-text-offline-erkennung")
+    @Test fun offlineModelleRegelBeiOfflineErkennung() {
+        // 3.9.0: die Regel steht unter den Textmodellen (vorher Text › Offline-Erkennung).
+        installSparse(ctx, ModelCatalog.SMALL)
+        screen(ready) { ModelsScreen(it) }
+        nachOben(hasText("Textverbesserung bei Offline-Erkennung"), abstandPx = 400f)
+        shot("textmodell-offline-modelle-regel")
     }
 
-    @Test fun textSeiteOnlineZugangOffline() {
-        // Offline mit Regel "Lokales Textmodell": der Online-Zugang erklaert, dass er nicht noetig ist.
-        screen(ready) { TextAccessScreen(it) }
-        shot("textmodell-text-online-zugang")
+    @Test fun kiZugangOffline() {
+        // Offline mit Regel "Lokales Textmodell": der KI-Zugang erklaert, dass er nicht noetig ist.
+        screen(ready) { LlmAccessScreen(it) }
+        shot("textmodell-ki-zugang-offline")
     }
 
-    @Test fun textSeiteBeideTextmodelleAuf16Gb() {
+    @Test fun offlineModelleBeideTextmodelleAuf16Gb() {
         // E2B geladen und gewaehlt, E4B passt (16 GB): ein Tipp laedt es.
+        installSparse(ctx, ModelCatalog.SMALL)
         installSparse(ctx, TextModelCatalog.GEMMA4_E2B)
-        screen(ready.copy(installedTextModels = setOf("gemma4_e2b"), totalRamBytes = 16L shl 30)) { TextOfflineScreen(it) }
-        shot("textmodell-text-auswahl-16gb")
+        screen(ready.copy(installedTextModels = setOf("gemma4_e2b"), totalRamBytes = 16L shl 30)) { ModelsScreen(it) }
+        nachOben(hasText("TEXTVERBESSERUNG"))
+        shot("textmodell-offline-modelle-auswahl-16gb")
     }
 
     @Test fun assistent2bNachLokalAuf16Gb() {
@@ -195,10 +199,12 @@ class TextModelScreenshotTest {
         shot("textmodell-assistent-2b")
     }
 
-    @Test fun textSeiteOhnePassendesTextmodell() {
-        // 4-GB-Geraet: offline ja, Gemma nein — die Regel wirkt wie "Ueberspringen".
-        screen(ready.copy(totalRamBytes = 4L shl 30)) { TextOfflineScreen(it) }
-        shot("textmodell-text-zu-wenig-ram")
+    @Test fun offlineModelleOhnePassendesTextmodell() {
+        // 4-GB-Geraet: offline ja, Gemma nein — die Regel wirkt wie "Ueberspringen", mit Grund.
+        installSparse(ctx, ModelCatalog.SMALL)
+        screen(ready.copy(totalRamBytes = 4L shl 30)) { ModelsScreen(it) }
+        nachOben(hasText("Textverbesserung bei Offline-Erkennung"), abstandPx = 400f)
+        shot("textmodell-offline-modelle-zu-wenig-ram")
     }
 
     @Test fun assistent2bDownloadFehlgeschlagen() {

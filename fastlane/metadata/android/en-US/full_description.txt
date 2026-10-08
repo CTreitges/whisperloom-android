@@ -1,27 +1,28 @@
 WhisperLoom types for you: tap, speak, done – the recognised text lands right in the active text field of any app.
 
 Three ways to dictate:
-• A floating microphone button above all apps (your keyboard stays as it is). Tap to record, tap again to insert, drag to ✕ to discard.
-• A dictation keyboard with hold-to-talk for apps that block overlays. While recording, swipe right to lock – recording continues hands-free, then send or discard; swipe left to discard right away. The wand above the microphone opens the four text levels without leaving the app.
+• A floating button above all apps (your keyboard stays as it is). Tap to record, tap again to insert, drag to ✕ to discard.
+• A dictation keyboard with hold-to-talk for apps that block overlays. Swipe right to lock – recording continues hands-free, with pause and resume; while paused the microphone is free, even if you open another app in between. Swipe left to discard. The wand above the microphone opens the text levels without leaving the app.
 • Pro Widgets for developers: voice command widgets on the home screen send voice tasks to your own server (see below). Off by default.
 
 Recognition your way:
 • Online with your own account at OpenAI, Groq (free tier), Mistral, ElevenLabs (Scribe), Together, DeepInfra, OpenRouter, or any OpenAI-compatible server you host yourself (speaches, whisper.cpp server).
-• For tinkerers, switchable under Settings → Advanced ("Erweitert"): "Models from the server" ("Modelle vom Server") loads each provider's current model list – pick new models without waiting for an update.
 • Offline on the device with whisper.cpp. Models (Tiny to Large v3 Turbo) are downloaded on demand – none is bundled.
-• Vocabulary for names and technical terms: as a list in the app or as a linked .md/.txt file that is re-read with every dictation – edits to the file take effect right away.
+• Vocabulary for names and technical terms: as a list in the app or as a linked .md/.txt file that is re-read with every dictation.
+• For tinkerers, under Settings → Advanced ("Erweitert"): "Models from the server" loads each provider's current model list.
 
 Text the way you want it:
-• Remove filler words (editable list), automatic capitalisation.
-• Optional clean-up by a language model in three levels: polish (optionally “more readable”, keeping your words and tone), rephrase, summarise – each level can use its own model, by default a fast one for polishing and a stronger one for rephrasing. Using your own or the recognition account, including Ollama: locally on your home server without a key (the text never leaves your network) or via Ollama Cloud. The model list comes straight from the server.
-• AI offline too: Gemma 4 refines offline-recognised text right on the device – no network needed, the text never leaves the phone. The model is downloaded once (E2B 2.6 GB from 6 GB RAM, E4B 3.7 GB from 8 GB).
-• For AI users, switchable under Settings → Advanced ("Erweitert"): the "Prompt" level turns a dictation into a well-structured prompt for ChatGPT, Claude & co.
-• "Automatic paragraphs" switch: the AI splits longer dictations into paragraphs – or, when switched off, returns everything as one continuous text.
+• Fixed rules without AI: remove filler words (editable list), capitalise sentence starts.
+• Optional clean-up by a language model: polish, rephrase, summarise. Each level has its own page: polish with the clean-up "punctuation only", "without fillers" or "readable" (repairs bumpy sentences, keeping your words and tone), paragraphs on or off, summaries structured automatically or as prose, and a model of its own per level. Using your own or the recognition account, including Ollama: locally on your home server without a key or via Ollama Cloud.
+• AI offline too: Gemma 4 refines offline-recognised text right on the device – no network needed. The model is downloaded once (E2B 2.6 GB from 6 GB RAM, E4B 3.7 GB from 8 GB).
+• For AI users, under Settings → Advanced: the "Prompt" level turns a dictation into a well-structured prompt for ChatGPT, Claude & co.
 
-Transcribe voice messages: share a message from WhatsApp, Telegram or Signal → WhisperLoom. The text appears in readable paragraphs, verbatim or without fillers, ready to copy or forward. Optionally with its own AI level: polish (also “more readable”), rephrase or summarise.
+History: find your dictations from keyboard and button again – with the raw text and the versions of each level, to copy, edit or refine later with another level, without speaking again. On by default, 10 to 500 entries, can be switched off.
 
-Pro Widgets for your own agent: tap, speak, tap – a voice command widget transcribes and sends the task to a server you run yourself; the reply arrives wherever you normally message your agent. Delivery keeps going with the screen off. Each widget has its own name (shown below the widget, can be hidden), its own server and token, an icon or gallery picture and optional auto-stop after a pause; resizes freely from 1 × 1 to 4 × 2. Unlock them under Settings → Advanced ("Erweitert"). Requires your own server (the counterpart's source code is on GitHub) and stays invisible otherwise.
+Transcribe voice messages: share a message from WhatsApp, Telegram or Signal → WhisperLoom. The text appears in paragraphs, verbatim or without fillers, ready to copy or forward. Optionally with its own AI level: polish (with its own clean-up), rephrase or summarise.
+
+Pro Widgets for your own agent: tap, speak, tap – a voice command widget transcribes and sends the task to a server you run yourself. Delivery keeps going with the screen off. Each widget has its own name, server and token, an icon or gallery picture and optional auto-stop after a pause; resizes freely from 1 × 1 to 4 × 2. Unlock them under Settings → Advanced. Requires your own server (the counterpart's source code is on GitHub).
 
 What's new is shown right in the app – tap the “?” next to the version number.
 
-Privacy: your API key never leaves the device. Online, audio and vocabulary go to the provider you chose; offline, the recording never leaves the phone, and the local text model refines the text on the device. With online text refinement, the recognised text goes to the language model you chose. No accounts, no ads, no tracking.
+Privacy: your API key never leaves the device. Online, audio and vocabulary go to the provider you chose, and with online text refinement the recognised text goes to the language model you chose; offline, the recording never leaves the phone, and the local text model refines the text on the device. WhisperLoom does not store recordings. The history stays on the device only, never goes into a backup and can be switched off. No accounts, no ads, no tracking.

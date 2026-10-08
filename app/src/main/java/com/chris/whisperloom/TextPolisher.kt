@@ -54,17 +54,16 @@ object PolishPlan {
     )
 
     /**
-     * Wenn ein Sprachmodell selbst ueber Fuellwoerter entscheidet, darf die feste
-     * Wortliste nicht nochmal daruebergehen — sonst wuerde zweimal gefiltert und die
-     * Entscheidung der KI ("im Zweifel behalten") wieder ausgehebelt. Die restliche
-     * Normalisierung (Whitespace, Satzzeichen, Gross-Schreibung) laeuft weiter.
+     * Nachbearbeitung nach der Textverbesserung. Die Fuellwort-Liste (eingebaut und eigene Woerter)
+     * ist das Sicherheitsnetz: sie laeuft nach jeder KI-Stufe, auch wenn die KI selbst ueber
+     * Fuellwoerter entscheidet (Glaetten · Ohne Fuellwoerter, Lesbar). Bei "Glaetten" laesst der
+     * Prompt jedes "ähm" stehen (Claude-Vergleich: 36 von 36 Antworten), und kleine Modelle uebersehen
+     * auch dort viele, wo sie streichen duerfen (gemma3:4b, Korpus 2026-10-05). Die Liste enthaelt nur
+     * eindeutige Fuellsilben — nach der KI kann sie kaum Schaden anrichten.
      *
      * Ausnahme "Prompt": Fuellwoerter und Gross-Schreibung erledigt dort das Modell (steht im
      * System-Prompt), und diktiertes Material zwischen `<text>`-Tags soll unveraendert bleiben —
      * die Satzanfang-Regel machte sonst aus `</text>` nach einem Punkt `</Text>`.
-     * "Lesbarer glaetten" ([RefineMode.READABLE]) zaehlt nicht dazu: kleine Modelle liessen "ähm"
-     * dort stehen (gemma3:4b, Korpus 2026-10-05). Die Liste laeuft danach wie beim Glaetten — mit den
-     * eingebauten Fuellsilben und den eigenen Woertern des Nutzers; nur smartFillers pausiert sie.
      *
      * Ist die Textverbesserung gescheitert, uebergibt der Aufrufer [RefineMode.OFF]: der
      * Rohtext wurde von niemandem bearbeitet und braucht die vollen Regeln.
@@ -74,24 +73,22 @@ object PolishPlan {
         autoCapitalize: Boolean,
         language: String,
         refineMode: RefineMode,
-        smartFillers: Boolean,
         customFillers: Collection<String> = emptyList(),
         disabledFillers: Set<String> = emptySet(),
         paragraphs: Boolean = true,
     ): PolishOptions {
         val refined = refineMode != RefineMode.OFF
         val prompt = refineMode == RefineMode.PROMPT
-        val aiDecidesFillers = refined && (smartFillers || prompt)
         return PolishOptions(
-            removeFillers = removeFillers && !aiDecidesFillers,
+            removeFillers = removeFillers && !prompt,
             autoCapitalize = autoCapitalize && !prompt,
             language = language,
             customFillers = customFillers,
             disabledFillers = disabledFillers,
-            // Das Sprachmodell setzt Absaetze/Stichpunkte bewusst — nicht plattziehen. Mit
-            // "Automatische Absaetze" aus werden Umbrueche, die das Modell trotzdem liefert,
-            // hier zuverlaessig zu einem Fliesstext zusammengezogen. Die Stufe "Prompt" ist
-            // ausgenommen: ihre Gliederung ist der Zweck, nicht Beiwerk.
+            // Das Sprachmodell setzt Absaetze/Stichpunkte bewusst — nicht plattziehen. Ohne Absaetze
+            // (Schalter der Stufe, Zusammenfassen als Fliesstext) werden Umbrueche, die das Modell
+            // trotzdem liefert, hier zuverlaessig zu einem Fliesstext zusammengezogen. Die Stufe
+            // "Prompt" ist ausgenommen: ihre Gliederung ist der Zweck, nicht Beiwerk.
             keepLineBreaks = refined && (paragraphs || prompt),
         )
     }
@@ -147,7 +144,7 @@ object TextPolisher {
                     "(?<!\\p{L})" + Pattern.quote(filler.trim()) + "(?!\\p{L}),?",
                     Pattern.CASE_INSENSITIVE or Pattern.UNICODE_CASE,
                 )
-                text = p.matcher(text).replaceAll(" ")
+                text = removeFiller(text, p)
             }
             // "gut, ähm." -> "gut, ." -> "gut." — ein Komma direkt vor dem Satzende ist nie gewollt.
             text = COMMA_BEFORE_END.matcher(text).replaceAll("")
@@ -161,6 +158,48 @@ object TextPolisher {
             text = capitalizeSentences(text)
         }
         return text
+    }
+
+    /**
+     * Jeden Treffer von [filler] durch ein Leerzeichen ersetzen. Stand ein Treffer gross am Satzanfang
+     * (Textanfang oder nach . ! ? und Leerraum), uebernimmt das Folgewort die Gross-Schreibung: aus
+     * "2021. Ähm, dann" wird "2021. Dann". Die Satzanfang-Regel ([capitalizeSentences]) koennte das
+     * nicht — hinter einer Zahl oder Abkuerzung setzt sie bewusst keinen Satzanfang.
+     */
+    private fun removeFiller(text: String, filler: Pattern): String {
+        val m = filler.matcher(text)
+        val sb = StringBuilder(text.length)
+        var last = 0
+        var capitalize = false
+        while (m.find()) {
+            capitalize = appendCapitalized(sb, text, last, m.start(), capitalize)
+            if (text[m.start()].isUpperCase() && startsSentence(text, m.start())) capitalize = true
+            sb.append(' ')
+            last = m.end()
+        }
+        appendCapitalized(sb, text, last, text.length, capitalize)
+        return sb.toString()
+    }
+
+    /** text[from, to) anhaengen, mit [capitalize] das erste Wortzeichen gross. @return ob es noch aussteht */
+    private fun appendCapitalized(sb: StringBuilder, text: String, from: Int, to: Int, capitalize: Boolean): Boolean {
+        var pending = capitalize
+        for (i in from until to) {
+            val ch = text[i]
+            if (pending && ch.isLetterOrDigit()) {
+                sb.append(ch.uppercaseChar())
+                pending = false
+            } else {
+                sb.append(ch)
+            }
+        }
+        return pending
+    }
+
+    /** Beginnt bei [index] ein Satz? Am Textanfang oder nach . ! ? mit Leerraum dazwischen. */
+    private fun startsSentence(text: String, index: Int): Boolean {
+        val before = text.substring(0, index).trimEnd()
+        return before.isEmpty() || (before.length < index && before.last() in ".!?")
     }
 
     /** Alles auf eine Zeile — oder je Zeile normalisieren und hoechstens eine Leerzeile lassen. */
@@ -188,12 +227,15 @@ object TextPolisher {
      * Leerraum; Zeichen dazwischen, die weder Buchstabe noch Ziffer sind (Anfuehrungszeichen,
      * Klammern, Emojis, Sternchen), aendern daran nichts. Sonst wuerde aus "config.yaml"
      * "config.Yaml" und aus "Python 3.13 gegenueber" "3.13 Gegenueber". Beginnt ein Satz mit
-     * einer Ziffer, bleibt das folgende Wort, wie es ist ("- 12 people").
+     * einer Ziffer, bleibt das folgende Wort, wie es ist ("- 12 people"). Ein Punkt nach einer
+     * Abkuerzung oder Ordnungszahl beendet keinen Satz ("z. B. ein", "ca. fünf", "vom 1. bis") —
+     * dieselbe Regel wie beim Absatz-Teilen ([Paragrapher.endsWithAbbreviation]).
      */
     private fun capitalizeSentences(text: String): String {
         val sb = StringBuilder(text.length)
         var capitalizeNext = true
         var sentenceEnd = false
+        var wordStart = 0
         for (ch in text) {
             if (capitalizeNext && ch.isLetterOrDigit()) {
                 sb.append(ch.uppercaseChar())
@@ -202,11 +244,13 @@ object TextPolisher {
                 sb.append(ch)
             }
             when {
-                ch == '.' || ch == '!' || ch == '?' -> sentenceEnd = true
+                ch == '.' -> sentenceEnd = !Paragrapher.endsWithAbbreviation(sb.substring(wordStart))
+                ch == '!' || ch == '?' -> sentenceEnd = true
                 ch.isLetterOrDigit() -> sentenceEnd = false
-                sentenceEnd && ch.isWhitespace() -> {
-                    capitalizeNext = true
+                ch.isWhitespace() -> {
+                    if (sentenceEnd) capitalizeNext = true
                     sentenceEnd = false
+                    wordStart = sb.length
                 }
             }
         }

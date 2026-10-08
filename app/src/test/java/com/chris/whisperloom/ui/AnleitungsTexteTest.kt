@@ -3,6 +3,8 @@ package com.chris.whisperloom.ui
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.R
+import com.chris.whisperloom.RefinePlan
+import com.chris.whisperloom.api.TextRefiner
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -78,6 +80,23 @@ class AnleitungsTexteTest {
         assertTrue(offline, offline.contains("lokalen Textmodell"))
     }
 
+    @Test fun bedienungshilfeSagtWasSieVomFeldLiest() {
+        // 3.9.0: Sie liest Text und Cursor des Zielfelds und prueft isPassword fuer den Verlauf —
+        // "liest nichts mit / speichert nichts" stimmt nicht mehr (Android-Dialog, Play-Hinweis, Hilfe).
+        listOf("a11y_description", "disclosure_a11y_body", "help_s6_a11y").forEach { name ->
+            val text = texte.getValue(name)
+            assertTrue("$name: $text", text.contains("Passwortfeld"))
+            listOf("nichts mitgelesen", "liest nichts mit", "speichert nichts").forEach { assertTrue("$name: $it", !text.contains(it)) }
+        }
+        listOf("a11y_description", "disclosure_a11y_body").forEach { assertTrue(it, texte.getValue(it).contains("Verlauf")) }
+    }
+
+    @Test fun verlaufVersprichtBeimKnopfKeinInkognito() {
+        // Der Knopf kennt das Zielfeld nur ueber die Bedienungshilfe, und die sieht kein Inkognito-Flag.
+        val sub = texte.getValue("history_save_switch_sub")
+        assertTrue(sub, sub.contains("beim Knopf Passwortfelder, wenn die Bedienungshilfe an ist"))
+    }
+
     @Test fun tutorialSeitenHabenHoechstens180Zeichen() {
         val seiten = texte.filterKeys { it.matches(Regex("tutorial_(pro_)?p\\d+_body")) }
         assertEquals("4 Einsteiger- und 6 Pro-Widgets-Seiten", 10, seiten.size)
@@ -89,6 +108,16 @@ class AnleitungsTexteTest {
             it.matches(Regex("help_(s\\d|widgets)_intro|help_s5_body|welcome_body|setup_s\\d[ab]?_body|a11y_description"))
         }
         assertEquals(emptyMap<String, Int>(), zuLang(kurz, 160))
+    }
+
+    @Test fun verweiseNennenDieSeitenDerNeuenOrdnung() {
+        // 3.9.0: den Menuepunkt "Text" gibt es nicht mehr, die Erkennung heisst "Spracherkennung",
+        // die Tastatur "Diktat-Tastatur" und der Knopf "Schwebender Knopf".
+        val alt = Regex("""[›→] Text(?![a-zäöü])|„Text“|unter Erkennung\b|Diktier-Tastatur|chwebende[rm]? Mikro-Knopf""")
+        assertEquals(emptyMap<String, String>(), texte.filterValues { alt.containsMatchIn(it) })
+        // Meldungen aus dem Code nennen die Seite, auf der man es beheben kann.
+        listOf(TextRefiner.MSG_NO_LLM, TextRefiner.MSG_NO_MODEL, TextRefiner.MSG_OFFLINE).forEach { assertTrue(it, it.contains("„KI-Zugang“")) }
+        assertTrue(RefinePlan.MSG_LOCAL_MISSING, RefinePlan.MSG_LOCAL_MISSING.contains("„Offline-Modelle“"))
     }
 
     @Test fun jedeIllustrationHatEinenKurzenBildtext() {

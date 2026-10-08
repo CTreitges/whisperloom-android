@@ -73,7 +73,7 @@ class TutorialScreenTest {
         show()
         compose.onNodeWithText("Weiter").performClick()
         compose.waitForIdle()
-        compose.onNodeWithText("Diktier-Tastatur").assertIsDisplayed()
+        compose.onNodeWithText("Diktat-Tastatur").assertIsDisplayed()
         compose.onNodeWithContentDescription("Seite 2 von 4").assertIsDisplayed()
         compose.onNodeWithText("Weiter").performClick()
         compose.waitForIdle()

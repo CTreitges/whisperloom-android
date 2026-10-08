@@ -72,6 +72,14 @@ class AppNavTest {
         assertTrue(newTask(i))
     }
 
+    @Test fun kiZugangUndTextverbesserungZielenAufMainActivity() {
+        listOf(AppNav.llmAccess(ctx) to "llm-access", AppNav.refine(ctx) to "refine").forEach { (i, route) ->
+            assertEquals(MainActivity::class.java.name, i.component?.className)
+            assertEquals(route, i.getStringExtra(AppNav.EXTRA_ROUTE))
+            assertTrue(newTask(i))
+        }
+    }
+
     @Test fun extraNamenSindStabil() {
         assertEquals("route", AppNav.EXTRA_ROUTE)
         assertEquals("step", AppNav.EXTRA_STEP)

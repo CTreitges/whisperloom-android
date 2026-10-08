@@ -6,6 +6,9 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.AppNav
+import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.RefineWay
+import com.chris.whisperloom.history.Processing
 import com.chris.whisperloom.ui.tutorial.TutorialKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -34,6 +37,15 @@ class RouteRequestTest {
         assertEquals(RouteRequest("advanced"), RouteRequest.from(AppNav.advanced(ctx)))
         assertEquals(RouteRequest("widgets"), RouteRequest.from(AppNav.proWidgets(ctx)))
         assertEquals(RouteRequest("widgets", profileId = "p1"), RouteRequest.from(AppNav.widgetProfile(ctx, "p1")))
+        assertEquals(RouteRequest("models"), RouteRequest.from(AppNav.models(ctx)))
+        assertEquals(RouteRequest("refine"), RouteRequest.from(AppNav.refine(ctx)))
+        assertEquals(RouteRequest("llm-access"), RouteRequest.from(AppNav.llmAccess(ctx)))
+    }
+
+    @Test fun dieNeuenSeitenRoutenTragenKeinProfil() {
+        // Die Activity ist exportiert: ein fremdes Profil an KI-Zugang oder Textverbesserung faellt weg.
+        assertEquals(RouteRequest("llm-access"), RouteRequest.from(AppNav.llmAccess(ctx).putExtra(AppNav.EXTRA_PROFILE, "p1")))
+        assertEquals(RouteRequest("refine"), RouteRequest.from(AppNav.refine(ctx).putExtra(AppNav.EXTRA_PROFILE, "p1")))
     }
 
     @Test fun einProfilGiltNurFuerDieWidgetRoute() {
@@ -67,12 +79,10 @@ class RouteRequestTest {
 
     @Test fun screenEncodingIstStabil() {
         val screens = listOf(
-            Screen.Home, Screen.Setup(3), Screen.SettingsHub, Screen.Recognition, Screen.TextSettings,
-            Screen.ButtonKeyboard, Screen.Models, Screen.Advanced, Screen.Widgets(), Screen.Widgets(WidgetTab.NORMAL),
+            Screen.Home, Screen.Setup(3), Screen.SettingsHub, Screen.Refine, Screen.Dictionary, Screen.Recognition,
+            Screen.LlmAccess, Screen.ButtonKeyboard, Screen.Models, Screen.Advanced, Screen.Widgets(), Screen.Widgets(WidgetTab.NORMAL),
             Screen.Widgets(WidgetTab.PRO), Screen.Widgets(WidgetTab.PRO, "p1"), Screen.Widgets(edit = "default"),
             Screen.Help(4), Screen.Patchnotes, Screen.Tutorial(2),
-            Screen.TextPage(TextSection.DICTATION), Screen.TextPage(TextSection.SHARE), Screen.TextPage(TextSection.ACCESS),
-            Screen.TextPage(TextSection.OFFLINE), Screen.TextPage(TextSection.RULES),
             Screen.Tutorial(1, startBubbleAfter = true), Screen.Tutorial(0, kind = TutorialKind.PRO_WIDGETS),
         )
         screens.forEach { assertEquals(it, Screen.decode(it.encode())) }
@@ -80,9 +90,54 @@ class RouteRequestTest {
         assertEquals("widgets:pro:p1", Screen.Widgets(WidgetTab.PRO, "p1").encode())
         assertEquals("advanced", Screen.Advanced.encode())
         assertEquals("patchnotes", Screen.Patchnotes.encode())
-        assertEquals("text-page:offline", Screen.TextPage(TextSection.OFFLINE).encode())
+        assertEquals("refine", Screen.Refine.encode())
+        assertEquals("dictionary", Screen.Dictionary.encode())
+        assertEquals("llm-access", Screen.LlmAccess.encode())
         // Das Pro-Widgets-Heft behaelt den Schluessel aus 3.7.0 (Sprachauftrag).
         assertEquals("tutorial:0:0:agent", Screen.Tutorial(kind = TutorialKind.PRO_WIDGETS).encode())
+    }
+
+    @Test fun stufenSeitenHabenJeEinenEigenenSchluessel() {
+        val seiten = RefineWay.entries.flatMap { way -> RefineMode.entries.mapNotNull { Screen.Stage.of(it, way) } }
+        assertEquals("5 fuers Diktat, 4 fuer Sprachnachrichten (je mit Aus)", 9, seiten.size)
+        seiten.forEach { assertEquals(it, Screen.decode(it.encode())) }
+        assertEquals("stage:polish:dictation", Screen.Stage(RefineMode.POLISH, RefineWay.DICTATION).encode())
+        assertEquals("stage:summarize:share", Screen.Stage(RefineMode.SUMMARIZE, RefineWay.SHARE).key)
+        assertEquals(Screen.Stage(RefineMode.OFF, RefineWay.DICTATION), Screen.decode("stage:off:dictation"))
+        assertEquals(Screen.Stage(RefineMode.OFF, RefineWay.SHARE), Screen.decode("stage:off:share"))
+        // Eigener Schluessel je Seite: AnimatedContent blendet auch von Stufe zu Stufe ueber.
+        assertEquals(seiten.size, seiten.map { it.key }.toSet().size)
+    }
+
+    @Test fun unbekannteStufenSeiteLandetAufDerTextverbesserung() {
+        listOf(
+            "stage", "stage:polish", "stage:polish:fax", "stage:off", "stage:off:fax",
+            "stage:readable:dictation", "stage:paragraphs:dictation", "stage:prompt:share",
+            // Ein unbekannter Schluessel ist nicht "Aus" (RefineMode.fromKey faellt auf OFF zurueck).
+            "stage:quer:dictation", "stage::share",
+        ).forEach { assertEquals(it, Screen.Refine, Screen.decode(it)) }
+        assertEquals(null, Screen.Stage.of(RefineMode.PROMPT, RefineWay.SHARE))
+    }
+
+    @Test fun verlaufScreensUeberstehenDenProzesstod() {
+        val id = "1791456000000-0a1b2c3d"
+        val screens = listOf(
+            Screen.History, Screen.HistorySettings, Screen.HistoryDetail(id), Screen.HistoryDetail(id, Screen.HistoryDetail.ORIGIN),
+            Screen.HistoryDetail(id, "polish_readable"), Screen.HistoryEdit(id, Processing.SUMMARIZE), Screen.HistoryEdit(id, Processing.EDITED),
+        )
+        screens.forEach { assertEquals(it, Screen.decode(it.encode())) }
+        assertEquals("history-entry:$id:raw", Screen.HistoryDetail(id, Screen.HistoryDetail.ORIGIN).encode())
+        assertEquals("history-edit:$id:edited", Screen.HistoryEdit(id, Processing.EDITED).encode())
+        // Ein Chip-Wechsel ersetzt den Eintrag: derselbe Schluessel, keine Uebergangsanimation.
+        assertEquals(Screen.HistoryDetail(id).key, Screen.HistoryDetail(id, "summarize").key)
+    }
+
+    @Test fun kaputteVerlaufSchluesselFuehrenZurListe() {
+        val id = "1791456000000-0a1b2c3d"
+        listOf("history-entry", "history-entry:", "history-entry:abc", "history-entry:1791456000000-XYZ", "history-edit:abc:summarize")
+            .forEach { assertEquals(it, Screen.History, Screen.decode(it)) }
+        assertEquals("unbekannte Fassung: die damalige", Screen.HistoryDetail(id), Screen.decode("history-entry:$id:fax"))
+        assertEquals("unbekannte Fassung im Editor: der Eintrag", Screen.HistoryDetail(id), Screen.decode("history-edit:$id:fax"))
     }
 
     @Test fun alteBackStacksBleibenLesbar() {
@@ -90,9 +145,27 @@ class RouteRequestTest {
         assertEquals(Screen.Advanced, Screen.decode("agent"))
         assertEquals(Screen.Widgets(), Screen.decode("widgets"))
         assertEquals("Unbekannter Tab: der Screen waehlt", Screen.Widgets(), Screen.decode("widgets:quer:"))
-        // Bis 3.8.5 war "text" die ganze Seite, jetzt der Hub; eine unbekannte Unterseite fuehrt dorthin.
-        assertEquals(Screen.TextSettings, Screen.decode("text"))
-        assertEquals(Screen.TextSettings, Screen.decode("text-page:modelle"))
-        assertEquals(Screen.TextSettings, Screen.decode("text-page"))
+    }
+
+    @Test fun alteTextSeitenLandenAufIhrerNeuenSeite() {
+        // Gespeichert von 3.8.6: der Text-Hub ("text") und seine Unterseiten ("text-page:<seite>").
+        assertEquals(Screen.Refine, Screen.decode("text"))
+        assertEquals(Screen.Refine, Screen.decode("text-page:dictation"))
+        assertEquals(Screen.Refine, Screen.decode("text-page:share"))
+        assertEquals(Screen.LlmAccess, Screen.decode("text-page:access"))
+        assertEquals(Screen.Models, Screen.decode("text-page:offline"))
+        assertEquals(Screen.Dictionary, Screen.decode("text-page:rules"))
+        // Unbekannte oder fehlende Unterseite: die Nachfolgerin des Text-Hubs.
+        assertEquals(Screen.Refine, Screen.decode("text-page:modelle"))
+        assertEquals(Screen.Refine, Screen.decode("text-page"))
+    }
+
+    @Test fun einAlterBackStackBleibtBeimWiederherstellenBedienbar() {
+        // Prozess-Tod unter 3.8.6 auf Text › Offline-Erkennung, Neustart mit 3.9.0.
+        val alt = listOf("home", "settings", "text", "text-page:offline")
+        assertEquals(
+            listOf(Screen.Home, Screen.SettingsHub, Screen.Refine, Screen.Models),
+            NavState.Saver.restore(alt)!!.snapshot(),
+        )
     }
 }

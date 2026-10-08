@@ -25,13 +25,13 @@ object RefinePrompt {
     /**
      * @param mode Was das Modell tun soll (nicht [RefineMode.OFF]).
      * @param german Anweisung auf Deutsch (bei deutscher Diktatsprache) statt Englisch.
-     * @param smartFillers Wenn true, entscheidet das Modell selbst, welche Fuellwoerter,
-     *   Versprecher und Wiederholungen weg koennen — statt einer festen Wortliste. Nur bei
-     *   Glaetten und Verschoenern (und den Absaetzen): Lesbar raeumt sie ohnehin auf, eine
-     *   Zusammenfassung und ein Prompt lassen sie sowieso weg.
-     * @param paragraphs Schalter "Automatische Absaetze": false = ein durchgehender Text ohne
-     *   Zeilenumbrueche. Fuer [RefineMode.PARAGRAPHS] und [RefineMode.PROMPT] gegenstandslos
-     *   (die Gliederung ist dort der Zweck).
+     * @param smartFillers Bereinigung "Ohne Fuellwoerter" ([com.chris.whisperloom.PolishCleanup.CLEAN]):
+     *   das Modell laesst Fuellwoerter, Stotterer und versehentliche Doppler weg. Nur beim Glaetten —
+     *   Lesbar raeumt sie ohnehin auf, Verschoenern, Zusammenfassung und Prompt lassen sie sowieso
+     *   weg; danach laeuft ausserdem die Wortliste ([com.chris.whisperloom.PolishPlan.options]).
+     * @param paragraphs Absaetze der Stufe (bei Zusammenfassen die Form "automatisch"): false = ein
+     *   durchgehender Text ohne Zeilenumbrueche. Fuer [RefineMode.PROMPT] gegenstandslos (die
+     *   Gliederung ist dort der Zweck).
      * @param short Kurzes Diktat ([isShort]): eine Zusammenfassung gibt es nur bereinigt zurueck,
      *   ein Prompt bleibt Fliesstext — beides wuerde sonst aufgeblaeht. Fuer andere Stufen egal.
      */
@@ -51,12 +51,10 @@ object RefinePrompt {
                 RefineMode.READABLE -> t.readable(p)
                 RefineMode.BEAUTIFY -> t.beautify(p)
                 RefineMode.SUMMARIZE -> t.summarize(p)
-                RefineMode.PARAGRAPHS -> t.paragraphs
                 RefineMode.PROMPT -> t.prompt
                 RefineMode.OFF -> ""
             },
         )
-        if (smartFillers && mode in FILLER_MODES) sb.append(t.fillers)
         if (short && mode == RefineMode.SUMMARIZE) sb.append(t.shortSummary)
         if (short && mode == RefineMode.PROMPT) sb.append(t.shortPrompt)
         sb.append(
@@ -92,7 +90,6 @@ object RefinePrompt {
 
     fun isShort(raw: String): Boolean = wordCount(raw) < SHORT_WORDS
 
-    private val FILLER_MODES = setOf(RefineMode.BEAUTIFY, RefineMode.PARAGRAPHS)
     private const val TAG_DE = "diktat"
     private const val TAG_EN = "dictation"
     private val WHITESPACE = Regex("\\s+")
@@ -107,10 +104,8 @@ object RefinePrompt {
         fun readable(p: Boolean): String
         fun beautify(p: Boolean): String
         fun summarize(p: Boolean): String
-        val paragraphs: String
         val prompt: String
         val shortPrompt: String
-        val fillers: String
         val shortSummary: String
         val reply: String
         val replySummary: String
@@ -185,11 +180,8 @@ object RefinePrompt {
             Verwende ${if (p) "außer „- “ keine" else "keine"} Formatierung, keine Gedankenstriche und keine Etiketten wie „Grund:“. Schreib in der Sprache des Diktats und übersetze nichts.
         """.trimIndent()
 
-        override val paragraphs = "Du gliederst diktierten Text in Absätze und lässt jedes Wort, wie es ist: nichts zusammenfassen, nichts umformulieren, nichts ergänzen. $FRAME\nSchreib in der Sprache des Diktats und übersetze nichts."
         override val prompt = PROMPT_DE
         override val shortPrompt = SHORT_DE
-        override val fillers = "\n" +
-            "Füllwörter wie äh und ähm, Stotterer und versehentlich doppelt gesagte Wörter lässt du in jedem Fall weg, auch wenn die Regeln oder Beispiele oben sie stehen lassen. Wörter wie halt, eben, ja, mal, also oder ich glaub zählen nicht dazu. Im Zweifel bleibt das Wort."
         override val shortSummary = "\n" +
             "Dieses Diktat ist sehr kurz, deshalb gilt die Längenvorgabe nicht: Übernimm seine Wörter, lass nur Füllwörter wie äh weg und setze die Satzzeichen, ohne Liste und ohne etwas zu ergänzen."
         override val reply = "\n" +
@@ -267,11 +259,8 @@ object RefinePrompt {
             Use no ${if (p) "formatting other than \"- \"" else "formatting"}, no dashes and no labels such as "Reason:". Write in the language of the dictation, whatever it is, and never translate.
         """.trimIndent()
 
-        override val paragraphs = "You split dictated text into paragraphs and leave every word as it is: do not summarise, rephrase or add anything. $FRAME\nWrite in the language of the dictation, whatever it is, and never translate."
         override val prompt = PROMPT_EN
         override val shortPrompt = SHORT_EN
-        override val fillers = "\n" +
-            "Fillers such as uh and um, stutters and words said twice by accident are always removed, even where the rules or examples above keep them. Words like just, really, kinda, I think or maybe are not fillers. When in doubt, keep the word."
         override val shortSummary = "\n" +
             "This dictation is very short, so the length rule does not apply: keep its words, only drop fillers like uh and fix the punctuation, with no list and nothing added."
         override val reply = "\n" +

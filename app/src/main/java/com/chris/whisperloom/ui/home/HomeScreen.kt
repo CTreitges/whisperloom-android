@@ -51,6 +51,7 @@ import com.chris.whisperloom.Engine
 import com.chris.whisperloom.OfflineRefineRule
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.RefineWay
 import com.chris.whisperloom.SetupState
 import com.chris.whisperloom.api.RefineBlock
 import com.chris.whisperloom.overlay.BubbleAnimators
@@ -76,7 +77,6 @@ import com.chris.whisperloom.ui.models.localModelMissing
 import com.chris.whisperloom.ui.models.offlineRule
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
-import com.chris.whisperloom.ui.nav.TextSection
 import com.chris.whisperloom.ui.nav.SetupRouter
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.theme.loom
@@ -95,6 +95,9 @@ fun HomeScreen(nav: NavState) {
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             SmallTopBar(title = stringResource(R.string.app_name)) {
+                IconButton(onClick = { nav.push(Screen.History) }) {
+                    LoomIcon(R.drawable.ic_history, stringResource(R.string.home_cd_history))
+                }
                 IconButton(onClick = { nav.push(Screen.Help(1)) }) {
                     LoomIcon(R.drawable.ic_help, stringResource(R.string.home_cd_help))
                 }
@@ -120,8 +123,8 @@ fun HomeScreen(nav: NavState) {
                     when (banner) {
                         HomeStatus.Banner.A11Y -> nav.push(Screen.Setup(SetupRouter.STEP_A11Y))
                         HomeStatus.Banner.MODEL -> nav.push(Screen.Models)
-                        // Direkt auf die Seite mit den Textmodellen, nicht in den Text-Hub.
-                        HomeStatus.Banner.TEXT_MODEL -> nav.push(Screen.TextPage(TextSection.OFFLINE))
+                        // Textmodelle und die Regel bei Offline-Erkennung stehen seit 3.9.0 bei den Offline-Modellen.
+                        HomeStatus.Banner.TEXT_MODEL -> nav.push(Screen.Models)
                         HomeStatus.Banner.NOTIF -> nav.push(Screen.Setup(SetupRouter.STEP_NOTIF))
                         HomeStatus.Banner.NONE -> Unit
                     }
@@ -328,8 +331,8 @@ private fun StatusCard(nav: NavState, modelInstalled: Boolean) {
         }
         null -> stringResource(R.string.setup_chip_open)
     }
-    // Das Modell, mit dem das naechste Diktat rechnet: das der Stufe (Modell je Stufe).
-    val llm = prefs.llmAccess(prefs.dictationStage)
+    // Das Modell, mit dem das naechste Diktat rechnet: das der Stufe (Modell je Stufe, gleich welche Bereinigung).
+    val llm = prefs.llmAccess(prefs.refinementFor(RefineWay.DICTATION).mode)
     val level = levelLabel(prefs.refineMode)
     // Offline erkannt: die Regel entscheidet (lokal, online mit Ausweg, uebersprungen) — "wie Erkennung" zaehlt nie.
     // Auch wenn nur die Stufe fuer geteilte Sprachnachrichten an ist: fehlt das Modell, warnt die Zeile wie das Banner.
@@ -388,7 +391,7 @@ private fun StatusCard(nav: NavState, modelInstalled: Boolean) {
             nav.push(Screen.Recognition)
         }
         StatusRow(stringResource(R.string.home_row_refine), refineText, refineTone, R.drawable.ic_auto_fix_high) {
-            nav.push(Screen.TextSettings)
+            nav.push(Screen.Refine)
         }
         StatusRow(stringResource(R.string.home_row_permissions), permText, permTone) { nav.push(Screen.ButtonKeyboard) }
         StatusRow(

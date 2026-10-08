@@ -56,8 +56,9 @@ fun SmallTopBar(
 }
 
 /**
- * Detail-Screen (E, E1–E5): LargeTopAppBar mit exitUntilCollapsed, Zurueck-Pfeil, Snackbar.
- * [content] bekommt das Scaffold-Padding und scrollt selbst (LazyColumn oder [ScrollColumn]).
+ * Detail-Screen (E, E1–E5): LargeTopAppBar mit exitUntilCollapsed, Zurueck-Pfeil, Snackbar,
+ * optional [actions] rechts (⋮ im Verlauf). [content] bekommt das Scaffold-Padding und scrollt
+ * selbst (LazyColumn oder [ScrollColumn]).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,6 +66,7 @@ fun DetailScaffold(
     title: String,
     onBack: () -> Unit,
     snack: SnackController,
+    actions: @Composable RowScope.() -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -77,6 +79,7 @@ fun DetailScaffold(
                 navigationIcon = {
                     IconButton(onClick = onBack) { LoomIcon(R.drawable.ic_arrow_back, stringResource(R.string.cd_back)) }
                 },
+                actions = actions,
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,

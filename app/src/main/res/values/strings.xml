@@ -67,7 +67,7 @@
     <!-- §6.2 Home (H) -->
     <string name="home_cd_help">Anleitung und Hilfe</string>
     <string name="home_cd_settings">Einstellungen</string>
-    <string name="home_hero_title">Schwebender Mikro-Knopf</string>
+    <string name="home_hero_title">Schwebender Knopf</string>
     <string name="home_hero_sub_off">Aus — startet den Knopf über allen Apps</string>
     <string name="home_hero_sub_on">Läuft — antippen zum Diktieren, ziehen zum Verschieben</string>
     <string name="home_hero_btn_start">Mikro-Knopf starten</string>
@@ -84,7 +84,7 @@
     <string name="home_banner_notif">Ohne Benachrichtigung kannst du den Knopf nur hier beenden.</string>
     <string name="home_banner_fix">Beheben</string>
     <string name="home_status_title">Status</string>
-    <string name="home_row_recognition">Erkennung</string>
+    <string name="home_row_recognition">Spracherkennung</string>
     <string name="home_row_refine">Textverbesserung</string>
     <string name="home_row_permissions">Berechtigungen</string>
     <string name="home_row_keyboard">Diktat-Tastatur</string>
@@ -172,7 +172,7 @@
     <string name="setup_s3_btn">Mikrofon erlauben</string>
     <string name="setup_s3_denied">Du hast das Mikrofon abgelehnt. Bitte in den App-Einstellungen erlauben.</string>
     <string name="setup_s4_title">Über anderen Apps anzeigen</string>
-    <string name="setup_s4_body">Der schwebende Mikro-Knopf liegt über anderen Apps. Dafür braucht Android deine Erlaubnis: In den Systemeinstellungen „WhisperLoom“ einschalten und zurück.</string>
+    <string name="setup_s4_body">Der schwebende Knopf liegt über anderen Apps. Dafür braucht Android deine Erlaubnis: In den Systemeinstellungen „WhisperLoom“ einschalten und zurück.</string>
     <string name="setup_s4_step_1">Die Systemeinstellung öffnet sich</string>
     <string name="setup_s4_step_2">Schalter „Über anderen Apps anzeigen“ einschalten</string>
     <string name="setup_s4_step_3">Zurück-Taste — WhisperLoom prüft automatisch</string>
@@ -201,13 +201,14 @@
     <string name="setup_done_start">Knopf starten &amp; los</string>
     <string name="setup_done_home">Zum Start</string>
     <string name="a11y_label">WhisperLoom Text-Einfügen</string>
-    <string name="a11y_description">Fügt diktierten Text ins gerade fokussierte Feld ein, damit du beim Diktieren nicht die Tastatur wechseln musst. Es wird nichts mitgelesen oder gespeichert.</string>
+    <!-- Zeigt Android beim Aktivieren. Gelesen wird nur das Zielfeld: Text und Cursor zum Einfügen, isPassword für den Verlauf. -->
+    <string name="a11y_description">Fügt Diktate vom Knopf ins fokussierte Feld ein. Liest nur dieses Feld und prüft, ob es ein Passwortfeld ist. Die Diktate kommen in den Verlauf, wenn er an ist.</string>
 
     <!-- Prominent Disclosure (Google-Play-Pflicht: eigener Consent-Hinweis vor Mikrofon-/Bedienungshilfe-Zugriff) -->
     <string name="disclosure_mic_title">Mikrofon &amp; Diktat</string>
     <string name="disclosure_mic_body">WhisperLoom nimmt beim Diktieren Ton auf, um ihn in Text umzuwandeln. Im Online-Modus wird die Aufnahme zur Erkennung an den von dir gewählten Anbieter gesendet (z. B. OpenAI oder Groq); im Offline-Modus verlässt die Aufnahme das Gerät nicht. WhisperLoom speichert keine Aufnahmen; nur der Auftrag eines Pro Widgets bleibt auf dem Gerät, bis er gesendet ist.</string>
     <string name="disclosure_a11y_title">Bedienungshilfe: Text einfügen</string>
-    <string name="disclosure_a11y_body">Die Bedienungshilfe „WhisperLoom Text-Einfügen“ fügt ausschließlich den diktierten Text in das gerade aktive Eingabefeld ein. Sie liest keine Bildschirminhalte mit und speichert nichts, und sie wird nur aktiv, wenn du den Knopf antippst.</string>
+    <string name="disclosure_a11y_body">Die Bedienungshilfe „WhisperLoom Text-Einfügen“ fügt den diktierten Text in das gerade aktive Eingabefeld ein. Dafür liest sie nur dieses Feld: Text und Cursor, um an der richtigen Stelle einzufügen, und ob es ein Passwortfeld ist. Andere Bildschirminhalte liest sie nicht, den Feldinhalt speichert sie nicht, und sie wird nur aktiv, wenn du den Knopf antippst. Diktate vom Knopf hebt WhisperLoom im Verlauf auf dem Gerät auf, solange er eingeschaltet ist, nicht aus Passwortfeldern.</string>
     <string name="disclosure_continue">Fortfahren</string>
 
     <!-- Tutorial (T): einmal nach der Einrichtung, sonst Home „Mehr“ (Seite 3) und Hilfe „Tutorial erneut ansehen“ -->
@@ -217,27 +218,31 @@
     <string name="tutorial_cd_page" tools:ignore="PluralsCandidate">Seite %1$d von %2$d</string>
     <string name="tutorial_p1_title">Diktieren mit dem Knopf</string>
     <string name="tutorial_p1_body">Tippe den schwebenden Knopf an: Er wird rot und nimmt auf. Nochmal antippen — der Text landet im aktiven Feld. Auf ✕ ziehen verwirft. Rot mit ↻: antippen versucht es erneut.</string>
-    <string name="tutorial_p2_title">Diktier-Tastatur</string>
+    <string name="tutorial_p2_title">Diktat-Tastatur</string>
     <string name="tutorial_p2_body">Zeigt eine App den Knopf nicht, hilft die WhisperLoom-Tastatur: über das Tastatur-Symbol wechseln, Mikrofon gedrückt halten, sprechen. Loslassen fügt den Text ein.</string>
     <string name="tutorial_p3_title">Sprachnachrichten abtippen</string>
     <string name="tutorial_p3_body">Halte in WhatsApp, Telegram oder Signal die Sprachnachricht lange gedrückt, tippe auf „Teilen“ und wähle WhisperLoom. Kurz darauf steht der Text da — auch für mehrere.</string>
     <string name="tutorial_p4_title">Der Text ist da</string>
     <string name="tutorial_p4_body">Der Text erscheint in Absätzen. Der Schalter „Füllwörter ausblenden“ nimmt „ähm“ und „äh“ heraus. Dann kopieren oder teilen. Alles hier steht auch unter Anleitung &amp; Hilfe.</string>
-    <string name="tutorial_img_button">Handy mit Textfeld und schwebendem Mikro-Knopf, der rot pulsiert; ein Pfeil zeigt vom Knopf ins Textfeld.</string>
-    <string name="tutorial_img_keyboard">Handy mit dunkler Diktier-Tastatur; ein Finger hält die große Mikrofon-Taste gedrückt, darüber Pegelbalken.</string>
+    <string name="tutorial_img_button">Handy mit Textfeld und schwebendem Knopf, der rot pulsiert; ein Pfeil zeigt vom Knopf ins Textfeld.</string>
+    <string name="tutorial_img_keyboard">Handy mit dunkler Diktat-Tastatur; ein Finger hält die große Mikrofon-Taste gedrückt, darüber Pegelbalken.</string>
     <string name="tutorial_img_share">Chat mit einer Sprachnachricht, die lange gedrückt wird; darüber der Menüpunkt „Teilen“ und daneben ein Teilen-Blatt, in dem die WhisperLoom-Kachel hervorgehoben ist.</string>
     <string name="tutorial_img_result">Ergebniskarte von WhisperLoom mit drei Textabsätzen, dem eingeschalteten Schalter „Füllwörter ausblenden“ und den Knöpfen Kopieren und Teilen.</string>
 
     <!-- §6.4 Einstellungen-Hub (E), Über (E6) -->
     <string name="settings_title">Einstellungen</string>
-    <string name="settings_group_recognition">Erkennung</string>
-    <string name="settings_group_text">Text</string>
+    <!-- 3.9.0: Zeilenname = Seitentitel (die neuen Seiten nutzen diese Strings als Titel) -->
+    <string name="settings_group_refine">Textverbesserung</string>
+    <string name="settings_group_dictionary">Wörterbuch &amp; Regeln</string>
+    <string name="settings_group_recognition">Spracherkennung</string>
+    <string name="settings_group_llm">KI-Zugang</string>
     <string name="settings_group_button">Knopf &amp; Tastatur</string>
     <string name="settings_group_models">Offline-Modelle</string>
     <string name="settings_group_help">Anleitung &amp; Hilfe</string>
     <string name="settings_group_about">Über WhisperLoom</string>
     <!-- Gruppen im Hub (angezeigt in Großbuchstaben) -->
-    <string name="settings_section_basics">Grundlagen</string>
+    <string name="settings_section_text">Text</string>
+    <string name="settings_section_models">Modelle &amp; Zugänge</string>
     <string name="settings_section_controls">Bedienung</string>
     <string name="settings_section_pro">Pro</string>
     <string name="settings_section_info">Info</string>
@@ -247,10 +252,10 @@
     <string name="settings_val_bubble_off">Knopf aus</string>
     <string name="settings_val_kb_on">Tastatur aktiv</string>
     <string name="settings_val_kb_off">Tastatur nicht aktiviert</string>
-    <string name="settings_val_text">%1$s · %2$s</string>
+    <!-- %1$s = Stufe beim Diktat, %2$s = Stufe für Sprachnachrichten -->
+    <string name="settings_val_refine">Diktat: %1$s · Sprachnachrichten: %2$s</string>
     <string name="settings_rule_fillers">Füllwörter</string>
     <string name="settings_rule_cap">Groß-Schreibung</string>
-    <string name="settings_rule_space">Leerzeichen</string>
     <string name="settings_rule_offline_local">lokal bei Offline</string>
     <string name="settings_rule_offline_online_local">online, ohne Netz lokal</string>
     <string name="settings_rule_offline_skip">ohne lokales Modell</string>
@@ -261,7 +266,7 @@
     <string name="about_source">Quellcode auf GitHub</string>
 
     <!-- §6.5 Erkennung (E1) und Zugangs-Felder (auch Schritt 2a) -->
-    <string name="rec_title">Erkennung</string>
+    <string name="rec_title">Spracherkennung</string>
     <string name="rec_engine_online">Online-Dienst</string>
     <string name="rec_engine_offline">Offline-Modell</string>
     <string name="rec_no_model">Kein Modell geladen</string>
@@ -269,7 +274,6 @@
     <string name="rec_card_transcription">Transkription</string>
     <string name="rec_card_offline">Offline-Modell</string>
     <string name="rec_offline_first_use">Erste Nutzung lädt das Modell in den Speicher (2–5 s).</string>
-    <string name="rec_card_language">Sprache &amp; Kontext</string>
     <string name="rec_language">Sprache</string>
     <string name="rec_provider">Anbieter</string>
     <string name="rec_base_url">Base-URL</string>
@@ -330,28 +334,56 @@
     <string name="model_custom_info">Genau so, wie der Anbieter die ID nennt.</string>
     <string name="key_sheet_title">Wo bekomme ich einen Key?</string>
 
-    <!-- §6.6 Text (E2) und Füllwörter-Sheet (B3) -->
-    <string name="text_title">Text</string>
-    <string name="text_card_refine">Textverbesserung (KI)</string>
+    <!-- §6.6 Textverbesserung (E2, 3.9.0 eine Seite) und Füllwörter-Sheet (B3) -->
+    <string name="text_card_refine">Beim Diktieren</string>
     <string name="text_level_off_sub">Nur die Regeln ohne KI, keine zweite Anfrage.</string>
-    <string name="text_level_smooth_sub">Zeichensetzung, Groß-/Kleinschreibung, Absätze. Inhalt unverändert.</string>
+    <!-- Gilt für alle drei Bereinigungen; was wegfällt, sagt die gewählte Bereinigung dahinter. -->
+    <string name="text_level_smooth_sub">Zeichensetzung und Groß-/Kleinschreibung, nah an deinen Worten.</string>
     <string name="text_level_beautify_sub">Formuliert flüssiger und klarer, behält Inhalt, Ton und deine Wörter.</string>
     <string name="text_level_summarize_sub">Kürzt auf das Wesentliche. Namen, Zahlen und Termine bleiben genau.</string>
     <string name="text_level_prompt_sub">Formt das Diktat zu einem gegliederten Prompt für ChatGPT, Claude &amp; Co.</string>
     <string name="text_level_cost">Zweite Anfrage · ca. 1–2 s länger · geringe Zusatzkosten</string>
-    <string name="pref_smart_fillers">Füllwörter intelligent entfernen</string>
-    <string name="pref_smart_fillers_info">Statt fester Wortliste entscheidet die KI selbst, welche Füllwörter, Versprecher und Wiederholungen weg können. Im Zweifel bleibt das Wort. Gilt auch für Sprachnachrichten.</string>
     <string name="text_smart_needs_level">Braucht eine Stufe über „Aus“.</string>
-    <string name="pref_polish_readable">Lesbarer glätten</string>
-    <string name="pref_polish_readable_info">„Glätten“ repariert auch holprige Sätze: Satzabbrüche, Versprecher, Wiederholungen, Füllwörter. Deine Wörter und dein Ton bleiben.</string>
-    <string name="text_readable_needs_polish">Wirkt mit der Stufe „Glätten“.</string>
-    <string name="pref_refine_paragraphs">Automatische Absätze</string>
-    <string name="pref_refine_paragraphs_info">Die KI gliedert längere Diktate in Absätze. Ausgeschaltet kommt alles als ein durchgehender Text.</string>
-    <string name="text_card_share">Geteilte Sprachnachrichten</string>
+    <string name="text_card_share">Bei geteilten Sprachnachrichten</string>
     <string name="text_share_intro">Für Audios, die du per Teilen an WhisperLoom schickst (z. B. aus WhatsApp). Eigene Stufe, unabhängig vom Diktat; bei „Aus“ bleibt der Text wortgetreu.</string>
     <string name="text_share_off_sub">Wortgetreu, Füllwörter per Schalter ausblendbar. Keine zweite Anfrage.</string>
-    <string name="text_card_offline">Offline-Erkennung</string>
-    <string name="text_local_none">Kein Textmodell geladen</string>
+    <string name="refine_offline">Bei Offline-Erkennung</string>
+    <!-- Stufen-Zeile (3.9.0): der Text öffnet die Seite der Stufe (erkennbar am ›), die unsichtbare Zone um den Punkt wählt sie -->
+    <string name="stage_open_settings">Einstellungen öffnen</string>
+    <!-- %1$s = Stufe („Glätten“); TalkBack-Name der Auswahl-Zone -->
+    <string name="stage_use_dictation_cd">%1$s für Diktat verwenden</string>
+    <string name="stage_use_share_cd">%1$s für Sprachnachrichten verwenden</string>
+    <!-- Stufen-Seiten (je Stufe und Weg) -->
+    <string name="stage_use_dictation">Für Diktat verwenden</string>
+    <string name="stage_use_share">Für Sprachnachrichten verwenden</string>
+    <string name="stage_active_dictation">Beim Diktat aktiv</string>
+    <string name="stage_active_share">Bei Sprachnachrichten aktiv</string>
+    <string name="stage_cleanup">Bereinigung</string>
+    <string name="stage_cleanup_plain">Nur Zeichensetzung</string>
+    <string name="stage_cleanup_plain_sub">Setzt Satzzeichen und Groß-/Kleinschreibung. Die KI streicht kein Wort, das macht nur deine Füllwort-Liste.</string>
+    <string name="stage_cleanup_clean">Ohne Füllwörter</string>
+    <string name="stage_cleanup_clean_sub">Die KI lässt Füllwörter, Versprecher und Wiederholungen weg, im Zweifel bleibt das Wort.</string>
+    <string name="stage_cleanup_readable">Lesbar</string>
+    <string name="stage_cleanup_readable_sub">Repariert auch holprige Sätze und Satzabbrüche. Deine Wörter und dein Ton bleiben.</string>
+    <string name="stage_paragraphs">Absätze</string>
+    <string name="stage_paragraphs_sub">Die KI gliedert längere Diktate in Absätze. Aus: alles als ein durchgehender Text.</string>
+    <string name="stage_paragraphs_off">Ohne Absätze</string>
+    <string name="stage_paragraphs_share">Sprachnachrichten werden immer in Absätze gegliedert.</string>
+    <string name="stage_form">Form</string>
+    <string name="stage_form_auto">Automatisch</string>
+    <string name="stage_form_auto_sub">Als Liste ab drei Aufgaben, Terminen oder Fragen, sonst in kurzen Absätzen.</string>
+    <string name="stage_form_prose">Fließtext</string>
+    <string name="stage_form_prose_sub">Wenige Sätze am Stück, ohne Liste.</string>
+    <string name="stage_model">Modell</string>
+    <string name="stage_model_both">Gilt beim Diktat und für Sprachnachrichten. Ein neuer Anbieter setzt es auf „Standard“ zurück.</string>
+    <!-- Sprachnachrichten übernehmen das Modell des Diktats; %1$s = Modell der Stufe -->
+    <string name="stage_model_like_dictation">Wie beim Diktat · %1$s</string>
+    <string name="stage_model_like_dictation_plain">Wie beim Diktat</string>
+    <string name="stage_model_no_model">Trag unter „KI-Zugang“ zuerst ein Modell ein. Es ist der Standard aller Stufen, danach kannst du hier ein anderes wählen.</string>
+    <!-- Stufen-Seite „Aus“: was ohne KI mit dem Text geschieht -->
+    <string name="stage_off_dictation_info">Ohne KI gelten nur die festen Regeln: die Füllwort-Liste mit deinen eigenen Wörtern und die Großschreibung am Satzanfang, je nachdem, was davon eingeschaltet ist.</string>
+    <string name="stage_off_share_info">Die Nachricht bleibt wortgetreu, ohne KI und ohne die festen Regeln. Im Fenster blendet der Schalter „Füllwörter ausblenden“ die Wörter der Füllwort-Liste aus.</string>
+    <string name="stage_off_share_fillers">Füllwort-Liste fürs Ausblenden im Fenster</string>
     <string name="text_local_needs_ram">Für ein lokales Textmodell braucht das Gerät mindestens 6 GB RAM.</string>
     <string name="text_rule_title">Textverbesserung bei Offline-Erkennung</string>
     <string name="text_rule_local">Lokales Textmodell</string>
@@ -398,29 +430,21 @@
     <string name="text_no_llm">%1$s erkennt nur Sprache und bietet keine Textverbesserung.</string>
     <string name="text_add_access">Eigenen Zugang eintragen</string>
     <string name="text_test">Zugang prüfen</string>
-    <string name="text_card_rules">Regeln ohne KI</string>
+    <!-- Wörterbuch & Regeln (3.9.0): Vokabular und die festen Regeln ohne KI -->
+    <string name="dict_card_vocab">Wörterbuch</string>
+    <string name="dict_card_rules">Feste Regeln</string>
     <string name="pref_remove_fillers">Füllwörter entfernen (ähm, äh …)</string>
-    <string name="text_fillers_sub">Feste Wortliste je Sprache</string>
+    <!-- Die Liste läuft nach jeder Stufe außer „Prompt“, auch wenn die KI schon Füllwörter weglässt. -->
+    <string name="text_fillers_sub">Feste Wortliste je Sprache · läuft zuletzt, mit und ohne KI</string>
     <string name="text_fillers_edit">Liste bearbeiten</string>
     <string name="pref_auto_cap">Automatisch groß schreiben</string>
     <string name="pref_trailing_space">Leerzeichen nach Diktat anhängen</string>
-    <string name="text_fillers_paused">Die Wortliste pausiert, solange die KI über Füllwörter entscheidet.</string>
-    <!-- 3.8.6 Text-Hub (Unterzeile = aktueller Wert) und Unterseiten; Seitentitel = Zeilentitel -->
-    <string name="text_hub_section_stages">KI-Stufen</string>
-    <string name="text_hub_section_models">Modelle &amp; Zugang</string>
-    <string name="text_hub_section_rules">Ohne KI</string>
-    <string name="text_hub_dictation">Diktat</string>
-    <string name="text_hub_share">Sprachnachrichten</string>
-    <string name="text_hub_access">Online-Zugang &amp; Modelle</string>
-    <!-- %1$s = Stufe („Glätten“) -->
-    <string name="text_hub_val_readable">%1$s · lesbarer</string>
-    <string name="text_hub_val_share_off">Aus · wortgetreu</string>
+    <!-- Unterzeilen (aktueller Wert) von KI-Zugang und „Bei Offline-Erkennung“ -->
     <!-- %1$s = Anbieter der Erkennung -->
     <string name="text_hub_val_access_same">Wie Erkennung · %1$s</string>
     <string name="text_hub_val_access_none">Kein Online-Zugang</string>
     <!-- %1$s = Regel („Lokales Textmodell“) -->
     <string name="text_hub_val_offline_missing">%1$s · Textmodell fehlt</string>
-    <string name="text_hub_val_rules_none">Keine</string>
     <plurals name="text_hub_val_models_custom">
         <item quantity="one">%d Stufe mit eigenem Modell</item>
         <item quantity="other">%d Stufen mit eigenem Modell</item>
@@ -430,7 +454,7 @@
     <!-- %1$s = Modell zum Glätten, %2$s = Modell zum Umformulieren -->
     <string name="text_models_recommended_sub">Glätten: %1$s · Umformulieren: %2$s</string>
     <string name="text_models_title">Modell je Stufe</string>
-    <string name="text_models_intro">„Standard“ ist das Modell des Zugangs, bei „Empfehlung je Stufe“ ein schnelles zum Glätten und ein stärkeres zum Umformulieren. Glätten gilt auch für „Lesbarer glätten“.</string>
+    <string name="text_models_intro">„Standard“ ist das Modell des Zugangs, bei „Empfehlung je Stufe“ ein schnelles zum Glätten und ein stärkeres zum Umformulieren. Gilt für Diktat und Sprachnachrichten.</string>
     <!-- %1$s = Modell, mit dem die Stufe ohne eigenes Modell rechnet -->
     <string name="text_models_standard">Standard · %1$s</string>
     <string name="text_models_standard_option">Standard (%1$s)</string>
@@ -466,7 +490,8 @@
     <string name="perm_notif">Benachrichtigungen</string>
     <string name="perm_allow">Erlauben</string>
     <string name="perm_open">Öffnen</string>
-    <string name="button_card_keyboard">Diktier-Tastatur</string>
+    <string name="button_card_keyboard">Diktat-Tastatur</string>
+    <string name="button_card_insert">Einfügen</string>
     <string name="button_keyboard_intro">Alternative zum Knopf: WhisperLoom als Tastatur mit Halten-zum-Sprechen. Nützlich, wenn eine App kein Overlay erlaubt.</string>
     <string name="button_card_howto">Kurzanleitung</string>
     <string name="help_dictate_1">Knopf antippen = Aufnahme</string>
@@ -504,7 +529,7 @@
     <string name="models_source">Quelle: huggingface.co/ggerganov/whisper.cpp</string>
     <string name="models_section_stt">Spracherkennung</string>
     <string name="models_section_llm">Textverbesserung</string>
-    <string name="models_llm_intro">Verbessert offline erkannten Text auf dem Gerät — ohne Netz, der Text verlässt das Handy nicht. Wann es rechnet, stellst du unter Text › Offline-Erkennung ein.</string>
+    <string name="models_llm_intro">Verbessert offline erkannten Text auf dem Gerät — ohne Netz, der Text verlässt das Handy nicht. Wann es rechnet, stellst du darunter bei „Textverbesserung bei Offline-Erkennung“ ein.</string>
     <string name="models_gemma_e2b">Gemma 4 E2B</string>
     <string name="models_gemma_e2b_sub">%1$s · ~1,8 GB RAM · Gerät ab 6 GB RAM</string>
     <string name="models_gemma_e4b">Gemma 4 E4B</string>
@@ -534,9 +559,9 @@
     <!-- §6.9 Hilfe (E5, B1). Reihenfolge im Screen: s1–s5, widgets, s6 (Datenschutz), s7 (Probleme). -->
     <string name="help_title">Anleitung &amp; Hilfe</string>
     <string name="help_s1_title">So funktioniert\'s</string>
-    <string name="help_s1_intro">Drei Wege zum Text: der schwebende Knopf, die Diktier-Tastatur und Sprachnachrichten, die du an WhisperLoom teilst.</string>
+    <string name="help_s1_intro">Drei Wege zum Text: der schwebende Knopf, die Diktat-Tastatur und Sprachnachrichten, die du an WhisperLoom teilst.</string>
     <string name="help_s1_bubble">Schwebender Knopf: antippen = Aufnahme, nochmal = fertig &amp; einfügen, auf ✕ ziehen = verwerfen, rot = Fehler, antippen = erneut.</string>
-    <string name="help_s1_keyboard">Diktier-Tastatur: Mikrofon gedrückt halten, sprechen, loslassen.</string>
+    <string name="help_s1_keyboard">Diktat-Tastatur: Mikrofon gedrückt halten, sprechen, loslassen. Nach rechts wischen stellt fest; dann pausiert ein Tipp, der nächste setzt fort, ➤ sendet, ✕ verwirft.</string>
     <string name="help_s1_share">Sprachnachrichten: in WhatsApp lange drücken → Teilen → WhisperLoom. Der Text erscheint in Absätzen, du kannst ihn kopieren oder weitergeben.</string>
     <string name="help_s1_tutorial">Tutorial erneut ansehen</string>
     <string name="help_s2_title">Einrichtung Schritt für Schritt</string>
@@ -556,7 +581,7 @@
     <string name="help_key_ollama_cloud">ollama.com registrieren → Settings → Keys → Add API Key. Nur Textverbesserung. Für ein lokales Ollama brauchst du keinen Key.</string>
     <string name="help_prices_note">Preise Stand 09/2026, ohne Gewähr.</string>
     <string name="help_s4_title">Eigener Server</string>
-    <string name="help_s4_intro">Jeder OpenAI-kompatible Server geht, z. B. speaches, whisper.cpp-server oder LocalAI. Eintragen unter Erkennung → Anbieter „Eigener Server“.</string>
+    <string name="help_s4_intro">Jeder OpenAI-kompatible Server geht, z. B. speaches, whisper.cpp-server oder LocalAI. Eintragen unter Spracherkennung → Anbieter „Eigener Server“.</string>
     <string name="help_s4_body">Base-URL eintragen, Key nur falls verlangt. Endpunkte: /v1/audio/transcriptions und /v1/chat/completions.\nTextverbesserung auch über Ollama: lokal ohne Key, Cloud mit Key.\nhttp:// nur im eigenen Netz oder per VPN.</string>
     <string name="help_s5_title">Offline-Modus</string>
     <string name="help_s5_body">Ein Offline-Modell erkennt Sprache auf dem Gerät (Small: etwa 5–12 s). Einmal laden (32–574 MB), löschen unter Offline-Modelle. Für Deutsch empfohlen: Small.</string>
@@ -572,7 +597,8 @@
     <string name="help_s6_intro">WhisperLoom speichert keine Aufnahmen (nur ein Pro-Widget-Auftrag wartet bis zum Senden), und dein Key bleibt auf dem Gerät.</string>
     <string name="help_s6_online">Online: Audio und Vokabular gehen an den gewählten Anbieter, bei Textverbesserung auch der erkannte Text — mit Ollama im eigenen Netz bleibt er dort. Eine Vokabular-Datei wird nur gelesen.</string>
     <string name="help_s6_offline">Offline: Die Aufnahme bleibt auf dem Gerät, mit dem lokalen Textmodell auch der Text. Ins Netz gehen nur Modell-Downloads und, wenn du offline online verbessern lässt, der erkannte Text.</string>
-    <string name="help_s6_a11y">Die Bedienungshilfe liest nichts mit und speichert nichts; sie fügt nur den diktierten Text ein.</string>
+    <string name="help_s6_history">Den Text deiner Diktate aus Knopf und Tastatur hebt der Verlauf auf — nur auf dem Gerät, nie im Backup. Abschalten: Verlauf › ⋮ › Verlauf-Einstellungen.</string>
+    <string name="help_s6_a11y">Die Bedienungshilfe liest nur das Feld, in das sie einfügt, und prüft, ob es ein Passwortfeld ist — keine anderen Bildschirminhalte. Den Feldinhalt speichert sie nicht.</string>
     <string name="help_s7_title">Wenn etwas nicht klappt</string>
     <string name="help_s7_intro">Die häufigsten Probleme und wo du sie behebst: Antippen zeigt die Lösung, „Öffnen“ führt direkt hin.</string>
     <string name="help_p1">Knopf erscheint nicht</string>
@@ -594,7 +620,9 @@
     <string name="share_sending">Wird übertragen …</string>
     <string name="share_refining">Text wird verbessert …</string>
     <string name="share_refining_local">Text wird lokal verbessert …</string>
-    <string name="share_refine_note">Textverbesserung: %1$s · änderbar unter Einstellungen › Text › Sprachnachrichten</string>
+    <!-- %1$s = Stufe, %2$s = share_refine_link (als Link) -->
+    <string name="share_refine_note">Textverbesserung: %1$s · änderbar unter %2$s</string>
+    <string name="share_refine_link">Einstellungen › Textverbesserung</string>
     <string name="share_refine_local_fallback">Textverbesserung: %1$s · online fehlgeschlagen, lokal verbessert</string>
     <string name="share_refine_partly" tools:ignore="PluralsCandidate">Textverbesserung: %1$s · bei %2$d von %3$d Dateien übersprungen: %4$s</string>
     <string name="share_copy">Kopieren</string>
@@ -655,10 +683,28 @@
     <string name="kb_error">Fehler bei der Erkennung — erneut versuchen</string>
     <string name="kb_lock_armed">Loslassen stellt die Aufnahme fest</string>
     <string name="kb_cancel_armed">Loslassen verwirft die Aufnahme</string>
-    <string name="kb_locked">Aufnahme %1$s — senden oder verwerfen</string>
+    <!-- Festgestellt ist die Mikro-Taste Pause bzw. Weiter, gesendet wird über ➤. Die Texte sind
+         etwa so lang wie früher, sonst springt die Höhe der Statuszeile. -->
+    <string name="kb_locked">Aufnahme %1$s — Pause, senden, verwerfen</string>
+    <string name="kb_paused">Pausiert bei %1$s — weiter, senden, verwerfen</string>
+    <!-- Nur Online-Erkennung: OpenAI nimmt höchstens rund 13 min, danach wäre das Audio weg. -->
+    <string name="kb_long">Aufnahme %1$s — bald senden, höchstens %2$s</string>
+    <string name="kb_capped">Höchstlänge erreicht — senden oder verwerfen</string>
+    <!-- Offline über die Höchstlänge aufgenommen, in der Pause auf Online umgestellt: der Anbieter
+         lehnte die Datei ab, und das Audio wäre weg. -->
+    <string name="kb_too_long">Zu lang für Online-Erkennung — offline senden oder verwerfen</string>
+    <!-- Ein Tastaturwechsel beendet die Tastatur; ein offenes Diktat käme dann nur noch in den Verlauf (DictationRescue). -->
+    <string name="kb_finish_first">Erst senden oder verwerfen</string>
     <string name="kb_discarded">Aufnahme verworfen</string>
+    <!-- Das Feld war beim Einfügen weg (App gewechselt, Tastatur zu): der fertige Text ging
+         nirgends hin, liegt aber im Verlauf. Steht bis zum nächsten Diktat. -->
+    <string name="kb_only_in_history">Feld nicht mehr da — Text liegt im Verlauf</string>
+    <!-- Dasselbe ohne Verlauf (ausgeschaltet): der Text liegt in der Zwischenablage. Aus einem
+         Passwort- oder Inkognito-Feld nicht — dort sagt die Zeile nur, dass nichts eingefügt wurde. -->
+    <string name="kb_only_in_clipboard">Feld nicht mehr da — Text in der Zwischenablage</string>
+    <string name="kb_not_inserted">Feld nicht mehr da — Text nicht eingefügt</string>
     <string name="kb_refine_set">Textverbesserung: %1$s</string>
-    <string name="kb_refine_needs_llm">Für die KI-Stufen fehlt ein Zugang — tippe zum Einrichten</string>
+    <string name="kb_refine_needs_llm">KI-Zugang fehlt — tippe zum Einrichten</string>
     <string name="kb_refine_needs_local">Offline ohne Textmodell — tippe zum Laden</string>
     <!-- Kurzfassungen der Stufen: in der Tastatur teilen sich vier Tasten eine Zeile (mit
          „Prompt“ fünf), "Verschönern" und "Zusammenfassen" passen dort nicht. -->
@@ -673,6 +719,7 @@
     <string name="kb_period">.</string>
     <string name="cd_mic">Diktat-Mikrofon — antippen zum Starten, gedrückt halten zum Sprechen</string>
     <string name="cd_kb_switch">Eingabemethode wechseln</string>
+    <string name="cd_kb_switch_blocked">Eingabemethode wechseln — erst senden oder verwerfen</string>
     <string name="cd_kb_comma">Komma</string>
     <string name="cd_kb_space">Leerzeichen</string>
     <string name="cd_kb_period">Punkt</string>
@@ -686,7 +733,9 @@
     <string name="cd_kb_send">Aufnahme senden</string>
     <string name="cd_kb_lock">Aufnahme feststellen</string>
     <string name="cd_mic_recording">Aufnahme läuft, %1$s — antippen zum Senden</string>
-    <string name="cd_mic_locked">Aufnahme festgestellt, %1$s — antippen zum Senden</string>
+    <string name="cd_mic_locked">Aufnahme festgestellt, %1$s — antippen zum Pausieren</string>
+    <string name="cd_mic_paused">Aufnahme pausiert, %1$s — antippen zum Weitersprechen</string>
+    <string name="cd_mic_capped">Aufnahme pausiert, Höchstlänge erreicht — senden oder verwerfen</string>
     <string name="cd_mic_sending">Wird übertragen</string>
     <string name="cd_mic_refining">Text wird verbessert. Antippen fügt ihn ohne KI ein</string>
     <string name="cd_mic_error">Fehler — antippen für erneuten Versuch</string>
@@ -837,7 +886,7 @@
     <string name="agent_widget_hint">Widget platzieren: Startbildschirm lange drücken → Widgets → WhisperLoom → „Sprach-Command“.</string>
     <string name="settings_prompt_sub">Stufe „Prompt“</string>
     <string name="prompt_enable">Stufe „Prompt“ anbieten</string>
-    <string name="prompt_enable_sub">Zusätzliche Stufe in Tastatur und Einstellungen → Text: formt ein Diktat zu einem gegliederten Prompt für KI-Assistenten wie ChatGPT oder Claude.</string>
+    <string name="prompt_enable_sub">Zusätzliche Stufe in Tastatur und Einstellungen → Textverbesserung: formt ein Diktat zu einem gegliederten Prompt für KI-Assistenten wie ChatGPT oder Claude.</string>
     <string name="tutorial_pro_p1_title">Pro Widgets freischalten</string>
     <string name="tutorial_pro_p1_body">Unter Einstellungen → Erweitert schaltest du „Pro Widgets“ ein. Danach hat das Widget-Menü einen eigenen Tab dafür.</string>
     <string name="tutorial_pro_p2_title">Widget anlegen</string>
@@ -918,4 +967,97 @@
     <string name="patchnotes_unavailable_title">Patchnotes nicht verfügbar</string>
     <string name="patchnotes_unavailable_body">In dieser App-Version fehlen die Patchnotes. Alle Änderungen stehen auf GitHub.</string>
     <string name="patchnotes_unavailable_action">Auf GitHub ansehen</string>
+    <!-- Verlauf (3.9.0, Plan §6): Liste, Eintrag, Andere Stufe, Bearbeiten, Verlauf-Einstellungen.
+         Nie Diktat-Text in Benachrichtigungen oder Logs — hier stehen nur Bezeichnungen. -->
+    <string name="settings_section_history">Verlauf</string>
+    <string name="settings_group_history">Verlauf</string>
+    <string name="settings_history_on" tools:ignore="PluralsCandidate">An · %1$d von %2$d</string>
+    <string name="settings_history_on_plain">An</string>
+    <string name="settings_history_off">Aus</string>
+    <string name="home_cd_history">Verlauf</string>
+    <string name="cd_more">Weitere Optionen</string>
+    <string name="history_title">Verlauf</string>
+    <string name="history_today">Heute</string>
+    <string name="history_yesterday">Gestern</string>
+    <string name="history_source_keyboard">Tastatur</string>
+    <string name="history_source_bubble">Knopf</string>
+    <!-- Zeile der Liste: Uhrzeit · Quelle · Dauer -->
+    <string name="history_meta">%1$s · %2$s · %3$s</string>
+    <string name="history_failed">ohne KI</string>
+    <string name="history_empty">Noch keine Diktate</string>
+    <string name="history_empty_body">Was du mit der Diktat-Tastatur oder dem schwebenden Knopf diktierst, erscheint hier.</string>
+    <string name="history_off">Verlauf ist aus</string>
+    <string name="history_off_body">Diktate werden nicht gespeichert.</string>
+    <string name="history_turn_on">Einschalten</string>
+    <string name="history_clear">Alle löschen</string>
+    <string name="history_clear_title">Alle Einträge löschen?</string>
+    <string name="history_clear_body">Der ganze Verlauf wird gelöscht. Das lässt sich nicht rückgängig machen.</string>
+    <string name="history_deleted">Eintrag gelöscht</string>
+    <string name="history_undo">Rückgängig</string>
+    <string name="history_entry_title">Diktat</string>
+    <!-- Kopfkarte: "Heute, 14:32" und "Tastatur · 0:41 · 86 Wörter" -->
+    <string name="history_when">%1$s, %2$s</string>
+    <string name="history_head">%1$s · %2$s · %3$s</string>
+    <plurals name="history_words">
+        <item quantity="one">%d Wort</item>
+        <item quantity="other">%d Wörter</item>
+    </plurals>
+    <string name="history_origin">Ursprung</string>
+    <string name="history_version_off">Ohne KI</string>
+    <string name="history_version_edited">Bearbeitet</string>
+    <!-- Glätten mit Bereinigung: "Glätten · Lesbar" -->
+    <string name="history_version_polish">%1$s · %2$s</string>
+    <string name="history_busy">wird verarbeitet</string>
+    <!-- Hinweiszeile: "Zusammenfassen · Claude Sonnet 5.5" -->
+    <string name="history_note">%1$s · %2$s</string>
+    <string name="history_note_failed">%1$s · ohne KI: %2$s</string>
+    <string name="history_note_failed_plain">%1$s · ohne KI</string>
+    <string name="history_note_edited">%1$s · bearbeitet</string>
+    <string name="history_note_off">Ohne KI · nur die festen Regeln</string>
+    <string name="history_note_edited_origin">Bearbeiteter Ursprung</string>
+    <string name="history_cd_edit">Bearbeiten</string>
+    <string name="history_other_stage">Andere Stufe …</string>
+    <string name="history_reprocess_failed">%1$s · Eintrag unverändert</string>
+    <string name="history_reprocess_failed_plain">Ohne KI · Eintrag unverändert</string>
+    <!-- Die Fassung wurde bearbeitet, während „Andere Stufe …“ sie neu rechnete. -->
+    <string name="history_reprocess_kept">Fassung inzwischen bearbeitet · deine Änderungen bleiben</string>
+    <string name="history_sheet_title">Andere Stufe</string>
+    <string name="history_sheet_hint">Aus dem Ursprung mit deinen aktuellen Einstellungen: eine Text-Anfrage, keine neue Erkennung. Deine eingestellte Stufe bleibt.</string>
+    <string name="history_sheet_more">Weitere Stufen</string>
+    <string name="history_sheet_existing">vorhanden</string>
+    <string name="history_replace_title">Bearbeitete Fassung ersetzen?</string>
+    <string name="history_replace_body">Deine Änderungen an „%1$s“ gehen dabei verloren.</string>
+    <string name="history_replace">Ersetzen</string>
+    <string name="history_edit_title">Bearbeiten</string>
+    <string name="history_edit_of">Fassung: %1$s</string>
+    <!-- TalkBack-Name des Textfelds im Bearbeiten-Fenster -->
+    <!-- Speichern, aber der Eintrag ist inzwischen gelöscht oder beim Kürzen rausgefallen. -->
+    <string name="history_edit_gone">Eintrag gibt es nicht mehr · Text nicht gespeichert</string>
+    <string name="history_copy_text">Text kopieren</string>
+    <string name="history_save">Speichern</string>
+    <string name="history_cd_undo">Rückgängig</string>
+    <string name="history_cd_redo">Wiederholen</string>
+    <string name="history_discard_title">Änderungen verwerfen?</string>
+    <string name="history_discard_body">Was du hier geändert hast, wird nicht gespeichert.</string>
+    <string name="history_discard">Verwerfen</string>
+    <string name="history_keep_editing">Weiter bearbeiten</string>
+    <string name="history_settings_title">Verlauf-Einstellungen</string>
+    <string name="history_save_switch">Verlauf speichern</string>
+    <!-- Der Knopf kennt das Zielfeld nur über die Bedienungshilfe, und die sieht kein Inkognito-Flag. -->
+    <string name="history_save_switch_sub">Diktate aus Tastatur und Knopf. Ausgenommen: bei der Tastatur Passwort- und Inkognito-Felder, beim Knopf Passwortfelder, wenn die Bedienungshilfe an ist.</string>
+    <string name="history_size">Größe</string>
+    <plurals name="history_entries">
+        <item quantity="one">%d Eintrag</item>
+        <item quantity="other">%d Einträge</item>
+    </plurals>
+    <string name="history_shrink_title">Verlauf verkleinern?</string>
+    <plurals name="history_shrink_body">
+        <item quantity="one">Der älteste Eintrag wird gelöscht.</item>
+        <item quantity="other">Die %d ältesten Einträge werden gelöscht.</item>
+    </plurals>
+    <string name="history_shrink_confirm">Verkleinern</string>
+    <string name="history_off_title">Verlauf ausschalten?</string>
+    <string name="history_off_confirm_body">Alle Einträge werden gelöscht, neue Diktate nicht mehr gespeichert.</string>
+    <string name="history_off_confirm">Ausschalten</string>
+    <string name="history_settings_hint">Der Verlauf liegt nur auf diesem Gerät und kommt nie in ein Backup. Audio wird nicht gespeichert.</string>
 </resources>

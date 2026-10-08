@@ -12,6 +12,7 @@ import com.chris.whisperloom.api.TextRefiner
 import com.chris.whisperloom.llm.LocalRefiner
 import com.chris.whisperloom.llm.LocalTextEngine
 import com.chris.whisperloom.whisper.OfflineSupport
+import com.chris.whisperloom.whisper.TextModelCatalog
 
 /**
  * Die Textverbesserung eines Auftrags, wie [RefineDecision] sie entscheidet, samt Ausfuehrung —
@@ -19,7 +20,7 @@ import com.chris.whisperloom.whisper.OfflineSupport
  * [of] sammelt die Eingaben: Regel, eigener Online-Zugang, Netz und lokales Textmodell. Das Netz
  * wird VOR jeder Online-Anfrage geprueft: ohne Netz geht keine raus, statt dass das Diktat im
  * Connect-Timeout haengt. Nach einer Online-Erkennung reicht ein aktives Netz — sie hat es gerade
- * bewiesen; VALIDATED verlangt nur die Offline-Erkennung.
+ * bewiesen; VALIDATED verlangen die Offline-Erkennung und das Neu-Verarbeiten aus dem Verlauf.
  */
 internal class RefinePlan(
     val route: RefineRoute,
@@ -46,26 +47,36 @@ internal class RefinePlan(
     fun refine(
         raw: String,
         language: String,
-        mode: RefineMode,
-        smartFillers: Boolean,
-        paragraphs: Boolean,
+        refinement: Refinement,
         onNote: (String) -> Unit = {},
         cancelled: () -> Boolean = { false },
     ): String = when (route) {
         is RefineRoute.Raw -> raw
-        RefineRoute.Local -> local(raw, language, mode, smartFillers, paragraphs, cancelled)
+        RefineRoute.Local -> local(raw, language, refinement, cancelled)
         is RefineRoute.Online -> if (onlineFailed) {
-            local(raw, language, mode, smartFillers, paragraphs, cancelled)
+            local(raw, language, refinement, cancelled)
         } else {
             try {
-                TextRefiner(access, connectTimeoutMs(route), ::temperatureRejected).refine(raw, language, mode, smartFillers, paragraphs)
+                TextRefiner(access, connectTimeoutMs(route), ::temperatureRejected)
+                    .refine(raw, language, refinement.mode, refinement.smartFillers, refinement.paragraphs)
             } catch (e: Exception) {
                 if (!route.fallbackLocal || cancelled()) throw e
                 Log.w(TAG, "Online gescheitert, verbessere lokal: ${e.message}", e)
                 onlineFailed = true
-                local(raw, language, mode, smartFillers, paragraphs, cancelled).also { onNote(MSG_ONLINE_FAILED_LOCAL) }
+                local(raw, language, refinement, cancelled).also { onNote(MSG_ONLINE_FAILED_LOCAL) }
             }
         }
+    }
+
+    /**
+     * Womit [refine] gerechnet hat, als Anzeige: das Modell des Online-Zugangs oder — auf der Route
+     * [RefineRoute.Local] bzw. nach einem Online-Fehler — das lokale Textmodell. null auf [RefineRoute.Raw].
+     */
+    fun modelLabel(): String? = when {
+        route is RefineRoute.Raw -> null
+        route == RefineRoute.Local || onlineFailed -> TextModelCatalog.byId(localModelId).label
+        // Wie ui.components.modelLabel: Katalog-Label, sonst die freie ID.
+        else -> access.modelOption?.label ?: access.model
     }
 
     private fun temperatureRejected(withoutTemperature: ApiAccess) {
@@ -77,12 +88,10 @@ internal class RefinePlan(
     private fun local(
         raw: String,
         language: String,
-        mode: RefineMode,
-        smartFillers: Boolean,
-        paragraphs: Boolean,
+        refinement: Refinement,
         cancelled: () -> Boolean,
     ): String = try {
-        LocalRefiner(localModelId, cancelled).refine(raw, language, mode, smartFillers, paragraphs)
+        LocalRefiner(localModelId, cancelled).refine(raw, language, refinement.mode, refinement.smartFillers, refinement.paragraphs)
     } catch (e: RefineRejectedException) {
         throw e
     } catch (e: Exception) {
@@ -98,7 +107,7 @@ internal class RefinePlan(
         const val MSG_NO_NET = "Kein Netz für den Online-Zugang"
 
         /** Regel "lokal", aber das Textmodell fehlt oder passt nicht in den RAM (refine_local_missing). */
-        const val MSG_LOCAL_MISSING = "Kein Textmodell geladen — unter „Text“ laden oder „Überspringen“ wählen"
+        const val MSG_LOCAL_MISSING = "Kein Textmodell geladen — unter „Offline-Modelle“ laden oder „Überspringen“ wählen"
 
         /** Die lokale Rechnung ist gescheitert: Init, Speicher, nativer Fehler (refine_local_failed). */
         const val MSG_LOCAL_FAILED = "Lokales Textmodell fehlgeschlagen"
@@ -117,10 +126,17 @@ internal class RefinePlan(
          * Sammelt die Eingaben der Entscheidungstabelle. Das Netz wird nur gefragt, wenn es zaehlt
          * (Online-Erkennung oder eigener Zugang), das lokale Modell nur bei Offline-Erkennung.
          *
-         * @param mode die wirksame Stufe des Auftrags ([Prefs.dictationStage] bzw. [Prefs.shareStage]) —
-         *   sie bestimmt auch das Textmodell ([Prefs.llmModelFor]).
+         * @param mode die wirksame Stufe des Auftrags ([Refinement.mode] aus [Prefs.refinementFor]) —
+         *   sie bestimmt auch das Textmodell ([Prefs.llmModelFor], fuer beide Wege dasselbe).
+         * @param networkProven eine Anfrage hat das Netz gerade getragen ([NetworkCheck.availableFor]):
+         *   ab Werk nach einer Online-Erkennung. Das Neu-Verarbeiten aus dem Verlauf hat keinen Nachweis.
          */
-        fun of(context: Context, prefs: Prefs, mode: RefineMode): RefinePlan {
+        fun of(
+            context: Context,
+            prefs: Prefs,
+            mode: RefineMode,
+            networkProven: Boolean = prefs.engine != Engine.OFFLINE,
+        ): RefinePlan {
             val access = prefs.llmAccess(mode)
             val engine = prefs.engine
             val stageActive = mode != RefineMode.OFF
@@ -128,7 +144,7 @@ internal class RefinePlan(
             // nur ein eigener, vollstaendiger Zugang.
             val ownOnlineReady = SetupState.llmReady(access)
             val network = stageActive && (engine != Engine.OFFLINE || ownOnlineReady) &&
-                networkCheck(context).availableFor(access.baseUrl, proven = engine != Engine.OFFLINE)
+                networkCheck(context).availableFor(access.baseUrl, proven = networkProven)
             val localModelId = prefs.localLlmModel
             val localReady = stageActive && engine == Engine.OFFLINE && LocalTextEngine.isReady(context, localModelId)
             // Passt kein Textmodell ins Geraet, wirkt jede Regel wie "Ueberspringen".

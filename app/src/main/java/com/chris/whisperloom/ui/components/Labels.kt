@@ -68,7 +68,7 @@ fun textModelSize(model: OfflineModel): String =
 @Composable
 fun levelLabel(mode: RefineMode): String = when (mode) {
     RefineMode.OFF -> stringResource(R.string.level_off)
-    RefineMode.POLISH, RefineMode.PARAGRAPHS, RefineMode.READABLE -> stringResource(R.string.level_smooth)
+    RefineMode.POLISH, RefineMode.READABLE -> stringResource(R.string.level_smooth)
     RefineMode.BEAUTIFY -> stringResource(R.string.level_beautify)
     RefineMode.SUMMARIZE -> stringResource(R.string.level_summarize)
     RefineMode.PROMPT -> stringResource(R.string.level_prompt)
@@ -89,7 +89,7 @@ fun offlineRuleDetails(rule: OfflineRefineRule): String = when (rule) {
     OfflineRefineRule.SKIP -> stringResource(R.string.text_rule_skip_sub)
 }
 
-/** Kurzform der Regel fuer die Hub-Unterzeile von "Text". */
+/** Kurzform der Regel fuer die Hub-Unterzeile von "Textverbesserung". */
 @Composable
 fun offlineRuleShort(rule: OfflineRefineRule): String = when (rule) {
     OfflineRefineRule.LOCAL -> stringResource(R.string.settings_rule_offline_local)

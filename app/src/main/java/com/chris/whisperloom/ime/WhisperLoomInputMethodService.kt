@@ -7,7 +7,6 @@ import android.inputmethodservice.InputMethodService
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.os.SystemClock
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
@@ -31,13 +30,16 @@ import com.chris.whisperloom.SetupState
 import com.chris.whisperloom.TranscriptionEngine
 import com.chris.whisperloom.api.ApiNotConfiguredException
 import com.chris.whisperloom.api.isRetryable
+import com.chris.whisperloom.history.History
+import com.chris.whisperloom.history.HistoryPolicy
+import com.chris.whisperloom.history.HistorySource
 import com.chris.whisperloom.llm.LocalTextEngine
 import com.chris.whisperloom.overlay.BubbleAnimators
 import com.chris.whisperloom.overlay.BubbleMotion
 import com.chris.whisperloom.overlay.BubbleState
-import com.chris.whisperloom.overlay.BubbleVisuals
 import com.chris.whisperloom.overlay.MicIcon
 import com.chris.whisperloom.overlay.MicRings
+import com.chris.whisperloom.whisper.OfflineNotAvailableException
 import com.chris.whisperloom.whisper.OfflineSupport
 import java.util.concurrent.Executors
 import kotlin.math.abs
@@ -51,6 +53,11 @@ import kotlin.math.abs
  * dann stehen ("festgestellt") und wird ueber die beiden eingeblendeten Tasten gesendet oder
  * verworfen. Nach links wischen verwirft sofort. Die Auswertung selbst steht Android-frei in
  * [DictationGesture].
+ *
+ * Festgestellt wird die Mikro-Taste zur Pause- bzw. Weiter-Taste ([DictationSession]): In der
+ * Pause ist das Mikrofon frei, das Aufgenommene bleibt im Speicher und uebersteht das Schliessen
+ * der Tastatur. Gesendet wird dann nur noch ueber die Senden-Taste (mit TalkBack auch ueber eine
+ * Aktion der Mikro-Taste, siehe [SessionKeys]).
  *
  * Scheitert die Anfrage (kein Netz, Server-Aussetzer), bleibt das Audio gepuffert und
  * die Wiederholen-Taste erscheint — sonst waere ein langes Diktat verloren. Laeuft die
@@ -71,11 +78,26 @@ class WhisperLoomInputMethodService : InputMethodService() {
     /** Audio des letzten fehlgeschlagenen Versuchs. */
     private var pendingSamples: FloatArray? = null
 
+    /** Feld, in dem der letzte Versuch scheiterte ([fieldKey]); dort bleibt "Erneut senden" stehen. */
+    private var errorField: String? = null
+
     /** Ausweg der laufenden Uebertragung; null = keine. */
     @Volatile private var refineSkip: RefineSkip? = null
 
     /** SENDING in der Textverbesserung: ein Tipp fuegt den Text ohne KI ein. */
     private var refining = false
+
+    /**
+     * Das Diktat gehoert in ein Passwort- oder Inkognito-Feld und kommt nicht in den Verlauf.
+     * Festgehalten beim Aufnahmestart und beim Senden (nach einer Pause kann es ein anderes Feld sein).
+     */
+    private var privateField = false
+
+    /**
+     * Der letzte Text kam in kein Feld mehr: wo er geblieben ist ([FieldGone]) — die Ruhe-Statuszeile
+     * sagt es bis zum naechsten Diktat. null = er wurde eingefuegt.
+     */
+    private var fieldGone: Int? = null
 
     private var statusView: TextView? = null
     private var levelBand: LevelBandView? = null
@@ -86,14 +108,17 @@ class WhisperLoomInputMethodService : InputMethodService() {
     private var gestureTargets: GestureTargets? = null
     private var refineBar: RefineBar? = null
     private var refineKey: View? = null
+    private var sessionKeys: SessionKeys? = null
 
     /** Aktueller Stand der Wisch-Geste; nur waehrend eines liegenden Fingers aussagekraeftig. */
     private var gesturePhase = DictationGesture.Phase.RECORDING
 
-    /** Aufnahme laeuft ohne liegenden Finger weiter (nach rechts gewischt oder per Klick gestartet). */
-    private var locked = false
+    /** Gehalten, festgestellt oder pausiert; gehoert dem Dienst und uebersteht den Neuaufbau. */
+    private val session = DictationSession()
 
-    private var recordingStartedAt = 0L
+    /** Dieses Aufsetzen hat die Pause beendet — sein Loslassen pausiert nicht gleich wieder. */
+    private var resumedByTouch = false
+
     private var downX = 0f
     private var downY = 0f
 
@@ -114,20 +139,32 @@ class WhisperLoomInputMethodService : InputMethodService() {
     private var verticalPx = 0f
     private var slopPx = 0f
 
-    /** Haelt die Dauer in der Statuszeile aktuell, solange die Aufnahme festgestellt ist. */
+    /**
+     * Haelt die Dauer in der Statuszeile aktuell, solange die festgestellte Aufnahme laeuft, und
+     * pausiert an der Hoechstlaenge. In der Pause steht er — die Uhr zaehlt Aufgenommenes.
+     */
     private val lockedTicker = object : Runnable {
         override fun run() {
-            if (!locked) return
-            val elapsed = elapsedMs()
-            showLockedStatus(elapsed)
+            if (!session.isLocked) return
+            // Der Aufnahme-Thread ist an einem Fehler gestorben (Mikrofon weg, kein Speicher): Das
+            // Aufgenommene bleibt, die Tastatur zeigt die Pause, statt ins geschlossene Mikrofon zu zaehlen.
+            if (!recorder.isRecording) {
+                if (session.pause()) enterPause(BubbleMotion.Haptic.REJECT)
+                return
+            }
+            if (session.update(recorder.recordedMs, lengthLimited()) == DictationSession.Length.MAX) {
+                capDictation()
+                return
+            }
+            showSessionStatus()
             updateMicDescription()
-            main.postDelayed(this, TICK_MS - elapsed % TICK_MS)
+            main.postDelayed(this, TICK_MS - session.recordedMs % TICK_MS)
         }
     }
 
     /** Statuszeile: Farbe und Tipp-Ziel je Art (UX-Spec §5.3). */
     private enum class Status {
-        HINT, LISTENING, LOCK_ARMED, CANCEL_ARMED, LOCKED, DISCARDED,
+        HINT, LISTENING, LOCK_ARMED, CANCEL_ARMED, LOCKED, PAUSED, WARNING, DISCARDED,
         TRANSCRIBING, REFINING, ERROR, NEED_PERMISSION, NOT_CONFIGURED, NEEDS_LLM, NEEDS_LOCAL,
     }
 
@@ -177,7 +214,9 @@ class WhisperLoomInputMethodService : InputMethodService() {
         // Im festgestellten Zustand traegt das rechte Ziel das Senden-Symbol (siehe GestureTargets).
         lockTarget.setOnClickListener { stopDictation() }
 
-        root.findViewById<View>(R.id.key_globe).setOnClickListener { showImePicker() }
+        val globe = root.findViewById<View>(R.id.key_globe)
+        globe.setOnClickListener { switchKeyboard() }
+        sessionKeys = SessionKeys(root.findViewById(R.id.mic), globe, ::stopDictation, ::discardDictation)
         root.findViewById<View>(R.id.key_comma).setOnClickListener { commitRaw(", ") }
         root.findViewById<View>(R.id.key_period).setOnClickListener { commitRaw(". ") }
         root.findViewById<View>(R.id.key_space).setOnClickListener { commitRaw(" ") }
@@ -196,10 +235,11 @@ class WhisperLoomInputMethodService : InputMethodService() {
         //
         // Und: aus dem Dienst-Zustand rekonstruieren statt blind auf Ruhe setzen. Bei einem
         // Konfigurationswechsel (Drehen, Dunkelmodus, Schriftgroesse) baut das Framework den
-        // Eingabe-View neu auf, ruft dabei aber KEIN onFinishInputView — Aufnahme, locked und
+        // Eingabe-View neu auf, ruft dabei aber KEIN onFinishInputView — Aufnahme, session und
         // state gehoeren dem Dienst und ueberleben. Ohne das zeigte die neue Tastatur Ruhe,
-        // waehrend das Mikrofon weiterlief und kein Weg mehr zum Verwerfen fuehrte.
-        if (locked && recorder.isRecording) enterLockedUi() else gestureTargets?.hide()
+        // waehrend das Mikrofon weiterlief (oder ein pausiertes Diktat wartete) und kein Weg
+        // mehr zum Verwerfen fuehrte.
+        if (session.withoutFinger && recorder.hasSession) enterLockedUi() else gestureTargets?.hide()
         applyState(state, animate = false)
         restoreStatus()
         return root
@@ -237,11 +277,13 @@ class WhisperLoomInputMethodService : InputMethodService() {
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
-        // Ein alter Fehlerzustand gilt fuer das NEUE Feld nicht mehr. Bei [restarting] ist es
-        // aber dasselbe Feld — das Framework baut nur neu auf (Drehen, Dunkelmodus). Dann den
-        // Puffer behalten, sonst verliert eine Drehung das Audio eines fehlgeschlagenen
-        // Diktats, obwohl die Wiederholen-Taste danebensteht.
-        if (state == BubbleState.ERROR && !restarting) {
+        // Ein alter Fehlerzustand gilt fuer das NEUE Feld nicht mehr. Dasselbe Feld behaelt den
+        // Puffer: bei [restarting] baut das Framework nur neu auf (Drehen, Dunkelmodus), und nach
+        // einem Umweg kommt es zurueck — etwa ueber die App, um Zugang oder Offline-Modell
+        // einzurichten. Felder der eigenen App unterwegs zaehlen nicht als Wechsel.
+        val keep = restarting || info?.packageName == packageName ||
+            fieldKey(info)?.let { it == errorField } == true
+        if (state == BubbleState.ERROR && !keep) {
             pendingSamples = null
             applyState(BubbleState.IDLE)
         }
@@ -261,16 +303,21 @@ class WhisperLoomInputMethodService : InputMethodService() {
      *
      * Ohne Feststellen bleibt es beim bisherigen harten Abbruch: dort liegt der Finger noch,
      * die Aufnahme war nie eigenstaendig.
+     *
+     * Eine Pause uebersteht beides (Plan §1.2): Das Audio liegt im Speicher, das Mikrofon ist
+     * frei, und beim naechsten Oeffnen steht wieder "Pausiert bei …" da — nur so hilft die Pause
+     * beim Nachschlagen in einer anderen App. Senden fuegt dann ins gerade sichtbare Feld ein.
      */
     override fun onFinishInputView(finishingInput: Boolean) {
-        if (locked && recorder.isRecording) {
-            if (finishingInput) discardDictation() else stopDictation()
-        } else if (recorder.isRecording) {
-            recorder.cancel()
+        if (!session.isPaused) {
+            when {
+                session.isLocked -> if (finishingInput) discardDictation() else stopDictation()
+                recorder.isRecording -> recorder.cancel()
+            }
+            endSession()
+            if (state == BubbleState.RECORDING) applyState(BubbleState.IDLE)
+            levelBand?.stop()
         }
-        endLockedMode()
-        if (state == BubbleState.RECORDING) applyState(BubbleState.IDLE)
-        levelBand?.stop()
         super.onFinishInputView(finishingInput)
     }
 
@@ -289,8 +336,14 @@ class WhisperLoomInputMethodService : InputMethodService() {
                 downY = ev.y
                 dragged = false
                 gesturePhase = DictationGesture.Phase.RECORDING
-                // Im festgestellten Zustand entscheidet erst das Loslassen (= Tipp zum Senden).
-                if (!locked) startDictation()
+                resumedByTouch = false
+                when {
+                    // Schon das Aufsetzen setzt fort: wer aus Gewohnheit haelt und spricht,
+                    // verliert sonst die ersten Woerter. Danach laeuft es festgestellt weiter.
+                    session.isPaused -> resumedByTouch = resumeDictation()
+                    // Festgestellt entscheidet erst das Loslassen (= Tipp zum Pausieren).
+                    !session.isLocked -> startDictation()
+                }
             }
 
             // Weitere Finger gehoeren nicht zur Geste. Trotzdem konsumieren: sonst bekommt
@@ -298,7 +351,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
             MotionEvent.ACTION_POINTER_DOWN -> Unit
 
             MotionEvent.ACTION_MOVE -> {
-                if (locked || state != BubbleState.RECORDING) return true
+                if (session.withoutFinger || state != BubbleState.RECORDING) return true
                 val index = ev.findPointerIndex(activePointerId)
                 if (index < 0) return true
                 val dx = ev.getX(index) - downX
@@ -325,10 +378,11 @@ class WhisperLoomInputMethodService : InputMethodService() {
 
             // Abgefangener Touch (Dialog, Fenster-Wechsel): ohne Feststellen wie bisher
             // senden, damit kein Diktat verloren geht. Mit Feststellen ist nichts zu retten —
-            // die Aufnahme laeuft weiter und beide Tasten sind bedienbar.
+            // die Aufnahme laeuft (oder pausiert) weiter und beide Tasten sind bedienbar.
             MotionEvent.ACTION_CANCEL -> {
                 activePointerId = MotionEvent.INVALID_POINTER_ID
-                if (!locked) releaseGesture(view, ev.x, ev.y)
+                resumedByTouch = false
+                if (!session.withoutFinger) releaseGesture(view, ev.x, ev.y)
             }
 
             else -> return false
@@ -338,12 +392,17 @@ class WhisperLoomInputMethodService : InputMethodService() {
 
     /** [x]/[y] sind die Koordinaten des Loslassens, relativ zur Mikro-Taste. */
     private fun releaseGesture(view: View, x: Float, y: Float) {
-        if (locked) {
-            // Nur senden, wenn wirklich auf der Taste losgelassen wurde. Die Mikro-Taste haelt
+        if (session.withoutFinger) {
+            // Das Aufsetzen hat schon fortgesetzt; dieses Loslassen gehoert noch dazu.
+            if (resumedByTouch) {
+                resumedByTouch = false
+                return
+            }
+            // Nur pausieren, wenn wirklich auf der Taste losgelassen wurde. Die Mikro-Taste haelt
             // den Touch-Strom, bekommt das Loslassen also auch weit ausserhalb ihrer Grenzen —
-            // wer den Finger zur Verwerfen-Taste zieht, wuerde sonst das Diktat abschicken.
+            // wer den Finger zur Verwerfen-Taste zieht, meint nicht die Pause.
             // View.onTouchEvent pruefte das selbst; dieser Listener ersetzt es.
-            if (x >= 0f && y >= 0f && x < view.width && y < view.height) stopDictation()
+            if (x >= 0f && y >= 0f && x < view.width && y < view.height) pauseDictation()
             return
         }
         if (state != BubbleState.RECORDING) {
@@ -360,11 +419,14 @@ class WhisperLoomInputMethodService : InputMethodService() {
     /**
      * Der Bedienungshilfen-Pfad (siehe [onCreateInputView]): ein Klick schaltet um, statt zu
      * halten. Ein so gestartetes Diktat geht gleich in den festgestellten Zustand — ohne
-     * liegenden Finger gaebe es sonst nichts, was die Aufnahme beendet.
+     * liegenden Finger gaebe es sonst nichts, was die Aufnahme beendet. Danach: Tipp = Pause,
+     * Tipp = Weiter; gesendet und verworfen wird ueber die Aktionen der Taste ([SessionKeys]).
      */
     private fun onMicClick() {
         when {
-            locked || state == BubbleState.RECORDING -> stopDictation()
+            session.isLocked -> pauseDictation()
+            session.isPaused -> resumeDictation()
+            state == BubbleState.RECORDING -> stopDictation()
             state == BubbleState.SENDING -> skipRefine()
             state == BubbleState.ERROR -> retry()
             else -> {
@@ -393,34 +455,82 @@ class WhisperLoomInputMethodService : InputMethodService() {
 
     /** Aufnahme laeuft ohne Finger weiter; aus den Anzeigen werden Verwerfen und Senden. */
     private fun lockDictation() {
-        if (!recorder.isRecording) return
-        locked = true
+        if (!recorder.isRecording || !session.lock()) return
         gesturePhase = DictationGesture.Phase.RECORDING
         haptic(BubbleMotion.Haptic.CONFIRM)
+        applyState(state) // Pause-Symbol, Aktionen, Globus
         enterLockedUi()
     }
 
+    /** Festgestellt → Pause: Mikrofon frei, das Aufgenommene bleibt (Plan §1.3). */
+    private fun pauseDictation() {
+        if (session.pause()) enterPause(BubbleMotion.Haptic.CONFIRM)
+    }
+
     /**
-     * Anzeige des festgestellten Zustands aufbauen — beim Feststellen und beim Neuaufbau der
-     * Tastatur.
+     * Hoechstlaenge erreicht (nur Online-Erkennung): pausieren und Weiter sperren. Darueber lehnt
+     * der Anbieter die Datei ab, und dieser Fehler ist nicht wiederholbar — das Audio waere weg.
+     */
+    private fun capDictation() {
+        if (session.cap()) enterPause(BubbleMotion.Haptic.REJECT)
+    }
+
+    private fun enterPause(feedback: BubbleMotion.Haptic) {
+        // Wartet kurz auf den Aufnahme-Thread (ein Lesevorgang) — im Stil von discardDictation.
+        recorder.pause()
+        session.update(recorder.recordedMs, lengthLimited())
+        haptic(feedback)
+        applyState(state)
+        enterLockedUi()
+    }
+
+    /** Aus der Pause weiter; false = gesperrt (Hoechstlaenge) oder das Mikrofon kam nicht. */
+    private fun resumeDictation(): Boolean {
+        if (!session.isPaused) return false
+        // Die Erkennung kann in der Pause gewechselt haben (Zahnrad): offline faellt der Deckel weg,
+        // online haelt er schon vor dem Mikrofon an, was offline ueber die Hoechstlaenge kam.
+        session.recheck(lengthLimited())
+        if (session.capped || !recorder.resume()) {
+            haptic(BubbleMotion.Haptic.REJECT)
+            showSessionStatus()
+            updateMicDescription()
+            return false
+        }
+        session.resume()
+        haptic(BubbleMotion.Haptic.CONFIRM)
+        applyState(state)
+        enterLockedUi()
+        return true
+    }
+
+    /**
+     * Anzeige des festgestellten bzw. pausierten Zustands aufbauen — beim Feststellen, bei Pause
+     * und Weiter und beim Neuaufbau der Tastatur.
      *
-     * Dabei verliert die Statuszeile ihre Live-Region: der Ticker schreibt sie im Sekundentakt
-     * neu, und TalkBack liest jede Aenderung einer Live-Region vor. Das waere eine Ansage pro
-     * Sekunde, die dem Nutzer ins eigene Diktat redet und seine Warteschlange nie leer laufen
-     * laesst. Der erste Lauf des Tickers passiert noch davor, das Feststellen selbst wird also
-     * angesagt; danach ist Ruhe. [endLockedMode] stellt die Live-Region zurueck.
+     * Waehrend der Aufnahme verliert die Statuszeile ihre Live-Region: der Ticker schreibt sie im
+     * Sekundentakt neu, und TalkBack liest jede Aenderung einer Live-Region vor. Das waere eine
+     * Ansage pro Sekunde, die dem Nutzer ins eigene Diktat redet und seine Warteschlange nie leer
+     * laufen laesst. Der erste Lauf des Tickers passiert noch davor, das Feststellen selbst wird
+     * also angesagt; danach ist Ruhe. In der Pause schreibt kein Ticker — dann darf die Zeile
+     * wieder ansagen ("Pausiert bei 0:42"). Deckelt schon der erste Lauf, ist es eine Pause, und
+     * die behaelt ihre Live-Region. [endSession] stellt die Live-Region zurueck.
      */
     private fun enterLockedUi() {
         gestureTargets?.showLocked()
         main.removeCallbacks(lockedTicker)
-        lockedTicker.run()
-        statusView?.accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_NONE
+        if (session.isPaused) {
+            statusView?.accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+            showSessionStatus()
+        } else {
+            lockedTicker.run()
+            if (session.isLocked) statusView?.accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_NONE
+        }
     }
 
-    /** Aufnahme wegwerfen: nichts wird transkribiert, nichts eingefuegt. */
+    /** Aufnahme wegwerfen — auch aus der Pause: nichts wird transkribiert, nichts eingefuegt. */
     private fun discardDictation() {
-        if (!recorder.isRecording) return
-        endLockedMode()
+        if (!recorder.hasSession) return
+        endSession()
         pendingSamples = null
         applyState(BubbleState.IDLE)
         showStatus(Status.DISCARDED)
@@ -431,19 +541,21 @@ class WhisperLoomInputMethodService : InputMethodService() {
         // zwischenzeitliches start() wuerde dann auf einen noch laufenden Thread treffen.
         recorder.cancel()
         // Die Meldung ist eine Quittung, kein Zustand — danach wieder der Ruhe-Hinweis.
-        main.postDelayed({ if (state == BubbleState.IDLE && !locked) showIdleStatus() }, DISCARD_HINT_MS)
+        main.postDelayed({ if (state == BubbleState.IDLE && !session.isOpen) showIdleStatus() }, DISCARD_HINT_MS)
     }
 
-    /** Zurueck aus dem festgestellten Zustand: Ticker aus, Ziele weg, Live-Region zurueck. */
-    private fun endLockedMode() {
-        locked = false
+    /** Diktat zu Ende (gesendet oder verworfen): Ticker aus, Ziele weg, Live-Region zurueck. */
+    private fun endSession() {
+        session.end()
+        resumedByTouch = false
         gesturePhase = DictationGesture.Phase.RECORDING
         main.removeCallbacks(lockedTicker)
         gestureTargets?.hide()
         statusView?.accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
     }
 
-    private fun elapsedMs() = SystemClock.elapsedRealtime() - recordingStartedAt
+    /** Nur die Online-Erkennung hat eine Obergrenze; whisper.cpp rechnet beliebig lange. */
+    private fun lengthLimited() = prefs.engine == Engine.ONLINE
 
     // --- Schnellzugriff Textverbesserung ------------------------------------
 
@@ -483,7 +595,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
     private fun refineLabel(mode: RefineMode) = getString(
         when (mode) {
             RefineMode.OFF -> R.string.level_off
-            RefineMode.POLISH, RefineMode.PARAGRAPHS, RefineMode.READABLE -> R.string.level_smooth
+            RefineMode.POLISH, RefineMode.READABLE -> R.string.level_smooth
             RefineMode.BEAUTIFY -> R.string.level_beautify
             RefineMode.SUMMARIZE -> R.string.level_summarize
             RefineMode.PROMPT -> R.string.level_prompt
@@ -527,12 +639,15 @@ class WhisperLoomInputMethodService : InputMethodService() {
             startActivity(AppNav.setup(this))
             return
         }
-        if (recorder.isRecording) return
+        // Auch nicht ueber einem pausierten Diktat: start() leert den Puffer.
+        if (recorder.hasSession) return
         if (recorder.start()) {
+            session.hold()
             pendingSamples = null
+            privateField = HistoryPolicy.isPrivateField(currentInputEditorInfo)
+            fieldGone = null
             // Sonst bliebe die Leiste offen, waehrend ihr Ausloeser verschwindet.
             closeRefineBar()
-            recordingStartedAt = SystemClock.elapsedRealtime()
             applyState(BubbleState.RECORDING)
             showStatus(Status.LISTENING)
             haptic(BubbleMotion.Haptic.CONFIRM)
@@ -542,9 +657,12 @@ class WhisperLoomInputMethodService : InputMethodService() {
         }
     }
 
+    /** Senden — auch aus der Pause. */
     private fun stopDictation() {
-        if (!recorder.isRecording) return
-        endLockedMode()
+        if (!recorder.hasSession) return
+        if (session.isPaused && sendBlocked()) return
+        endSession()
+        privateField = privateField || HistoryPolicy.isPrivateField(currentInputEditorInfo)
         // Sofortiges UI-Feedback auf dem Main-Thread ...
         applyState(BubbleState.SENDING)
         showStatus(Status.TRANSCRIBING)
@@ -563,6 +681,22 @@ class WhisperLoomInputMethodService : InputMethodService() {
             }
             send(samples)
         }
+    }
+
+    /**
+     * Senden aus der Pause: die Erkennung kann seit der Aufnahme gewechselt haben (Zahnrad). Zu lang
+     * fuer die Online-Erkennung oder kein Zugang — dann bleibt das Diktat pausiert (die Pause
+     * uebersteht den Weg in die Einstellungen), statt an einem nicht wiederholbaren Fehler verloren
+     * zu gehen. @return true = nicht senden
+     */
+    private fun sendBlocked(): Boolean {
+        when {
+            session.tooLong(lengthLimited()) -> showSessionStatus()
+            !TranscriptionEngine.isConfigured(this) -> showStatus(Status.NOT_CONFIGURED)
+            else -> return false
+        }
+        haptic(BubbleMotion.Haptic.REJECT)
+        return true
     }
 
     /**
@@ -614,34 +748,39 @@ class WhisperLoomInputMethodService : InputMethodService() {
         val skip = RefineSkip()
         refineSkip = skip
         try {
-            var refineSkipped: String? = null
-            var refineNote: String? = null
-            val text = TranscriptionEngine.transcribe(
+            val dictation = TranscriptionEngine.transcribe(
                 applicationContext,
                 samples,
                 skip = skip,
                 onRefineStart = { main.post { showRefining(skip) } },
-                onRefineNote = { refineNote = it },
-            ) { refineSkipped = it }
+            )
+            // Vor dem Einfuegen: ist das Feld inzwischen weg, bleibt der Text so erhalten.
+            val inHistory = !privateField && History.record(applicationContext, HistorySource.KEYBOARD, dictation)
             pendingSamples = null
             main.post {
-                commitDictation(text)
+                val gone = if (commitDictation(dictation.text)) null else FieldGone.keep(this, dictation.text, inHistory, privateField)
+                fieldGone = gone
                 applyState(BubbleState.IDLE)
-                rings?.flashSuccess()
+                // Erfolg nur, wenn der Text sicher liegt: im Feld oder im Verlauf.
+                if (gone == null || inHistory) rings?.flashSuccess()
                 showIdleStatus()
                 // Text ist eingefuegt, nur die Veredelung fiel aus — Hinweis statt Fehlerzustand.
-                refineSkipped?.let { showStatus(Status.ERROR, getString(R.string.refine_skipped, it)) }
-                    ?: refineNote?.let { showStatus(Status.HINT, it) }
+                if (gone == null) {
+                    dictation.result.skipped?.let { showStatus(Status.ERROR, getString(R.string.refine_skipped, it)) }
+                        ?: dictation.result.note?.let { showStatus(Status.HINT, it) }
+                }
             }
         } catch (e: ApiNotConfiguredException) {
-            pendingSamples = null
+            // Das Audio bleibt fuer "Erneut senden": der Zugang laesst sich einrichten, ohne neu zu diktieren.
+            pendingSamples = samples
             main.post {
-                applyState(BubbleState.IDLE)
+                applyState(BubbleState.ERROR)
                 showStatus(Status.NOT_CONFIGURED)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Transkription fehlgeschlagen", e)
-            val retryable = e.isRetryable()
+            // Ohne Offline-Modell ebenso: laden oder auf Online umstellen, dann erneut senden.
+            val retryable = e.isRetryable() || e is OfflineNotAvailableException
             pendingSamples = if (retryable) samples else null
             main.post {
                 applyState(if (retryable) BubbleState.ERROR else BubbleState.IDLE)
@@ -659,15 +798,20 @@ class WhisperLoomInputMethodService : InputMethodService() {
     /** Mikro-Taste (Fuellung, Icon, Ringe), Wiederholen-Taste und Pegelband auf [next] setzen. */
     private fun applyState(next: BubbleState, animate: Boolean = true) {
         state = next
+        if (next == BubbleState.ERROR) errorField = fieldKey(currentInputEditorInfo)
         if (next != BubbleState.SENDING) refining = false
-        val visual = BubbleVisuals.visualFor(next, reduceMotion = reduceMotion())
+        val visual = ImeMetrics.micVisual(next, paused = session.isPaused, reduceMotion = reduceMotion())
         micButton?.let {
             it.background.level = ImeMetrics.micFillLevel(visual)
             MicIcon.apply(it, visual, animate = animate && !reduceMotion())
+            // Festgestellt pausiert ein Tipp. Das Symbol kennt nur die Tastatur — der Knopf teilt
+            // BubbleVisual und hat keine Pause.
+            if (next == BubbleState.RECORDING && session.isLocked) it.setImageResource(R.drawable.ic_pause)
         }
         rings?.show(visual.ring)
         retryKey?.visibility = if (next == BubbleState.ERROR) View.VISIBLE else View.GONE
-        if (next == BubbleState.RECORDING) levelBand?.start() else levelBand?.stop()
+        // In der Pause steht das Band: das Mikrofon ist frei.
+        if (next == BubbleState.RECORDING && !session.isPaused) levelBand?.start() else levelBand?.stop()
         // Der Zauberstab sitzt in der Mikro-Zone, wo bei einer laufenden Aufnahme die
         // Wisch-Ziele erscheinen — waehrend des Diktierens hat er dort nichts verloren.
         refineKey?.visibility = if (next == BubbleState.RECORDING || next == BubbleState.SENDING) {
@@ -675,6 +819,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
         } else {
             View.VISIBLE
         }
+        sessionKeys?.show(open = session.isOpen, withoutFinger = session.withoutFinger)
         updateMicDescription()
     }
 
@@ -684,9 +829,12 @@ class WhisperLoomInputMethodService : InputMethodService() {
      */
     private fun updateMicDescription() {
         val mic = micButton ?: return
+        val time = Formats.duration(session.recordedMs)
         mic.contentDescription = when {
-            locked -> getString(R.string.cd_mic_locked, Formats.duration(elapsedMs()))
-            state == BubbleState.RECORDING -> getString(R.string.cd_mic_recording, Formats.duration(elapsedMs()))
+            session.capped -> getString(R.string.cd_mic_capped)
+            session.isPaused -> getString(R.string.cd_mic_paused, time)
+            session.isLocked -> getString(R.string.cd_mic_locked, time)
+            state == BubbleState.RECORDING -> getString(R.string.cd_mic_recording, time)
             state == BubbleState.SENDING && refining -> getString(R.string.cd_mic_refining)
             state == BubbleState.SENDING -> getString(R.string.cd_mic_sending)
             state == BubbleState.ERROR -> getString(R.string.cd_mic_error)
@@ -694,8 +842,20 @@ class WhisperLoomInputMethodService : InputMethodService() {
         }
     }
 
-    private fun showLockedStatus(elapsedMs: Long) =
-        showStatus(Status.LOCKED, getString(R.string.kb_locked, Formats.duration(elapsedMs)))
+    /** Statuszeile eines Diktats ohne liegenden Finger: laeuft, pausiert oder am Laengen-Deckel. */
+    private fun showSessionStatus() {
+        val time = Formats.duration(session.recordedMs)
+        when {
+            session.tooLong(lengthLimited()) -> showStatus(Status.WARNING, getString(R.string.kb_too_long))
+            session.capped -> showStatus(Status.WARNING, getString(R.string.kb_capped))
+            session.isPaused -> showStatus(Status.PAUSED, getString(R.string.kb_paused, time))
+            session.length == DictationSession.Length.LONG -> showStatus(
+                Status.WARNING,
+                getString(R.string.kb_long, time, Formats.duration(DictationSession.MAX_MS)),
+            )
+            else -> showStatus(Status.LOCKED, getString(R.string.kb_locked, time))
+        }
+    }
 
     /**
      * Statuszeile zum aktuellen Zustand des Dienstes. Gebraucht nach dem Neuaufbau der
@@ -703,20 +863,22 @@ class WhisperLoomInputMethodService : InputMethodService() {
      * oder Uebertragung weiterlaufen.
      */
     private fun restoreStatus() = when {
-        locked -> showLockedStatus(elapsedMs())
+        session.withoutFinger -> showSessionStatus()
         state == BubbleState.SENDING -> showStatus(if (refining) Status.REFINING else Status.TRANSCRIBING)
         state == BubbleState.RECORDING -> showStatus(Status.LISTENING)
         else -> showIdleStatus()
     }
 
     /** Ruhe-Statuszeile: Hinweis oder Warnung (fehlende Berechtigung / kein Zugang). */
-    private fun showIdleStatus() = showStatus(
+    private fun showIdleStatus() {
+        val gone = fieldGone
         when {
-            !hasMicPermission() -> Status.NEED_PERMISSION
-            !TranscriptionEngine.isConfigured(this) -> Status.NOT_CONFIGURED
-            else -> Status.HINT
-        },
-    )
+            !hasMicPermission() -> showStatus(Status.NEED_PERMISSION)
+            !TranscriptionEngine.isConfigured(this) -> showStatus(Status.NOT_CONFIGURED)
+            gone != null -> showStatus(Status.HINT, getString(gone))
+            else -> showStatus(Status.HINT)
+        }
+    }
 
     private fun showStatus(kind: Status, text: CharSequence? = null) {
         val v = statusView ?: return
@@ -727,6 +889,8 @@ class WhisperLoomInputMethodService : InputMethodService() {
                 Status.LOCK_ARMED -> R.string.kb_lock_armed
                 Status.CANCEL_ARMED -> R.string.kb_cancel_armed
                 Status.LOCKED -> R.string.kb_locked
+                Status.PAUSED -> R.string.kb_paused
+                Status.WARNING -> R.string.kb_finish_first
                 Status.DISCARDED -> R.string.kb_discarded
                 Status.TRANSCRIBING -> R.string.kb_transcribing
                 Status.REFINING -> R.string.kb_refining
@@ -740,11 +904,12 @@ class WhisperLoomInputMethodService : InputMethodService() {
         v.setTextColor(
             getColor(
                 when (kind) {
-                    Status.HINT, Status.TRANSCRIBING, Status.DISCARDED -> R.color.loom_onSurfaceVariant
+                    Status.HINT, Status.TRANSCRIBING, Status.DISCARDED, Status.PAUSED -> R.color.loom_onSurfaceVariant
                     Status.LISTENING, Status.LOCKED -> R.color.loom_recordingText
                     Status.LOCK_ARMED, Status.REFINING -> R.color.loom_primary
                     Status.CANCEL_ARMED, Status.ERROR -> R.color.loom_error
-                    Status.NEED_PERMISSION, Status.NOT_CONFIGURED, Status.NEEDS_LLM, Status.NEEDS_LOCAL -> R.color.loom_warning
+                    Status.NEED_PERMISSION, Status.NOT_CONFIGURED, Status.NEEDS_LLM, Status.NEEDS_LOCAL,
+                    Status.WARNING -> R.color.loom_warning
                 },
             ),
         )
@@ -752,8 +917,8 @@ class WhisperLoomInputMethodService : InputMethodService() {
         when (kind) {
             Status.NEED_PERMISSION -> v.setOnClickListener { startActivity(AppNav.setup(this, SETUP_STEP_MIC)) }
             Status.NOT_CONFIGURED -> v.setOnClickListener { startActivity(AppNav.setup(this)) }
-            // Der KI-Zugang wird in den Text-Einstellungen eingerichtet, nicht im Assistenten.
-            Status.NEEDS_LLM -> v.setOnClickListener { startActivity(AppNav.settings(this)) }
+            // Der KI-Zugang wird unter Einstellungen › KI-Zugang eingerichtet, nicht im Assistenten.
+            Status.NEEDS_LLM -> v.setOnClickListener { startActivity(AppNav.llmAccess(this)) }
             // Das Textmodell laedt man unter Offline-Modelle.
             Status.NEEDS_LOCAL -> v.setOnClickListener { startActivity(AppNav.models(this)) }
             // Ausweg waehrend der Textverbesserung: Text sofort ohne KI einfuegen.
@@ -772,9 +937,10 @@ class WhisperLoomInputMethodService : InputMethodService() {
 
     // --- Text einfuegen -----------------------------------------------------
 
-    private fun commitDictation(text: String) {
-        val ic = currentInputConnection ?: return
-        if (text.isEmpty()) return
+    /** @return false = der Text kam in kein Feld (keine oder eine tote Verbindung) */
+    private fun commitDictation(text: String): Boolean {
+        if (text.isEmpty()) return true
+        val ic = currentInputConnection ?: return false
         var out = text
         // Fuehrendes Leerzeichen, wenn direkt an ein Wort angefuegt wird.
         val before = ic.getTextBeforeCursor(1, 0)
@@ -785,7 +951,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
             }
         }
         if (prefs.trailingSpace && !out.endsWith(" ")) out += " "
-        ic.commitText(out, 1)
+        return ic.commitText(out, 1)
     }
 
     private fun commitRaw(s: String) {
@@ -814,13 +980,37 @@ class WhisperLoomInputMethodService : InputMethodService() {
     private fun hasMicPermission(): Boolean =
         checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
 
-    private fun showImePicker() {
-        (getSystemService(INPUT_METHOD_SERVICE) as? InputMethodManager)?.showInputMethodPicker()
+    /**
+     * Globus: Tastatur wechseln — nicht, solange ein Diktat offen ist. Der Wechsel beendet den
+     * Dienst und wuerfe auch ein pausiertes Diktat still weg (siehe [SessionKeys]).
+     */
+    private fun switchKeyboard() {
+        if (!session.isOpen) {
+            (getSystemService(INPUT_METHOD_SERVICE) as? InputMethodManager)?.showInputMethodPicker()
+            return
+        }
+        haptic(BubbleMotion.Haptic.REJECT)
+        showStatus(Status.WARNING)
+        // Laufend schreibt der Ticker die Zeile ohnehin neu; in der Pause kehrt sie hier zurueck.
+        main.postDelayed({ if (session.isPaused) showSessionStatus() }, DISCARD_HINT_MS)
     }
+
+    /** Ein Feld ueber App-Wechsel hinweg: App und Feld-Id. null = unbekannt (gilt nie als dasselbe). */
+    private fun fieldKey(info: EditorInfo?): String? =
+        info?.packageName?.let { "$it#${info.fieldId}" }
 
     override fun onDestroy() {
         main.removeCallbacks(lockedTicker)
-        if (recorder.isRecording) recorder.cancel()
+        // Offenes Diktat: der Globus ist gesperrt, ein Wechsel ueber die Navigationsleiste oder die
+        // Systemeinstellungen beendet den Dienst trotzdem. Anhalten (Mikrofon sofort frei) und die
+        // Sitzung schliessen — super.onDestroy ruft noch onFinishInputView, das darf nichts mehr
+        // verwerfen —, dann im Hintergrund in den Verlauf retten. Ein schon gesendetes Diktat stoppt
+        // der io-Thread selbst; shutdown laesst ihn zu Ende laufen.
+        if (session.isOpen) {
+            recorder.pause()
+            endSession()
+            DictationRescue.rescue(this, recorder, privateField)
+        }
         rings?.release()
         io.shutdown()
         super.onDestroy()
@@ -835,10 +1025,10 @@ class WhisperLoomInputMethodService : InputMethodService() {
         /** Tastenreihe ist 4 dp hoeher als die Tasten (52/48 bzw. 60/56). */
         private const val KEY_ROW_EXTRA_DP = 4
 
-        /** Takt der Dauer-Anzeige im festgestellten Zustand. */
+        /** Takt der Dauer-Anzeige und der Laengen-Pruefung im festgestellten Zustand. */
         private const val TICK_MS = 1000L
 
-        /** Wie lange "Aufnahme verworfen" stehen bleibt, bevor der Ruhe-Hinweis zurueckkehrt. */
+        /** Wie lange eine Quittung ("Aufnahme verworfen") stehen bleibt, bevor der Zustand zurueckkehrt. */
         private const val DISCARD_HINT_MS = 2000L
     }
 }

@@ -72,11 +72,11 @@ class TemperatureMemoTest {
     }
 
     @Test fun zweitesDiktatSchicktNurNochEineAnfrage() {
-        assertEquals("Hallo Welt.", TranscriptionEngine.transcribe(ctx, speech))
+        assertEquals("Hallo Welt.", TranscriptionEngine.transcribe(ctx, speech).text)
         assertEquals("erstes Diktat: Fehlversuch + zweiter Versuch", 2, bodies.size)
 
         bodies.clear()
-        assertEquals("Hallo Welt.", TranscriptionEngine.transcribe(ctx, speech))
+        assertEquals("Hallo Welt.", TranscriptionEngine.transcribe(ctx, speech).text)
         assertEquals("zweiter Auftrag = 1 Anfrage", 1, bodies.size)
         assertFalse(bodies[0].has("temperature"))
         assertEquals(ChatPayload.MAX_COMPLETION_TOKENS, bodies[0].getInt("max_completion_tokens"))

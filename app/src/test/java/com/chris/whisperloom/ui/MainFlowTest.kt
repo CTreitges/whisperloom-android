@@ -21,6 +21,8 @@ import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.hasAnyAncestor
@@ -42,9 +44,12 @@ import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.BuildConfig
 import com.chris.whisperloom.Engine
+import com.chris.whisperloom.PolishCleanup
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.RefineWay
+import com.chris.whisperloom.SummarizeForm
 import com.chris.whisperloom.overlay.FloatingMicService
 import com.chris.whisperloom.ui.components.HUB_DIVIDER_TAG
 import com.chris.whisperloom.ui.components.hasIllustration
@@ -63,12 +68,13 @@ import com.chris.whisperloom.whisper.ModelCatalog
 import com.chris.whisperloom.whisper.ModelDownloads
 import com.chris.whisperloom.whisper.ModelStore
 import java.io.RandomAccessFile
+import com.chris.whisperloom.ui.settings.DICTATION_REFINE_TAG
+import com.chris.whisperloom.ui.settings.DictionaryScreen
+import com.chris.whisperloom.ui.settings.LlmAccessScreen
+import com.chris.whisperloom.ui.settings.RefineScreen
 import com.chris.whisperloom.ui.settings.SettingsHubScreen
 import com.chris.whisperloom.ui.settings.SHARE_REFINE_TAG
-import com.chris.whisperloom.ui.settings.TextAccessScreen
-import com.chris.whisperloom.ui.settings.TextDictationScreen
-import com.chris.whisperloom.ui.settings.TextRulesScreen
-import com.chris.whisperloom.ui.settings.TextShareScreen
+import com.chris.whisperloom.ui.settings.StageScreen
 import com.chris.whisperloom.ui.setup.SetupScreen
 import com.chris.whisperloom.ui.state.AppEnv
 import com.chris.whisperloom.ui.state.LocalAppEnv
@@ -134,6 +140,15 @@ class MainFlowTest {
 
     /** Fuer "nicht da" genuegt der Bildtext. */
     private fun bildtext(text: Int) = compose.onNodeWithContentDescription(ctx.getString(text))
+
+    /** Element der Gruppe "Beim Diktieren" auf der Seite Textverbesserung (die Sprachnachrichten haben dieselben). */
+    private fun diktat(text: String) = compose.onNode(hasText(text) and hasAnyAncestor(hasTestTag(DICTATION_REFINE_TAG)))
+
+    /** Auswahl-Zone einer Stufe ("Glätten für Diktat verwenden"). */
+    private fun zone(name: String) = compose.onNodeWithContentDescription(name)
+
+    /** Auswahl auf einer Stufen-Seite (Bereinigung, Form). */
+    private fun option(text: String) = compose.onNode(isSelectable() and hasText(text))
 
     // --- Router ----------------------------------------------------------------
 
@@ -482,51 +497,56 @@ class MainFlowTest {
         compose.onNode(hasSetTextAction() and hasText("Modell-ID")).assertTextContains("gpt-transcribe-2026-08-01")
     }
 
-    // --- E2 Text: Unterseiten (3.8.6) ----------------------------------------------
+    // --- E2 Textverbesserung, Woerterbuch & Regeln, KI-Zugang (3.9.0) -----------------------
 
-    @Test fun textStufeSchreibtRefineModeUndSchaltetSmartFillersFrei() {
-        screen(env()) { TextDictationScreen(it) }
-        compose.onNodeWithText("Füllwörter intelligent entfernen").assertIsNotEnabled()
-        compose.onNodeWithText("Glätten").performClick()
+    /** 3.9.0: gewaehlt wird ueber die Zone rechts; der Text der Stufe oeffnet ihre Seite. */
+    @Test fun textStufeWaehltUeberDieZone() {
+        screen(env()) { RefineScreen(it) }
+        zone("Glätten für Diktat verwenden").assertIsNotSelected().performClick()
         compose.waitForIdle()
         assertEquals(RefineMode.POLISH, Prefs(ctx).refineMode)
-        compose.onNodeWithText("Füllwörter intelligent entfernen").assertIsEnabled()
+        zone("Glätten für Diktat verwenden").assertIsSelected()
+        zone("Aus für Diktat verwenden").assertIsNotSelected()
     }
 
     @Test fun shareStufeIstEigeneKarteUndSchreibtNurShareRefineMode() {
         prefs.promptLevelEnabled = true
-        screen(env()) { TextShareScreen(it) }
-        compose.onNodeWithText("Geteilte Sprachnachrichten").assertExists()
+        screen(env()) { RefineScreen(it) }
+        compose.onNodeWithText("Bei geteilten Sprachnachrichten").assertExists()
         val inShareCard = hasAnyAncestor(hasTestTag(SHARE_REFINE_TAG))
-        compose.onNode(hasText("Aus") and inShareCard).assertIsSelected()
+        zone("Aus für Sprachnachrichten verwenden").assertIsSelected()
         // "Prompt" gibt es nur fuers Diktat, nie fuer eine fremde Nachricht.
         compose.onNode(hasText("Prompt") and inShareCard).assertDoesNotExist()
-        compose.onNode(hasText("Zusammenfassen") and inShareCard).performClick()
+        zone("Prompt für Sprachnachrichten verwenden").assertDoesNotExist()
+        zone("Zusammenfassen für Sprachnachrichten verwenden").performClick()
         compose.waitForIdle()
         assertEquals(RefineMode.SUMMARIZE, Prefs(ctx).shareRefineMode)
         assertEquals(RefineMode.OFF, Prefs(ctx).refineMode)
-        compose.onNode(hasText("Zusammenfassen") and inShareCard).assertIsSelected()
+        zone("Zusammenfassen für Sprachnachrichten verwenden").assertIsSelected()
     }
 
-    /** Review: "intelligent entfernen" wirkt auch auf geteilte Audios — also auch dann bedienbar. */
-    @Test fun intelligenteFuellwoerterSindMitNurDerShareStufeBedienbar() {
-        val e = env()
-        screen(e) { TextDictationScreen(it) }
-        compose.onNodeWithText("Füllwörter intelligent entfernen").assertIsNotEnabled()
-        compose.onNodeWithText("Gilt auch für Sprachnachrichten.", substring = true).assertDoesNotExist()
-        compose.runOnIdle { e.prefs.shareRefineMode = RefineMode.POLISH } // Seite Sprachnachrichten
+    /**
+     * 3.9.0: "Füllwörter intelligent entfernen" ist die Bereinigung "Ohne Füllwörter" auf der Seite
+     * Glätten des Diktats; "Lesbarer glätten" ist "Lesbar". Die Sprachnachrichten haben ihre eigene.
+     */
+    @Test fun ohneFuellwoerterIstDieBereinigungDesDiktats() {
+        prefs.shareRefineMode = RefineMode.POLISH
+        screen(env()) { StageScreen(RefineMode.POLISH, RefineWay.DICTATION, it) }
+        option("Ohne Füllwörter").performClick()
         compose.waitForIdle()
-        compose.onNodeWithText("Gilt auch für Sprachnachrichten.", substring = true).assertExists()
-        assertEquals(RefineMode.OFF, Prefs(ctx).refineMode)
-        compose.onNodeWithText("Füllwörter intelligent entfernen").assertIsEnabled().performClick()
+        assertEquals(PolishCleanup.CLEAN, Prefs(ctx).polishCleanupFor(RefineWay.DICTATION))
+        assertEquals("die Sprachnachrichten bleiben", PolishCleanup.PLAIN, Prefs(ctx).polishCleanupFor(RefineWay.SHARE))
+        option("Lesbar").performClick()
         compose.waitForIdle()
-        assertEquals(true, Prefs(ctx).smartFillers)
-        // Die Absaetze bleiben Sache des Diktats: ohne Diktat-Stufe weiter gesperrt.
-        compose.onNodeWithText("Automatische Absätze").assertIsNotEnabled()
+        assertEquals(PolishCleanup.READABLE, Prefs(ctx).polishCleanupFor(RefineWay.DICTATION))
+        option("Ohne Füllwörter").assertIsNotSelected()
+        option("Nur Zeichensetzung").performClick()
+        compose.waitForIdle()
+        assertEquals(PolishCleanup.PLAIN, Prefs(ctx).polishCleanupFor(RefineWay.DICTATION))
     }
 
     @Test fun fuellwoerterSheetFuegtEigenesWortHinzu() {
-        screen(env()) { TextRulesScreen(it) }
+        screen(env()) { DictionaryScreen(it) }
         compose.onNodeWithText("Liste bearbeiten").performClick()
         compose.waitForIdle()
         compose.onNodeWithText("Noch keine eigenen Wörter").assertExists()
@@ -537,41 +557,97 @@ class MainFlowTest {
         compose.onNodeWithText("sozusagen").assertExists()
     }
 
-    @Test fun absatzSchalterIstAnUndWirktNurMitStufe() {
-        screen(env()) { TextDictationScreen(it) }
-        compose.onNodeWithText("Automatische Absätze").assertIsNotEnabled()
-        compose.onNodeWithText("Glätten").performClick()
+    /** 3.9.0: die Liste gilt auch fuers Ausblenden bei Sprachnachrichten — bearbeitbar auch bei ausgeschalteter Regel. */
+    @Test fun fuellwortListeIstAuchOhneDieRegelBearbeitbar() {
+        prefs.removeFillers = false
+        screen(env()) { DictionaryScreen(it) }
+        compose.onNodeWithText("Liste bearbeiten").assertIsEnabled().performClick()
         compose.waitForIdle()
-        compose.onNodeWithText("Automatische Absätze").assertIsEnabled().performClick()
-        compose.waitForIdle()
-        assertEquals(false, Prefs(ctx).refineParagraphs)
+        compose.onNodeWithText("Wort hinzufügen").assertExists()
     }
 
-    @Test fun lesbarerGlaettenIstAusUndWirktNurMitGlaetten() {
-        screen(env()) { TextDictationScreen(it) }
-        compose.onNodeWithText("Lesbarer glätten").assertIsNotEnabled()
-        compose.onNodeWithText("Wirkt mit der Stufe „Glätten“.").assertExists()
-        compose.onNodeWithText("Verschönern").performClick()
+    /** 3.9.0: Absaetze je Stufe statt eines Schalters fuer alle Diktat-Stufen. */
+    @Test fun absatzSchalterIstAnUndGiltNurFuerSeineStufe() {
+        screen(env()) { StageScreen(RefineMode.BEAUTIFY, RefineWay.DICTATION, it) }
+        compose.onNode(isToggleable() and hasText("Absätze")).assertIsOn().performClick()
         compose.waitForIdle()
-        compose.onNodeWithText("Lesbarer glätten").assertIsNotEnabled()
-        compose.onNodeWithText("Glätten").performClick()
+        val p = Prefs(ctx)
+        assertEquals(false, p.paragraphsFor(RefineMode.BEAUTIFY))
+        assertEquals(true, p.paragraphsFor(RefineMode.POLISH))
+        assertEquals(SummarizeForm.AUTO, p.summarizeFormFor(RefineWay.DICTATION))
+        assertEquals("Sprachnachrichten bleiben gegliedert", SummarizeForm.AUTO, p.summarizeFormFor(RefineWay.SHARE))
+    }
+
+    /**
+     * Ganzer Weg durch die App: Text "Glätten" oeffnet die Seite, dort "Lesbar"; zurueck nennt die
+     * Unterzeile die Bereinigung, die Stufe ist noch nicht gewaehlt. Erst die Zone waehlt sie.
+     */
+    @Test fun lesbarUeberDieStufenSeiteUndZurueck() {
+        lateinit var back: OnBackPressedDispatcher
+        prefs.engine = Engine.ONLINE
+        prefs.apiKey = "sk-test"
+        prefs.tutorialSeen = true
+        compose.setContent {
+            back = LocalOnBackPressedDispatcherOwner.current!!.onBackPressedDispatcher
+            WhisperLoomTheme { WhisperLoomApp(env(readyStatus), route = RouteRequest(AppNav.ROUTE_REFINE)) }
+        }
         compose.waitForIdle()
-        compose.onNodeWithText("Lesbarer glätten").assertIsEnabled().performClick()
+        diktat("Glätten").performClick()
         compose.waitForIdle()
-        assertEquals(true, Prefs(ctx).polishReadable)
+        compose.onNodeWithText("Für Diktat verwenden").assertExists()
+        option("Lesbar").performClick()
+        compose.waitForIdle()
+        compose.runOnIdle { back.onBackPressed() }
+        compose.waitForIdle()
+        diktat("Zeichensetzung und Groß-/Kleinschreibung, nah an deinen Worten · Lesbar").assertExists()
+        assertEquals(RefineMode.OFF, Prefs(ctx).refineMode)
+        zone("Glätten für Diktat verwenden").performClick()
+        compose.waitForIdle()
+        assertEquals(RefineMode.READABLE, Prefs(ctx).refinementFor(RefineWay.DICTATION).mode)
         // Gespeichert bleibt "Glaetten" — erst die Anfrage ans Modell wird zu READABLE.
         assertEquals(RefineMode.POLISH, Prefs(ctx).refineMode)
-        assertEquals(RefineMode.READABLE, Prefs(ctx).dictationStage)
-        // Der Schalter der Diktat-Seite gilt nur fuers Diktat (3.8.6).
-        assertEquals(false, Prefs(ctx).sharePolishReadable)
+        assertEquals(PolishCleanup.PLAIN, Prefs(ctx).polishCleanupFor(RefineWay.SHARE))
     }
 
-    /** 3.8.6: Sprachnachrichten haben einen eigenen Schalter — der des Diktats bleibt ohne Diktat-Stufe gesperrt. */
-    @Test fun lesbarerGlaettenDesDiktatsMitNurDerShareStufeGesperrt() {
+    /**
+     * 3.9.0: auch "Aus" hat zwei Ziele. Die Zeile oeffnet seine Seite, von dort geht es zu Woerterbuch
+     * & Regeln; zurueck steht die Stufe unveraendert.
+     */
+    @Test fun ausOeffnetSeineSeiteUndVonDortWoerterbuchUndRegeln() {
+        lateinit var back: OnBackPressedDispatcher
+        prefs.engine = Engine.ONLINE
+        prefs.apiKey = "sk-test"
+        prefs.tutorialSeen = true
+        prefs.refineMode = RefineMode.BEAUTIFY
+        compose.setContent {
+            back = LocalOnBackPressedDispatcherOwner.current!!.onBackPressedDispatcher
+            WhisperLoomTheme { WhisperLoomApp(env(readyStatus), route = RouteRequest(AppNav.ROUTE_REFINE)) }
+        }
+        compose.waitForIdle()
+        diktat("Aus").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Für Diktat verwenden").assertExists()
+        compose.onNodeWithText("Ohne KI gelten nur die festen Regeln", substring = true).assertExists()
+        compose.onNodeWithText("Wörterbuch & Regeln").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Feste Regeln").assertExists()
+        repeat(2) {
+            compose.runOnIdle { back.onBackPressed() }
+            compose.waitForIdle()
+        }
+        zone("Verschönern für Diktat verwenden").assertIsSelected()
+        assertEquals(RefineMode.BEAUTIFY, Prefs(ctx).refineMode)
+    }
+
+    /** 3.8.6: Sprachnachrichten haben eine eigene Bereinigung — Lesbar dort macht das Diktat nicht lesbar. */
+    @Test fun lesbarDerSprachnachrichtenWirktNichtAufsDiktat() {
+        prefs.refineMode = RefineMode.POLISH
         prefs.shareRefineMode = RefineMode.POLISH
-        screen(env()) { TextDictationScreen(it) }
-        assertEquals(RefineMode.OFF, Prefs(ctx).refineMode)
-        compose.onNodeWithText("Lesbarer glätten").assertIsNotEnabled()
+        screen(env()) { StageScreen(RefineMode.POLISH, RefineWay.SHARE, it) }
+        option("Lesbar").performClick()
+        compose.waitForIdle()
+        assertEquals(RefineMode.READABLE, Prefs(ctx).refinementFor(RefineWay.SHARE).mode)
+        assertEquals(RefineMode.POLISH, Prefs(ctx).refinementFor(RefineWay.DICTATION).mode)
     }
 
     /** Review 3.5.0 HOCH: nach aus/an darf weder die Ollama-Adresse noch der Ollama-Key haengen bleiben. */
@@ -584,7 +660,7 @@ class MainFlowTest {
         prefs.llmUrl = "http://homeserver:11434"
         prefs.llmKey = "ollama-key"
         prefs.llmModel = "gemma3"
-        screen(env()) { TextAccessScreen(it) }
+        screen(env()) { LlmAccessScreen(it) }
         compose.onNodeWithText("Eigenen Zugang verwenden").performClick() // aus
         compose.waitForIdle()
         compose.onNodeWithText("Eigenen Zugang verwenden").performClick() // wieder an
@@ -601,7 +677,7 @@ class MainFlowTest {
     @Test fun ollamaImHeimnetzFragtNachDerServerAdresse() {
         prefs.refineMode = RefineMode.POLISH
         prefs.llmProviderId = "ollama"
-        screen(env()) { TextAccessScreen(it) }
+        screen(env()) { LlmAccessScreen(it) }
         compose.onNodeWithText("Dein eigenes Ollama", substring = true).assertExists()
         compose.onNodeWithText("Modelle vom Server laden").assertIsNotEnabled()
         compose.onNode(hasSetTextAction() and hasText("Server-Adresse")).performTextInput("http://127.0.0.1:1")
@@ -617,7 +693,7 @@ class MainFlowTest {
     @Test fun ollamaCloudZeigtModellAuswahlUndFreieEingabe() {
         prefs.refineMode = RefineMode.POLISH
         prefs.llmProviderId = "ollama-cloud"
-        screen(env()) { TextAccessScreen(it) }
+        screen(env()) { LlmAccessScreen(it) }
         compose.onNodeWithText("https://ollama.com").assertExists()
         // Leeres Modell = Empfehlung je Stufe (3.8.6), nicht mehr das erste Katalogmodell.
         compose.onNodeWithTag("dropdown:Modell").assertTextContains("Empfehlung je Stufe")
@@ -638,7 +714,7 @@ class MainFlowTest {
         prefs.sttProviderId = "elevenlabs"
         prefs.apiKey = "xi-stt"
         prefs.refineMode = RefineMode.POLISH
-        screen(env()) { TextAccessScreen(it) }
+        screen(env()) { LlmAccessScreen(it) }
         compose.onNodeWithText("ElevenLabs erkennt nur Sprache und bietet keine Textverbesserung.").assertExists()
         // Kein Modellfeld fuer einen Anbieter ohne Textmodelle, keine Pruefung ins Leere.
         compose.onNode(hasSetTextAction() and hasText("Modell")).assertDoesNotExist()
@@ -656,7 +732,7 @@ class MainFlowTest {
         prefs.sttProviderId = "together"
         prefs.apiKey = "tg"
         prefs.refineMode = RefineMode.POLISH
-        screen(env()) { TextAccessScreen(it) }
+        screen(env()) { LlmAccessScreen(it) }
         compose.onNodeWithText("bietet keine Textverbesserung", substring = true).assertDoesNotExist()
         compose.onNodeWithText("Zugang prüfen").assertIsNotEnabled() // ohne Modell ginge die Pruefung ins Leere
         compose.onNode(hasSetTextAction() and hasText("Modell")).performTextInput("meta-llama/Llama-3.3-70B-Instruct-Turbo")
@@ -672,19 +748,19 @@ class MainFlowTest {
         prefs.sttProviderId = "together"
         prefs.serverModelsEnabled = true
         prefs.refineMode = RefineMode.POLISH
-        screen(env()) { TextAccessScreen(it) }
+        screen(env()) { LlmAccessScreen(it) }
         compose.onNodeWithTag("picker:Modell").assertDoesNotExist()
         compose.onNodeWithText("Modelle aktualisieren").assertDoesNotExist()
         compose.onNode(hasSetTextAction() and hasText("Modell")).assertExists()
     }
 
-    // --- Vokabular -------------------------------------------------------------------
+    // --- Vokabular (Woerterbuch & Regeln, bis 3.8.6 unter Erkennung) ---------------------
 
     @Test fun vokabularAlsListeImSheet() {
         prefs.engine = Engine.ONLINE
         prefs.sttProviderId = "groq"
         prefs.apiKey = "k"
-        screen(env()) { RecognitionScreen(it) }
+        screen(env()) { DictionaryScreen(it) }
         compose.onNodeWithText("Noch keine Begriffe").assertExists()
         compose.onNodeWithText("Bearbeiten").performClick()
         compose.waitForIdle()
@@ -706,8 +782,17 @@ class MainFlowTest {
         prefs.apiPrompt = "Anna\nBernd"
         prefs.vocabFileUri = "content://x/namen.md"
         prefs.vocabFileName = "namen.md"
-        screen(env()) { RecognitionScreen(it) }
+        screen(env()) { DictionaryScreen(it) }
         compose.onNodeWithText("2 Begriffe · Datei: namen.md").assertExists()
+    }
+
+    @Test fun spracherkennungHatKeinVokabularMehr() {
+        prefs.engine = Engine.ONLINE
+        prefs.sttProviderId = "groq"
+        prefs.apiKey = "k"
+        screen(env()) { RecognitionScreen(it) }
+        compose.onNodeWithText("Vokabular").assertDoesNotExist()
+        compose.onNodeWithTag("dropdown:Sprache").assertExists()
     }
 
     // --- E4 Offline-Modelle -------------------------------------------------------
@@ -762,7 +847,7 @@ class MainFlowTest {
         prefs.engine = Engine.ONLINE
         prefs.sttProviderId = "mistral"
         prefs.apiKey = "k"
-        screen(env()) { RecognitionScreen(it) }
+        screen(env()) { DictionaryScreen(it) }
         compose.onNodeWithText("Dieser Anbieter nimmt kein Vokabular entgegen — es wirkt nur bei anderen Anbietern und offline.")
             .assertExists()
         compose.onNodeWithText("Kontext-Wörter (kommagetrennt)").assertDoesNotExist()
@@ -772,7 +857,7 @@ class MainFlowTest {
         prefs.engine = Engine.ONLINE
         prefs.sttProviderId = "elevenlabs"
         prefs.apiKey = "k"
-        screen(env()) { RecognitionScreen(it) }
+        screen(env()) { DictionaryScreen(it) }
         compose.onNodeWithText("etwa 20 % Aufpreis", substring = true).assertExists()
         compose.onNodeWithText("Dieser Anbieter nimmt kein Vokabular entgegen", substring = true).assertDoesNotExist()
         compose.onNodeWithText("Kostet nichts extra", substring = true).assertDoesNotExist()
@@ -879,6 +964,9 @@ class MainFlowTest {
         screen(env()) { HelpScreen(7, it) }
         bild(R.drawable.ill_help_privacy, R.string.img_help_privacy).assertExists()
         bildtext(R.string.img_pro_widgets).assertDoesNotExist()
+        // 3.9.0: Der Verlauf hebt Diktat-Texte auf — die Karte darf nicht nur "keine Aufnahmen" sagen.
+        compose.onNodeWithText(ctx.getString(R.string.help_s6_history)).assertExists()
+        compose.onNodeWithText(ctx.getString(R.string.help_s6_a11y)).assertExists()
     }
 
     @Test fun einZuHoherAbschnittOeffnetDenLetzten() {
@@ -898,13 +986,45 @@ class MainFlowTest {
         compose.onNodeWithText("Knopf antippen = Aufnahme").assertExists()
     }
 
-    @Test fun hubZeigtAchtZeilenInVierGruppen() {
-        // User-Entscheidung U3: Grundlagen, Bedienung, Pro, Info — in genau dieser Reihenfolge.
+    @Test fun knopfUndTastaturEinstellungenObenBerechtigungenUnten() {
+        screen(env()) { ButtonKeyboardScreen(it) }
+        val reihenfolge = listOf("Schwebender Knopf", "Textausgabe", "Diktat-Tastatur", "Einfügen", "Berechtigungen", "Mikrofon")
+        val oben = reihenfolge.map { compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
+        assertEquals("Von oben nach unten: $reihenfolge", oben.sorted(), oben)
+    }
+
+    /** 3.9.0: "Leerzeichen nach Diktat" ist Einfuege-Verhalten und steht bei Knopf & Tastatur. */
+    @Test fun leerzeichenNachDiktatStehtBeimEinfuegen() {
+        screen(env()) { ButtonKeyboardScreen(it) }
+        compose.onNodeWithText("Leerzeichen nach Diktat anhängen").performClick()
+        compose.waitForIdle()
+        assertEquals(false, Prefs(ctx).trailingSpace)
+    }
+
+    @Test fun textausgabeOhneBedienungshilfeZeigtErstDenHinweis() {
+        screen(env()) { ButtonKeyboardScreen(it) }
+        compose.onNodeWithText("Textausgabe").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Bedienungshilfe: Text einfügen").assertExists()
+        assertNull(shadowOf(ctx as Application).nextStartedActivity)
+    }
+
+    @Test fun textausgabeMitBedienungshilfeOeffnetDieEinstellungen() {
+        screen(env(readyStatus)) { ButtonKeyboardScreen(it) }
+        compose.onNodeWithText("Textausgabe").performClick()
+        compose.waitForIdle()
+        assertEquals(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS, shadowOf(ctx as Application).nextStartedActivity?.action)
+    }
+
+    @Test fun hubZeigtElfZeilenInSechsGruppen() {
+        // 3.9.0 nach Gegenstaenden: Text, Modelle & Zugaenge, Bedienung, Verlauf, Pro, Info — in genau dieser Reihenfolge.
         prefs.engine = Engine.ONLINE
         screen(env()) { SettingsHubScreen(it) }
         val reihenfolge = listOf(
-            "GRUNDLAGEN", "Erkennung", "Offline-Modelle", "Text",
+            "TEXT", "Textverbesserung", "Wörterbuch & Regeln",
+            "MODELLE & ZUGÄNGE", "Spracherkennung", "KI-Zugang", "Offline-Modelle",
             "BEDIENUNG", "Knopf & Tastatur", "Widgets",
+            "VERLAUF", "Verlauf",
             "PRO", "Erweitert",
             "INFO", "Anleitung & Hilfe", "Über WhisperLoom",
         )
@@ -918,21 +1038,24 @@ class MainFlowTest {
         prefs.engine = Engine.ONLINE
         screen(env()) { SettingsHubScreen(it) }
         val zeilen = listOf(
-            "Erkennung", "Offline-Modelle", "Text", "Knopf & Tastatur", "Widgets", "Erweitert",
-            "Anleitung & Hilfe", "Über WhisperLoom",
+            "Textverbesserung", "Wörterbuch & Regeln", "Spracherkennung", "KI-Zugang", "Offline-Modelle",
+            "Knopf & Tastatur", "Widgets", "Verlauf", "Erweitert", "Anleitung & Hilfe", "Über WhisperLoom",
         ).map { it to compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
         // Jeder Trenner gehoert zur naechsthoeheren Zeile ueber ihm.
         val mitTrenner = compose.onAllNodesWithTag(HUB_DIVIDER_TAG).fetchSemanticsNodes().map { trenner ->
             zeilen.filter { it.second < trenner.boundsInRoot.top }.maxBy { it.second }.first
         }
-        assertEquals(listOf("Erkennung", "Offline-Modelle", "Knopf & Tastatur", "Anleitung & Hilfe"), mitTrenner)
+        assertEquals(listOf("Textverbesserung", "Spracherkennung", "KI-Zugang", "Knopf & Tastatur", "Anleitung & Hilfe"), mitTrenner)
     }
 
     @Test fun dieGruppenSindUeberschriftenInNormalerSchreibung() {
-        // Grossbuchstaben nur fuer das Auge; TalkBack liest "Grundlagen" und springt per Ueberschrift.
+        // Grossbuchstaben nur fuer das Auge; TalkBack liest "Modelle & Zugänge" und springt per Ueberschrift.
         prefs.engine = Engine.ONLINE
         screen(env()) { SettingsHubScreen(it) }
-        mapOf("GRUNDLAGEN" to "Grundlagen", "BEDIENUNG" to "Bedienung", "PRO" to "Pro", "INFO" to "Info").forEach { (sichtbar, gelesen) ->
+        mapOf(
+            "TEXT" to "Text", "MODELLE & ZUGÄNGE" to "Modelle & Zugänge", "BEDIENUNG" to "Bedienung", "VERLAUF" to "Verlauf",
+            "PRO" to "Pro", "INFO" to "Info",
+        ).forEach { (sichtbar, gelesen) ->
             compose.onNodeWithText(sichtbar)
                 .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
                 .assert(SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf(gelesen)))

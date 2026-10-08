@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Android 12+ (dataExtractionRules): gleiche Ausnahmen fuer Cloud-Backup und Geraete-Transfer.
-     allowBackup=false schaltet beides zusaetzlich ganz ab; die Regeln bleiben, falls das Attribut
-     kuenftig ignoriert wird. -->
+     allowBackup=false schaltet das Cloud-Backup ab, bei manchen Herstellern aber NICHT den
+     Geraeteumzug (Device-to-Device; Android-Doku zu targetSdk 31+:
+     https://developer.android.com/about/versions/12/behavior-changes-12). Die Ausschluesse unter
+     device-transfer sind deshalb tragend, keine blosse Absicherung: jede neue App-Datei mit
+     Keys oder persoenlichen Daten gehoert in beide Listen und in backup_rules.xml. -->
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="sharedpref" path="whisperloom.xml" />

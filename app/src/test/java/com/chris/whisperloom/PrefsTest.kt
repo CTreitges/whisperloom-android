@@ -46,8 +46,9 @@ class PrefsTest {
         assertEquals(OfflineRefineRule.LOCAL, p.offlineRefine)
         assertEquals("gemma4_e2b", p.localLlmModel)
         assertTrue(p.shareHideFillers)
-        // Automatische Absaetze an = Verhalten bis 3.4; kein Vokabular, keine Datei.
-        assertTrue(p.refineParagraphs)
+        // Absaetze an = Verhalten bis 3.4; kein Vokabular, keine Datei.
+        assertTrue(p.paragraphsFor(RefineMode.POLISH))
+        assertTrue(p.paragraphsFor(RefineMode.BEAUTIFY))
         assertEquals("", p.apiPrompt)
         assertEquals("", p.vocabFileUri)
         assertEquals("", p.vocabFileName)
@@ -56,9 +57,11 @@ class PrefsTest {
         assertFalse(p.a11ySkipped)
         assertFalse(p.notifSkipped)
         assertFalse(p.keyboardSkipped)
-        assertFalse(p.polishReadable)
-        assertFalse(p.sharePolishReadable)
-        assertEquals(5, sp.getInt("prefs_version", 0))
+        for (way in RefineWay.entries) {
+            assertEquals(way.name, PolishCleanup.PLAIN, p.polishCleanupFor(way))
+            assertEquals(way.name, SummarizeForm.AUTO, p.summarizeFormFor(way))
+        }
+        assertEquals(6, sp.getInt("prefs_version", 0))
         // Ohne Engine ist die App nicht eingerichtet — auch nicht mit Key.
         assertFalse(TranscriptionEngine.isConfigured(ctx))
     }
@@ -80,7 +83,7 @@ class PrefsTest {
         assertEquals("sk-alt", stt.apiKey)
         assertEquals(Prefs.DEFAULT_LLM_MODEL, p.llmAccess().model)
         assertTrue(TranscriptionEngine.isConfigured(ctx))
-        assertEquals(5, sp.getInt("prefs_version", 0))
+        assertEquals(6, sp.getInt("prefs_version", 0))
     }
 
     // --- Review KOR-2/SEC-3: v2 hatte eine freie api_url ohne Anbieter ---------------------
@@ -149,7 +152,7 @@ class PrefsTest {
         val p = Prefs(ctx)
         assertEquals("gemini-2.5-flash-lite", p.llmModel)
         assertEquals("gemini-2.5-flash-lite", p.llmAccess().model)
-        assertEquals(5, sp.getInt("prefs_version", 0))
+        assertEquals(6, sp.getInt("prefs_version", 0))
     }
 
     @Test fun geminiMitGewaehltemModellUndAndereAnbieterBleibenUnveraendert() {
@@ -199,85 +202,247 @@ class PrefsTest {
         assertEquals(RefineMode.PROMPT, Prefs(ctx).refineMode)
     }
 
-    // --- "Lesbarer glaetten" ------------------------------------------------------
+    // --- Stufen-Einstellungen je Weg (3.9.0) --------------------------------------------
 
-    @Test fun lesbarerGlaettenIstAbWerkAus() {
+    @Test fun bereinigungUndFormHabenJeWegEigeneSchluessel() {
+        val p = Prefs(ctx)
+        p.setPolishCleanupFor(RefineWay.DICTATION, PolishCleanup.READABLE)
+        p.setPolishCleanupFor(RefineWay.SHARE, PolishCleanup.CLEAN)
+        p.setSummarizeFormFor(RefineWay.DICTATION, SummarizeForm.PROSE)
+        assertEquals("readable", sp.getString("polish_cleanup", null))
+        assertEquals("clean", sp.getString("share_polish_cleanup", null))
+        assertEquals("prose", sp.getString("summarize_form", null))
+        assertEquals("auto", sp.getString("share_summarize_form", null))
+        val again = Prefs(ctx)
+        assertEquals(PolishCleanup.READABLE, again.polishCleanupFor(RefineWay.DICTATION))
+        assertEquals(PolishCleanup.CLEAN, again.polishCleanupFor(RefineWay.SHARE))
+        assertEquals(SummarizeForm.PROSE, again.summarizeFormFor(RefineWay.DICTATION))
+        assertEquals(SummarizeForm.AUTO, again.summarizeFormFor(RefineWay.SHARE))
+        p.setSummarizeFormFor(RefineWay.SHARE, SummarizeForm.PROSE)
+        assertEquals("prose", sp.getString("share_summarize_form", null))
+    }
+
+    @Test fun absaetzeHabenNurGlaettenUndVerschoenern() {
+        val p = Prefs(ctx)
+        p.setParagraphsFor(RefineMode.POLISH, false)
+        assertFalse(Prefs(ctx).paragraphsFor(RefineMode.POLISH))
+        assertFalse("Lesbar ist Glaetten", Prefs(ctx).paragraphsFor(RefineMode.READABLE))
+        assertTrue("Verschoenern hat einen eigenen Schalter", Prefs(ctx).paragraphsFor(RefineMode.BEAUTIFY))
+        assertFalse(sp.getBoolean("paragraphs_polish", true))
+        p.setParagraphsFor(RefineMode.BEAUTIFY, false)
+        assertFalse(sp.getBoolean("paragraphs_beautify", true))
+        for (stage in listOf(RefineMode.OFF, RefineMode.SUMMARIZE, RefineMode.PROMPT)) {
+            assertTrue(stage.name, p.paragraphsFor(stage))
+            try {
+                p.setParagraphsFor(stage, false)
+                fail("${stage.name} hat keinen Schalter")
+            } catch (e: IllegalArgumentException) {
+                // erwartet
+            }
+        }
+    }
+
+    @Test fun unbekannteWerteGeltenAlsStandard() {
+        sp.edit().putString("polish_cleanup", "quatsch").putString("share_summarize_form", "").commit()
+        assertEquals(PolishCleanup.PLAIN, Prefs(ctx).polishCleanupFor(RefineWay.DICTATION))
+        assertEquals(SummarizeForm.AUTO, Prefs(ctx).summarizeFormFor(RefineWay.SHARE))
+    }
+
+    @Test fun derWegHatEinenFestenSchluessel() {
+        assertEquals("dictation", RefineWay.DICTATION.key)
+        assertEquals("share", RefineWay.SHARE.key)
+        for (way in RefineWay.entries) assertEquals(way, RefineWay.fromKey(way.key))
+        assertNull(RefineWay.fromKey("quatsch"))
+        assertNull(RefineWay.fromKey(null))
+    }
+
+    @Test fun eineDiktatOptionLaesstDieSprachnachrichtenInRuhe() {
         val p = Prefs(ctx)
         p.refineMode = RefineMode.POLISH
         p.shareRefineMode = RefineMode.POLISH
-        assertFalse(p.polishReadable)
-        assertFalse(p.sharePolishReadable)
-        assertEquals(RefineMode.POLISH, p.dictationStage)
-        assertEquals(RefineMode.POLISH, p.shareStage)
+        p.setPolishCleanupFor(RefineWay.DICTATION, PolishCleanup.READABLE)
+        p.setSummarizeFormFor(RefineWay.DICTATION, SummarizeForm.PROSE)
+        p.setParagraphsFor(RefineMode.POLISH, false)
+        assertEquals(Refinement(RefineMode.READABLE, paragraphs = false), p.refinementFor(RefineWay.DICTATION))
+        assertEquals("Sprachnachrichten unveraendert", Refinement(RefineMode.POLISH), Prefs(ctx).refinementFor(RefineWay.SHARE))
+        p.shareRefineMode = RefineMode.SUMMARIZE
+        assertEquals(Refinement(RefineMode.SUMMARIZE), Prefs(ctx).refinementFor(RefineWay.SHARE))
     }
 
-    @Test fun lesbarerGlaettenWirktNurAufGlaetten() {
+    @Test fun eineSprachnachrichtenOptionLaesstDasDiktatInRuhe() {
         val p = Prefs(ctx)
-        p.polishReadable = true
-        assertTrue(Prefs(ctx).polishReadable)
-        assertEquals(RefineMode.READABLE, Prefs.effective(RefineMode.POLISH, readable = true))
-        for (mode in RefineMode.entries - RefineMode.POLISH) assertEquals(mode.name, mode, Prefs.effective(mode, readable = true))
-        for (mode in RefineMode.entries) assertEquals(mode.name, mode, Prefs.effective(mode, readable = false))
-        // Gespeichert bleibt die Wahl "Glaetten" — READABLE ist nie eine waehlbare Stufe.
         p.refineMode = RefineMode.POLISH
+        p.shareRefineMode = RefineMode.POLISH
+        p.setPolishCleanupFor(RefineWay.SHARE, PolishCleanup.CLEAN)
+        p.setSummarizeFormFor(RefineWay.SHARE, SummarizeForm.PROSE)
+        assertEquals(Refinement(RefineMode.POLISH, smartFillers = true), p.refinementFor(RefineWay.SHARE))
+        assertEquals("Diktat unveraendert", Refinement(RefineMode.POLISH), Prefs(ctx).refinementFor(RefineWay.DICTATION))
+        p.refineMode = RefineMode.SUMMARIZE
+        assertEquals(Refinement(RefineMode.SUMMARIZE), Prefs(ctx).refinementFor(RefineWay.DICTATION))
+        p.shareRefineMode = RefineMode.SUMMARIZE
+        assertEquals(Refinement(RefineMode.SUMMARIZE, paragraphs = false), Prefs(ctx).refinementFor(RefineWay.SHARE))
+    }
+
+    @Test fun gespeichertBleibtDieStufeGlaetten() {
+        val p = Prefs(ctx)
+        p.refineMode = RefineMode.POLISH
+        p.setPolishCleanupFor(RefineWay.DICTATION, PolishCleanup.READABLE)
         assertEquals("polish", sp.getString("refine_mode", null))
+        assertEquals(RefineMode.POLISH, Prefs(ctx).refineMode)
+        assertEquals(RefineMode.READABLE, Prefs(ctx).refinementFor(RefineWay.DICTATION).mode)
         assertFalse(RefineMode.READABLE in RefineMode.settings(promptEnabled = true))
     }
 
-    @Test fun lesbarerGlaettenSpiegeltSichInCompose() {
+    /** Die fruehere Stufe "Absaetze" war nie waehlbar und ist entfallen — gespeichert gilt sie als Glaetten. */
+    @Test fun dieFruehereStufeAbsaetzeGiltAlsGlaetten() {
+        sp.edit().putString("refine_mode", "paragraphs").commit()
+        assertEquals(RefineMode.POLISH, Prefs(ctx).refineMode)
+        assertEquals(RefineMode.POLISH, Prefs(ctx).refinementFor(RefineWay.DICTATION).mode)
+        assertEquals("paragraphs", sp.getString("refine_mode", null))
+        assertFalse(RefineMode.entries.any { it.key == "paragraphs" })
+    }
+
+    @Test fun stufenEinstellungenSpiegelnSichInCompose() {
         val state = PrefsState(Prefs(ctx))
-        state.polishReadable = true
-        assertTrue(Prefs(ctx).polishReadable)
-        Prefs(ctx).polishReadable = false
-        assertFalse(state.polishReadable)
-        state.sharePolishReadable = true
-        assertTrue(Prefs(ctx).sharePolishReadable)
-        state.shareRefineMode = RefineMode.POLISH
+        state.setPolishCleanupFor(RefineWay.SHARE, PolishCleanup.READABLE)
+        assertEquals(PolishCleanup.READABLE, Prefs(ctx).polishCleanupFor(RefineWay.SHARE))
+        assertEquals(PolishCleanup.PLAIN, state.polishCleanupFor(RefineWay.DICTATION))
+        state.setSummarizeFormFor(RefineWay.DICTATION, SummarizeForm.PROSE)
+        assertEquals(SummarizeForm.PROSE, Prefs(ctx).summarizeFormFor(RefineWay.DICTATION))
+        state.setParagraphsFor(RefineMode.BEAUTIFY, false)
+        assertFalse(Prefs(ctx).paragraphsFor(RefineMode.BEAUTIFY))
+        assertTrue(state.paragraphsFor(RefineMode.POLISH))
+        // Von aussen geschrieben (Tastatur, zweite Instanz) kommt es an.
+        Prefs(ctx).setPolishCleanupFor(RefineWay.DICTATION, PolishCleanup.CLEAN)
+        Prefs(ctx).setSummarizeFormFor(RefineWay.SHARE, SummarizeForm.PROSE)
+        Prefs(ctx).setParagraphsFor(RefineMode.POLISH, false)
+        assertEquals(PolishCleanup.CLEAN, state.polishCleanupFor(RefineWay.DICTATION))
+        assertEquals(SummarizeForm.PROSE, state.summarizeFormFor(RefineWay.SHARE))
+        assertFalse(state.paragraphsFor(RefineMode.READABLE))
+        // Wirksame Verarbeitung ueber die Spiegel wie in den Prefs.
         state.refineMode = RefineMode.POLISH
-        assertEquals(RefineMode.READABLE, state.shareStage)
-        assertEquals(RefineMode.POLISH, state.dictationStage)
-        Prefs(ctx).sharePolishReadable = false
-        assertEquals(RefineMode.POLISH, state.shareStage)
+        state.shareRefineMode = RefineMode.POLISH
+        for (way in RefineWay.entries) assertEquals(way.name, Prefs(ctx).refinementFor(way), state.refinementFor(way))
+        assertEquals(Refinement(RefineMode.POLISH, smartFillers = true, paragraphs = false), state.refinementFor(RefineWay.DICTATION))
+        assertEquals(Refinement(RefineMode.READABLE), state.refinementFor(RefineWay.SHARE))
         state.dispose()
     }
 
-    // --- v5 (3.8.6): "Lesbarer glaetten" getrennt fuer Sprachnachrichten -------------------
+    // --- v6 (3.9.0): Migration der Schalter in die Stufen-Einstellungen --------------------------
 
-    @Test fun lesbarerGlaettenGetrenntFuerDiktatUndSprachnachrichten() {
-        val p = Prefs(ctx)
+    /** Ein Bestandsnutzer von 3.8.6 (v5) mit den alten Schaltern. */
+    private fun v5(readable: Boolean, shareReadable: Boolean, smart: Boolean, paragraphs: Boolean): Prefs {
+        sp.edit().clear().putInt("prefs_version", 5)
+            .putBoolean("polish_readable", readable)
+            .putBoolean("share_polish_readable", shareReadable)
+            .putBoolean("smart_fillers", smart)
+            .putBoolean("refine_paragraphs", paragraphs)
+            .commit()
+        return Prefs(ctx)
+    }
+
+    @Test fun v6BereinigungAusLesbarUndIntelligentJeWeg() {
+        for (readable in listOf(false, true)) for (shareReadable in listOf(false, true)) for (smart in listOf(false, true)) {
+            val p = v5(readable, shareReadable, smart, paragraphs = true)
+            val fall = "readable=$readable share=$shareReadable smart=$smart"
+            // Lesbar geht vor: dort raeumt die KI Fuellwoerter ohnehin auf. "Intelligent" galt fuer beide Wege.
+            val diktat = if (readable) PolishCleanup.READABLE else if (smart) PolishCleanup.CLEAN else PolishCleanup.PLAIN
+            val share = if (shareReadable) PolishCleanup.READABLE else if (smart) PolishCleanup.CLEAN else PolishCleanup.PLAIN
+            assertEquals(fall, diktat, p.polishCleanupFor(RefineWay.DICTATION))
+            assertEquals(fall, share, p.polishCleanupFor(RefineWay.SHARE))
+            assertEquals(fall, diktat.key, sp.getString("polish_cleanup", null))
+            assertEquals(fall, share.key, sp.getString("share_polish_cleanup", null))
+            assertEquals(6, sp.getInt("prefs_version", 0))
+        }
+    }
+
+    @Test fun v6AbsaetzeUndFormAusAutomatischenAbsaetzen() {
+        for (paragraphs in listOf(true, false)) {
+            val p = v5(readable = false, shareReadable = false, smart = false, paragraphs = paragraphs)
+            assertEquals(paragraphs, p.paragraphsFor(RefineMode.POLISH))
+            assertEquals(paragraphs, p.paragraphsFor(RefineMode.BEAUTIFY))
+            assertEquals(if (paragraphs) SummarizeForm.AUTO else SummarizeForm.PROSE, p.summarizeFormFor(RefineWay.DICTATION))
+            // Sprachnachrichten waren immer gegliedert.
+            assertEquals(SummarizeForm.AUTO, p.summarizeFormFor(RefineWay.SHARE))
+            assertTrue(sp.contains("paragraphs_polish") && sp.contains("paragraphs_beautify"))
+            assertEquals("auto", sp.getString("share_summarize_form", null))
+        }
+    }
+
+    @Test fun v6WirktWieDieAltenSchalter() {
+        // "Ohne Absaetze" + "intelligent" + Lesbar nur fuer Sprachnachrichten — so verarbeitete 3.8.6.
+        val p = v5(readable = false, shareReadable = true, smart = true, paragraphs = false)
         p.refineMode = RefineMode.POLISH
         p.shareRefineMode = RefineMode.POLISH
-        p.polishReadable = true
-        assertEquals(RefineMode.READABLE, p.dictationStage)
-        assertEquals("Diktat-Schalter faerbt nicht ab", RefineMode.POLISH, p.shareStage)
-        p.polishReadable = false
-        p.sharePolishReadable = true
-        assertEquals(RefineMode.POLISH, Prefs(ctx).dictationStage)
-        assertEquals(RefineMode.READABLE, Prefs(ctx).shareStage)
-        assertTrue(sp.getBoolean("share_polish_readable", false))
-        // Nur "Glaetten" wird lesbarer.
+        assertEquals(Refinement(RefineMode.POLISH, smartFillers = true, paragraphs = false), p.refinementFor(RefineWay.DICTATION))
+        assertEquals(Refinement(RefineMode.READABLE), p.refinementFor(RefineWay.SHARE))
+        p.refineMode = RefineMode.SUMMARIZE
         p.shareRefineMode = RefineMode.SUMMARIZE
-        assertEquals(RefineMode.SUMMARIZE, Prefs(ctx).shareStage)
+        assertEquals(Refinement(RefineMode.SUMMARIZE, paragraphs = false), p.refinementFor(RefineWay.DICTATION))
+        assertEquals(Refinement(RefineMode.SUMMARIZE), p.refinementFor(RefineWay.SHARE))
     }
 
-    @Test fun v5UebernimmtDenGemeinsamenSchalterFuerSprachnachrichten() {
-        // Bis 3.8.5 galt "Lesbarer glaetten" auch fuer geteilte Audios — das Verhalten bleibt.
+    @Test fun v6VonVor386UebernimmtLesbarAuchFuerSprachnachrichten() {
+        // Bis 3.8.5 galt "Lesbarer glaetten" auch fuer geteilte Audios (frueher v5) — das Verhalten bleibt.
         sp.edit().putInt("prefs_version", 4).putBoolean("polish_readable", true).commit()
         val p = Prefs(ctx)
-        assertTrue(p.sharePolishReadable)
-        assertTrue(p.polishReadable)
-        assertEquals(5, sp.getInt("prefs_version", 0))
+        assertEquals(PolishCleanup.READABLE, p.polishCleanupFor(RefineWay.DICTATION))
+        assertEquals(PolishCleanup.READABLE, p.polishCleanupFor(RefineWay.SHARE))
+        assertEquals(6, sp.getInt("prefs_version", 0))
 
-        sp.edit().clear().putInt("prefs_version", 4).putBoolean("polish_readable", false).commit()
-        assertFalse(Prefs(ctx).sharePolishReadable)
-        assertTrue(sp.contains("share_polish_readable"))
+        sp.edit().clear().putInt("prefs_version", 4).putBoolean("polish_readable", false).putBoolean("smart_fillers", true).commit()
+        assertEquals(PolishCleanup.CLEAN, Prefs(ctx).polishCleanupFor(RefineWay.SHARE))
     }
 
-    @Test fun v5LaeuftNurEinmal() {
-        sp.edit().putInt("prefs_version", 4).putBoolean("polish_readable", true).commit()
-        Prefs(ctx).sharePolishReadable = false
-        assertFalse("die Nutzer-Entscheidung bleibt", Prefs(ctx).sharePolishReadable)
-        assertTrue(Prefs(ctx).polishReadable)
+    @Test fun v6LaesstDieModelleJeStufeUnangetastet() {
+        sp.edit().putInt("prefs_version", 5).putString("llm_model_polish", "a").putString("llm_model_summarize", "c").commit()
+        val p = Prefs(ctx)
+        assertEquals("a", p.llmModelFor(RefineMode.POLISH))
+        assertEquals("c", p.llmModelFor(RefineMode.SUMMARIZE))
+        // Das Modell je Stufe gilt fuer beide Wege — kein zweiter Satz Schluessel.
+        assertTrue(sp.all.keys.filter { it.startsWith("llm_model") }.toSet() == setOf("llm_model_polish", "llm_model_summarize"))
+        assertTrue(sp.all.keys.none { it.startsWith("share_llm_model") })
+    }
+
+    @Test fun v6LaeuftNurEinmal() {
+        v5(readable = true, shareReadable = false, smart = false, paragraphs = false)
+        Prefs(ctx).setPolishCleanupFor(RefineWay.DICTATION, PolishCleanup.PLAIN)
+        Prefs(ctx).setParagraphsFor(RefineMode.POLISH, true)
+        Prefs(ctx).setSummarizeFormFor(RefineWay.DICTATION, SummarizeForm.AUTO)
+        val again = Prefs(ctx)
+        assertEquals("die Nutzer-Entscheidung bleibt", PolishCleanup.PLAIN, again.polishCleanupFor(RefineWay.DICTATION))
+        assertTrue(again.paragraphsFor(RefineMode.POLISH))
+        assertEquals(SummarizeForm.AUTO, again.summarizeFormFor(RefineWay.DICTATION))
+        // Die alten Schluessel bleiben liegen (nur noch zur Migration gelesen) und wirken nicht mehr.
+        assertTrue(sp.getBoolean("polish_readable", false))
+    }
+
+    @Test fun v6BehaeltSchonGesetzteWerte() {
+        sp.edit().putInt("prefs_version", 5)
+            .putBoolean("polish_readable", true)
+            .putBoolean("smart_fillers", true)
+            .putBoolean("refine_paragraphs", false)
+            .putString("polish_cleanup", "plain")
+            .putString("share_polish_cleanup", "readable")
+            .putBoolean("paragraphs_beautify", true)
+            .putString("summarize_form", "auto")
+            .putString("share_summarize_form", "prose")
+            .commit()
+        val p = Prefs(ctx)
+        assertEquals(PolishCleanup.PLAIN, p.polishCleanupFor(RefineWay.DICTATION))
+        assertEquals(PolishCleanup.READABLE, p.polishCleanupFor(RefineWay.SHARE))
+        assertTrue(p.paragraphsFor(RefineMode.BEAUTIFY))
+        assertFalse("nicht gesetzt: kommt aus refine_paragraphs", p.paragraphsFor(RefineMode.POLISH))
+        assertEquals(SummarizeForm.AUTO, p.summarizeFormFor(RefineWay.DICTATION))
+        assertEquals(SummarizeForm.PROSE, p.summarizeFormFor(RefineWay.SHARE))
+    }
+
+    @Test fun v6LaeuftNichtAufDemNeuenStand() {
+        // prefs_version 6: nichts wird geschrieben, auch wenn alte Schluessel herumliegen.
+        sp.edit().putInt("prefs_version", 6).putBoolean("polish_readable", true).commit()
+        val p = Prefs(ctx)
+        assertEquals(PolishCleanup.PLAIN, p.polishCleanupFor(RefineWay.DICTATION))
+        assertFalse(sp.contains("polish_cleanup"))
     }
 
     // --- Modell je Stufe (3.8.6) ------------------------------------------------------
@@ -293,9 +458,8 @@ class PrefsTest {
         assertEquals("b", sp.getString("llm_model_beautify", null))
         assertEquals("c", sp.getString("llm_model_summarize", null))
         assertEquals("d", sp.getString("llm_model_prompt", null))
-        // "Lesbarer glaetten" und Absaetze rechnen mit dem Glaetten-Modell, "aus" mit keinem.
+        // "Lesbar" rechnet mit dem Glaetten-Modell, "aus" mit keinem.
         assertEquals("a", Prefs(ctx).llmModelFor(RefineMode.READABLE))
-        assertEquals("a", Prefs(ctx).llmModelFor(RefineMode.PARAGRAPHS))
         assertEquals("", Prefs(ctx).llmModelFor(RefineMode.OFF))
         assertEquals("", Prefs(ctx).llmModelFor(null))
         assertEquals("", p.llmModel)
@@ -388,7 +552,7 @@ class PrefsTest {
         assertEquals(Prefs.DEFAULT_LOCAL_LLM_MODEL, p.localLlmModel)
         assertFalse(sp.contains("offline_refine"))
         assertFalse(sp.contains("local_llm_model"))
-        assertEquals(5, sp.getInt("prefs_version", 0))
+        assertEquals(6, sp.getInt("prefs_version", 0))
     }
 
     @Test fun unbekannteOfflineRegelGiltAlsLokal() {
@@ -624,6 +788,50 @@ class PrefsTest {
         assertTrue(state.isEnabled(ProFeature.WIDGETS))
         assertFalse(Prefs(ctx).promptLevelEnabled)
         assertFalse(state.isEnabled(ProFeature.PROMPT))
+        state.dispose()
+    }
+
+    // --- Verlauf (3.9.0): ab Werk an mit 50, ohne Versionssprung ------------------------------
+
+    @Test fun verlaufIstAbWerkAnMitFuenfzig() {
+        val p = Prefs(ctx)
+        assertTrue(p.historyEnabled)
+        assertEquals(50, p.historySize)
+    }
+
+    /** E7: ein Standard fuer alle — auch wer von v5 kommt, hat den Verlauf an. */
+    @Test fun bestandsnutzerHabenDenVerlaufOhneMigration() {
+        sp.edit().putInt("prefs_version", 5).putString("engine", "online").commit()
+        val p = Prefs(ctx)
+        assertTrue(p.historyEnabled)
+        assertEquals(50, p.historySize)
+    }
+
+    @Test fun verlaufsgroesseNurAusDerListe() {
+        val p = Prefs(ctx)
+        assertEquals(listOf(10, 25, 50, 100, 250, 500), Prefs.HISTORY_SIZES)
+        for (size in Prefs.HISTORY_SIZES) {
+            p.historySize = size
+            assertEquals(size, p.historySize)
+        }
+        try {
+            p.historySize = 7
+            fail("IllegalArgumentException erwartet")
+        } catch (e: IllegalArgumentException) {
+            // erwartet
+        }
+        sp.edit().putInt("history_size", 7).commit()
+        assertEquals("Unbekanntes gilt als Standard", 50, p.historySize)
+    }
+
+    @Test fun derSpiegelZiehtDenVerlaufNach() {
+        val state = PrefsState(Prefs(ctx))
+        assertTrue(state.historyEnabled)
+        assertEquals(50, state.historySize)
+        Prefs(ctx).historyEnabled = false
+        Prefs(ctx).historySize = 100
+        assertFalse(state.historyEnabled)
+        assertEquals(100, state.historySize)
         state.dispose()
     }
 }

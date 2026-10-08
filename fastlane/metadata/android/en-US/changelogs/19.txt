@@ -1,0 +1,8 @@
+WhisperLoom 3.9.0
+• New: history of your dictations – on by default, on the device only, can be switched off
+• New: pause in the dictation keyboard
+• New: a page per level with clean-up, paragraphs, form and model
+• New: settings reorganised by topic
+• New: the filler-word list tidies up after every AI level
+• Fixed: no capital letter after abbreviations like “ca.”
+• Fixed: text for a vanished input field goes to history or clipboard, not from private fields

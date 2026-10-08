@@ -6,7 +6,7 @@ import org.json.JSONObject
 
 /**
  * Optionale zweite Runde: laesst ein Sprachmodell den Rohtext bearbeiten (glaetten, lesbar
- * glaetten, verschoenern, zusammenfassen, in Absaetze gliedern, zum Prompt formen). Kostet eine zusaetzliche
+ * glaetten, verschoenern, zusammenfassen, zum Prompt formen). Kostet eine zusaetzliche
  * Anfrage und etwas Latenz — deshalb in den Einstellungen abschaltbar.
  *
  * Spricht POST /chat/completions des [ApiAccess] bzw. bei Ollama POST /api/chat — das kann
@@ -25,8 +25,8 @@ class TextRefiner(
 ) {
 
     /**
-     * Liefert den bearbeiteten Text. Bei leerer Eingabe, [RefineMode.OFF] oder leerer
-     * Antwort wird der Originaltext zurueckgegeben. Fehler des Sprachmodells (HTTP, Netz)
+     * Liefert den bearbeiteten Text. Bei leerer Eingabe oder [RefineMode.OFF] wird der
+     * Originaltext zurueckgegeben. Fehler des Sprachmodells (HTTP, Netz, leere Antwort)
      * werden geworfen — [com.chris.whisperloom.TranscriptionEngine] faengt sie und faellt
      * auf den Rohtext zurueck: die Veredelung darf ein Diktat niemals verschlucken.
      *
@@ -34,7 +34,8 @@ class TextRefiner(
      *   sonst ginge die Anfrage an "/chat/completions" ohne Host — oder der Zugang keinen Text
      *   verbessern kann ([ApiAccess.refineBlock]: [MSG_NO_LLM], [MSG_NO_MODEL], [MSG_OFFLINE]).
      * @throws RefineRejectedException wenn das Modell geantwortet hat, statt den Text zu bearbeiten
-     *   (Ausgabe weit laenger als das Diktat), oder an seiner Laengengrenze abgebrochen hat ([MSG_TRUNCATED]).
+     *   (Ausgabe weit laenger als das Diktat), an seiner Laengengrenze abgebrochen hat ([MSG_TRUNCATED])
+     *   oder nichts geliefert hat ([MSG_EMPTY]).
      */
     fun refine(
         raw: String,
@@ -113,14 +114,17 @@ class TextRefiner(
          */
         const val MSG_TRUNCATED = "Antwort des Modells abgeschnitten (Längengrenze)"
 
+        /** Das Modell hat nichts geliefert (keine oder leere Antwort, nur Nachdenken oder Markierung). */
+        const val MSG_EMPTY = "Leere Antwort des Modells"
+
         /** Der Erkennungs-Anbieter hat keinen Chat (ElevenLabs), und es ist kein eigener Zugang eingetragen. */
-        const val MSG_NO_LLM = "Der Erkennungs-Anbieter kann keinen Text verbessern — unter „Text“ einen eigenen Zugang eintragen"
+        const val MSG_NO_LLM = "Der Erkennungs-Anbieter kann keinen Text verbessern — unter „KI-Zugang“ einen eigenen Zugang eintragen"
 
         /** "Wie Erkennung" bei Together/DeepInfra: der Katalog kennt dort kein Textmodell, eingetragen ist keins. */
-        const val MSG_NO_MODEL = "Kein Textmodell eingetragen — unter „Text“ ein Modell eintragen"
+        const val MSG_NO_MODEL = "Kein Textmodell eingetragen — unter „KI-Zugang“ ein Modell eintragen"
 
         /** "Wie Erkennung" bei Offline-Erkennung: kein Online-Zugang, an den der Text gehen duerfte. */
-        const val MSG_OFFLINE = "Offline-Erkennung ohne Textverbesserung — unter „Text“ einen eigenen Zugang eintragen"
+        const val MSG_OFFLINE = "Offline-Erkennung ohne Textverbesserung — unter „KI-Zugang“ einen eigenen Zugang eintragen"
         private const val LENGTH = "length"
 
         /** OpenAI: "Unsupported parameter: 'temperature' is not supported with this model." Claude 5.x ebenso mit 400. */
@@ -145,16 +149,21 @@ class TextRefiner(
 
         /**
          * Nacharbeit der Modell-Antwort — online wie lokal: Nachdenken, Markierung, Vorrede und
-         * Verpackung weg ([cleanText]/[cleanPrompt]). Keine oder leere Antwort = Rohtext.
+         * Verpackung weg ([cleanText]/[cleanPrompt]).
          *
-         * @throws RefineRejectedException bei unplausibel langer Ausgabe.
+         * Keine oder leere Antwort gilt als gescheitert ([MSG_EMPTY]): der Aufrufer nimmt den Rohtext
+         * mit Hinweis und den vollen Regeln. Als Rohtext "verbessert" kam er frueher ohne Hinweis durch,
+         * mit "Fuellwoerter intelligent" samt jedem "ähm" (N7).
+         *
+         * @throws RefineRejectedException bei unplausibel langer oder leerer Ausgabe.
          */
         fun finish(raw: String, mode: RefineMode, output: String?): String {
             val text = output
                 ?.let { stripThinking(it) }
                 ?.trim()
                 ?.let { if (mode == RefineMode.PROMPT) cleanPrompt(raw, it) else cleanText(raw, it) }
-            return if (text.isNullOrBlank()) raw else text
+            if (text.isNullOrBlank()) throw RefineRejectedException(MSG_EMPTY)
+            return text
         }
 
         /**

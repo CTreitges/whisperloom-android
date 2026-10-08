@@ -4,6 +4,7 @@ import android.accessibilityservice.AccessibilityService
 import android.os.Bundle
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import com.chris.whisperloom.history.HistoryPolicy
 
 /**
  * Bedienungshilfe-Dienst, der erkannten Text an der Cursor-Position in das gerade
@@ -31,9 +32,7 @@ class TextInserterAccessibilityService : AccessibilityService() {
     /** Fuegt [text] an der Cursor-Position ein. Gibt true bei Erfolg. */
     fun insert(text: String): Boolean {
         if (text.isEmpty()) return true
-        val root = rootInActiveWindow ?: return false
-        val node = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)?.takeIf { it.isEditable }
-            ?: return false
+        val node = focusedField() ?: return false
 
         val old = currentText(node)
         val result = TextInsertion.compute(old, node.textSelectionStart, node.textSelectionEnd, text)
@@ -53,6 +52,10 @@ class TextInserterAccessibilityService : AccessibilityService() {
         node.performAction(AccessibilityNodeInfo.ACTION_SET_SELECTION, selArgs)
         return true
     }
+
+    /** Das fokussierte, editierbare Feld; null ohne Fenster oder Fokus. */
+    private fun focusedField(): AccessibilityNodeInfo? =
+        rootInActiveWindow?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)?.takeIf { it.isEditable }
 
     /**
      * Aktueller Feldinhalt — leer, wenn das Feld nur seinen Platzhalter zeigt.
@@ -79,5 +82,15 @@ class TextInserterAccessibilityService : AccessibilityService() {
 
         /** Versucht den Text einzufuegen; false, wenn Dienst aus oder kein Fokusfeld. */
         fun tryInsert(text: String): Boolean = instance?.insert(text) ?: false
+
+        /**
+         * Ist das fokussierte Feld ein Passwortfeld? Dann kommt das Diktat nicht in den Verlauf.
+         * Gelesen wird nur diese Eigenschaft, kein Inhalt. false = Dienst aus oder kein Fokusfeld.
+         */
+        fun focusedIsPassword(): Boolean = instance?.focusedField()?.let(::isPassword) ?: false
+
+        /** Passwortfeld laut Knoten oder Eingabetyp; ein Inkognito-Flag kennt die Bedienungshilfe nicht. */
+        internal fun isPassword(node: AccessibilityNodeInfo): Boolean =
+            node.isPassword || HistoryPolicy.isPrivateField(node.inputType, imeOptions = 0)
     }
 }

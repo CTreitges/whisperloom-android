@@ -141,10 +141,8 @@ class RefinePipelineTest {
     private class Run(val text: String, val skipped: String?, val note: String?, val started: Boolean)
 
     private fun transcribe(skip: RefineSkip? = null, onStart: () -> Unit = {}): Run {
-        var skipped: String? = null
-        var note: String? = null
         var started = false
-        val text = TranscriptionEngine.transcribe(
+        val dictation = TranscriptionEngine.transcribe(
             ctx,
             speech,
             skip = skip,
@@ -152,9 +150,8 @@ class RefinePipelineTest {
                 started = true
                 onStart()
             },
-            onRefineNote = { note = it },
-        ) { skipped = it }
-        return Run(text, skipped, note, started)
+        )
+        return Run(dictation.text, dictation.result.skipped, dictation.result.note, started)
     }
 
     private val localCalls: Int get() = made.sumOf { it.calls.size }

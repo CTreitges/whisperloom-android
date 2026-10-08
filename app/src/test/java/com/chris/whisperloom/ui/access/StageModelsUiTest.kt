@@ -19,12 +19,14 @@ import com.chris.whisperloom.Engine
 import com.chris.whisperloom.ModelCache
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.RefineWay
 import com.chris.whisperloom.api.ModelKind
 import com.chris.whisperloom.api.RemoteModel
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SystemStatus
-import com.chris.whisperloom.ui.settings.TextAccessScreen
+import com.chris.whisperloom.ui.settings.LlmAccessScreen
+import com.chris.whisperloom.ui.settings.StageScreen
 import com.chris.whisperloom.ui.state.AppEnv
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.PrefsState
@@ -42,9 +44,10 @@ import java.net.InetSocketAddress
 import java.util.Collections
 
 /**
- * Seite "Online-Zugang & Modelle" (3.8.6): Abschnitt "Modell je Stufe" (Standard-Label je Rolle,
- * eigenes Modell schreiben, Zuruecksetzen beim Anbieterwechsel, Hinweis ohne Online-Zugang oder ohne Modell
- * des Zugangs, "Modell pruefen") und der Eintrag "Empfehlung je Stufe" im Modellfeld des Zugangs. Nur
+ * Seite "KI-Zugang" (3.9.0, vorher Text › Online-Zugang & Modelle): Uebersicht "Modell je Stufe" (Standard-Label je
+ * Rolle, Zeilen fuehren auf die Stufen-Seiten, Zuruecksetzen beim Anbieterwechsel, Hinweis ohne Online-Zugang oder
+ * ohne Modell des Zugangs), die Auswahl auf der Stufen-Seite (eigenes Modell schreiben, Server-Liste, "Modell
+ * pruefen") und der Eintrag "Empfehlung je Stufe" im Modellfeld des Zugangs. Nur
  * "Modell pruefen" fragt, und zwar einen lokalen JDK-HttpServer; sonst geht nichts raus (Liste im Cache).
  */
 @RunWith(RobolectricTestRunner::class)
@@ -77,14 +80,27 @@ class StageModelsUiTest {
         prefs.llmKey = key
     }
 
-    private fun show() {
+    private fun show(): NavState {
         val status = SystemStatus()
         val env = AppEnv(PrefsState(prefs), status) { status }
-        val nav = NavState(listOf(Screen.Home, Screen.TextSettings))
+        val nav = NavState(listOf(Screen.Home, Screen.SettingsHub, Screen.LlmAccess))
         compose.setContent {
-            WhisperLoomTheme { CompositionLocalProvider(LocalAppEnv provides env) { TextAccessScreen(nav) } }
+            WhisperLoomTheme { CompositionLocalProvider(LocalAppEnv provides env) { LlmAccessScreen(nav) } }
         }
         compose.waitForIdle()
+        return nav
+    }
+
+    /** Seite der Stufe beim Diktat (3.9.0): dort sitzt die Auswahl, "Modell" oeffnet das Sheet. */
+    private fun stufe(stage: RefineMode) {
+        val status = SystemStatus()
+        val env = AppEnv(PrefsState(prefs), status) { status }
+        val nav = NavState(listOf(Screen.Home, Screen.SettingsHub, Screen.LlmAccess, Screen.Stage(stage, RefineWay.DICTATION)))
+        compose.setContent {
+            WhisperLoomTheme { CompositionLocalProvider(LocalAppEnv provides env) { StageScreen(stage, RefineWay.DICTATION, nav) } }
+        }
+        compose.waitForIdle()
+        click("Modell")
     }
 
     private fun click(text: String) {
@@ -106,6 +122,22 @@ class StageModelsUiTest {
         compose.onNodeWithText("Prompt").assertDoesNotExist() // nur mit Pro
     }
 
+    /** 3.9.0: die Uebersicht waehlt nicht selbst, ihre Zeilen fuehren auf die Stufen-Seiten des Diktats. */
+    @Test fun jedeZeileOeffnetDieSeiteIhrerStufe() {
+        anthropic()
+        prefs.promptLevelEnabled = true
+        val nav = show()
+        listOf(RefineMode.POLISH, RefineMode.BEAUTIFY, RefineMode.SUMMARIZE, RefineMode.PROMPT).zip(
+            listOf("Glätten", "Verschönern", "Zusammenfassen", "Prompt"),
+        ).forEach { (stage, zeile) ->
+            click(zeile)
+            assertEquals(zeile, Screen.Stage(stage, RefineWay.DICTATION), nav.current)
+            nav.pop()
+        }
+        compose.onNodeWithText("Modell für Verschönern").assertDoesNotExist()
+        compose.onNodeWithText("Gilt für Diktat und Sprachnachrichten.", substring = true).assertExists()
+    }
+
     @Test fun promptZeileNurMitPro() {
         anthropic()
         prefs.promptLevelEnabled = true
@@ -123,8 +155,7 @@ class StageModelsUiTest {
 
     @Test fun eineStufeBekommtEinEigenesModellUndZurueckAufStandard() {
         anthropic()
-        show()
-        click("Verschönern")
+        stufe(RefineMode.BEAUTIFY)
         compose.onNodeWithText("Modell für Verschönern").assertExists()
         compose.onNodeWithText("Modell prüfen").assertExists()
         row("Standard (Claude Sonnet 5.5)").assertIsSelected()
@@ -135,7 +166,7 @@ class StageModelsUiTest {
         compose.onNodeWithText("Modell für Verschönern").assertDoesNotExist()
         compose.onNodeWithText("Claude Opus 5.5").assertExists()
 
-        click("Verschönern")
+        click("Modell")
         row("Claude Opus 5.5").assertIsSelected()
         row("Standard (Claude Sonnet 5.5)").assertIsNotSelected().performClick()
         compose.waitForIdle()
@@ -144,8 +175,7 @@ class StageModelsUiTest {
 
     @Test fun eigenesModellFuerEineStufe() {
         anthropic()
-        show()
-        click("Zusammenfassen")
+        stufe(RefineMode.SUMMARIZE)
         click("Eigenes Modell …")
         compose.onNode(hasSetTextAction() and hasText("Modell-ID")).performTextInput("claude-fable-6")
         click("Übernehmen")
@@ -160,8 +190,7 @@ class StageModelsUiTest {
         val access = prefs.llmAccess()
         ctx.getSharedPreferences(ModelCache.FILE, Context.MODE_PRIVATE).edit()
             .putString(ModelCache.key(access.provider.id, ModelKind.LLM, access.baseUrl), ModelCache.encode(entry)).commit()
-        show()
-        click("Glätten")
+        stufe(RefineMode.POLISH)
         compose.onNodeWithText("Vom Server", substring = true).assertExists()
         row("claude-mythos-6").performClick()
         compose.waitForIdle()
@@ -287,8 +316,7 @@ class StageModelsUiTest {
             anthropic()
             prefs.llmUrl = "http://127.0.0.1:${server.address.port}/v1"
             prefs.setLlmModelFor(RefineMode.SUMMARIZE, "claude-opus-5-5")
-            show()
-            click("Zusammenfassen")
+            stufe(RefineMode.SUMMARIZE)
             click("Modell prüfen")
             compose.waitUntil(5_000) { compose.onAllNodesWithText("Verbunden", substring = true).fetchSemanticsNodes().isNotEmpty() }
             assertEquals("claude-opus-5-5", bodies.single().getString("model"))

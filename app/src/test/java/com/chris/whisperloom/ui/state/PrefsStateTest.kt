@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.Engine
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.RefineWay
 import com.chris.whisperloom.api.AccessResolver
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -55,6 +56,16 @@ class PrefsStateTest {
         assertEquals("groq", fresh.sttProviderId)
         // Der Spiegel liefert die normalisierte Fassung nicht selbst — Anzeige ist klein geschrieben ueber den Setter-Aufrufer.
         assertEquals("https://api.groq.com/openai/v1", state.sttAccess().baseUrl)
+    }
+
+    @Test fun stufeJeWegSchreibtNurIhrenWeg() {
+        state.setRefineModeFor(RefineWay.SHARE, RefineMode.SUMMARIZE)
+        assertEquals(RefineMode.SUMMARIZE, Prefs(ctx).shareRefineMode)
+        assertEquals(RefineMode.OFF, Prefs(ctx).refineMode)
+        state.setRefineModeFor(RefineWay.DICTATION, RefineMode.POLISH)
+        assertEquals(RefineMode.POLISH, Prefs(ctx).refineMode)
+        assertEquals(RefineMode.SUMMARIZE, Prefs(ctx).shareRefineMode)
+        assertEquals(RefineMode.POLISH, state.refineModeFor(RefineWay.DICTATION))
     }
 
     @Test fun llmUseOwnFolgtDemProviderFeld() {

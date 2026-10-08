@@ -1,0 +1,8 @@
+WhisperLoom 3.9.0
+• Neu: Verlauf deiner Diktate – ab Werk an, nur auf dem Gerät, abschaltbar
+• Neu: Pause in der Diktat-Tastatur
+• Neu: eine Seite je Stufe mit Bereinigung, Absätzen, Form und Modell
+• Neu: Einstellungen übersichtlicher geordnet
+• Neu: Füllwort-Liste räumt nach jeder KI-Stufe auf
+• Behoben: keine Großschreibung mehr nach Abkürzungen wie „ca.“
+• Behoben: Text bei verschwundenem Feld kommt in Verlauf oder Zwischenablage, nicht aus privaten Feldern

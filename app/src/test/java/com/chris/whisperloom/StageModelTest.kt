@@ -72,7 +72,7 @@ class StageModelTest {
     /** Das Modell der letzten Anfrage nach einem Diktat mit Stufe [mode]. */
     private fun diktat(mode: RefineMode, readable: Boolean = false): String {
         prefs.refineMode = mode
-        prefs.polishReadable = readable
+        prefs.setPolishCleanupFor(RefineWay.DICTATION, if (readable) PolishCleanup.READABLE else PolishCleanup.PLAIN)
         TranscriptionEngine.transcribe(ctx, speech)
         return bodies.last().getString("model")
     }
@@ -89,7 +89,7 @@ class StageModelTest {
         prefs.setLlmModelFor(RefineMode.POLISH, "claude-sonnet-5")
         prefs.setLlmModelFor(RefineMode.BEAUTIFY, "claude-opus-5-5")
         assertEquals("claude-opus-5-5", diktat(RefineMode.BEAUTIFY))
-        // "Lesbarer glaetten" rechnet mit dem Glaetten-Modell.
+        // "Lesbar" rechnet mit dem Glaetten-Modell.
         assertEquals("claude-sonnet-5", diktat(RefineMode.POLISH, readable = true))
         assertEquals("claude-sonnet-5-5", diktat(RefineMode.SUMMARIZE))
     }
@@ -135,5 +135,25 @@ class StageModelTest {
         prefs.setLlmModelFor(RefineMode.SUMMARIZE, "")
         SharedRefine.run(ctx, prefs, listOf("Hallo."), "de")
         assertEquals("claude-sonnet-5-5", bodies.single().getString("model"))
+    }
+
+    /** 3.9.0: eigene Bereinigung je Weg, aber ein Modell je Stufe fuer beide Wege. */
+    @Test fun sprachnachrichtUndDiktatTeilenDasModellDerStufeGleichWelcheBereinigung() {
+        prefs.setLlmModelFor(RefineMode.POLISH, "claude-sonnet-5")
+        prefs.shareRefineMode = RefineMode.POLISH
+        for (cleanup in PolishCleanup.entries) {
+            prefs.setPolishCleanupFor(RefineWay.SHARE, cleanup)
+            SharedRefine.run(ctx, prefs, listOf("Hallo."), "de")
+            assertEquals(cleanup.name, "claude-sonnet-5", bodies.last().getString("model"))
+        }
+        prefs.setPolishCleanupFor(RefineWay.DICTATION, PolishCleanup.CLEAN)
+        assertEquals("claude-sonnet-5", diktatMitBereinigung())
+    }
+
+    /** Das Modell der letzten Anfrage nach einem Diktat mit "Glaetten" und der eingestellten Bereinigung. */
+    private fun diktatMitBereinigung(): String {
+        prefs.refineMode = RefineMode.POLISH
+        TranscriptionEngine.transcribe(ctx, speech)
+        return bodies.last().getString("model")
     }
 }
