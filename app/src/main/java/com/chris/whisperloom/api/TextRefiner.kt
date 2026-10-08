@@ -6,7 +6,7 @@ import org.json.JSONObject
 
 /**
  * Optionale zweite Runde: laesst ein Sprachmodell den Rohtext bearbeiten (glaetten, lesbar
- * glaetten, verschoenern, zusammenfassen, in Absaetze gliedern, zum Prompt formen). Kostet eine zusaetzliche
+ * glaetten, verschoenern, zusammenfassen, zum Prompt formen). Kostet eine zusaetzliche
  * Anfrage und etwas Latenz — deshalb in den Einstellungen abschaltbar.
  *
  * Spricht POST /chat/completions des [ApiAccess] bzw. bei Ollama POST /api/chat — das kann

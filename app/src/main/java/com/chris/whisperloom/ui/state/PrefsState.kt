@@ -4,9 +4,13 @@ import android.content.SharedPreferences
 import androidx.compose.runtime.mutableStateOf
 import com.chris.whisperloom.Engine
 import com.chris.whisperloom.OfflineRefineRule
+import com.chris.whisperloom.PolishCleanup
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.ProFeature
 import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.RefineWay
+import com.chris.whisperloom.Refinement
+import com.chris.whisperloom.SummarizeForm
 import com.chris.whisperloom.api.AccessResolver
 import com.chris.whisperloom.api.ApiAccess
 import kotlin.properties.ReadWriteProperty
@@ -41,12 +45,19 @@ class PrefsState(val prefs: Prefs) {
     var llmKey: String by pref({ prefs.llmKey }) { prefs.llmKey = it }
     var llmModel: String by pref({ prefs.llmModel }) { prefs.llmModel = it }
     var refineMode: RefineMode by pref({ prefs.refineMode }) { prefs.refineMode = it }
-    var smartFillers: Boolean by pref({ prefs.smartFillers }) { prefs.smartFillers = it }
-    var refineParagraphs: Boolean by pref({ prefs.refineParagraphs }) { prefs.refineParagraphs = it }
-    var polishReadable: Boolean by pref({ prefs.polishReadable }) { prefs.polishReadable = it }
     var promptLevelEnabled: Boolean by pref({ prefs.promptLevelEnabled }) { prefs.promptLevelEnabled = it }
     var shareRefineMode: RefineMode by pref({ prefs.shareRefineMode }) { prefs.shareRefineMode = it }
-    var sharePolishReadable: Boolean by pref({ prefs.sharePolishReadable }) { prefs.sharePolishReadable = it }
+
+    // Stufen-Einstellungen je Weg (Bereinigung, Form) und Absaetze des Diktats je Stufe
+    private val polishCleanups: Map<RefineWay, PrefField<PolishCleanup>> = RefineWay.entries.associateWith { way ->
+        PrefField({ prefs.polishCleanupFor(way) }) { prefs.setPolishCleanupFor(way, it) }.also { fields += it }
+    }
+    private val summarizeForms: Map<RefineWay, PrefField<SummarizeForm>> = RefineWay.entries.associateWith { way ->
+        PrefField({ prefs.summarizeFormFor(way) }) { prefs.setSummarizeFormFor(way, it) }.also { fields += it }
+    }
+    private val paragraphs: Map<RefineMode, PrefField<Boolean>> = RefineMode.PARAGRAPH_STAGES.associateWith { stage ->
+        PrefField({ prefs.paragraphsFor(stage) }) { prefs.setParagraphsFor(stage, it) }.also { fields += it }
+    }
 
     // Modell je Stufe (RefineMode.MODEL_STAGES; "" = Standard)
     private val stageModels: Map<RefineMode, PrefField<String>> = RefineMode.MODEL_STAGES.associateWith { stage ->
@@ -94,11 +105,43 @@ class PrefsState(val prefs: Prefs) {
         }
     }
 
-    /** Wie [Prefs.dictationStage], ueber die Spiegel. */
-    val dictationStage: RefineMode get() = Prefs.effective(refineMode, polishReadable)
+    /** Wie [Prefs.refineModeFor], ueber die Spiegel. */
+    fun refineModeFor(way: RefineWay): RefineMode = when (way) {
+        RefineWay.DICTATION -> refineMode
+        RefineWay.SHARE -> shareRefineMode
+    }
 
-    /** Wie [Prefs.shareStage], ueber die Spiegel. */
-    val shareStage: RefineMode get() = Prefs.effective(shareRefineMode, sharePolishReadable)
+    /** Wie [Prefs.polishCleanupFor], ueber die Spiegel. */
+    fun polishCleanupFor(way: RefineWay): PolishCleanup = polishCleanups.getValue(way).value
+
+    /** Schreibt sofort durch, wie jede Zuweisung hier. */
+    fun setPolishCleanupFor(way: RefineWay, cleanup: PolishCleanup) {
+        polishCleanups.getValue(way).value = cleanup
+    }
+
+    /** Wie [Prefs.summarizeFormFor], ueber die Spiegel. */
+    fun summarizeFormFor(way: RefineWay): SummarizeForm = summarizeForms.getValue(way).value
+
+    fun setSummarizeFormFor(way: RefineWay, form: SummarizeForm) {
+        summarizeForms.getValue(way).value = form
+    }
+
+    /** Wie [Prefs.paragraphsFor], ueber die Spiegel: Stufen ohne Schalter gliedern immer. */
+    fun paragraphsFor(stage: RefineMode): Boolean = paragraphsField(stage)?.value ?: true
+
+    /** @throws IllegalArgumentException fuer eine Stufe ohne Schalter "Absaetze" (wie [Prefs.setParagraphsFor]). */
+    fun setParagraphsFor(stage: RefineMode, on: Boolean) {
+        requireNotNull(paragraphsField(stage)) { "Stufe ${stage.name} hat keinen Schalter Absaetze" }.value = on
+    }
+
+    /** "Lesbar" ist Glaetten — es teilt dessen Schalter. */
+    private fun paragraphsField(stage: RefineMode): PrefField<Boolean>? = stage.modelStage?.let { paragraphs[it] }
+
+    /** Wie [Prefs.refinementFor], ueber die Spiegel. */
+    fun refinementFor(way: RefineWay): Refinement {
+        val stage = refineModeFor(way)
+        return Refinement.of(way, stage, polishCleanupFor(way), paragraphsFor(stage), summarizeFormFor(way))
+    }
 
     /** Der Nutzer hat einen eigenen LLM-Zugang gewaehlt (sonst gilt der Erkennungs-Zugang). */
     val llmUseOwn: Boolean get() = llmProviderId != AccessResolver.LLM_SAME

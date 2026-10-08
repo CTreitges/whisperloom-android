@@ -79,7 +79,7 @@ object TranscriptionEngine {
         val app = context.applicationContext
         val prefs = Prefs(app)
         if (prefs.engine != Engine.OFFLINE) return
-        if (RefinePlan.of(app, prefs, prefs.dictationStage).route == RefineRoute.Local) {
+        if (RefinePlan.of(app, prefs, prefs.refinementFor(RefineWay.DICTATION).mode).route == RefineRoute.Local) {
             LocalTextEngine.warmUp(prefs.localLlmModel)
         }
     }
@@ -125,8 +125,9 @@ object TranscriptionEngine {
         if (raw.isBlank()) return ""
 
         val language = effectiveLanguage(prefs.language, result.detectedLanguage)
-        val mode = prefs.dictationStage
-        val refined = refineOrNull(app, prefs, raw, language, mode, skip, cancelled, onRefineStart, onRefineNote, onRefineSkipped)
+        // Diktat, Knopf und Widget: die Stufe und ihre Einstellungen fuers Diktat, nie die der Sprachnachrichten.
+        val refinement = prefs.refinementFor(RefineWay.DICTATION)
+        val refined = refineOrNull(app, prefs, raw, language, refinement, skip, cancelled, onRefineStart, onRefineNote, onRefineSkipped)
 
         val options = PolishPlan.options(
             removeFillers = prefs.removeFillers,
@@ -134,10 +135,10 @@ object TranscriptionEngine {
             language = language,
             // Ohne KI (aus, gescheitert, uebersprungen) = Rohtext, den keine KI bearbeitet hat: volle
             // Regeln, sonst blieben bei "Prompt" die "ähm"s stehen und Umbrueche ungeglaettet.
-            refineMode = if (refined == null) RefineMode.OFF else mode,
+            refineMode = if (refined == null) RefineMode.OFF else refinement.mode,
             customFillers = prefs.customFillers,
             disabledFillers = prefs.disabledFillers,
-            paragraphs = prefs.refineParagraphs,
+            paragraphs = refinement.paragraphs,
         )
         return TextPolisher.polish(refined ?: raw, options)
     }
@@ -145,7 +146,7 @@ object TranscriptionEngine {
     /**
      * Die Veredelung darf ein bereits erkanntes (und ggf. bezahltes) Diktat nie verschlucken:
      * scheitert das Sprachmodell (falsches Modell, 401/429, eigener Server aus, Base-URL leer,
-     * unbrauchbare Antwort, lokales Modell), kommt der Rohtext durch — nur mit Hinweis statt Fehler.
+     * unbrauchbare oder leere Antwort, lokales Modell), kommt der Rohtext durch — nur mit Hinweis statt Fehler.
      * Ohne Netz geht gar keine Anfrage raus ([RefinePlan]): sofort ohne KI statt im Timeout zu haengen.
      *
      * @return der bearbeitete Text; null = ohne KI (Stufe aus, so gewollt, nicht moeglich, gescheitert, uebersprungen).
@@ -155,14 +156,14 @@ object TranscriptionEngine {
         prefs: Prefs,
         raw: String,
         language: String,
-        mode: RefineMode,
+        refinement: Refinement,
         skip: RefineSkip?,
         cancelled: () -> Boolean,
         onStart: () -> Unit,
         onNote: (String) -> Unit,
         onSkipped: (String) -> Unit,
     ): String? {
-        val plan = RefinePlan.of(app, prefs, mode)
+        val plan = RefinePlan.of(app, prefs, refinement.mode)
         val route = plan.route
         if (route is RefineRoute.Raw) {
             route.hint?.let { onSkipped(RefinePlan.message(it)) }
@@ -170,7 +171,7 @@ object TranscriptionEngine {
         }
         onStart()
         val work = {
-            plan.refine(raw, language, mode, prefs.smartFillers, prefs.refineParagraphs, onNote) { skip?.isSkipped == true || cancelled() }
+            plan.refine(raw, language, refinement, onNote) { skip?.isSkipped == true || cancelled() }
         }
         return try {
             if (skip == null) work() else skip.race(work)
@@ -202,7 +203,7 @@ data class SharedTranscript(
     val chunkCount: Int = 1,
     /** KI-Fassung nach [refineMode]; null = keine (Stufe aus oder Textverbesserung gescheitert). */
     val paragraphsRefined: List<String>? = null,
-    /** Die fuer geteilte Audios eingestellte Stufe ([Prefs.shareRefineMode]). */
+    /** Die wirksame Stufe fuer geteilte Audios ([Refinement.mode] des Wegs [RefineWay.SHARE]). */
     val refineMode: RefineMode = RefineMode.OFF,
     /** Warum die KI-Fassung trotz Stufe fehlt ("API-Fehler 401 …"); null = nicht gescheitert. */
     val refineSkipped: String? = null,

@@ -259,9 +259,71 @@ class TranscriptionEngineTest {
     /** Review-Befund: die KI sollte die Fuellwoerter entfernen — gescheitert, tat es niemand. */
     @Test fun kiFehlerMitIntelligentenFuellwoerternRaeumtTrotzdemAuf() {
         useOllama("ollama")
-        prefs.smartFillers = true
+        prefs.setPolishCleanupFor(RefineWay.DICTATION, PolishCleanup.CLEAN)
         ollamaStatus = 500
         assertEquals("Also hallo welt", TranscriptionEngine.transcribe(ctx, speech))
+    }
+
+    // --- Fuellwort-Netz und leere Antwort (3.9.0) -------------------------------------------
+
+    /** Plan §4: "Ohne Fuellwoerter" schickt den Glaetten-Zweig mit Fuellwort-Regel, die Liste faengt danach Reste. */
+    @Test fun ohneFuellwoerterSchicktDenZweigUndDieListeFaengtReste() {
+        useOllama("ollama")
+        prefs.setPolishCleanupFor(RefineWay.DICTATION, PolishCleanup.CLEAN)
+        prefs.customFillers = setOf("sozusagen")
+        // Ein kleines Modell uebersieht ein "ähm" — bis 3.8.6 pausierte die Liste dann und es blieb stehen.
+        ollamaResponse = """{"message":{"content":"Also, ähm, hallo Welt, sozusagen."}}"""
+
+        assertEquals("Also, hallo Welt.", TranscriptionEngine.transcribe(ctx, speech))
+        val system = JSONObject(ollamaBody!!).getJSONArray("messages").getJSONObject(0).getString("content")
+        assertTrue(system, system.contains("nie Wörter außer Füllwörtern"))
+    }
+
+    /** N7: eine leere Antwort galt als "verbessert" — ohne Hinweis, mit "intelligent" samt jedem "ähm". */
+    @Test fun leereKiAntwortGiltAlsOhneKiMitHinweis() {
+        useOllama("ollama")
+        prefs.setPolishCleanupFor(RefineWay.DICTATION, PolishCleanup.CLEAN)
+        prefs.setParagraphsFor(RefineMode.POLISH, true)
+        ollamaResponse = """{"message":{"content":""},"done":true}"""
+        var hinweis: String? = null
+
+        val text = TranscriptionEngine.transcribe(ctx, speech) { hinweis = it }
+
+        assertEquals("Rohtext mit den vollen Regeln", "Also hallo welt", text)
+        assertEquals(com.chris.whisperloom.api.TextRefiner.MSG_EMPTY, hinweis)
+    }
+
+    @Test fun leereAntwortUeberChatCompletionsGiltAlsOhneKi() {
+        useLocalServer()
+        prefs.refineMode = RefineMode.BEAUTIFY
+        chatResponse = """{"choices":[{"message":{"content":"<think>hm</think>  "},"finish_reason":"stop"}]}"""
+        var hinweis: String? = null
+        assertEquals("Also hallo welt", TranscriptionEngine.transcribe(ctx, speech) { hinweis = it })
+        assertEquals(com.chris.whisperloom.api.TextRefiner.MSG_EMPTY, hinweis)
+    }
+
+    /** Plan §3.2: Verschoenern behaelt den Standard-Prompt — die Fuellwort-Regel gehoert zum Glaetten. */
+    @Test fun verschoenernBekommtKeinenFuellwortZusatz() {
+        useOllama("ollama")
+        prefs.refineMode = RefineMode.BEAUTIFY
+        prefs.setPolishCleanupFor(RefineWay.DICTATION, PolishCleanup.CLEAN)
+        ollamaResponse = """{"message":{"content":"Also, ähm, hallo Welt."}}"""
+
+        assertEquals("die Liste raeumt auf", "Also, hallo Welt.", TranscriptionEngine.transcribe(ctx, speech))
+        val system = JSONObject(ollamaBody!!).getJSONArray("messages").getJSONObject(0).getString("content")
+        assertTrue(system, system.contains("Du überarbeitest diktierten Text"))
+        assertEquals(system, com.chris.whisperloom.api.RefinePrompt.build(RefineMode.BEAUTIFY, german = true, smartFillers = false, short = true))
+    }
+
+    /** Diktat und Sprachnachrichten getrennt: die Bereinigung der Sprachnachrichten aendert das Diktat nicht. */
+    @Test fun diktatIgnoriertDieBereinigungDerSprachnachrichten() {
+        useOllama("ollama")
+        prefs.shareRefineMode = RefineMode.POLISH
+        prefs.setPolishCleanupFor(RefineWay.SHARE, PolishCleanup.CLEAN)
+        TranscriptionEngine.transcribe(ctx, speech)
+        val system = JSONObject(ollamaBody!!).getJSONArray("messages").getJSONObject(0).getString("content")
+        assertTrue(system, system.contains("Du korrigierst in diktiertem Text nur Satzzeichen"))
+        assertFalse(system, system.contains("Füllwörtern"))
     }
 
     // --- Automatische Absaetze ------------------------------------------------------------
@@ -272,9 +334,9 @@ class TranscriptionEngineTest {
         assertEquals("Erster Absatz.\n\nZweiter Absatz.", TranscriptionEngine.transcribe(ctx, speech))
     }
 
-    @Test fun ohneAutomatischeAbsaetzeKommtEinFliesstext() {
+    @Test fun ohneAbsaetzeKommtEinFliesstext() {
         useOllama("ollama")
-        prefs.refineParagraphs = false
+        prefs.setParagraphsFor(RefineMode.POLISH, false)
         // Auch wenn das Modell die Anweisung ignoriert: die Nachbearbeitung zieht zusammen.
         ollamaResponse = """{"message":{"content":"Erster Absatz.\n\nZweiter Absatz."}}"""
         assertEquals("Erster Absatz. Zweiter Absatz.", TranscriptionEngine.transcribe(ctx, speech))
@@ -282,9 +344,35 @@ class TranscriptionEngineTest {
         assertTrue(system, system.contains("einen einzigen durchgehenden Absatz"))
     }
 
+    @Test fun absaetzeGeltenJeStufe() {
+        useOllama("ollama")
+        prefs.setParagraphsFor(RefineMode.BEAUTIFY, false)
+        ollamaResponse = """{"message":{"content":"Erster Absatz.\n\nZweiter Absatz."}}"""
+        assertEquals("Glaetten behaelt sie", "Erster Absatz.\n\nZweiter Absatz.", TranscriptionEngine.transcribe(ctx, speech))
+
+        prefs.refineMode = RefineMode.BEAUTIFY
+        assertEquals("Erster Absatz. Zweiter Absatz.", TranscriptionEngine.transcribe(ctx, speech))
+        val system = JSONObject(ollamaBody!!).getJSONArray("messages").getJSONObject(0).getString("content")
+        assertTrue(system, system.contains("einen einzigen durchgehenden Absatz"))
+    }
+
+    @Test fun zusammenfassenAlsFliesstextOhneListe() {
+        useOllama("ollama")
+        prefs.refineMode = RefineMode.SUMMARIZE
+        prefs.setSummarizeFormFor(RefineWay.DICTATION, SummarizeForm.PROSE)
+        ollamaResponse = """{"message":{"content":"Kurz gesagt.\n- Eins.\n- Zwei."}}"""
+        assertEquals("Kurz gesagt. - Eins. - Zwei.", TranscriptionEngine.transcribe(ctx, speech))
+        val system = JSONObject(ollamaBody!!).getJSONArray("messages").getJSONObject(0).getString("content")
+        assertTrue(system, system.contains("ohne Liste und ohne Zeilenumbruch"))
+
+        // Automatisch: die Liste bleibt.
+        prefs.setSummarizeFormFor(RefineWay.DICTATION, SummarizeForm.AUTO)
+        assertEquals("Kurz gesagt.\n- Eins.\n- Zwei.", TranscriptionEngine.transcribe(ctx, speech))
+    }
+
     @Test fun lesbarerGlaettenSchicktDenLesbarPromptUndDieWortlisteFaengtReste() {
         useOllama("ollama")
-        prefs.polishReadable = true
+        prefs.setPolishCleanupFor(RefineWay.DICTATION, PolishCleanup.READABLE)
         // Ein kleines Modell laesst ein "ähm" stehen — die Wortliste raeumt es danach weg.
         ollamaResponse = """{"message":{"content":"Also, ähm, hallo Welt."}}"""
 
@@ -304,11 +392,11 @@ class TranscriptionEngineTest {
         assertFalse(system, system.contains("lesbar"))
     }
 
-    /** 3.8.6: der Schalter der Sprachnachrichten gilt nicht fuers Diktat. */
+    /** 3.8.6: die Bereinigung der Sprachnachrichten gilt nicht fuers Diktat. */
     @Test fun diktatIgnoriertDenLesbarSchalterDerSprachnachrichten() {
         useOllama("ollama")
         prefs.shareRefineMode = RefineMode.POLISH
-        prefs.sharePolishReadable = true
+        prefs.setPolishCleanupFor(RefineWay.SHARE, PolishCleanup.READABLE)
         TranscriptionEngine.transcribe(ctx, speech)
         val system = JSONObject(ollamaBody!!).getJSONArray("messages").getJSONObject(0).getString("content")
         assertTrue(system, system.contains("Du korrigierst in diktiertem Text nur Satzzeichen"))
@@ -340,7 +428,7 @@ class TranscriptionEngineTest {
 
     @Test fun promptStufeSchicktDasDiktatMarkiertUndBehaeltDieGliederung() {
         usePromptLevel()
-        prefs.refineParagraphs = false // die Gliederung ist der Zweck — der Schalter gilt hier nicht
+        prefs.setParagraphsFor(RefineMode.POLISH, false) // die Gliederung ist der Zweck — kein Schalter hier
         ollamaResponse = """{"message":{"content":"Hier ist dein Prompt:\nErstelle mir eine Einkaufsliste.\n- 12 Personen\n- Budget höchstens 100 Euro"}}"""
 
         val text = TranscriptionEngine.transcribe(ctx, speech)

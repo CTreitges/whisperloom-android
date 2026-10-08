@@ -14,8 +14,8 @@ import org.junit.Test
 class RefinePromptTest {
 
     /** Die Stufen mit dem gemeinsamen Geruest (Rahmen, Schlussformel); "Prompt" hat ein eigenes. */
-    private val modes = listOf(RefineMode.POLISH, RefineMode.READABLE, RefineMode.BEAUTIFY, RefineMode.SUMMARIZE, RefineMode.PARAGRAPHS)
-    private val withSwitch = listOf(RefineMode.POLISH, RefineMode.READABLE, RefineMode.BEAUTIFY, RefineMode.SUMMARIZE)
+    private val modes = listOf(RefineMode.POLISH, RefineMode.READABLE, RefineMode.BEAUTIFY, RefineMode.SUMMARIZE)
+    private val withSwitch = modes
 
     /** Jede Kombination aus Sprache, smartFillers, Absaetzen und Kurz-Diktat. */
     private fun all(mode: RefineMode): List<String> = listOf(true, false).flatMap { german ->
@@ -138,25 +138,19 @@ class RefinePromptTest {
         }
     }
 
-    @Test fun absatzModusIgnoriertDenSchalter() {
-        val p = RefinePrompt.build(RefineMode.PARAGRAPHS, german = true, smartFillers = false, paragraphs = false)
-        assertEquals(RefinePrompt.build(RefineMode.PARAGRAPHS, german = true, smartFillers = false), p)
-        assertTrue(p.contains("Du gliederst diktierten Text in Absätze"))
-        assertFalse(p.contains("durchgehenden Absatz"))
-    }
-
-    @Test fun smartFillersNurBeiGlaettenVerschoenernUndAbsaetzen() {
-        for (mode in listOf(RefineMode.BEAUTIFY, RefineMode.PARAGRAPHS)) {
-            val de = RefinePrompt.build(mode, true, true)
-            assertTrue(mode.name, de.contains("Füllwörter wie äh und ähm"))
-            // Konservativ bleiben ist Teil der Anweisung — sonst verschwinden echte Woerter.
-            assertTrue(mode.name, de.contains("Im Zweifel bleibt das Wort"))
-            assertFalse(mode.name, RefinePrompt.build(mode, true, false).contains("Im Zweifel bleibt das Wort"))
-            assertTrue(mode.name, RefinePrompt.build(mode, false, true).contains("When in doubt, keep the word"))
+    /**
+     * 3.9.0 (Plan §3.2): "Ohne Fuellwoerter" ist eine Bereinigung beim Glaetten. Die anderen Stufen
+     * bekommen keinen Zusatz mehr — Verschoenern behaelt den Standard-Prompt, die Wortliste laeuft danach.
+     */
+    @Test fun smartFillersNurBeimGlaetten() {
+        for (mode in listOf(RefineMode.READABLE, RefineMode.BEAUTIFY, RefineMode.SUMMARIZE)) {
+            for (german in listOf(true, false)) for (p in listOf(true, false)) {
+                assertEquals(mode.name, RefinePrompt.build(mode, german, false, p), RefinePrompt.build(mode, german, true, p))
+            }
+            assertFalse(mode.name, RefinePrompt.build(mode, true, true).contains("lässt du in jedem Fall weg"))
+            assertFalse(mode.name, RefinePrompt.build(mode, false, true).contains("are always removed"))
         }
-        for (mode in listOf(RefineMode.READABLE, RefineMode.SUMMARIZE)) {
-            assertFalse(mode.name, RefinePrompt.build(mode, true, true).contains("Im Zweifel bleibt das Wort"))
-        }
+        assertNotEquals(RefinePrompt.build(RefineMode.POLISH, true, false), RefinePrompt.build(RefineMode.POLISH, true, true))
     }
 
     /** Review: hinter "Lass kein Wort weg … (der der)" und "über über" ignorierte gemma3:4b den angehaengten Zusatz. */

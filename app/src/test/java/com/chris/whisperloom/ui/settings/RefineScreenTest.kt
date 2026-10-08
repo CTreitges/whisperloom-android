@@ -15,6 +15,8 @@ import com.chris.whisperloom.Engine
 import com.chris.whisperloom.OfflineRefineRule
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.RefineWay
+import com.chris.whisperloom.PolishCleanup
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SystemStatus
@@ -97,10 +99,10 @@ class RefineScreenTest {
         page()
         click(sprachnachrichten("Lesbarer glätten"))
         val p = Prefs(ctx)
-        assertEquals(true, p.sharePolishReadable)
-        assertEquals(false, p.polishReadable)
-        assertEquals(RefineMode.READABLE, p.shareStage)
-        assertEquals(RefineMode.POLISH, p.dictationStage)
+        assertEquals(PolishCleanup.READABLE, p.polishCleanupFor(RefineWay.SHARE))
+        assertEquals(PolishCleanup.PLAIN, p.polishCleanupFor(RefineWay.DICTATION))
+        assertEquals(RefineMode.READABLE, p.refinementFor(RefineWay.SHARE).mode)
+        assertEquals(RefineMode.POLISH, p.refinementFor(RefineWay.DICTATION).mode)
     }
 
     @Test fun lesbarerGlaettenDerSprachnachrichtenNenntIhreStufeGlaetten() {
@@ -118,32 +120,32 @@ class RefineScreenTest {
     /** Nach dem Update auf 3.8.6 (v5 uebernimmt den alten Wert) stand der Schalter bei anderer Stufe an und war gesperrt. */
     @Test fun lesbarerGlaettenDerSprachnachrichtenLaesstSichOhneGlaettenAbschalten() {
         prefs.shareRefineMode = RefineMode.SUMMARIZE
-        prefs.sharePolishReadable = true
+        prefs.setPolishCleanupFor(RefineWay.SHARE, PolishCleanup.READABLE)
         page()
         sprachnachrichten("Wirkt mit der Stufe „Glätten“.").assertExists()
         click(sprachnachrichten("Lesbarer glätten"))
-        assertEquals(false, Prefs(ctx).sharePolishReadable)
+        assertEquals(PolishCleanup.PLAIN, Prefs(ctx).polishCleanupFor(RefineWay.SHARE))
     }
 
     @Test fun lesbarerGlaettenDesDiktatsLaesstSichOhneGlaettenAbschalten() {
         prefs.refineMode = RefineMode.BEAUTIFY
-        prefs.polishReadable = true
+        prefs.setPolishCleanupFor(RefineWay.DICTATION, PolishCleanup.READABLE)
         page()
         click(diktat("Lesbarer glätten"))
-        assertEquals(false, Prefs(ctx).polishReadable)
+        assertEquals(PolishCleanup.PLAIN, Prefs(ctx).polishCleanupFor(RefineWay.DICTATION))
     }
 
     @Test fun lesbarerGlaettenDesDiktatsLaesstDieSprachnachrichtenInRuhe() {
         prefs.refineMode = RefineMode.POLISH
         prefs.shareRefineMode = RefineMode.POLISH
-        prefs.sharePolishReadable = true
+        prefs.setPolishCleanupFor(RefineWay.SHARE, PolishCleanup.READABLE)
         page()
         click(diktat("Lesbarer glätten"))
-        assertEquals(true, Prefs(ctx).polishReadable)
-        assertEquals(true, Prefs(ctx).sharePolishReadable)
+        assertEquals(PolishCleanup.READABLE, Prefs(ctx).polishCleanupFor(RefineWay.DICTATION))
+        assertEquals(PolishCleanup.READABLE, Prefs(ctx).polishCleanupFor(RefineWay.SHARE))
         click(diktat("Lesbarer glätten"))
-        assertEquals(false, Prefs(ctx).polishReadable)
-        assertEquals(true, Prefs(ctx).sharePolishReadable)
+        assertEquals(PolishCleanup.PLAIN, Prefs(ctx).polishCleanupFor(RefineWay.DICTATION))
+        assertEquals(PolishCleanup.READABLE, Prefs(ctx).polishCleanupFor(RefineWay.SHARE))
     }
 
     // --- Verweise ---------------------------------------------------------------------------

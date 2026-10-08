@@ -2,17 +2,16 @@ package com.chris.whisperloom
 
 /**
  * Was das Sprachmodell nach der Erkennung mit dem Text tun soll.
- * [PARAGRAPHS] ist nirgends waehlbar — auch geteilte Audios ([Prefs.shareRefineMode]) nutzen [SETTINGS].
- * [READABLE] ebenso wenig: es ist [POLISH] mit dem Schalter "Lesbarer glaetten" ([Prefs.effective]) —
- * je einer fuers Diktat und fuer geteilte Sprachnachrichten.
+ * [READABLE] ist nirgends waehlbar: es ist [POLISH] mit der Bereinigung "Lesbar" ([Refinement.of]) —
+ * je eine fuers Diktat und fuer geteilte Sprachnachrichten.
  * [PROMPT] nur, wenn in den erweiterten Optionen eingeschaltet ([Prefs.promptLevelEnabled]).
+ * Die fruehere Stufe "Absaetze" (Schluessel `paragraphs`, nie waehlbar) liest [Prefs.refineMode] als [POLISH].
  */
 enum class RefineMode(val key: String) {
     OFF("off"),
     POLISH("polish"),
     BEAUTIFY("beautify"),
     SUMMARIZE("summarize"),
-    PARAGRAPHS("paragraphs"),
 
     /** Glaetten plus behutsames Lektorat: Satzbau lesbar, Wortwahl und Ton bleiben. Nie gespeichert. */
     READABLE("readable"),
@@ -21,13 +20,13 @@ enum class RefineMode(val key: String) {
     PROMPT("prompt");
 
     /**
-     * Unter welcher Stufe das Textmodell eingestellt ist ([Prefs.llmModelFor]): "Lesbarer glaetten"
-     * und Absaetze rechnen mit dem Glaetten-Modell. null = aus, kein Modell.
+     * Unter welcher Stufe das Textmodell eingestellt ist ([Prefs.llmModelFor]): die Bereinigung
+     * "Lesbar" rechnet mit dem Glaetten-Modell. null = aus, kein Modell.
      */
     val modelStage: RefineMode?
         get() = when (this) {
             OFF -> null
-            POLISH, READABLE, PARAGRAPHS -> POLISH
+            POLISH, READABLE -> POLISH
             BEAUTIFY, SUMMARIZE, PROMPT -> this
         }
 
@@ -37,6 +36,9 @@ enum class RefineMode(val key: String) {
 
         /** Stufen mit eigenem Textmodell ([modelStage]); gelten fuer Diktat und Sprachnachrichten gemeinsam. */
         val MODEL_STAGES = listOf(POLISH, BEAUTIFY, SUMMARIZE, PROMPT)
+
+        /** Stufen mit eigenem Schalter "Absaetze" beim Diktat ([Prefs.paragraphsFor]). */
+        val PARAGRAPH_STAGES = listOf(POLISH, BEAUTIFY)
 
         /** Die waehlbaren Stufen — "Prompt" nur fuer die, die sie eingeschaltet haben. */
         fun settings(promptEnabled: Boolean): List<RefineMode> = if (promptEnabled) SETTINGS + PROMPT else SETTINGS

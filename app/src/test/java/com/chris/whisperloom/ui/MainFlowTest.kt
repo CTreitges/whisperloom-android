@@ -21,6 +21,7 @@ import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.hasAnyAncestor
@@ -42,9 +43,12 @@ import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.BuildConfig
 import com.chris.whisperloom.Engine
+import com.chris.whisperloom.PolishCleanup
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.RefineWay
+import com.chris.whisperloom.SummarizeForm
 import com.chris.whisperloom.overlay.FloatingMicService
 import com.chris.whisperloom.ui.components.HUB_DIVIDER_TAG
 import com.chris.whisperloom.ui.components.hasIllustration
@@ -487,9 +491,10 @@ class MainFlowTest {
 
     // --- E2 Textverbesserung, Woerterbuch & Regeln, KI-Zugang (3.9.0) -----------------------
 
-    @Test fun textStufeSchreibtRefineModeUndSchaltetSmartFillersFrei() {
+    /** 3.9.0: die Bereinigung ist eine Einstellung des Glaettens — bedienbar wie "Lesbarer glaetten", ohne gesperrtes "an". */
+    @Test fun textStufeSchreibtRefineModeUndBereinigungBleibtBedienbar() {
         screen(env()) { RefineScreen(it) }
-        compose.onNodeWithText("Füllwörter intelligent entfernen").assertIsNotEnabled()
+        compose.onNodeWithText("Füllwörter intelligent entfernen").assertIsEnabled()
         diktat("Glätten").performClick()
         compose.waitForIdle()
         assertEquals(RefineMode.POLISH, Prefs(ctx).refineMode)
@@ -511,20 +516,25 @@ class MainFlowTest {
         compose.onNode(hasText("Zusammenfassen") and inShareCard).assertIsSelected()
     }
 
-    /** Review: "intelligent entfernen" wirkt auch auf geteilte Audios — also auch dann bedienbar. */
-    @Test fun intelligenteFuellwoerterSindMitNurDerShareStufeBedienbar() {
-        val e = env()
-        screen(e) { RefineScreen(it) }
-        compose.onNodeWithText("Füllwörter intelligent entfernen").assertIsNotEnabled()
-        compose.onNodeWithText("Gilt auch für Sprachnachrichten.", substring = true).assertDoesNotExist()
-        compose.runOnIdle { e.prefs.shareRefineMode = RefineMode.POLISH } // Gruppe Sprachnachrichten
+    /**
+     * 3.9.0: "intelligent entfernen" ist die Bereinigung "Ohne Füllwörter" beim Glätten des Diktats —
+     * die Sprachnachrichten haben ihre eigene. Mit "Lesbarer glätten" schliesst es sich aus.
+     */
+    @Test fun intelligenteFuellwoerterSindDieBereinigungDesDiktats() {
+        prefs.shareRefineMode = RefineMode.POLISH
+        screen(env()) { RefineScreen(it) }
+        diktat("Füllwörter intelligent entfernen").assertIsEnabled().performClick()
         compose.waitForIdle()
-        compose.onNodeWithText("Gilt auch für Sprachnachrichten.", substring = true).assertExists()
-        assertEquals(RefineMode.OFF, Prefs(ctx).refineMode)
-        compose.onNodeWithText("Füllwörter intelligent entfernen").assertIsEnabled().performClick()
+        assertEquals(PolishCleanup.CLEAN, Prefs(ctx).polishCleanupFor(RefineWay.DICTATION))
+        assertEquals("die Sprachnachrichten bleiben", PolishCleanup.PLAIN, Prefs(ctx).polishCleanupFor(RefineWay.SHARE))
+        diktat("Lesbarer glätten").performClick()
         compose.waitForIdle()
-        assertEquals(true, Prefs(ctx).smartFillers)
-        // Die Absaetze bleiben Sache des Diktats: ohne Diktat-Stufe weiter gesperrt.
+        assertEquals(PolishCleanup.READABLE, Prefs(ctx).polishCleanupFor(RefineWay.DICTATION))
+        diktat("Füllwörter intelligent entfernen").assertIsOff()
+        diktat("Lesbarer glätten").performClick()
+        compose.waitForIdle()
+        assertEquals(PolishCleanup.PLAIN, Prefs(ctx).polishCleanupFor(RefineWay.DICTATION))
+        // Die Absaetze bleiben Sache des Diktats: ohne Diktat-Stufe gesperrt.
         compose.onNodeWithText("Automatische Absätze").assertIsNotEnabled()
     }
 
@@ -556,7 +566,12 @@ class MainFlowTest {
         compose.waitForIdle()
         compose.onNodeWithText("Automatische Absätze").assertIsEnabled().performClick()
         compose.waitForIdle()
-        assertEquals(false, Prefs(ctx).refineParagraphs)
+        // Zwischenstand bis zu den Stufen-Seiten: der Schalter gilt fuer alle Diktat-Stufen.
+        val p = Prefs(ctx)
+        assertEquals(false, p.paragraphsFor(RefineMode.POLISH))
+        assertEquals(false, p.paragraphsFor(RefineMode.BEAUTIFY))
+        assertEquals(SummarizeForm.PROSE, p.summarizeFormFor(RefineWay.DICTATION))
+        assertEquals("Sprachnachrichten bleiben gegliedert", SummarizeForm.AUTO, p.summarizeFormFor(RefineWay.SHARE))
     }
 
     @Test fun lesbarerGlaettenIstAusUndWirktNurMitGlaetten() {
@@ -569,12 +584,12 @@ class MainFlowTest {
         compose.waitForIdle()
         diktat("Lesbarer glätten").assertIsEnabled().performClick()
         compose.waitForIdle()
-        assertEquals(true, Prefs(ctx).polishReadable)
+        assertEquals(PolishCleanup.READABLE, Prefs(ctx).polishCleanupFor(RefineWay.DICTATION))
         // Gespeichert bleibt "Glaetten" — erst die Anfrage ans Modell wird zu READABLE.
         assertEquals(RefineMode.POLISH, Prefs(ctx).refineMode)
-        assertEquals(RefineMode.READABLE, Prefs(ctx).dictationStage)
+        assertEquals(RefineMode.READABLE, Prefs(ctx).refinementFor(RefineWay.DICTATION).mode)
         // Der Schalter der Diktat-Gruppe gilt nur fuers Diktat (3.8.6).
-        assertEquals(false, Prefs(ctx).sharePolishReadable)
+        assertEquals(PolishCleanup.PLAIN, Prefs(ctx).polishCleanupFor(RefineWay.SHARE))
     }
 
     /** 3.8.6: Sprachnachrichten haben einen eigenen Schalter — die Share-Stufe macht den des Diktats nicht wirksam. */

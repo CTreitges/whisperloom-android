@@ -13,8 +13,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.chris.whisperloom.PolishCleanup
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.RefineWay
+import com.chris.whisperloom.SummarizeForm
 import com.chris.whisperloom.ui.components.LoomRow
 import com.chris.whisperloom.ui.components.SectionCard
 import com.chris.whisperloom.ui.components.SwitchRow
@@ -53,16 +56,13 @@ fun RefineScreen(nav: NavState) {
 }
 
 /**
- * "Beim Diktieren": Stufe, "Lesbarer glaetten" (nur mit "Glaetten", nur fuers Diktat),
- * KI-Fuellwoerter (ein Schalter, gilt auch fuer Sprachnachrichten) und Absaetze.
+ * "Beim Diktieren": Stufe und — bis die Stufen-Seiten kommen — die Bereinigung beim Glaetten als
+ * zwei Schalter ("Lesbarer glaetten", "Fuellwoerter intelligent", schliessen sich aus) und die
+ * Absaetze (gelten fuer alle Diktat-Stufen). Alles nur fuers Diktat.
  */
 @Composable
 private fun DictationStages(prefs: PrefsState, onRules: () -> Unit) {
     val off = prefs.refineMode == RefineMode.OFF
-    // "Intelligent entfernen" wirkt auch auf Sprachnachrichten — bedienbar, sobald irgendeine KI-Stufe gilt.
-    val noAi = !anyAiStage(prefs)
-    // Sprachnachrichten haben ihren eigenen Schalter (sharePolishReadable).
-    val polish = prefs.refineMode == RefineMode.POLISH
 
     SectionCard(
         modifier = Modifier.testTag(DICTATION_REFINE_TAG),
@@ -87,35 +87,26 @@ private fun DictationStages(prefs: PrefsState, onRules: () -> Unit) {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        SwitchRow(
-            headline = stringResource(R.string.pref_polish_readable),
-            supporting = stringResource(if (polish) R.string.pref_polish_readable_info else R.string.text_readable_needs_polish),
-            checked = prefs.polishReadable,
-            onCheckedChange = { prefs.polishReadable = it },
-        )
-        SwitchRow(
-            headline = stringResource(R.string.pref_smart_fillers),
-            supporting = stringResource(if (noAi) R.string.text_smart_needs_level else R.string.pref_smart_fillers_info),
-            checked = prefs.smartFillers,
-            onCheckedChange = { prefs.smartFillers = it },
-            enabled = !noAi,
-        )
+        ReadableSwitch(prefs, RefineWay.DICTATION)
+        // Die Unterzeile nennt "Glaetten" schon — kein zweites "Wirkt mit der Stufe" daneben.
+        CleanupSwitch(prefs, RefineWay.DICTATION, PolishCleanup.CLEAN, R.string.pref_smart_fillers, stringResource(R.string.pref_smart_fillers_info))
         SwitchRow(
             headline = stringResource(R.string.pref_refine_paragraphs),
             supporting = stringResource(if (off) R.string.text_smart_needs_level else R.string.pref_refine_paragraphs_info),
-            checked = prefs.refineParagraphs,
-            onCheckedChange = { prefs.refineParagraphs = it },
+            checked = prefs.paragraphsFor(RefineMode.POLISH),
+            onCheckedChange = { on ->
+                RefineMode.PARAGRAPH_STAGES.forEach { prefs.setParagraphsFor(it, on) }
+                prefs.setSummarizeFormFor(RefineWay.DICTATION, if (on) SummarizeForm.AUTO else SummarizeForm.PROSE)
+            },
             enabled = !off,
         )
         PageLinkRow(R.drawable.ic_checklist, stringResource(R.string.settings_group_dictionary), dictionaryValue(prefs), onRules)
     }
 }
 
-/** "Bei geteilten Sprachnachrichten": eigene Stufe (ohne "Prompt") und eigener Schalter "Lesbarer glaetten". */
+/** "Bei geteilten Sprachnachrichten": eigene Stufe (ohne "Prompt") und eigene Bereinigung beim Glaetten. */
 @Composable
 private fun ShareStages(prefs: PrefsState) {
-    val polish = prefs.shareRefineMode == RefineMode.POLISH
-
     SectionCard(
         modifier = Modifier.testTag(SHARE_REFINE_TAG),
         title = stringResource(R.string.text_card_share),
@@ -138,19 +129,36 @@ private fun ShareStages(prefs: PrefsState) {
                 )
             }
         }
-        SwitchRow(
-            headline = stringResource(R.string.pref_polish_readable),
-            supporting = stringResource(if (polish) R.string.pref_polish_readable_info else R.string.text_readable_needs_polish),
-            checked = prefs.sharePolishReadable,
-            onCheckedChange = { prefs.sharePolishReadable = it },
-        )
+        ReadableSwitch(prefs, RefineWay.SHARE)
     }
+}
+
+/** "Lesbarer glaetten" des Wegs; ohne "Glaetten" sagt die Unterzeile, wann es wirkt. */
+@Composable
+private fun ReadableSwitch(prefs: PrefsState, way: RefineWay) {
+    val polish = prefs.refineModeFor(way) == RefineMode.POLISH
+    val supporting = stringResource(if (polish) R.string.pref_polish_readable_info else R.string.text_readable_needs_polish)
+    CleanupSwitch(prefs, way, PolishCleanup.READABLE, R.string.pref_polish_readable, supporting)
+}
+
+/**
+ * Zwischenstand bis zu den Stufen-Seiten: eine Bereinigung des Wegs als Schalter. An = [cleanup],
+ * aus = "Nur Zeichensetzung". Immer bedienbar (ein gesperrter Schalter taeuschte sonst ein "an" vor).
+ */
+@Composable
+private fun CleanupSwitch(prefs: PrefsState, way: RefineWay, cleanup: PolishCleanup, headline: Int, supporting: String) {
+    SwitchRow(
+        headline = stringResource(headline),
+        supporting = supporting,
+        checked = prefs.polishCleanupFor(way) == cleanup,
+        onCheckedChange = { prefs.setPolishCleanupFor(way, if (it) cleanup else PolishCleanup.PLAIN) },
+    )
 }
 
 /** Unterzeile einer Stufe in den Radios von Diktat und Sprachnachrichten. */
 internal fun levelSubtitle(mode: RefineMode): Int = when (mode) {
     RefineMode.OFF -> R.string.text_level_off_sub
-    RefineMode.POLISH, RefineMode.PARAGRAPHS, RefineMode.READABLE -> R.string.text_level_smooth_sub
+    RefineMode.POLISH, RefineMode.READABLE -> R.string.text_level_smooth_sub
     RefineMode.BEAUTIFY -> R.string.text_level_beautify_sub
     RefineMode.SUMMARIZE -> R.string.text_level_summarize_sub
     RefineMode.PROMPT -> R.string.text_level_prompt_sub

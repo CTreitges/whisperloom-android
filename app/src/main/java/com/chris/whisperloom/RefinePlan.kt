@@ -46,24 +46,23 @@ internal class RefinePlan(
     fun refine(
         raw: String,
         language: String,
-        mode: RefineMode,
-        smartFillers: Boolean,
-        paragraphs: Boolean,
+        refinement: Refinement,
         onNote: (String) -> Unit = {},
         cancelled: () -> Boolean = { false },
     ): String = when (route) {
         is RefineRoute.Raw -> raw
-        RefineRoute.Local -> local(raw, language, mode, smartFillers, paragraphs, cancelled)
+        RefineRoute.Local -> local(raw, language, refinement, cancelled)
         is RefineRoute.Online -> if (onlineFailed) {
-            local(raw, language, mode, smartFillers, paragraphs, cancelled)
+            local(raw, language, refinement, cancelled)
         } else {
             try {
-                TextRefiner(access, connectTimeoutMs(route), ::temperatureRejected).refine(raw, language, mode, smartFillers, paragraphs)
+                TextRefiner(access, connectTimeoutMs(route), ::temperatureRejected)
+                    .refine(raw, language, refinement.mode, refinement.smartFillers, refinement.paragraphs)
             } catch (e: Exception) {
                 if (!route.fallbackLocal || cancelled()) throw e
                 Log.w(TAG, "Online gescheitert, verbessere lokal: ${e.message}", e)
                 onlineFailed = true
-                local(raw, language, mode, smartFillers, paragraphs, cancelled).also { onNote(MSG_ONLINE_FAILED_LOCAL) }
+                local(raw, language, refinement, cancelled).also { onNote(MSG_ONLINE_FAILED_LOCAL) }
             }
         }
     }
@@ -77,12 +76,10 @@ internal class RefinePlan(
     private fun local(
         raw: String,
         language: String,
-        mode: RefineMode,
-        smartFillers: Boolean,
-        paragraphs: Boolean,
+        refinement: Refinement,
         cancelled: () -> Boolean,
     ): String = try {
-        LocalRefiner(localModelId, cancelled).refine(raw, language, mode, smartFillers, paragraphs)
+        LocalRefiner(localModelId, cancelled).refine(raw, language, refinement.mode, refinement.smartFillers, refinement.paragraphs)
     } catch (e: RefineRejectedException) {
         throw e
     } catch (e: Exception) {
@@ -117,8 +114,8 @@ internal class RefinePlan(
          * Sammelt die Eingaben der Entscheidungstabelle. Das Netz wird nur gefragt, wenn es zaehlt
          * (Online-Erkennung oder eigener Zugang), das lokale Modell nur bei Offline-Erkennung.
          *
-         * @param mode die wirksame Stufe des Auftrags ([Prefs.dictationStage] bzw. [Prefs.shareStage]) —
-         *   sie bestimmt auch das Textmodell ([Prefs.llmModelFor]).
+         * @param mode die wirksame Stufe des Auftrags ([Refinement.mode] aus [Prefs.refinementFor]) —
+         *   sie bestimmt auch das Textmodell ([Prefs.llmModelFor], fuer beide Wege dasselbe).
          */
         fun of(context: Context, prefs: Prefs, mode: RefineMode): RefinePlan {
             val access = prefs.llmAccess(mode)

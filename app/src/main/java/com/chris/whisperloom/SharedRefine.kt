@@ -4,12 +4,14 @@ import android.content.Context
 import android.util.Log
 
 /**
- * KI-Stufe fuer geteilte Sprachnachrichten ([Prefs.shareStage]: Stufe und "Lesbarer glaetten") —
- * getrennt von denen fuers Diktat und ab Werk aus. Ohne Audio und (ueber [run]s `refine`) ohne Netz testbar.
+ * KI-Stufe fuer geteilte Sprachnachrichten ([Prefs.refinementFor] mit [RefineWay.SHARE]: Stufe,
+ * Bereinigung, Form) — getrennt von denen fuers Diktat und ab Werk aus; nur das Modell je Stufe ist
+ * dasselbe. Ohne Audio und (ueber [run]s `refine`) ohne Netz testbar.
  */
 object SharedRefine {
 
     /**
+     * @property mode die wirksame Stufe ([Refinement.mode]), z. B. [RefineMode.READABLE] fuer Glaetten · Lesbar.
      * @property paragraphs KI-Fassung; null = keine (Stufe aus oder gescheitert, Grund in [skipped]).
      * @property localFallback online gescheitert, das lokale Textmodell ist eingesprungen — kein Fehler, nur zur Info.
      */
@@ -36,7 +38,7 @@ object SharedRefine {
         isCancelled: () -> Boolean = { false },
         onStart: (local: Boolean) -> Unit = {},
     ): Result {
-        val mode = prefs.shareStage
+        val mode = prefs.refinementFor(RefineWay.SHARE).mode
         if (mode == RefineMode.OFF) return Result(mode, null, null)
         val plan = RefinePlan.of(context, prefs, mode)
         val route = plan.route
@@ -46,8 +48,8 @@ object SharedRefine {
         }
         // Der einzige Hinweis von plan.refine: online gescheitert, lokal verbessert.
         var localFallback = false
-        val result = run(prefs, parts, language, isCancelled, { onStart(route == RefineRoute.Local) }) { raw, stage ->
-            plan.refine(raw, language, stage, prefs.smartFillers, paragraphs = true, onNote = { localFallback = true }, cancelled = isCancelled)
+        val result = run(prefs, parts, language, isCancelled, { onStart(route == RefineRoute.Local) }) { raw, refinement ->
+            plan.refine(raw, language, refinement, onNote = { localFallback = true }, cancelled = isCancelled)
         }
         return if (result.paragraphs != null) result.copy(localFallback = localFallback) else result
     }
@@ -71,13 +73,14 @@ object SharedRefine {
         language: String,
         isCancelled: () -> Boolean = { false },
         onStart: () -> Unit = {},
-        refine: (raw: String, mode: RefineMode) -> String,
+        refine: (raw: String, refinement: Refinement) -> String,
     ): Result {
-        val mode = prefs.shareStage
+        val refinement = prefs.refinementFor(RefineWay.SHARE)
+        val mode = refinement.mode
         if (mode == RefineMode.OFF) return Result(mode, null, null)
         onStart()
         return try {
-            Result(mode, paragraphs(parts, options(prefs, language, mode), isCancelled) { refine(it, mode) }, null)
+            Result(mode, paragraphs(parts, options(prefs, language, refinement), isCancelled) { refine(it, refinement) }, null)
         } catch (e: UnsupportedAudioException) {
             throw e
         } catch (e: Exception) {
@@ -91,18 +94,18 @@ object SharedRefine {
     }
 
     /**
-     * Nachbearbeitung der KI-Fassung — dieselben Regeln wie beim Diktat, nur die Absaetze sind
-     * immer an: eine Sprachnachricht am Stueck liest sich schlecht, und der Schalter
-     * "Automatische Absaetze" gilt fuer geteilte Audios nicht.
+     * Nachbearbeitung der KI-Fassung — dieselben Regeln wie beim Diktat. Die Absaetze kommen aus
+     * [refinement]: bei Glaetten und Verschoenern immer an (eine Sprachnachricht am Stueck liest
+     * sich schlecht), beim Zusammenfassen nach der Form der Sprachnachrichten.
      */
-    internal fun options(prefs: Prefs, language: String, mode: RefineMode): PolishOptions = PolishPlan.options(
+    internal fun options(prefs: Prefs, language: String, refinement: Refinement): PolishOptions = PolishPlan.options(
         removeFillers = prefs.removeFillers,
         autoCapitalize = prefs.autoCapitalize,
         language = language,
-        refineMode = mode,
+        refineMode = refinement.mode,
         customFillers = prefs.customFillers,
         disabledFillers = prefs.disabledFillers,
-        paragraphs = true,
+        paragraphs = refinement.paragraphs,
     )
 
     /**

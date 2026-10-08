@@ -135,9 +135,9 @@ class RefineBarTest {
         assertEquals(View.GONE, f.row.visibility)
     }
 
-    @Test fun dasTotePARAGRAPHSStehtNichtInDerLeiste() {
-        // Es ist nirgends zuweisbar und mappt im Einstellungs-Screen auf "Glaetten".
-        assertFalse(RefineMode.SETTINGS.contains(RefineMode.PARAGRAPHS))
-        assertEquals(4, RefineMode.SETTINGS.size)
+    @Test fun dieLeisteKenntNurDieWaehlbarenStufen() {
+        // Die fruehere Stufe "Absaetze" ist entfallen, "Lesbar" ist eine Bereinigung beim Glaetten.
+        assertEquals(listOf(RefineMode.OFF, RefineMode.POLISH, RefineMode.BEAUTIFY, RefineMode.SUMMARIZE), RefineMode.SETTINGS)
+        assertFalse(RefineMode.entries.any { it.key == "paragraphs" })
     }
 }

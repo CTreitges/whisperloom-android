@@ -22,8 +22,10 @@ import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.Engine
+import com.chris.whisperloom.PolishCleanup
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.RefineWay
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SystemStatus
@@ -132,7 +134,7 @@ class SettingsScreenshotTest {
     }
 
     @Test fun textverbesserung() {
-        prefs.polishReadable = true
+        prefs.setPolishCleanupFor(RefineWay.DICTATION, PolishCleanup.READABLE)
         screen { RefineScreen(it) }
         shot("textverbesserung-diktat")
         nachOben(hasText("Bei geteilten Sprachnachrichten"))
@@ -143,7 +145,7 @@ class SettingsScreenshotTest {
         // Offline ohne Textmodell (das Home-Banner): die Zeile "Bei Offline-Erkennung" sagt es.
         prefs.engine = Engine.OFFLINE
         prefs.shareRefineMode = RefineMode.POLISH
-        prefs.sharePolishReadable = true
+        prefs.setPolishCleanupFor(RefineWay.SHARE, PolishCleanup.READABLE)
         screen(SystemStatus(installedModels = setOf("small"), totalRamBytes = 16L shl 30)) { RefineScreen(it) }
         nachOben(hasText("Bei geteilten Sprachnachrichten"))
         shot("textverbesserung-offline")

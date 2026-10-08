@@ -34,10 +34,14 @@ class SharedRefineTest {
 
     private val calls = mutableListOf<Pair<String, RefineMode>>()
 
+    /** Was je Anfrage an das Modell ging (Prompt-Variante, Fuellwoerter, Absaetze). */
+    private val refinements = mutableListOf<Refinement>()
+
     private fun run(parts: List<String>, answer: (String) -> String = { "$it (KI)" }): SharedRefine.Result {
         var started = 0
-        val result = SharedRefine.run(prefs, parts, "de", onStart = { started++ }) { raw, mode ->
-            calls += raw to mode
+        val result = SharedRefine.run(prefs, parts, "de", onStart = { started++ }) { raw, refinement ->
+            calls += raw to refinement.mode
+            refinements += refinement
             answer(raw)
         }
         assertEquals("onStart genau dann, wenn eine Stufe gilt", if (result.mode == RefineMode.OFF) 0 else 1, started)
@@ -63,26 +67,43 @@ class SharedRefineTest {
         assertNull(result.skipped)
     }
 
-    @Test fun lesbarerGlaettenHatEinenEigenenSchalter() {
+    @Test fun dieBereinigungKommtAusDenShareEinstellungen() {
         prefs.shareRefineMode = RefineMode.POLISH
-        prefs.sharePolishReadable = true
+        prefs.setPolishCleanupFor(RefineWay.SHARE, PolishCleanup.READABLE)
         val result = run(listOf("Hallo."))
         assertEquals(listOf("Hallo." to RefineMode.READABLE), calls)
         assertEquals(RefineMode.READABLE, result.mode)
+
+        prefs.setPolishCleanupFor(RefineWay.SHARE, PolishCleanup.CLEAN)
+        run(listOf("Hallo."))
+        assertEquals(Refinement(RefineMode.POLISH, smartFillers = true), refinements.last())
     }
 
-    /** 3.8.6: bis 3.8.5 wirkte der eine Schalter auf beides. */
-    @Test fun derSchalterDesDiktatsWirktNichtAufGeteilteAudios() {
+    /** 3.9.0: Diktat und Sprachnachrichten haben je Stufe eigene Einstellungen. */
+    @Test fun dieEinstellungenDesDiktatsWirkenNichtAufGeteilteAudios() {
         prefs.refineMode = RefineMode.POLISH
         prefs.shareRefineMode = RefineMode.POLISH
-        prefs.polishReadable = true
+        prefs.setPolishCleanupFor(RefineWay.DICTATION, PolishCleanup.CLEAN)
+        prefs.setParagraphsFor(RefineMode.POLISH, false)
+        prefs.setSummarizeFormFor(RefineWay.DICTATION, SummarizeForm.PROSE)
         val result = run(listOf("Hallo."))
-        assertEquals(listOf("Hallo." to RefineMode.POLISH), calls)
         assertEquals(RefineMode.POLISH, result.mode)
-        // Und andersherum: der Schalter der Sprachnachrichten aendert das Diktat nicht.
-        prefs.polishReadable = false
-        prefs.sharePolishReadable = true
-        assertEquals(RefineMode.POLISH, prefs.dictationStage)
+        assertEquals("ohne intelligent, mit Absaetzen", listOf(Refinement(RefineMode.POLISH)), refinements)
+
+        prefs.shareRefineMode = RefineMode.SUMMARIZE
+        run(listOf("Hallo."))
+        assertEquals("die Form des Diktats zaehlt hier nicht", Refinement(RefineMode.SUMMARIZE), refinements.last())
+        // Und andersherum: die Einstellungen der Sprachnachrichten aendern das Diktat nicht.
+        prefs.setPolishCleanupFor(RefineWay.SHARE, PolishCleanup.READABLE)
+        assertEquals(Refinement(RefineMode.POLISH, smartFillers = true, paragraphs = false), prefs.refinementFor(RefineWay.DICTATION))
+    }
+
+    @Test fun zusammenfassenAlsFliesstextBeiSprachnachrichten() {
+        prefs.shareRefineMode = RefineMode.SUMMARIZE
+        prefs.setSummarizeFormFor(RefineWay.SHARE, SummarizeForm.PROSE)
+        val result = run(listOf("roh")) { "Erster Satz.\n\nZweiter Satz.\n- Eins." }
+        assertEquals(listOf(Refinement(RefineMode.SUMMARIZE, paragraphs = false)), refinements)
+        assertEquals("die Nachbearbeitung zieht zusammen", listOf("Erster Satz. Zweiter Satz. - Eins."), result.paragraphs)
     }
 
     // --- Was an das Modell geht -------------------------------------------------------------
@@ -118,10 +139,11 @@ class SharedRefineTest {
     }
 
     @Test fun absaetzeBleibenAuchWennDasDiktatSieAusHat() {
-        prefs.refineParagraphs = false
+        prefs.setParagraphsFor(RefineMode.POLISH, false)
+        prefs.shareRefineMode = RefineMode.POLISH
         prefs.customFillers = setOf("sozusagen")
         prefs.disabledFillers = setOf("hmm")
-        val options = SharedRefine.options(prefs, "de", RefineMode.POLISH)
+        val options = SharedRefine.options(prefs, "de", prefs.refinementFor(RefineWay.SHARE))
         assertTrue("Absaetze der KI bleiben", options.keepLineBreaks)
         assertEquals(setOf("sozusagen"), options.customFillers.toSet())
         assertEquals(setOf("hmm"), options.disabledFillers)
@@ -129,10 +151,14 @@ class SharedRefineTest {
         assertTrue(options.autoCapitalize)
     }
 
-    /** 3.9.0 (Plan §4): die Liste laeuft auch nach "intelligent" — bis 3.8.6 pausierte sie. */
-    @Test fun intelligenteFuellwoerterLassenDieWortlisteAlsNetzLaufen() {
-        prefs.smartFillers = true
-        assertEquals(true, SharedRefine.options(prefs, "de", RefineMode.POLISH).removeFillers)
+    /** 3.9.0 (Plan §4): die Liste laeuft auch nach "Ohne Fuellwoerter" — bis 3.8.6 pausierte sie. */
+    @Test fun ohneFuellwoerterLaesstDieWortlisteAlsNetzLaufen() {
+        prefs.shareRefineMode = RefineMode.POLISH
+        prefs.setPolishCleanupFor(RefineWay.SHARE, PolishCleanup.CLEAN)
+        prefs.customFillers = setOf("sozusagen")
+        assertEquals(true, SharedRefine.options(prefs, "de", prefs.refinementFor(RefineWay.SHARE)).removeFillers)
+        val result = run(listOf("roh")) { "Das passt, ähm, sozusagen." }
+        assertEquals(listOf("Das passt."), result.paragraphs)
     }
 
     // --- Kein KI-Fehler kostet die Nachricht -------------------------------------------------
@@ -163,8 +189,8 @@ class SharedRefineTest {
     @Test fun abbruchGehtDurchStattZumHinweisZuWerden() {
         prefs.shareRefineMode = RefineMode.POLISH
         try {
-            SharedRefine.run(prefs, listOf("Eins.", "Zwei."), "de", isCancelled = { calls.isNotEmpty() }) { raw, mode ->
-                calls += raw to mode
+            SharedRefine.run(prefs, listOf("Eins.", "Zwei."), "de", isCancelled = { calls.isNotEmpty() }) { raw, refinement ->
+                calls += raw to refinement.mode
                 raw
             }
             fail("Abbruch muss durchgehen")

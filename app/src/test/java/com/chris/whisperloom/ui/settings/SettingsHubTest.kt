@@ -11,8 +11,10 @@ import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.Engine
+import com.chris.whisperloom.PolishCleanup
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.RefineWay
 import com.chris.whisperloom.ui.WhisperLoomApp
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.RouteRequest
@@ -80,7 +82,7 @@ class SettingsHubTest {
 
     @Test fun textverbesserungNenntDieStufenBeiderWege() {
         prefs.refineMode = RefineMode.POLISH
-        prefs.polishReadable = true // die Stufe bleibt "Glaetten"
+        prefs.setPolishCleanupFor(RefineWay.DICTATION, PolishCleanup.READABLE) // die Stufe bleibt "Glaetten"
         hub()
         compose.onNodeWithText("Diktat: Glätten · Sprachnachrichten: Aus").assertExists()
     }

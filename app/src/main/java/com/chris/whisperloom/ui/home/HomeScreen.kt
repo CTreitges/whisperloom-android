@@ -51,6 +51,7 @@ import com.chris.whisperloom.Engine
 import com.chris.whisperloom.OfflineRefineRule
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.RefineWay
 import com.chris.whisperloom.SetupState
 import com.chris.whisperloom.api.RefineBlock
 import com.chris.whisperloom.overlay.BubbleAnimators
@@ -327,8 +328,8 @@ private fun StatusCard(nav: NavState, modelInstalled: Boolean) {
         }
         null -> stringResource(R.string.setup_chip_open)
     }
-    // Das Modell, mit dem das naechste Diktat rechnet: das der Stufe (Modell je Stufe).
-    val llm = prefs.llmAccess(prefs.dictationStage)
+    // Das Modell, mit dem das naechste Diktat rechnet: das der Stufe (Modell je Stufe, gleich welche Bereinigung).
+    val llm = prefs.llmAccess(prefs.refinementFor(RefineWay.DICTATION).mode)
     val level = levelLabel(prefs.refineMode)
     // Offline erkannt: die Regel entscheidet (lokal, online mit Ausweg, uebersprungen) — "wie Erkennung" zaehlt nie.
     // Auch wenn nur die Stufe fuer geteilte Sprachnachrichten an ist: fehlt das Modell, warnt die Zeile wie das Banner.

@@ -563,7 +563,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
     private fun refineLabel(mode: RefineMode) = getString(
         when (mode) {
             RefineMode.OFF -> R.string.level_off
-            RefineMode.POLISH, RefineMode.PARAGRAPHS, RefineMode.READABLE -> R.string.level_smooth
+            RefineMode.POLISH, RefineMode.READABLE -> R.string.level_smooth
             RefineMode.BEAUTIFY -> R.string.level_beautify
             RefineMode.SUMMARIZE -> R.string.level_summarize
             RefineMode.PROMPT -> R.string.level_prompt

@@ -159,7 +159,7 @@ class AccessResolverTest {
         AccessResolver.resolveLlm(stt, "anthropic", "", "sk-ant", model, stageModel = stageModel, stage = stage).model
 
     @Test fun ohneModellGiltDieEmpfehlungJeStufe() {
-        for (mode in listOf(RefineMode.POLISH, RefineMode.READABLE, RefineMode.PARAGRAPHS)) {
+        for (mode in listOf(RefineMode.POLISH, RefineMode.READABLE)) {
             assertEquals(mode.name, "claude-haiku-5-5", anthropic(stage = mode))
         }
         for (mode in listOf(RefineMode.BEAUTIFY, RefineMode.SUMMARIZE, RefineMode.PROMPT)) {
