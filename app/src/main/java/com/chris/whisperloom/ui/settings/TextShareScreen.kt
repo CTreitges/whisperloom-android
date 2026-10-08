@@ -60,7 +60,6 @@ fun TextShareScreen(nav: NavState) {
                 supporting = stringResource(if (polish) R.string.pref_polish_readable_info else R.string.text_readable_needs_polish),
                 checked = prefs.sharePolishReadable,
                 onCheckedChange = { prefs.sharePolishReadable = it },
-                enabled = polish,
             )
         }
     }

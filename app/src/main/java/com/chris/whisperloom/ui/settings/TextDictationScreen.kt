@@ -61,7 +61,6 @@ fun TextDictationScreen(nav: NavState) {
                 supporting = stringResource(if (polish) R.string.pref_polish_readable_info else R.string.text_readable_needs_polish),
                 checked = prefs.polishReadable,
                 onCheckedChange = { prefs.polishReadable = it },
-                enabled = polish,
             )
             SwitchRow(
                 headline = stringResource(R.string.pref_smart_fillers),

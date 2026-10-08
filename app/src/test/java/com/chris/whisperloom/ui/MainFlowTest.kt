@@ -549,11 +549,10 @@ class MainFlowTest {
 
     @Test fun lesbarerGlaettenIstAusUndWirktNurMitGlaetten() {
         screen(env()) { TextDictationScreen(it) }
-        compose.onNodeWithText("Lesbarer glätten").assertIsNotEnabled()
         compose.onNodeWithText("Wirkt mit der Stufe „Glätten“.").assertExists()
         compose.onNodeWithText("Verschönern").performClick()
         compose.waitForIdle()
-        compose.onNodeWithText("Lesbarer glätten").assertIsNotEnabled()
+        compose.onNodeWithText("Wirkt mit der Stufe „Glätten“.").assertExists()
         compose.onNodeWithText("Glätten").performClick()
         compose.waitForIdle()
         compose.onNodeWithText("Lesbarer glätten").assertIsEnabled().performClick()
@@ -566,12 +565,12 @@ class MainFlowTest {
         assertEquals(false, Prefs(ctx).sharePolishReadable)
     }
 
-    /** 3.8.6: Sprachnachrichten haben einen eigenen Schalter — der des Diktats bleibt ohne Diktat-Stufe gesperrt. */
-    @Test fun lesbarerGlaettenDesDiktatsMitNurDerShareStufeGesperrt() {
+    /** 3.8.6: Sprachnachrichten haben einen eigenen Schalter — die Share-Stufe macht den des Diktats nicht wirksam. */
+    @Test fun lesbarerGlaettenDesDiktatsMitNurDerShareStufeOhneWirkung() {
         prefs.shareRefineMode = RefineMode.POLISH
         screen(env()) { TextDictationScreen(it) }
         assertEquals(RefineMode.OFF, Prefs(ctx).refineMode)
-        compose.onNodeWithText("Lesbarer glätten").assertIsNotEnabled()
+        compose.onNodeWithText("Wirkt mit der Stufe „Glätten“.").assertExists()
     }
 
     /** Review 3.5.0 HOCH: nach aus/an darf weder die Ollama-Adresse noch der Ollama-Key haengen bleiben. */

@@ -2,6 +2,12 @@
 
 Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [Unreleased]
+
+### Behoben
+
+- **„Lesbarer glätten“ ließ sich bei anderer Stufe nicht abschalten.** Der Schalter war ausgegraut, solange auf seiner Seite nicht „Glätten“ gewählt war, zeigte aber weiter „an“. Nach dem Update auf 3.8.6 traf das etwa die Sprachnachrichten mit „Zusammenfassen“, weil der neue Schalter die alte Einstellung übernommen hatte. Jetzt lässt er sich bei jeder Stufe umschalten und wirkt weiter nur mit „Glätten“.
+
 ## [3.8.6] — 2026-10-08
 
 ### Hinzugefügt

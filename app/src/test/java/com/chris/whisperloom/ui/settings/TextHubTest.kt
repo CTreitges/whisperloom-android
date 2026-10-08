@@ -6,7 +6,6 @@ import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsEnabled
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -217,16 +216,34 @@ class TextHubTest {
         assertEquals(RefineMode.POLISH, p.dictationStage)
     }
 
-    @Test fun lesbarerGlaettenDerSprachnachrichtenNurMitIhrerStufeGlaetten() {
-        prefs.refineMode = RefineMode.POLISH // die Diktat-Stufe schaltet ihn nicht frei
+    @Test fun lesbarerGlaettenDerSprachnachrichtenNenntIhreStufeGlaetten() {
+        prefs.refineMode = RefineMode.POLISH // die Diktat-Stufe zaehlt hier nicht
         prefs.shareRefineMode = RefineMode.SUMMARIZE
         screen(env()) { TextShareScreen(it) }
-        compose.onNodeWithText("Lesbarer glätten").assertIsNotEnabled()
+        compose.onNodeWithText("Lesbarer glätten").assertIsEnabled()
         compose.onNodeWithText("Wirkt mit der Stufe „Glätten“.").assertExists()
         compose.onNode(hasText("Glätten") and hasAnyAncestor(hasTestTag(SHARE_REFINE_TAG))).performClick()
         compose.waitForIdle()
         assertEquals(RefineMode.POLISH, Prefs(ctx).shareRefineMode)
-        compose.onNodeWithText("Lesbarer glätten").assertIsEnabled()
+        compose.onNodeWithText("Wirkt mit der Stufe „Glätten“.").assertDoesNotExist()
+    }
+
+    /** Nach dem Update auf 3.8.6 (v5 uebernimmt den alten Wert) stand der Schalter bei anderer Stufe an und war gesperrt. */
+    @Test fun lesbarerGlaettenDerSprachnachrichtenLaesstSichOhneGlaettenAbschalten() {
+        prefs.shareRefineMode = RefineMode.SUMMARIZE
+        prefs.sharePolishReadable = true
+        screen(env()) { TextShareScreen(it) }
+        compose.onNodeWithText("Wirkt mit der Stufe „Glätten“.").assertExists()
+        click("Lesbarer glätten")
+        assertEquals(false, Prefs(ctx).sharePolishReadable)
+    }
+
+    @Test fun lesbarerGlaettenDesDiktatsLaesstSichOhneGlaettenAbschalten() {
+        prefs.refineMode = RefineMode.BEAUTIFY
+        prefs.polishReadable = true
+        screen(env()) { TextDictationScreen(it) }
+        click("Lesbarer glätten")
+        assertEquals(false, Prefs(ctx).polishReadable)
     }
 
     @Test fun lesbarerGlaettenDesDiktatsLaesstDieSprachnachrichtenInRuhe() {
