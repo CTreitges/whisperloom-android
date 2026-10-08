@@ -318,7 +318,7 @@ class HistoryTest {
         record(dictation(text = "Komme morgen später.", refinement = Refinement(RefineMode.SUMMARIZE)))
         val id = History.list(ctx).single().id
 
-        val result = History.reprocess(ctx, id, Processing.POLISH_PLAIN)!!
+        val result = History.reprocess(ctx, id, Processing.POLISH_PLAIN)!!.result
         History.reprocess(ctx, id, Processing.SUMMARIZE)
 
         assertEquals("Neu geglättet.", result.text)
@@ -338,7 +338,7 @@ class HistoryTest {
         record()
         val before = History.list(ctx).single()
 
-        val result = History.reprocess(ctx, before.id, Processing.POLISH_PLAIN)!!
+        val result = History.reprocess(ctx, before.id, Processing.POLISH_PLAIN)!!.result
 
         assertEquals(RefinePlan.MSG_NO_NET, result.skipped)
         assertFalse(result.refined)
@@ -369,6 +369,36 @@ class HistoryTest {
         assertEquals(0, History.count(ctx))
         assertNull("auch direkt gesetzt nicht", History.setVersion(ctx, id, Processing.OFF, HistoryVersion("x", 0L)))
         assertEquals(0, History.count(ctx))
+    }
+
+    /** Waehrend die KI rechnet, speichert der Nutzer eine Bearbeitung derselben Fassung: sie bleibt. */
+    @Test fun neuVerarbeitenUeberschreibtKeineBearbeitungAusDerRechenzeit() {
+        ownAccess()
+        record(dictation(text = "Geglättet.", refinement = Refinement(RefineMode.POLISH)))
+        val id = History.list(ctx).single().id
+        beforeAnswer = { assertNotNull(History.edit(ctx, id, Processing.POLISH_PLAIN, "Von Hand.")) }
+
+        val reprocessed = History.reprocess(ctx, id, Processing.POLISH_PLAIN)!!
+
+        assertTrue("nicht gespeichert, die Bearbeitung bleibt", reprocessed.kept)
+        val version = History.get(ctx, id)!!.versions.getValue(Processing.POLISH_PLAIN)
+        assertEquals("Von Hand.", version.text)
+        assertTrue(version.edited)
+        assertEquals(1, chatRequests.get())
+    }
+
+    /** Vor dem Start bearbeitet und die Rueckfrage "Ersetzen" bestaetigt: dann wird ersetzt. */
+    @Test fun neuVerarbeitenErsetztEineVorDemStartBearbeiteteFassung() {
+        ownAccess()
+        record(dictation(text = "Geglättet.", refinement = Refinement(RefineMode.POLISH)))
+        val id = History.list(ctx).single().id
+        History.edit(ctx, id, Processing.POLISH_PLAIN, "Von Hand.")
+
+        assertFalse(History.reprocess(ctx, id, Processing.POLISH_PLAIN)!!.kept)
+
+        val version = History.get(ctx, id)!!.versions.getValue(Processing.POLISH_PLAIN)
+        assertEquals("Neu geglättet.", version.text)
+        assertFalse(version.edited)
     }
 
     // --- Loeschen und Rueckgaengig --------------------------------------------------------------

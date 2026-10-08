@@ -4,6 +4,8 @@ import android.content.ClipboardManager
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasStateDescription
 import androidx.compose.ui.test.hasText
@@ -288,6 +290,34 @@ class HistoryDetailScreenTest {
         val version = History.get(ui.ctx, entry.id)!!.versions.getValue(Processing.BEAUTIFY)
         assertEquals("Neu verschönert.", version.text)
         assertTrue("ersetzt, nicht mehr bearbeitet", !version.edited)
+    }
+
+    /**
+     * Waehrend "Andere Stufe …" eine vorhandene Fassung neu rechnet, ist ✎ fuer genau diese Fassung
+     * gesperrt — sonst ersetzte das Ergebnis die Bearbeitung still. Kommt doch eine Bearbeitung
+     * dazwischen, bleibt sie, und ein Hinweis sagt es.
+     */
+    @Test fun bearbeitenIstGesperrtSolangeDieFassungNeuGerechnetWird() {
+        ownAccess()
+        val entry = ui.record(refinement = Refinement(RefineMode.BEAUTIFY), text = "Schön.")
+        eintrag(entry.id)
+        ui.waitFor("Schön.")
+        gate = CountDownLatch(1)
+
+        compose.onNodeWithText("Andere Stufe …").performClick()
+        compose.onNode(hasText("Verschönern") and hasStateDescription("vorhanden")).performClick()
+        ui.waitUntil { compose.onAllNodes(hasStateDescription("wird verarbeitet")).fetchSemanticsNodes().isNotEmpty() }
+
+        compose.onNodeWithContentDescription("Bearbeiten").assertIsNotEnabled()
+        chip("Ursprung").performClick()
+        compose.onNodeWithContentDescription("Bearbeiten").assertIsEnabled()
+
+        // Eine Bearbeitung derselben Fassung aus der Rechenzeit (etwa ein zweites Fenster).
+        History.edit(ui.ctx, entry.id, Processing.BEAUTIFY, "Von Hand schön.")
+        gate!!.countDown()
+
+        ui.waitFor("Fassung inzwischen bearbeitet · deine Änderungen bleiben")
+        assertEquals("Von Hand schön.", History.get(ui.ctx, entry.id)!!.versions.getValue(Processing.BEAUTIFY).text)
     }
 
     /** Schmalstes Zielgeraet: alle Chips bleiben im Bild, sie brechen um. */

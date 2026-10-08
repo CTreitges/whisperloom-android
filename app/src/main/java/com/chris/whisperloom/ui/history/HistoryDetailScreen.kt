@@ -99,6 +99,7 @@ fun HistoryDetailScreen(screen: Screen.HistoryDetail, nav: NavState) {
             val message = when {
                 done.saved -> done.note
                 done.gone -> null
+                done.kept -> res.getString(R.string.history_reprocess_kept)
                 done.reason != null -> res.getString(R.string.history_reprocess_failed, done.reason)
                 else -> res.getString(R.string.history_reprocess_failed_plain)
             }
@@ -139,7 +140,8 @@ fun HistoryDetailScreen(screen: Screen.HistoryDetail, nav: NavState) {
                     IconButton(onClick = { nav.pop() }) { LoomIcon(R.drawable.ic_arrow_back, stringResource(R.string.cd_back)) }
                 },
                 actions = {
-                    IconButton(onClick = { nav.push(Screen.HistoryEdit(id, shown ?: Processing.EDITED)) }, enabled = text != null) {
+                    // Nicht waehrend diese Fassung neu gerechnet wird: das Ergebnis ersetzte die Bearbeitung.
+                    IconButton(onClick = { nav.push(Screen.HistoryEdit(id, shown ?: Processing.EDITED)) }, enabled = text != null && shown !in loading) {
                         LoomIcon(R.drawable.ic_edit, stringResource(R.string.history_cd_edit))
                     }
                     EntryMenu(

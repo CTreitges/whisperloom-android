@@ -1008,6 +1008,8 @@
     <string name="history_other_stage">Andere Stufe …</string>
     <string name="history_reprocess_failed">%1$s · Eintrag unverändert</string>
     <string name="history_reprocess_failed_plain">Ohne KI · Eintrag unverändert</string>
+    <!-- Die Fassung wurde bearbeitet, während „Andere Stufe …“ sie neu rechnete. -->
+    <string name="history_reprocess_kept">Fassung inzwischen bearbeitet · deine Änderungen bleiben</string>
     <string name="history_sheet_title">Andere Stufe</string>
     <string name="history_sheet_hint">Aus dem Ursprung mit deinen aktuellen Einstellungen: eine Text-Anfrage, keine neue Erkennung. Deine eingestellte Stufe bleibt.</string>
     <string name="history_sheet_more">Weitere Stufen</string>

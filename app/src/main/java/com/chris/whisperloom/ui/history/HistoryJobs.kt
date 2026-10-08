@@ -28,7 +28,8 @@ object HistoryJobs {
 
     /**
      * Ergebnis einer Rechnung. [saved] = die Fassung liegt im Eintrag. Sonst blieb der Eintrag
-     * unveraendert: [reason] = warum ohne KI (null = unbekannt), [gone] = der Eintrag ist weg.
+     * unveraendert: [reason] = warum ohne KI (null = unbekannt), [gone] = der Eintrag ist weg,
+     * [kept] = die Fassung wurde waehrend der Rechnung bearbeitet, die Bearbeitung bleibt.
      * [note] = Hinweis ohne Folgen (online gescheitert, lokal verbessert).
      */
     data class Finished(
@@ -37,6 +38,7 @@ object HistoryJobs {
         val reason: String? = null,
         val note: String? = null,
         val gone: Boolean = false,
+        val kept: Boolean = false,
     )
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -54,11 +56,12 @@ object HistoryJobs {
         val app = context.applicationContext
         scope.launch {
             val done = try {
-                val result = History.reprocess(app, id, processing)
+                val reprocessed = History.reprocess(app, id, processing)
                 when {
-                    result == null -> Finished(job, saved = false, gone = true)
-                    processing == Processing.OFF || result.refined -> Finished(job, saved = true, note = result.note)
-                    else -> Finished(job, saved = false, reason = result.skipped)
+                    reprocessed == null -> Finished(job, saved = false, gone = true)
+                    reprocessed.kept -> Finished(job, saved = false, kept = true)
+                    processing == Processing.OFF || reprocessed.result.refined -> Finished(job, saved = true, note = reprocessed.result.note)
+                    else -> Finished(job, saved = false, reason = reprocessed.result.skipped)
                 }
             } catch (e: Exception) {
                 // Nie Text loggen — nur die Art des Fehlers.

@@ -129,23 +129,33 @@ object History {
         }
     }
 
-    /** Lesen, aendern, schreiben in einem Zug unter der Sperre; ein geloeschter Eintrag bleibt geloescht. */
+    /**
+     * Lesen, aendern, schreiben in einem Zug unter der Sperre; ein geloeschter Eintrag bleibt geloescht.
+     * Gibt [change] den Eintrag unveraendert zurueck, wird nichts geschrieben.
+     */
     private fun update(context: Context, id: String, change: (HistoryEntry) -> HistoryEntry): HistoryEntry? {
         val updated = synchronized(this) {
             val dir = dir(context)
             val entry = read(dir, id) ?: return null
-            change(entry).also { write(dir, it) }
+            change(entry).also { if (it !== entry) write(dir, it) }
         }
         changed()
         return updated
     }
 
     /**
+     * Ergebnis von [reprocess]: die [result] der Rechnung. [kept] = nicht gespeichert, weil die
+     * Fassung waehrend der Rechnung bearbeitet wurde — die Bearbeitung bleibt.
+     */
+    data class Reprocessed(val result: Refined, val kept: Boolean = false)
+
+    /**
      * Neu verarbeiten: aus dem gespeicherten Rohtext mit den aktuellen Diktat-Einstellungen (Modell
      * je Stufe, Zugang, Offline-Regel; ohne neue Erkennung). Das Netz gilt nicht als bewiesen. Nur
      * eine Fassung mit KI wird gespeichert (bei "Aus" die Regeln-Fassung); ohne KI bleibt der
      * Eintrag unveraendert, der Grund steht in [Refined.skipped]. Die Rechnung laeuft ausserhalb der
-     * Sperre — sie dauert Sekunden bis Minuten.
+     * Sperre — sie dauert Sekunden bis Minuten. Ersetzt wird nur die Fassung, die beim Start da war:
+     * die Rueckfrage "Bearbeitete Fassung ersetzen?" galt ihr, nicht einer Bearbeitung aus der Rechenzeit.
      *
      * @param cancelled Abbruch: die lokale Rechnung bricht ab, nichts wird gespeichert.
      * @return das Ergebnis; null = der Eintrag ist nicht (mehr) da
@@ -156,14 +166,24 @@ object History {
         id: String,
         processing: Processing,
         cancelled: () -> Boolean = { false },
-    ): Refined? {
+    ): Reprocessed? {
         val app = context.applicationContext
         val refinement = requireNotNull(processing.refinement(Prefs(app))) { "Bearbeitet ist keine Stufe" }
         val entry = get(app, id) ?: return null
+        val before = entry.versions[processing]
         val result = TranscriptionEngine.refine(app, entry.raw, entry.language, refinement, networkProven = false, cancelled = cancelled)
-        if (cancelled() || (processing != Processing.OFF && !result.refined)) return result
+        if (cancelled() || (processing != Processing.OFF && !result.refined)) return Reprocessed(result)
         val version = HistoryVersion(result.text, clock(), result.model)
-        return setVersion(app, id, processing, version)?.let { result }
+        var kept = false
+        update(app, id) { current ->
+            if (current.versions[processing] == before) {
+                current.copy(versions = current.versions + (processing to version))
+            } else {
+                kept = true
+                current
+            }
+        } ?: return null
+        return Reprocessed(result, kept)
     }
 
     /** Eintrag loeschen. @return der geloeschte Eintrag fuer "Rueckgaengig" ([restore]); null = war nicht da */
