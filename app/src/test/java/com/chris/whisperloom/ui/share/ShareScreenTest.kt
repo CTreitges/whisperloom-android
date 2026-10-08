@@ -2,14 +2,19 @@ package com.chris.whisperloom.ui.share
 
 import android.content.Context
 import android.net.Uri
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.filterToOne
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onChildren
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.RefineMode
@@ -60,6 +65,7 @@ class ShareScreenTest {
         onRetryFile: (Int) -> Unit = {},
         onRetryAll: () -> Unit = {},
         onOpenSetup: () -> Unit = {},
+        onOpenRefine: () -> Unit = {},
     ) {
         compose.setContent {
             WhisperLoomTheme {
@@ -72,6 +78,7 @@ class ShareScreenTest {
                     onRetryAll = onRetryAll,
                     onHideFillersChange = {},
                     onOpenSetup = onOpenSetup,
+                    onOpenRefine = onOpenRefine,
                 )
             }
         }
@@ -145,6 +152,7 @@ class ShareScreenTest {
                     onRetryAll = controller::retryAll,
                     onHideFillersChange = controller::setHideFillers,
                     onOpenSetup = {},
+                    onOpenRefine = {},
                 )
             }
         }
@@ -166,7 +174,19 @@ class ShareScreenTest {
         compose.onNodeWithText("Geglätteter Absatz.").assertIsDisplayed()
         compose.onNodeWithText("Erster Absatz.").assertDoesNotExist()
         compose.onNodeWithText("Füllwörter ausblenden").assertDoesNotExist()
-        compose.onNodeWithText("Textverbesserung: Glätten · änderbar unter Einstellungen › Text › Sprachnachrichten").assertIsDisplayed()
+        compose.onNodeWithText("Textverbesserung: Glätten · änderbar unter Einstellungen › Textverbesserung").assertIsDisplayed()
+    }
+
+    /** 3.9.0: der Hinweis ist ein Link auf die Seite Textverbesserung (eine Route in die MainActivity). */
+    @Test fun derHinweisZurStufeVerlinktDieTextverbesserung() {
+        var opened = false
+        val k = done.copy(paragraphsRefined = listOf("Geglätteter Absatz."), refineMode = RefineMode.SUMMARIZE)
+        show(ShareUiState(phase = SharePhase.DONE, files = listOf(ShareFile("a.ogg", result = k))), onOpenRefine = { opened = true })
+        val hinweis = compose.onNodeWithText("Textverbesserung: Zusammenfassen · änderbar unter Einstellungen › Textverbesserung")
+        // Der Link ist ein eigener Knoten unter dem Text; unter Robolectric hat er keine Flaeche, also die Aktion direkt.
+        hinweis.onChildren().filterToOne(hasClickAction()).performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitForIdle()
+        assertTrue(opened)
     }
 
     @Test fun onlineGescheitertLokalVerbessertIstEinHinweisKeinFehler() {

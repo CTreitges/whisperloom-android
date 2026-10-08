@@ -588,7 +588,9 @@
     <string name="share_sending">Wird übertragen …</string>
     <string name="share_refining">Text wird verbessert …</string>
     <string name="share_refining_local">Text wird lokal verbessert …</string>
-    <string name="share_refine_note">Textverbesserung: %1$s · änderbar unter Einstellungen › Text › Sprachnachrichten</string>
+    <!-- %1$s = Stufe, %2$s = share_refine_link (als Link) -->
+    <string name="share_refine_note">Textverbesserung: %1$s · änderbar unter %2$s</string>
+    <string name="share_refine_link">Einstellungen › Textverbesserung</string>
     <string name="share_refine_local_fallback">Textverbesserung: %1$s · online fehlgeschlagen, lokal verbessert</string>
     <string name="share_refine_partly" tools:ignore="PluralsCandidate">Textverbesserung: %1$s · bei %2$d von %3$d Dateien übersprungen: %4$s</string>
     <string name="share_copy">Kopieren</string>
@@ -660,7 +662,7 @@
     <string name="kb_finish_first">Erst senden oder verwerfen</string>
     <string name="kb_discarded">Aufnahme verworfen</string>
     <string name="kb_refine_set">Textverbesserung: %1$s</string>
-    <string name="kb_refine_needs_llm">Für die KI-Stufen fehlt ein Zugang — tippe zum Einrichten</string>
+    <string name="kb_refine_needs_llm">KI-Zugang fehlt — tippe zum Einrichten</string>
     <string name="kb_refine_needs_local">Offline ohne Textmodell — tippe zum Laden</string>
     <!-- Kurzfassungen der Stufen: in der Tastatur teilen sich vier Tasten eine Zeile (mit
          „Prompt“ fünf), "Verschönern" und "Zusammenfassen" passen dort nicht. -->

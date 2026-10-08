@@ -24,6 +24,8 @@ object AppNav {
     const val ROUTE_AGENT = "agent"
     const val ROUTE_WIDGETS = "widgets"
     const val ROUTE_MODELS = "models"
+    const val ROUTE_REFINE = "refine"
+    const val ROUTE_LLM_ACCESS = "llm-access"
 
     /** Home (H): Notification-Tipp. */
     fun home(ctx: Context): Intent = intent(ctx, ROUTE_HOME)
@@ -39,6 +41,12 @@ object AppNav {
 
     /** Offline-Modelle (E4): Tastatur-Hinweis "Offline ohne Textmodell". */
     fun models(ctx: Context): Intent = intent(ctx, ROUTE_MODELS)
+
+    /** Textverbesserung: Hinweis im Sprachnachrichten-Fenster (eigene Activity). */
+    fun refine(ctx: Context): Intent = intent(ctx, ROUTE_REFINE)
+
+    /** KI-Zugang: Tastatur-Hinweis "KI-Zugang fehlt". */
+    fun llmAccess(ctx: Context): Intent = intent(ctx, ROUTE_LLM_ACCESS)
 
     /** "Erweitert": Widget-Tipp, solange Pro Widgets aus sind. */
     fun advanced(ctx: Context): Intent = intent(ctx, ROUTE_ADVANCED)

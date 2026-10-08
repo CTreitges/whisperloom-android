@@ -43,6 +43,21 @@ class ApplyRouteTest {
         assertEquals(listOf(Screen.Home, Screen.SettingsHub, Screen.Models), stapel(RouteRequest(AppNav.ROUTE_MODELS)))
     }
 
+    @Test fun kiZugangLiegtUeberDenEinstellungen() {
+        // Tastatur-Hinweis "KI-Zugang fehlt" (bis 3.8.6 nur der Hub).
+        assertEquals(listOf(Screen.Home, Screen.SettingsHub, Screen.LlmAccess), stapel(RouteRequest(AppNav.ROUTE_LLM_ACCESS)))
+    }
+
+    @Test fun textverbesserungLiegtUeberDenEinstellungen() {
+        // Hinweis im Sprachnachrichten-Fenster.
+        assertEquals(listOf(Screen.Home, Screen.SettingsHub, Screen.Refine), stapel(RouteRequest(AppNav.ROUTE_REFINE)))
+    }
+
+    @Test fun eineUnbekannteRouteLaesstDenStapelInRuhe() {
+        // Die Activity ist exportiert: was sie nicht kennt, aendert nichts.
+        assertEquals(listOf(Screen.Home, Screen.Models), stapel(RouteRequest("unbekannt")))
+    }
+
     @Test fun widgetsOeffnetDenTabProWidgets() {
         assertEquals(
             listOf(Screen.Home, Screen.SettingsHub, Screen.Widgets(WidgetTab.PRO)),

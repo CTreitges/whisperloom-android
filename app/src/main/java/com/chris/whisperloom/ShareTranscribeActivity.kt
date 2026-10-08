@@ -21,7 +21,8 @@ import com.chris.whisperloom.ui.theme.WhisperLoomTheme
  * Darstellung in [ShareScreen] (UX-Spec §2.9).
  *
  * Der Text wird ab Werk WORTGETREU erkannt; "Fuellwoerter ausblenden" ist ein Schalter in der
- * Ansicht. Eine KI-Stufe gibt es nur ueber die Einstellungen (Text › Sprachnachrichten).
+ * Ansicht. Eine KI-Stufe gibt es nur ueber die Einstellungen (Textverbesserung › Bei geteilten
+ * Sprachnachrichten); der Hinweis unter dem Text verlinkt dorthin.
  * Die Zwischenablage wird bewusst NICHT automatisch ueberschrieben — nur auf Knopfdruck.
  */
 class ShareTranscribeActivity : ComponentActivity() {
@@ -49,6 +50,7 @@ class ShareTranscribeActivity : ComponentActivity() {
                     onRetryAll = controller::retryAll,
                     onHideFillersChange = controller::setHideFillers,
                     onOpenSetup = ::openSetup,
+                    onOpenRefine = ::openRefine,
                 )
             }
         }
@@ -93,6 +95,11 @@ class ShareTranscribeActivity : ComponentActivity() {
     /** Ausweg "Einrichtung oeffnen" -> Assistent in der MainActivity. */
     private fun openSetup() {
         startActivity(AppNav.setup(this))
+    }
+
+    /** Hinweis "aenderbar unter Einstellungen › Textverbesserung" -> diese Seite in der MainActivity. */
+    private fun openRefine() {
+        startActivity(AppNav.refine(this))
     }
 
     private fun plainText(): String = controller.plainText(getString(R.string.share_nothing_recognised))

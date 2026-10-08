@@ -34,6 +34,15 @@ class RouteRequestTest {
         assertEquals(RouteRequest("advanced"), RouteRequest.from(AppNav.advanced(ctx)))
         assertEquals(RouteRequest("widgets"), RouteRequest.from(AppNav.proWidgets(ctx)))
         assertEquals(RouteRequest("widgets", profileId = "p1"), RouteRequest.from(AppNav.widgetProfile(ctx, "p1")))
+        assertEquals(RouteRequest("models"), RouteRequest.from(AppNav.models(ctx)))
+        assertEquals(RouteRequest("refine"), RouteRequest.from(AppNav.refine(ctx)))
+        assertEquals(RouteRequest("llm-access"), RouteRequest.from(AppNav.llmAccess(ctx)))
+    }
+
+    @Test fun dieNeuenSeitenRoutenTragenKeinProfil() {
+        // Die Activity ist exportiert: ein fremdes Profil an KI-Zugang oder Textverbesserung faellt weg.
+        assertEquals(RouteRequest("llm-access"), RouteRequest.from(AppNav.llmAccess(ctx).putExtra(AppNav.EXTRA_PROFILE, "p1")))
+        assertEquals(RouteRequest("refine"), RouteRequest.from(AppNav.refine(ctx).putExtra(AppNav.EXTRA_PROFILE, "p1")))
     }
 
     @Test fun einProfilGiltNurFuerDieWidgetRoute() {

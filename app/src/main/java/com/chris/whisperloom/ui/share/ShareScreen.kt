@@ -57,7 +57,12 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.chris.whisperloom.Formats
@@ -85,6 +90,7 @@ fun ShareScreen(
     onRetryAll: () -> Unit,
     onHideFillersChange: (Boolean) -> Unit,
     onOpenSetup: () -> Unit,
+    onOpenRefine: () -> Unit,
 ) {
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -131,7 +137,7 @@ fun ShareScreen(
             SharePhase.NO_FILE -> NoFileCard(padding, onClose)
             SharePhase.NOT_CONFIGURED -> NotConfiguredCard(padding, onOpenSetup, onClose)
             SharePhase.ALL_FAILED -> AllFailedCard(padding, state.failure, onRetryAll, onClose)
-            SharePhase.LOADING, SharePhase.DONE -> TranscriptContent(state, padding, onRetryFile, onHideFillersChange)
+            SharePhase.LOADING, SharePhase.DONE -> TranscriptContent(state, padding, onRetryFile, onHideFillersChange, onOpenRefine)
         }
     }
 }
@@ -144,6 +150,7 @@ private fun TranscriptContent(
     padding: PaddingValues,
     onRetryFile: (Int) -> Unit,
     onHideFillersChange: (Boolean) -> Unit,
+    onOpenRefine: () -> Unit,
 ) {
     val loading = state.phase == SharePhase.LOADING
     Column(
@@ -160,7 +167,7 @@ private fun TranscriptContent(
         }
         TranscriptList(state, onRetryFile, Modifier.weight(1f))
         if (state.phase == SharePhase.DONE) {
-            RefineNote(state)
+            RefineNote(state, onOpenRefine)
             // Zeigt jede Datei ihre KI-Fassung, gibt es nichts umzuschalten — die Stufe waehlt
             // man in den Einstellungen, nicht hier.
             if (state.hasUnrefined) FillerToggleBar(state.hideFillers, onHideFillersChange)
@@ -169,28 +176,45 @@ private fun TranscriptContent(
 }
 
 /**
- * Hinweiszeile zur KI-Stufe fuer geteilte Audios: aktiv, online gescheitert und lokal verbessert,
- * gescheitert (mit Grund) oder bei mehreren Dateien nur teilweise gescheitert — dann mit Anzahl,
- * sonst saehe die KI-Fassung der anderen Dateien wie gescheitert aus. Bei "Aus" nichts.
+ * Hinweiszeile zur KI-Stufe fuer geteilte Audios: aktiv (mit Link zur Textverbesserung, 3.9.0),
+ * online gescheitert und lokal verbessert, gescheitert (mit Grund) oder bei mehreren Dateien nur
+ * teilweise gescheitert — dann mit Anzahl, sonst saehe die KI-Fassung der anderen Dateien wie
+ * gescheitert aus. Bei "Aus" nichts.
  */
 @Composable
-private fun RefineNote(state: ShareUiState) {
+private fun RefineNote(state: ShareUiState, onOpenRefine: () -> Unit) {
     val mode = state.refineMode
     if (mode == RefineMode.OFF) return
     val skipped = state.refineSkipped
     val failures = state.refineFailures
+    val style = MaterialTheme.typography.labelMedium
+    if (skipped == null && !state.refineLocalFallback) {
+        val link = stringResource(R.string.share_refine_link)
+        val text = stringResource(R.string.share_refine_note, levelLabel(mode), link)
+        val start = text.indexOf(link)
+        val linkStyle = TextLinkStyles(SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline))
+        // Context7: Compose ui 1.12 – LinkAnnotation.Clickable/addLink: ein Link im Text, TalkBack bietet ihn als Link an.
+        val note = buildAnnotatedString {
+            append(text)
+            addLink(LinkAnnotation.Clickable(REFINE_LINK_TAG, linkStyle) { onOpenRefine() }, start, start + link.length)
+        }
+        Text(note, style = style, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        return
+    }
     Text(
         when {
-            skipped == null && state.refineLocalFallback -> stringResource(R.string.share_refine_local_fallback, levelLabel(mode))
-            skipped == null -> stringResource(R.string.share_refine_note, levelLabel(mode))
+            skipped == null -> stringResource(R.string.share_refine_local_fallback, levelLabel(mode))
             failures < state.results.size ->
                 stringResource(R.string.share_refine_partly, levelLabel(mode), failures, state.results.size, skipped)
             else -> stringResource(R.string.refine_skipped, skipped)
         },
-        style = MaterialTheme.typography.labelMedium,
+        style = style,
         color = if (skipped != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
+
+/** Tag des Links "Einstellungen › Textverbesserung" im Hinweis. */
+private const val REFINE_LINK_TAG = "refine"
 
 /** Kopf-Karte: Icon-Kreis, Quelle, "Dauer · 1 Datei" bzw. "n Dateien · Dauer gesamt". */
 @Composable
