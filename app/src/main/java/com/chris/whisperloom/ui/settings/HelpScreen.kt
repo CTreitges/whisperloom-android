@@ -140,6 +140,7 @@ fun HelpScreen(section: Int, nav: NavState) {
                 ExpandableCard(stringResource(R.string.help_s6_title), isOpen(7), { toggle(7) }, icon = R.drawable.ic_lock) {
                     GuideHeader(R.drawable.ill_help_privacy, R.string.img_help_privacy, text = stringResource(R.string.help_s6_intro))
                     PrivacyCards()
+                    HelpLine(R.drawable.ic_history, stringResource(R.string.help_s6_history))
                     HelpLine(R.drawable.ic_accessibility_new, stringResource(R.string.help_s6_a11y))
                 }
             }

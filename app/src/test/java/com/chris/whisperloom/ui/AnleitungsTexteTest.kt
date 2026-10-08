@@ -80,6 +80,23 @@ class AnleitungsTexteTest {
         assertTrue(offline, offline.contains("lokalen Textmodell"))
     }
 
+    @Test fun bedienungshilfeSagtWasSieVomFeldLiest() {
+        // 3.9.0: Sie liest Text und Cursor des Zielfelds und prueft isPassword fuer den Verlauf —
+        // "liest nichts mit / speichert nichts" stimmt nicht mehr (Android-Dialog, Play-Hinweis, Hilfe).
+        listOf("a11y_description", "disclosure_a11y_body", "help_s6_a11y").forEach { name ->
+            val text = texte.getValue(name)
+            assertTrue("$name: $text", text.contains("Passwortfeld"))
+            listOf("nichts mitgelesen", "liest nichts mit", "speichert nichts").forEach { assertTrue("$name: $it", !text.contains(it)) }
+        }
+        listOf("a11y_description", "disclosure_a11y_body").forEach { assertTrue(it, texte.getValue(it).contains("Verlauf")) }
+    }
+
+    @Test fun verlaufVersprichtBeimKnopfKeinInkognito() {
+        // Der Knopf kennt das Zielfeld nur ueber die Bedienungshilfe, und die sieht kein Inkognito-Flag.
+        val sub = texte.getValue("history_save_switch_sub")
+        assertTrue(sub, sub.contains("beim Knopf Passwortfelder, wenn die Bedienungshilfe an ist"))
+    }
+
     @Test fun tutorialSeitenHabenHoechstens180Zeichen() {
         val seiten = texte.filterKeys { it.matches(Regex("tutorial_(pro_)?p\\d+_body")) }
         assertEquals("4 Einsteiger- und 6 Pro-Widgets-Seiten", 10, seiten.size)

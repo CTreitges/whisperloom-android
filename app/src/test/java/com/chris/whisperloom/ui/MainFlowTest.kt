@@ -964,6 +964,9 @@ class MainFlowTest {
         screen(env()) { HelpScreen(7, it) }
         bild(R.drawable.ill_help_privacy, R.string.img_help_privacy).assertExists()
         bildtext(R.string.img_pro_widgets).assertDoesNotExist()
+        // 3.9.0: Der Verlauf hebt Diktat-Texte auf — die Karte darf nicht nur "keine Aufnahmen" sagen.
+        compose.onNodeWithText(ctx.getString(R.string.help_s6_history)).assertExists()
+        compose.onNodeWithText(ctx.getString(R.string.help_s6_a11y)).assertExists()
     }
 
     @Test fun einZuHoherAbschnittOeffnetDenLetzten() {

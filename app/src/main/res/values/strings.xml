@@ -201,13 +201,14 @@
     <string name="setup_done_start">Knopf starten &amp; los</string>
     <string name="setup_done_home">Zum Start</string>
     <string name="a11y_label">WhisperLoom Text-Einfügen</string>
-    <string name="a11y_description">Fügt diktierten Text ins gerade fokussierte Feld ein, damit du beim Diktieren nicht die Tastatur wechseln musst. Es wird nichts mitgelesen oder gespeichert.</string>
+    <!-- Zeigt Android beim Aktivieren. Gelesen wird nur das Zielfeld: Text und Cursor zum Einfügen, isPassword für den Verlauf. -->
+    <string name="a11y_description">Fügt Diktate vom Knopf ins fokussierte Feld ein. Liest nur dieses Feld und prüft, ob es ein Passwortfeld ist. Die Diktate kommen in den Verlauf, wenn er an ist.</string>
 
     <!-- Prominent Disclosure (Google-Play-Pflicht: eigener Consent-Hinweis vor Mikrofon-/Bedienungshilfe-Zugriff) -->
     <string name="disclosure_mic_title">Mikrofon &amp; Diktat</string>
     <string name="disclosure_mic_body">WhisperLoom nimmt beim Diktieren Ton auf, um ihn in Text umzuwandeln. Im Online-Modus wird die Aufnahme zur Erkennung an den von dir gewählten Anbieter gesendet (z. B. OpenAI oder Groq); im Offline-Modus verlässt die Aufnahme das Gerät nicht. WhisperLoom speichert keine Aufnahmen; nur der Auftrag eines Pro Widgets bleibt auf dem Gerät, bis er gesendet ist.</string>
     <string name="disclosure_a11y_title">Bedienungshilfe: Text einfügen</string>
-    <string name="disclosure_a11y_body">Die Bedienungshilfe „WhisperLoom Text-Einfügen“ fügt ausschließlich den diktierten Text in das gerade aktive Eingabefeld ein. Sie liest keine Bildschirminhalte mit und speichert nichts, und sie wird nur aktiv, wenn du den Knopf antippst.</string>
+    <string name="disclosure_a11y_body">Die Bedienungshilfe „WhisperLoom Text-Einfügen“ fügt den diktierten Text in das gerade aktive Eingabefeld ein. Dafür liest sie nur dieses Feld: Text und Cursor, um an der richtigen Stelle einzufügen, und ob es ein Passwortfeld ist. Andere Bildschirminhalte liest sie nicht, den Feldinhalt speichert sie nicht, und sie wird nur aktiv, wenn du den Knopf antippst. Diktate vom Knopf hebt WhisperLoom im Verlauf auf dem Gerät auf, solange er eingeschaltet ist, nicht aus Passwortfeldern.</string>
     <string name="disclosure_continue">Fortfahren</string>
 
     <!-- Tutorial (T): einmal nach der Einrichtung, sonst Home „Mehr“ (Seite 3) und Hilfe „Tutorial erneut ansehen“ -->
@@ -596,7 +597,8 @@
     <string name="help_s6_intro">WhisperLoom speichert keine Aufnahmen (nur ein Pro-Widget-Auftrag wartet bis zum Senden), und dein Key bleibt auf dem Gerät.</string>
     <string name="help_s6_online">Online: Audio und Vokabular gehen an den gewählten Anbieter, bei Textverbesserung auch der erkannte Text — mit Ollama im eigenen Netz bleibt er dort. Eine Vokabular-Datei wird nur gelesen.</string>
     <string name="help_s6_offline">Offline: Die Aufnahme bleibt auf dem Gerät, mit dem lokalen Textmodell auch der Text. Ins Netz gehen nur Modell-Downloads und, wenn du offline online verbessern lässt, der erkannte Text.</string>
-    <string name="help_s6_a11y">Die Bedienungshilfe liest nichts mit und speichert nichts; sie fügt nur den diktierten Text ein.</string>
+    <string name="help_s6_history">Den Text deiner Diktate aus Knopf und Tastatur hebt der Verlauf auf — nur auf dem Gerät, nie im Backup. Abschalten: Verlauf › ⋮ › Verlauf-Einstellungen.</string>
+    <string name="help_s6_a11y">Die Bedienungshilfe liest nur das Feld, in das sie einfügt, und prüft, ob es ein Passwortfeld ist — keine anderen Bildschirminhalte. Den Feldinhalt speichert sie nicht.</string>
     <string name="help_s7_title">Wenn etwas nicht klappt</string>
     <string name="help_s7_intro">Die häufigsten Probleme und wo du sie behebst: Antippen zeigt die Lösung, „Öffnen“ führt direkt hin.</string>
     <string name="help_p1">Knopf erscheint nicht</string>
@@ -691,7 +693,7 @@
     <!-- Offline über die Höchstlänge aufgenommen, in der Pause auf Online umgestellt: der Anbieter
          lehnte die Datei ab, und das Audio wäre weg. -->
     <string name="kb_too_long">Zu lang für Online-Erkennung — offline senden oder verwerfen</string>
-    <!-- Ein Tastaturwechsel beendet die Tastatur und würde ein offenes Diktat still verwerfen. -->
+    <!-- Ein Tastaturwechsel beendet die Tastatur; ein offenes Diktat käme dann nur noch in den Verlauf (DictationRescue). -->
     <string name="kb_finish_first">Erst senden oder verwerfen</string>
     <string name="kb_discarded">Aufnahme verworfen</string>
     <!-- Das Feld war beim Einfügen weg (App gewechselt, Tastatur zu): der fertige Text ging
@@ -1042,7 +1044,8 @@
     <string name="history_keep_editing">Weiter bearbeiten</string>
     <string name="history_settings_title">Verlauf-Einstellungen</string>
     <string name="history_save_switch">Verlauf speichern</string>
-    <string name="history_save_switch_sub">Diktate aus Tastatur und Knopf, nichts aus Passwort- und Inkognito-Feldern</string>
+    <!-- Der Knopf kennt das Zielfeld nur über die Bedienungshilfe, und die sieht kein Inkognito-Flag. -->
+    <string name="history_save_switch_sub">Diktate aus Tastatur und Knopf. Ausgenommen: bei der Tastatur Passwort- und Inkognito-Felder, beim Knopf Passwortfelder, wenn die Bedienungshilfe an ist.</string>
     <string name="history_size">Größe</string>
     <plurals name="history_entries">
         <item quantity="one">%d Eintrag</item>
