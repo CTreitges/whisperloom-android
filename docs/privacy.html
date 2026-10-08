@@ -61,6 +61,27 @@
     <p>Teilst du eine Sprachnachricht (z. B. aus WhatsApp, Telegram, Signal) an WhisperLoom, wird die
     Datei einmalig zur Erkennung verarbeitet und danach nicht gespeichert.</p>
 
+    <h3>Verlauf (Text deiner Diktate)</h3>
+    <p>Diktate aus der Diktat-Tastatur und vom schwebenden Knopf speichert WhisperLoom ab Werk im
+    <strong>Verlauf</strong>, damit du sie wiederfinden, kopieren, bearbeiten und nachträglich anders verbessern
+    kannst. Gespeichert werden je Diktat der erkannte Rohtext, die verbesserten Fassungen samt Name des
+    verwendeten Sprachmodells, Sprache, Quelle (Tastatur oder Knopf), Zeitpunkt und Dauer – <strong>kein
+    Audio</strong> und nicht die App, in die der Text ging. Nicht gespeichert werden Texte aus Passwortfeldern
+    und aus Feldern, die keine Eingaben lernen dürfen (z. B. im Inkognito-Modus eines Browsers), geteilte
+    Sprachnachrichten und Aufträge von Pro Widgets.</p>
+    <ul>
+      <li><strong>Ort:</strong> nur auf deinem Gerät, im privaten App-Speicher in einem Ordner, den Android nie
+      sichert – der Verlauf landet weder im Google-Backup noch im Geräte-zu-Gerät-Transfer.</li>
+      <li><strong>Größe:</strong> 10 bis 500 Einträge (ab Werk 50); ist der Verlauf voll, wird der älteste Eintrag
+      gelöscht.</li>
+      <li><strong>Löschen und Ausschalten:</strong> einzelne Einträge per Wischen, alle über „Alle löschen“.
+      Schaltest du „Verlauf speichern“ aus, werden alle Einträge gelöscht und neue Diktate nicht mehr
+      gespeichert.</li>
+      <li><strong>Weitergabe:</strong> Der Verlauf verlässt das Gerät nicht. Nur wenn du bei einem Eintrag
+      „Andere Stufe …“ wählst, geht dessen Rohtext zur Textverbesserung an das von dir gewählte Sprachmodell
+      bzw. an das lokale Textmodell, wie bei einem Diktat (siehe Abschnitt 3).</li>
+    </ul>
+
     <h3>Auf dem Gerät gespeichert</h3>
     <ul>
       <li>Deine Einstellungen inklusive API-Key im privaten App-Speicher (für andere Apps unzugänglich).</li>
@@ -70,12 +91,15 @@
       <li>Die Position des schwebenden Knopfs.</li>
       <li>Dein Vokabular (eigene Begriffe; bei einer verknüpften Datei nur der Verweis darauf).</li>
       <li>Die zuletzt geladenen Modell-Listen der Anbieter, ohne Key.</li>
+      <li>Der Verlauf deiner Diktate (siehe oben), solange er eingeschaltet ist.</li>
       <li>Nur mit Pro Widgets: die Widgets mit Name, Server-Adresse, Token und ggf. Galerie-Bild sowie ein
       noch nicht gesendeter Auftrag (Text und Aufnahme), bis er gesendet oder verworfen ist.</li>
     </ul>
-    <p>Darüber hinaus keine Aufnahmen, keine erkannten Texte, keine Verläufe. WhisperLoom ist vom
-    Android-System-Backup ausgenommen (<code>allowBackup=false</code>) – dein Key und die Widget-Tokens
-    landen weder im Google-Backup noch im Geräte-zu-Gerät-Transfer.</p>
+    <p>Darüber hinaus keine Aufnahmen und keine weiteren Texte; geteilte Sprachnachrichten werden nicht
+    gespeichert. WhisperLoom ist vom Android-System-Backup ausgenommen (<code>allowBackup=false</code>); weil
+    manche Hersteller den Geräteumzug trotzdem zulassen, sind Einstellungen, Widgets und Modelle zusätzlich
+    ausdrücklich davon ausgeschlossen – dein Key und die Widget-Tokens landen weder im Google-Backup noch im
+    Geräte-zu-Gerät-Transfer.</p>
 
     <h2>3. Wann Daten das Gerät verlassen</h2>
     <h3>Online-Erkennung (optional)</h3>
@@ -101,6 +125,11 @@
     Besonderheiten hin (z. B. Trainingsnutzung im kostenlosen Google-Gemini-Tarif, Serverstandort China
     bei DeepSeek). Dein API-Key wird ausschließlich zur Authentifizierung beim gewählten Anbieter genutzt
     und verlässt das Gerät sonst nicht.</p>
+
+    <h3>Neu verarbeiten aus dem Verlauf</h3>
+    <p>Wählst du im Verlauf bei einem Eintrag „Andere Stufe …“, wird dessen Rohtext mit deinen aktuellen
+    Einstellungen wie ein Diktat verbessert: online an das gewählte Sprachmodell, bei Offline-Erkennung je nach
+    Regel an das lokale Textmodell auf dem Gerät. Eine neue Spracherkennung findet nicht statt.</p>
 
     <h3>Modell-Listen (optional, ab Werk aus)</h3>
     <p>Schaltest du unter Einstellungen → Erweitert „Modelle vom Server“ ein, fragt WhisperLoom beim
@@ -152,14 +181,17 @@
       wird weiter übertragen, auch wenn der Bildschirm ausgeht.</li>
       <li><strong>Bedienungshilfe („WhisperLoom Text-Einfügen")</strong> – fügt ausschließlich den
       diktierten Text in das gerade fokussierte Eingabefeld ein. Sie liest keine Bildschirminhalte mit
-      und speichert nichts. Die Nutzung erfolgt nur nach deiner aktiven Aktion (Antippen des Knopfs).
+      und speichert nichts; vom fokussierten Feld prüft sie nur, ob es ein Passwortfeld ist, damit dessen Text
+      nicht in den Verlauf kommt. Die Nutzung erfolgt nur nach deiner aktiven Aktion (Antippen des Knopfs).
       Die Aktivierung ist optional; ohne sie wird der Text in die Zwischenablage kopiert.</li>
     </ul>
 
     <h2>6. Löschung deiner Daten</h2>
     <p>Alle von WhisperLoom gespeicherten Daten liegen ausschließlich lokal auf deinem Gerät. Du löschst
     sie, indem du die App-Daten leerst (Android-Einstellungen → Apps → WhisperLoom → Speicher) oder die
-    App deinstallierst. Es gibt kein serverseitiges Konto, das gelöscht werden müsste.</p>
+    App deinstallierst. Den Verlauf löschst du zusätzlich direkt in der App: einzelne Einträge, „Alle
+    löschen“ oder „Verlauf speichern“ ausschalten. Es gibt kein serverseitiges Konto, das gelöscht werden
+    müsste.</p>
 
     <h2>7. Kinder</h2>
     <p>WhisperLoom richtet sich nicht gezielt an Kinder und erhebt wissentlich keine Daten von Kindern.</p>
@@ -196,6 +228,26 @@
     <p>If you share a voice message (e.g. from WhatsApp, Telegram, Signal) to WhisperLoom, the file is
     processed once for recognition and not stored afterwards.</p>
 
+    <h3>History (text of your dictations)</h3>
+    <p>By default, WhisperLoom keeps dictations from the dictation keyboard and the floating button in its
+    <strong>history</strong>, so you can find, copy, edit and re-process them later. For each dictation it
+    stores the raw recognised text, the refined versions with the name of the language model used, language,
+    source (keyboard or button), time and length – <strong>no audio</strong> and not the app the text went into.
+    Text from password fields and from fields that must not learn input (e.g. a browser's incognito mode),
+    shared voice messages and Pro Widget tasks are not stored.</p>
+    <ul>
+      <li><strong>Location:</strong> only on your device, in private app storage, in a folder Android never
+      backs up – the history ends up neither in Google backup nor in device-to-device transfer.</li>
+      <li><strong>Size:</strong> 10 to 500 entries (50 by default); when it is full, the oldest entry is
+      deleted.</li>
+      <li><strong>Deleting and switching off:</strong> single entries by swiping, all of them via “Alle
+      löschen” (delete all). Switching off “Verlauf speichern” (save history) deletes all entries and stops
+      saving new dictations.</li>
+      <li><strong>Sharing:</strong> The history does not leave the device. Only if you choose “Andere Stufe …”
+      (another level) for an entry is its raw text sent for text refinement to the language model you selected,
+      or to the local text model, just like a dictation (see section 3).</li>
+    </ul>
+
     <h3>Stored on the device</h3>
     <ul>
       <li>Your settings including the API key, in private app storage (inaccessible to other apps).</li>
@@ -204,12 +256,14 @@
       <li>The position of the floating button.</li>
       <li>Your vocabulary (your own terms; for a linked file only the reference to it).</li>
       <li>The model lists most recently loaded from the providers, without the key.</li>
+      <li>The history of your dictations (see above), while it is switched on.</li>
       <li>Only with Pro Widgets: the widgets with name, server address, token and, if chosen, a gallery
       picture, plus a task not yet sent (text and recording) until it has been sent or discarded.</li>
     </ul>
-    <p>Beyond that, no recordings, no recognised text, no history. WhisperLoom is excluded from Android
-    system backup (<code>allowBackup=false</code>) – your key and the widget tokens end up neither in
-    Google backup nor in device-to-device transfer.</p>
+    <p>Beyond that, no recordings and no other text; shared voice messages are not stored. WhisperLoom is
+    excluded from Android system backup (<code>allowBackup=false</code>); because some manufacturers still allow
+    device transfer, settings, widgets and models are additionally excluded from it explicitly – your key and
+    the widget tokens end up neither in Google backup nor in device-to-device transfer.</p>
 
     <h2>3. When data leaves the device</h2>
     <h3>Online recognition (optional)</h3>
@@ -225,6 +279,11 @@
     <strong>that provider's own privacy policy</strong>. WhisperLoom flags notable cases at selection
     time (e.g. training use on Google Gemini's free tier, servers in China for DeepSeek). Your API key is
     used solely to authenticate with the selected provider and does not otherwise leave the device.</p>
+
+    <h3>Re-processing from the history</h3>
+    <p>If you choose “Andere Stufe …” (another level) for a history entry, its raw text is refined with your
+    current settings just like a dictation: online by the selected language model, with offline recognition,
+    depending on the rule, by the local text model on the device. No new speech recognition takes place.</p>
 
     <h3>Model lists (optional, off by default)</h3>
     <p>If you enable “Models from the server” under Settings → Advanced, WhisperLoom asks the selected
@@ -274,15 +333,17 @@
       <li><strong>Background work (Android WorkManager)</strong> – Pro Widgets only: a task keeps being
       delivered even when the screen turns off.</li>
       <li><strong>Accessibility service (“WhisperLoom text insertion")</strong> – inserts only the dictated
-      text into the currently focused input field. It does not read screen content and stores nothing. It
+      text into the currently focused input field. It does not read screen content and stores nothing; of the
+      focused field it only checks whether it is a password field, so that its text stays out of the history. It
       acts only after your explicit action (tapping the button). It is optional; without it the text is
       copied to the clipboard.</li>
     </ul>
 
     <h2>6. Deleting your data</h2>
     <p>All data stored by WhisperLoom is local to your device only. Delete it by clearing the app's data
-    (Android settings → Apps → WhisperLoom → Storage) or by uninstalling the app. There is no
-    server-side account to delete.</p>
+    (Android settings → Apps → WhisperLoom → Storage) or by uninstalling the app. You can also delete the
+    history directly in the app: single entries, “Alle löschen” (delete all) or by switching off “Verlauf
+    speichern” (save history). There is no server-side account to delete.</p>
 
     <h2>7. Children</h2>
     <p>WhisperLoom is not directed at children and does not knowingly collect data from children.</p>
