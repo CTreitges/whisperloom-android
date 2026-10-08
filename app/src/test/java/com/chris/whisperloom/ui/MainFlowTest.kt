@@ -506,7 +506,7 @@ class MainFlowTest {
         compose.waitForIdle()
         assertEquals(RefineMode.POLISH, Prefs(ctx).refineMode)
         zone("Glätten für Diktat verwenden").assertIsSelected()
-        diktat("Aus").assertIsNotSelected()
+        zone("Aus für Diktat verwenden").assertIsNotSelected()
     }
 
     @Test fun shareStufeIstEigeneKarteUndSchreibtNurShareRefineMode() {
@@ -514,7 +514,7 @@ class MainFlowTest {
         screen(env()) { RefineScreen(it) }
         compose.onNodeWithText("Bei geteilten Sprachnachrichten").assertExists()
         val inShareCard = hasAnyAncestor(hasTestTag(SHARE_REFINE_TAG))
-        compose.onNode(hasText("Aus") and inShareCard).assertIsSelected()
+        zone("Aus für Sprachnachrichten verwenden").assertIsSelected()
         // "Prompt" gibt es nur fuers Diktat, nie fuer eine fremde Nachricht.
         compose.onNode(hasText("Prompt") and inShareCard).assertDoesNotExist()
         zone("Prompt für Sprachnachrichten verwenden").assertDoesNotExist()
@@ -607,6 +607,36 @@ class MainFlowTest {
         // Gespeichert bleibt "Glaetten" — erst die Anfrage ans Modell wird zu READABLE.
         assertEquals(RefineMode.POLISH, Prefs(ctx).refineMode)
         assertEquals(PolishCleanup.PLAIN, Prefs(ctx).polishCleanupFor(RefineWay.SHARE))
+    }
+
+    /**
+     * 3.9.0: auch "Aus" hat zwei Ziele. Die Zeile oeffnet seine Seite, von dort geht es zu Woerterbuch
+     * & Regeln; zurueck steht die Stufe unveraendert.
+     */
+    @Test fun ausOeffnetSeineSeiteUndVonDortWoerterbuchUndRegeln() {
+        lateinit var back: OnBackPressedDispatcher
+        prefs.engine = Engine.ONLINE
+        prefs.apiKey = "sk-test"
+        prefs.tutorialSeen = true
+        prefs.refineMode = RefineMode.BEAUTIFY
+        compose.setContent {
+            back = LocalOnBackPressedDispatcherOwner.current!!.onBackPressedDispatcher
+            WhisperLoomTheme { WhisperLoomApp(env(readyStatus), route = RouteRequest(AppNav.ROUTE_REFINE)) }
+        }
+        compose.waitForIdle()
+        diktat("Aus").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Für Diktat verwenden").assertExists()
+        compose.onNodeWithText("Ohne KI gelten nur die festen Regeln", substring = true).assertExists()
+        compose.onNodeWithText("Wörterbuch & Regeln").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Feste Regeln").assertExists()
+        repeat(2) {
+            compose.runOnIdle { back.onBackPressed() }
+            compose.waitForIdle()
+        }
+        zone("Verschönern für Diktat verwenden").assertIsSelected()
+        assertEquals(RefineMode.BEAUTIFY, Prefs(ctx).refineMode)
     }
 
     /** 3.8.6: Sprachnachrichten haben eine eigene Bereinigung — Lesbar dort macht das Diktat nicht lesbar. */

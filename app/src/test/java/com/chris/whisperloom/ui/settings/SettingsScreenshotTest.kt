@@ -4,23 +4,21 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.compose.runtime.Composable
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.filterToOne
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -35,11 +33,6 @@ import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.RefineWay
 import com.chris.whisperloom.SummarizeForm
-import com.chris.whisperloom.ui.components.LoomRow
-import com.chris.whisperloom.ui.components.SectionCard
-import com.chris.whisperloom.ui.components.StageRadio
-import com.chris.whisperloom.ui.components.StageRow
-import com.chris.whisperloom.ui.components.StageZone
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SystemStatus
@@ -48,6 +41,7 @@ import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.PrefsState
 import com.chris.whisperloom.ui.theme.WhisperLoomTheme
 import java.io.File
+import org.junit.Assert.assertEquals
 import org.junit.Assume
 import org.junit.Before
 import org.junit.BeforeClass
@@ -60,8 +54,8 @@ import org.robolectric.annotation.GraphicsMode
 import org.robolectric.shadows.ShadowDialog
 
 /**
- * Screenshots des Einstellungen-Hubs und seiner Seiten (3.9.0, mit Stufen-Seiten und den zwei Varianten
- * der Auswahl-Zone aus E11) zum Ansehen, keine Pixel-Vergleiche:
+ * Screenshots des Einstellungen-Hubs und seiner Seiten (3.9.0, mit Stufen-Seiten samt "Aus") zum Ansehen,
+ * keine Pixel-Vergleiche (einzige Ausnahme: die Auswahl-Zone hat keine Toenung):
  * PNGs nach app/build/reports/screenshots/. Wie TextModelScreenshotTest: braucht Robolectrics
  * Native-Graphics, auf linux-aarch64 uebersprungen, lokal per x86_64-JVM unter qemu ausfuehrbar.
  */
@@ -163,6 +157,7 @@ class SettingsScreenshotTest {
         prefs.setSummarizeFormFor(RefineWay.SHARE, SummarizeForm.PROSE)
         screen { RefineScreen(it) }
         shot("textverbesserung-diktat")
+        zoneOhneToenung("Verschönern für Diktat verwenden")
         nachOben(hasText("Bei geteilten Sprachnachrichten"))
         shot("textverbesserung-sprachnachrichten")
     }
@@ -175,6 +170,21 @@ class SettingsScreenshotTest {
         screen(fontScale = 2f) { RefineScreen(it) }
         nachOben(hasText("Beim Diktieren"), abstandPx = 30f)
         shot("textverbesserung-360dp-schrift200")
+        // Der laengste Titel: das "›" bleibt neben "Zusammenfassen" und vor der Zone.
+        nachOben(hasText("Zusammenfassen") and hasAnyAncestor(hasTestTag(DICTATION_REFINE_TAG)), abstandPx = 30f)
+        shot("textverbesserung-360dp-schrift200-unten")
+    }
+
+    /**
+     * Die Zone um den Punkt ist unsichtbar (User-Wunsch 2026-10-08): ueber dem Punkt dieselbe Farbe wie
+     * die Karte links daneben, im Rand der Text-Spalte.
+     */
+    private fun zoneOhneToenung(name: String) {
+        val bild = compose.onRoot().captureToImage().asAndroidBitmap()
+        val zone = compose.onNodeWithContentDescription(name).fetchSemanticsNode().boundsInRoot
+        val abstand = with(compose.density) { 10.dp.toPx() }
+        val y = (zone.top + abstand).toInt()
+        assertEquals("Zone ohne Toenung", bild.getPixel((zone.left - abstand).toInt(), y), bild.getPixel(zone.center.x.toInt(), y))
     }
 
     // --- Stufen-Seiten (3.9.0) ---------------------------------------------------------------
@@ -213,20 +223,17 @@ class SettingsScreenshotTest {
         shot("stufe-verschoenern-ohne-zugang")
     }
 
-    /** E11: getoente Flaeche (Standard) gegen nur einen Trenner, je mit Aus und drei Stufen. */
-    @Test fun zoneImVergleich() {
-        var zone by mutableStateOf(StageZone.TONAL)
-        screen {
-            SectionCard(modifier = Modifier.padding(20.dp), title = "Beim Diktieren", gap = 4.dp) {
-                LoomRow("Aus", supporting = "Nur die Regeln ohne KI, keine zweite Anfrage.", trailing = { StageRadio(false) })
-                listOf("Glätten", "Verschönern", "Zusammenfassen").forEachIndexed { i, stufe ->
-                    StageRow(stufe, "Kurzbeschreibung der Stufe · Abweichung", i == 0, "$stufe für Diktat verwenden", i + 1, {}, {}, zone = zone)
-                }
-            }
-        }
-        shot("zone-getoent")
-        zone = StageZone.DIVIDER
-        shot("zone-trenner")
+    @Test fun stufeAusDiktat() {
+        // Gewaehlt ist Glaetten: oben der Knopf "Fuer Diktat verwenden", unten der Stand der Regeln.
+        prefs.apiPrompt = "Anna\nKubernetes"
+        screen { StageScreen(RefineMode.OFF, RefineWay.DICTATION, it) }
+        shot("stufe-aus-diktat")
+    }
+
+    @Test fun stufeAusSprachnachrichten() {
+        // Ab Werk aus: oben "Bei Sprachnachrichten aktiv".
+        screen { StageScreen(RefineMode.OFF, RefineWay.SHARE, it) }
+        shot("stufe-aus-sprachnachrichten")
     }
 
     @Test fun textverbesserungMitOfflineErkennung() {

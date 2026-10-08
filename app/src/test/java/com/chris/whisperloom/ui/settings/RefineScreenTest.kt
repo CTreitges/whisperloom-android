@@ -42,7 +42,7 @@ import org.robolectric.annotation.Config
 
 /**
  * Seite "Textverbesserung" (3.9.0): beide Stufen-Gruppen auf einer Seite und unabhaengig voneinander,
- * je Stufe zwei Ziele (Text oeffnet die Stufen-Seite, Zone waehlt), "Aus" mit einem, die Unterzeile
+ * je Stufe zwei Ziele (Text oeffnet die Stufen-Seite, Zone waehlt), auch bei "Aus", die Unterzeile
  * mit den Abweichungen, die Verweise auf Woerterbuch & Regeln und auf die Regel bei Offline-Erkennung.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -81,7 +81,7 @@ class RefineScreenTest {
         return nav
     }
 
-    /** Text-Bereich einer Stufe (oeffnet die Seite) bzw. die Zeile "Aus". */
+    /** Text-Bereich einer Stufe (oeffnet ihre Seite). */
     private fun diktat(text: String) = compose.onNode(hasText(text) and hasAnyAncestor(hasTestTag(DICTATION_REFINE_TAG)))
     private fun sprachnachrichten(text: String) = compose.onNode(hasText(text) and hasAnyAncestor(hasTestTag(SHARE_REFINE_TAG)))
 
@@ -147,17 +147,31 @@ class RefineScreenTest {
         assertEquals(Screen.Stage(RefineMode.PROMPT, RefineWay.DICTATION), nav.current)
     }
 
-    @Test fun ausHatKeinZweitesZielUndWaehltUeberDieGanzeZeile() {
+    /** "Aus" wie jede Stufe: der Punkt waehlt, die Zeile oeffnet die Seite "Aus" — in beiden Gruppen. */
+    @Test fun ausHatZweiZiele() {
         prefs.refineMode = RefineMode.POLISH
+        prefs.shareRefineMode = RefineMode.SUMMARIZE
         val nav = page()
-        compose.onNode(hasContentDescription("Aus für Diktat verwenden")).assertDoesNotExist()
-        val aus = diktat("Aus")
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton))
-            .assertIsNotSelected()
-        click(aus)
+        diktat("Aus")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Selected))
+        click(diktat("Aus"))
+        assertEquals(Screen.Stage(RefineMode.OFF, RefineWay.DICTATION), nav.current)
+        nav.pop()
+        click(sprachnachrichten("Aus"))
+        assertEquals(Screen.Stage(RefineMode.OFF, RefineWay.SHARE), nav.current)
+        nav.pop()
+        assertEquals("die Zeile waehlt nicht", RefineMode.POLISH, Prefs(ctx).refineMode)
+        assertEquals(RefineMode.SUMMARIZE, Prefs(ctx).shareRefineMode)
+
+        click(zoneDiktat("Aus").assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)).assertIsNotSelected())
         assertEquals(RefineMode.OFF, Prefs(ctx).refineMode)
         assertEquals("kein Seitenwechsel", Screen.Refine, nav.current)
-        diktat("Aus").assertIsSelected()
+        zoneDiktat("Aus").assertIsSelected()
+        zoneSprachnachrichten("Aus").assertIsNotSelected()
+        click(zoneSprachnachrichten("Aus"))
+        assertEquals(RefineMode.OFF, Prefs(ctx).shareRefineMode)
+        zoneSprachnachrichten("Aus").assertIsSelected()
     }
 
     /** "x von y" fuer TalkBack: selectableGroup() zaehlte die Zonen nicht, also selbst gesetzt. */
@@ -167,7 +181,8 @@ class RefineScreenTest {
         val listen = compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.CollectionInfo)).fetchSemanticsNodes()
         assertEquals("Diktat mit Prompt, dann Sprachnachrichten", listOf(5, 4), listen.map { it.config[SemanticsProperties.CollectionInfo].rowCount })
         fun position(node: SemanticsNodeInteraction) = node.fetchSemanticsNode().config[SemanticsProperties.CollectionItemInfo].rowIndex
-        assertEquals(0, position(diktat("Aus")))
+        assertEquals(0, position(zoneDiktat("Aus")))
+        assertEquals(0, position(zoneSprachnachrichten("Aus")))
         assertEquals(1, position(zoneDiktat("Glätten")))
         assertEquals(4, position(zoneDiktat("Prompt")))
         assertEquals(3, position(zoneSprachnachrichten("Zusammenfassen")))

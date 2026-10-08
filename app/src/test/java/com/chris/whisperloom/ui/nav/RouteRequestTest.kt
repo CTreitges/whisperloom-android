@@ -98,19 +98,23 @@ class RouteRequestTest {
     }
 
     @Test fun stufenSeitenHabenJeEinenEigenenSchluessel() {
-        val seiten = RefineWay.entries.flatMap { way -> RefineMode.MODEL_STAGES.mapNotNull { Screen.Stage.of(it, way) } }
-        assertEquals("4 fuers Diktat, 3 fuer Sprachnachrichten", 7, seiten.size)
+        val seiten = RefineWay.entries.flatMap { way -> RefineMode.entries.mapNotNull { Screen.Stage.of(it, way) } }
+        assertEquals("5 fuers Diktat, 4 fuer Sprachnachrichten (je mit Aus)", 9, seiten.size)
         seiten.forEach { assertEquals(it, Screen.decode(it.encode())) }
         assertEquals("stage:polish:dictation", Screen.Stage(RefineMode.POLISH, RefineWay.DICTATION).encode())
         assertEquals("stage:summarize:share", Screen.Stage(RefineMode.SUMMARIZE, RefineWay.SHARE).key)
+        assertEquals(Screen.Stage(RefineMode.OFF, RefineWay.DICTATION), Screen.decode("stage:off:dictation"))
+        assertEquals(Screen.Stage(RefineMode.OFF, RefineWay.SHARE), Screen.decode("stage:off:share"))
         // Eigener Schluessel je Seite: AnimatedContent blendet auch von Stufe zu Stufe ueber.
         assertEquals(seiten.size, seiten.map { it.key }.toSet().size)
     }
 
     @Test fun unbekannteStufenSeiteLandetAufDerTextverbesserung() {
         listOf(
-            "stage", "stage:polish", "stage:polish:fax", "stage:quer:dictation", "stage:off:dictation",
+            "stage", "stage:polish", "stage:polish:fax", "stage:off", "stage:off:fax",
             "stage:readable:dictation", "stage:paragraphs:dictation", "stage:prompt:share",
+            // Ein unbekannter Schluessel ist nicht "Aus" (RefineMode.fromKey faellt auf OFF zurueck).
+            "stage:quer:dictation", "stage::share",
         ).forEach { assertEquals(it, Screen.Refine, Screen.decode(it)) }
         assertEquals(null, Screen.Stage.of(RefineMode.PROMPT, RefineWay.SHARE))
     }

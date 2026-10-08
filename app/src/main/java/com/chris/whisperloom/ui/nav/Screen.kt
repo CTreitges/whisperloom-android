@@ -31,15 +31,15 @@ sealed class Screen(val key: String) {
     data object Refine : Screen("refine")
 
     /**
-     * Seite einer Stufe auf einem Weg (3.9.0): Glaetten, Verschoenern, Zusammenfassen und — nur beim
-     * Diktat — Prompt. Eigener Schluessel je Seite ("stage:polish:dictation"), sonst fehlte beim
+     * Seite einer Stufe auf einem Weg (3.9.0): Aus, Glaetten, Verschoenern, Zusammenfassen und — nur
+     * beim Diktat — Prompt. Eigener Schluessel je Seite ("stage:polish:dictation"), sonst fehlte beim
      * Wechsel von einer Stufen-Seite zur anderen die Uebergangsanimation.
      */
     data class Stage(val stage: RefineMode, val way: RefineWay) : Screen("stage:${stage.key}:${way.key}") {
         companion object {
             /** Die Seite zu [stage] und [way], wenn es sie gibt; sonst null. */
             fun of(stage: RefineMode, way: RefineWay): Stage? =
-                Stage(stage, way).takeIf { stage in RefineMode.MODEL_STAGES && (stage != RefineMode.PROMPT || way == RefineWay.DICTATION) }
+                Stage(stage, way).takeIf { stage in RefineMode.settings(promptEnabled = way == RefineWay.DICTATION) }
         }
     }
 
@@ -125,9 +125,11 @@ sealed class Screen(val key: String) {
                 "setup" -> Setup(arg ?: Setup.WELCOME)
                 "settings" -> SettingsHub
                 "refine" -> Refine
-                // Unbekannte Stufe oder unbekannter Weg: die Textverbesserung, auf der sie stehen.
-                "stage" -> RefineWay.fromKey(parts.getOrNull(2))
-                    ?.let { way -> Stage.of(RefineMode.fromKey(parts.getOrNull(1)), way) } ?: Refine
+                // Unbekannte Stufe oder unbekannter Weg: die Textverbesserung, auf der sie stehen. Nicht
+                // ueber RefineMode.fromKey: das liest einen unbekannten Schluessel als "Aus", und "Aus"
+                // hat eine eigene Seite.
+                "stage" -> RefineMode.entries.firstOrNull { it.key == parts.getOrNull(1) }
+                    ?.let { stage -> RefineWay.fromKey(parts.getOrNull(2))?.let { Stage.of(stage, it) } } ?: Refine
                 "dictionary" -> Dictionary
                 "recognition" -> Recognition
                 "llm-access" -> LlmAccess

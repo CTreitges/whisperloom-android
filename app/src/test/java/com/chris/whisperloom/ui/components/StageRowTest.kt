@@ -24,6 +24,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -38,8 +39,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Stufen-Zeile mit zwei Zielen (3.9.0): der Text oeffnet, die Zone waehlt — zwei Knoten fuer TalkBack,
- * die Zone gross genug zum Treffen. Schmales Geraet (360 dp) wie im Plan.
+ * Stufen-Zeile mit zwei Zielen (3.9.0): der Text oeffnet (erkennbar am "›"), die unsichtbare Zone um
+ * den Punkt waehlt — zwei Knoten fuer TalkBack, die Zone gross genug zum Treffen. Schmales Geraet
+ * (360 dp) wie im Plan. Dass die Zone keine Toenung hat, prueft SettingsScreenshotTest am Bild.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w360dp-h800dp-xxhdpi")
@@ -55,7 +57,7 @@ class StageRowTest {
 
     private val beschreibung = "Zeichensetzung und Groß-/Kleinschreibung. Inhalt unverändert · Lesbar · Claude Opus 5.5"
 
-    private fun zeile(zone: StageZone = StageZone.TONAL) {
+    private fun zeile() {
         compose.setContent {
             WhisperLoomTheme {
                 val d = LocalDensity.current
@@ -73,7 +75,6 @@ class StageRowTest {
                                 selections++
                                 selected = true
                             },
-                            zone = zone,
                         )
                     }
                 }
@@ -145,13 +146,27 @@ class StageRowTest {
         assertEquals("die Zone waechst mit", t.height.value, z.height.value, 0.5f)
     }
 
-    @Test fun nurTrennerStattFlaecheHatDieselbenZiele() {
-        zeile(zone = StageZone.DIVIDER)
-        zone().assertWidthIsAtLeast(64.dp).performClick()
-        text().performClick()
+    /** Das "›" sagt, dass der Text die Einstellungen oeffnet: hinter dem Titel, auf seiner Hoehe, vor der Zone. */
+    @Test fun dasChevronStehtHinterDemTitelUndVorDerZone() {
+        zeile()
+        chevronNebenDemTitel()
+        // 200 % Schrift bei 360 dp: das "›" bricht nicht allein um und ragt nicht in die Zone.
+        schrift = 2f
         compose.waitForIdle()
-        assertEquals(1, selections)
-        assertEquals(1, opened)
+        chevronNebenDemTitel()
+    }
+
+    private fun chevronNebenDemTitel() {
+        val c = compose.onNodeWithTag(STAGE_CHEVRON_TAG, useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val titel = compose.onNode(hasText("Glätten"), useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val t = text().getUnclippedBoundsInRoot()
+        val z = zone().getUnclippedBoundsInRoot()
+        assertEquals("20 dp", 20f, (c.right - c.left).value, 0.5f)
+        assertTrue("hinter dem Titel", c.left >= titel.right)
+        assertTrue("in der Zeile des Titels", c.top >= titel.top && c.bottom <= titel.bottom)
+        assertEquals("auf die Titelhoehe zentriert", (titel.top + titel.bottom).value / 2, (c.top + c.bottom).value / 2, 0.5f)
+        assertTrue("Teil des Ziels, das oeffnet", c.right <= t.right)
+        assertTrue("nicht in der Zone", c.right <= z.left)
     }
 
     @Test fun dieListeninfoStehtAnDerZone() {

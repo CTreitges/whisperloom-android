@@ -346,7 +346,7 @@
     <string name="text_share_intro">Für Audios, die du per Teilen an WhisperLoom schickst (z. B. aus WhatsApp). Eigene Stufe, unabhängig vom Diktat; bei „Aus“ bleibt der Text wortgetreu.</string>
     <string name="text_share_off_sub">Wortgetreu, Füllwörter per Schalter ausblendbar. Keine zweite Anfrage.</string>
     <string name="refine_offline">Bei Offline-Erkennung</string>
-    <!-- Stufen-Zeile (3.9.0): der Text öffnet die Seite der Stufe, die Zone rechts wählt sie -->
+    <!-- Stufen-Zeile (3.9.0): der Text öffnet die Seite der Stufe (erkennbar am ›), die unsichtbare Zone um den Punkt wählt sie -->
     <string name="stage_open_settings">Einstellungen öffnen</string>
     <!-- %1$s = Stufe („Glätten“); TalkBack-Name der Auswahl-Zone -->
     <string name="stage_use_dictation_cd">%1$s für Diktat verwenden</string>
@@ -378,6 +378,10 @@
     <string name="stage_model_like_dictation">Wie beim Diktat · %1$s</string>
     <string name="stage_model_like_dictation_plain">Wie beim Diktat</string>
     <string name="stage_model_no_model">Trag unter „KI-Zugang“ zuerst ein Modell ein. Es ist der Standard aller Stufen, danach kannst du hier ein anderes wählen.</string>
+    <!-- Stufen-Seite „Aus“: was ohne KI mit dem Text geschieht -->
+    <string name="stage_off_dictation_info">Ohne KI gelten nur die festen Regeln: die Füllwort-Liste mit deinen eigenen Wörtern und die Großschreibung am Satzanfang, je nachdem, was davon eingeschaltet ist.</string>
+    <string name="stage_off_share_info">Die Nachricht bleibt wortgetreu, ohne KI und ohne die festen Regeln. Im Fenster blendet der Schalter „Füllwörter ausblenden“ die Wörter der Füllwort-Liste aus.</string>
+    <string name="stage_off_share_fillers">Füllwort-Liste fürs Ausblenden im Fenster</string>
     <string name="text_local_needs_ram">Für ein lokales Textmodell braucht das Gerät mindestens 6 GB RAM.</string>
     <string name="text_rule_title">Textverbesserung bei Offline-Erkennung</string>
     <string name="text_rule_local">Lokales Textmodell</string>

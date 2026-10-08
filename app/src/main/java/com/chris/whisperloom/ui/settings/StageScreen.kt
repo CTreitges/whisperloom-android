@@ -50,9 +50,9 @@ private val RowCardPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp)
 /**
  * Seite einer Stufe auf einem Weg (3.9.0): oben die Kurzbeschreibung und "Fuer Diktat verwenden"
  * bzw. "Fuer Sprachnachrichten verwenden", darunter nur, was fuer diese Stufe auf diesem Weg gilt.
- * Diktat: Glaetten Bereinigung, Absaetze, Modell · Verschoenern Absaetze, Modell · Zusammenfassen
- * Form, Modell · Prompt Modell. Sprachnachrichten haben eigene Bereinigung und Form, werden immer
- * gegliedert und uebernehmen das Modell vom Diktat (ein Satz Stufen-Modelle fuer beide Wege).
+ * Diktat: Aus feste Regeln · Glaetten Bereinigung, Absaetze, Modell · Verschoenern Absaetze, Modell ·
+ * Zusammenfassen Form, Modell · Prompt Modell. Sprachnachrichten: Aus wortgetreu; eigene Bereinigung
+ * und Form, immer gegliedert, das Modell vom Diktat (ein Satz Stufen-Modelle fuer beide Wege).
  */
 @Composable
 fun StageScreen(stage: RefineMode, way: RefineWay, nav: NavState) {
@@ -60,6 +60,7 @@ fun StageScreen(stage: RefineMode, way: RefineWay, nav: NavState) {
     SettingsPageScaffold(levelLabel(stage), nav) {
         UseCard(prefs, stage, way)
         when (stage) {
+            RefineMode.OFF -> OffCard(prefs, way, nav)
             RefineMode.POLISH -> OptionCard(R.string.stage_cleanup, PolishCleanup.entries, prefs.polishCleanupFor(way), ::cleanupLabel, ::cleanupSubtitle) {
                 prefs.setPolishCleanupFor(way, it)
             }
@@ -82,7 +83,7 @@ fun StageScreen(stage: RefineMode, way: RefineWay, nav: NavState) {
                 }
             }
         }
-        ModelCard(prefs, stage, way, nav)
+        if (stage in RefineMode.MODEL_STAGES) ModelCard(prefs, stage, way, nav)
     }
 }
 
@@ -95,7 +96,7 @@ private fun UseCard(prefs: PrefsState, stage: RefineMode, way: RefineWay) {
         titleIcon = if (dictation) R.drawable.ic_mic else R.drawable.ic_voicemail,
         titleIconTint = if (dictation) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
     ) {
-        Text(stringResource(levelSubtitle(stage)), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(levelSubtitle(stage, way)), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         if (prefs.refineModeFor(way) == stage) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 StatusIcon(Tone.SUCCESS)
@@ -106,6 +107,26 @@ private fun UseCard(prefs: PrefsState, stage: RefineMode, way: RefineWay) {
                 Text(stringResource(if (dictation) R.string.stage_use_dictation else R.string.stage_use_share))
             }
         }
+    }
+}
+
+/**
+ * "Aus": was ohne KI mit dem Text geschieht, und der Weg zu Woerterbuch & Regeln. Beim Diktat gelten
+ * die festen Regeln (Wert wie am Fusslink der Textverbesserung). Sprachnachrichten bleiben wortgetreu,
+ * von dort wirkt nur die Fuellwort-Liste, und zwar fuer den Schalter im Fenster.
+ */
+@Composable
+private fun OffCard(prefs: PrefsState, way: RefineWay, nav: NavState) {
+    val dictation = way == RefineWay.DICTATION
+    SectionCard(contentPadding = RowCardPadding, gap = 0.dp) {
+        Text(
+            stringResource(if (dictation) R.string.stage_off_dictation_info else R.string.stage_off_share_info),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(vertical = 12.dp),
+        )
+        val value = if (dictation) dictionaryValue(prefs) else stringResource(R.string.stage_off_share_fillers)
+        PageLinkRow(R.drawable.ic_checklist, stringResource(R.string.settings_group_dictionary), value) { nav.push(Screen.Dictionary) }
     }
 }
 

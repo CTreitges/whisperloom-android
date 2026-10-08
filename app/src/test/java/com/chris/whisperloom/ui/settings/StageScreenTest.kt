@@ -43,7 +43,8 @@ import org.robolectric.annotation.Config
 /**
  * Stufen-Seiten (3.9.0, Plan §3.2): je Stufe und Weg genau ihre Optionen, und jede Seite schreibt nur
  * die Einstellung ihres Wegs. Das Modell je Stufe gilt fuer beide Wege; die Seiten der
- * Sprachnachrichten nennen es nur und fuehren zur Diktat-Seite.
+ * Sprachnachrichten nennen es nur und fuehren zur Diktat-Seite. "Aus" hat keine Optionen, nur was ohne
+ * KI geschieht und den Weg zu Woerterbuch & Regeln.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w411dp-h2400dp-xxhdpi")
@@ -128,10 +129,57 @@ class StageScreenTest {
         compose.onNodeWithText("Bei Sprachnachrichten aktiv").assertExists()
     }
 
+    @Test fun ausFuerDiktatVerwendenLaesstDieSprachnachrichtenInRuhe() {
+        prefs.refineMode = RefineMode.POLISH
+        prefs.shareRefineMode = RefineMode.SUMMARIZE
+        seite(RefineMode.OFF, RefineWay.DICTATION)
+        compose.onNodeWithText("Nur die Regeln ohne KI, keine zweite Anfrage.").assertExists()
+        click("Für Diktat verwenden")
+        assertEquals(RefineMode.OFF, Prefs(ctx).refineMode)
+        assertEquals(RefineMode.SUMMARIZE, Prefs(ctx).shareRefineMode)
+        compose.onNodeWithText("Beim Diktat aktiv").assertExists()
+    }
+
+    @Test fun ausFuerSprachnachrichtenVerwendenLaesstDasDiktatInRuhe() {
+        prefs.refineMode = RefineMode.BEAUTIFY
+        prefs.shareRefineMode = RefineMode.POLISH
+        seite(RefineMode.OFF, RefineWay.SHARE)
+        compose.onNodeWithText("Wortgetreu, Füllwörter per Schalter ausblendbar. Keine zweite Anfrage.").assertExists()
+        click("Für Sprachnachrichten verwenden")
+        assertEquals(RefineMode.OFF, Prefs(ctx).shareRefineMode)
+        assertEquals(RefineMode.BEAUTIFY, Prefs(ctx).refineMode)
+        compose.onNodeWithText("Bei Sprachnachrichten aktiv").assertExists()
+    }
+
+    // --- Aus: was ohne KI geschieht --------------------------------------------------------------
+
+    /** Diktat: die festen Regeln wirken; der Link nennt ihren Stand wie der Fusslink der Textverbesserung. */
+    @Test fun ausBeimDiktatNenntDieFestenRegelnUndFuehrtZuIhnen() {
+        prefs.removeFillers = true
+        prefs.autoCapitalize = false
+        val nav = seite(RefineMode.OFF, RefineWay.DICTATION)
+        compose.onNodeWithText("Ohne KI gelten nur die festen Regeln", substring = true).assertExists()
+        compose.onNodeWithText("Noch keine Begriffe · Füllwörter").assertExists()
+        click("Wörterbuch & Regeln")
+        assertEquals(Screen.Dictionary, nav.current)
+    }
+
+    /** Sprachnachrichten: wortgetreu ohne feste Regeln; von dort wirkt nur die Fuellwort-Liste (Schalter im Fenster). */
+    @Test fun ausBeiSprachnachrichtenIstWortgetreuUndFuehrtZurFuellwortListe() {
+        val nav = seite(RefineMode.OFF, RefineWay.SHARE)
+        compose.onNodeWithText("Die Nachricht bleibt wortgetreu, ohne KI und ohne die festen Regeln", substring = true).assertExists()
+        compose.onNodeWithText("Ohne KI gelten nur die festen Regeln", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Füllwort-Liste fürs Ausblenden im Fenster").assertExists()
+        click("Wörterbuch & Regeln")
+        assertEquals(Screen.Dictionary, nav.current)
+    }
+
     // --- Optionen je Stufe und Weg (Tabelle Plan §3.2) ----------------------------------------
 
     @Test fun jedeSeiteZeigtGenauIhreOptionen() {
         val erwartet = mapOf(
+            Screen.Stage(RefineMode.OFF, RefineWay.DICTATION) to emptyList(),
+            Screen.Stage(RefineMode.OFF, RefineWay.SHARE) to emptyList(),
             Screen.Stage(RefineMode.POLISH, RefineWay.DICTATION) to listOf("Bereinigung", "Absätze", "Modell"),
             Screen.Stage(RefineMode.BEAUTIFY, RefineWay.DICTATION) to listOf("Absätze", "Modell"),
             Screen.Stage(RefineMode.SUMMARIZE, RefineWay.DICTATION) to listOf("Form", "Modell"),
