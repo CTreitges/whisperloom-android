@@ -1,6 +1,7 @@
 package com.chris.whisperloom.api
 
 import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.SetupState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -201,6 +202,20 @@ class AccessResolverTest {
         assertEquals("gemma4:12b", AccessResolver.resolveLlm(stt, "ollama", url, "", "gemma4:12b", stage = RefineMode.BEAUTIFY).model)
         assertEquals("gemma4:26b", AccessResolver.resolveLlm(stt, "ollama", url, "", "gemma4:12b", stageModel = "gemma4:26b", stage = RefineMode.BEAUTIFY).model)
         assertEquals("", AccessResolver.resolveLlm(stt, "ollama", url, "", "", stage = RefineMode.BEAUTIFY).model)
+    }
+
+    @Test fun stufenModellZaehltNurMitModellDesZugangs() {
+        // Review 3.8.6 (L1): Ohne Modell des Zugangs sagen Bereitschaft, Tastatur und Banner (ohne Stufe)
+        // "kein Modell" — dann darf auch die Stufe nicht mit ihrem eigenen Modell rausgehen.
+        val together = AccessResolver.resolveStt("together", "", "k", "", 0)
+        val same = AccessResolver.resolveLlm(together, "same", "", "", "", stageModel = "Y", stage = RefineMode.BEAUTIFY)
+        assertEquals(RefineBlock.NO_MODEL, same.refineBlock)
+        assertFalse(SetupState.llmReady(same))
+        for (id in listOf("ollama", "custom")) {
+            val l = AccessResolver.resolveLlm(stt, id, "http://192.168.1.10:11434", "", "", stageModel = "gemma4:26b", stage = RefineMode.BEAUTIFY)
+            assertEquals(id, "", l.model)
+            assertFalse(id, SetupState.llmReady(l))
+        }
     }
 
     // --- Server-Modelle (Flags aus dem Cache bzw. Heuristik) ----------------------------

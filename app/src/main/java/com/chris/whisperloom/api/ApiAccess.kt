@@ -89,7 +89,8 @@ object AccessResolver {
      *   gehen ([RefineBlock.OFFLINE], ohne Adresse und Key).
      * @param stageModel eigenes Modell der Stufe ("" = Standard). Reihenfolge: [stageModel] →
      *   [model] (das Modell des Zugangs, wenn gesetzt) → Empfehlung des Anbieters fuer [stage]
-     *   ([Provider.recommendedLlmModel]) → erstes Katalog-Modell.
+     *   ([Provider.recommendedLlmModel]) → erstes Katalog-Modell. Ohne Katalog und ohne [model] gilt
+     *   auch [stageModel] nicht (Ollama lokal, eigener Server, Together "wie Erkennung").
      */
     fun resolveLlm(
         stt: ApiAccess,
@@ -116,7 +117,10 @@ object AccessResolver {
         }
         val provider = if (same) stt.provider else ProviderCatalog.byId(providerId)
         val sameProvider = provider.id == stt.provider.id
-        val modelId = stageModel.trim().ifBlank { model.trim() }.ifBlank { provider.recommendedLlmModel(stage) }
+        // Das Stufen-Modell zaehlt nur, wenn der Zugang selbst eins hat (Katalog oder llm_model). Sonst
+        // sagen Bereitschaft, Tastatur und Banner (ohne Stufe) "kein Modell", und die Stufe ginge doch raus.
+        val accessModel = model.trim().ifBlank { provider.recommendedLlmModel(stage) }
+        val modelId = if (accessModel.isBlank()) "" else stageModel.trim().ifBlank { accessModel }
 
         val url = when {
             same -> stt.baseUrl

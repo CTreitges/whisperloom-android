@@ -39,12 +39,17 @@ import org.robolectric.annotation.Config
 
 /**
  * Seite "Online-Zugang & Modelle" (3.8.6): Abschnitt "Modell je Stufe" (Standard-Label je Rolle,
- * eigenes Modell schreiben, Zuruecksetzen beim Anbieterwechsel, Hinweis ohne Online-Zugang) und der
- * Eintrag "Empfehlung je Stufe" im Modellfeld des Zugangs. Keine Anfrage geht raus (Liste im Cache).
+ * eigenes Modell schreiben, Zuruecksetzen beim Anbieterwechsel, Hinweis ohne Online-Zugang oder ohne Modell
+ * des Zugangs) und der Eintrag "Empfehlung je Stufe" im Modellfeld des Zugangs. Keine Anfrage geht raus
+ * (Liste im Cache).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w411dp-h2400dp-xxhdpi")
 class StageModelsUiTest {
+
+    private companion object {
+        const val NO_MODEL = "Trag oben zuerst ein Modell ein — es ist der Standard aller Stufen. Danach kannst du hier je Stufe ein anderes wählen."
+    }
 
     @get:Rule
     val compose = createComposeRule()
@@ -195,6 +200,25 @@ class StageModelsUiTest {
         compose.onNodeWithText("Standard · Claude Haiku 5.5").assertExists()
     }
 
+    @Test fun togetherWieErkennungOhneModellEinHinweisStattDerAuswahl() {
+        prefs.sttProviderId = "together"
+        prefs.apiKey = "k"
+        prefs.setLlmModelFor(RefineMode.BEAUTIFY, "Y")
+        show()
+        compose.onNodeWithText(NO_MODEL).assertExists()
+        compose.onNodeWithText("Standard ·", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Y").assertDoesNotExist()
+    }
+
+    @Test fun ohneKatalogMitModellDesZugangsGibtEsDieAuswahl() {
+        prefs.llmProviderId = "custom"
+        prefs.llmUrl = "http://127.0.0.1:1/v1"
+        prefs.llmModel = "qwen3:8b"
+        show()
+        compose.onNodeWithText(NO_MODEL).assertDoesNotExist()
+        compose.onAllNodesWithText("Standard · qwen3:8b").fetchSemanticsNodes().let { assertEquals(3, it.size) }
+    }
+
     // --- Modellfeld des Zugangs: "Empfehlung je Stufe" ------------------------------------------
 
     @Test fun modellfeldBietetEmpfehlungJeStufeMitBeidenModellen() {
@@ -217,12 +241,14 @@ class StageModelsUiTest {
     }
 
     @Test fun ohneKatalogKeineEmpfehlungJeStufe() {
-        // Eigener Server: das Modell ist Pflicht, eine Empfehlung gibt es nicht.
+        // Eigener Server: das Modell ist Pflicht, eine Empfehlung gibt es nicht. Ohne Modell des Zugangs
+        // wirkt kein Stufen-Modell (Review 3.8.6, L1) — also ein Hinweis statt der Auswahl.
         prefs.llmProviderId = "custom"
         prefs.llmUrl = "http://127.0.0.1:1/v1"
         show()
         compose.onNodeWithText("Empfehlung je Stufe").assertDoesNotExist()
-        compose.onAllNodesWithText("Standard · noch kein Modell").fetchSemanticsNodes().let { assertEquals(3, it.size) }
+        compose.onNodeWithText(NO_MODEL).assertExists()
+        compose.onNodeWithText("Standard ·", substring = true).assertDoesNotExist()
     }
 
     @Test fun pickerMitProHatEmpfehlungJeStufeOben() {

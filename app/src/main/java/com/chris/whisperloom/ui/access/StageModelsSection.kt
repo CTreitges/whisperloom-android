@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.api.ModelKind
+import com.chris.whisperloom.api.RefineBlock
 import com.chris.whisperloom.ui.components.LoomIcon
 import com.chris.whisperloom.ui.components.LoomRow
 import com.chris.whisperloom.ui.components.levelLabel
@@ -23,7 +24,9 @@ import com.chris.whisperloom.ui.state.LocalAppEnv
 /**
  * Abschnitt "Modell je Stufe" (3.8.6): je Stufe "Standard" oder ein eigenes Modell desselben Zugangs
  * (Diktat und Sprachnachrichten gemeinsam). "Prompt" nur mit Pro. Kann der Zugang keinen Text
- * verbessern (offline ohne eigenen Zugang, ElevenLabs, Together ohne Modell), steht dort ein Hinweis.
+ * verbessern (offline ohne eigenen Zugang, ElevenLabs) oder hat er kein Modell (Ollama lokal, eigener
+ * Server, Together "wie Erkennung"), steht dort ein Hinweis: ohne Modell des Zugangs wirkt kein
+ * Stufen-Modell ([com.chris.whisperloom.api.AccessResolver.resolveLlm]).
  */
 @Composable
 fun StageModelsSection() {
@@ -31,9 +34,15 @@ fun StageModelsSection() {
     var picking by rememberSaveable { mutableStateOf<RefineMode?>(null) }
     var custom by rememberSaveable { mutableStateOf<RefineMode?>(null) }
 
-    if (prefs.llmAccess().refineBlock != null) {
+    val llm = prefs.llmAccess()
+    val hint = when {
+        llm.refineBlock == RefineBlock.OFFLINE || llm.refineBlock == RefineBlock.NO_CHAT -> R.string.text_models_no_access
+        llm.model.isBlank() -> R.string.text_models_no_model
+        else -> null
+    }
+    if (hint != null) {
         Text(
-            stringResource(R.string.text_models_no_access),
+            stringResource(hint),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -75,7 +84,7 @@ fun StageModelsSection() {
         val own = prefs.llmModelFor(stage)
         CustomModelSheet(
             placeholder = stringResource(R.string.text_llm_model_placeholder),
-            initial = if (prefs.llmAccess().provider.llmModel(own) == null) own else "",
+            initial = if (llm.provider.llmModel(own) == null) own else "",
             onApply = { prefs.setLlmModelFor(stage, it) },
             onDismiss = { custom = null },
         )
@@ -91,12 +100,7 @@ internal fun stageModels(promptEnabled: Boolean): List<RefineMode> =
 private fun stageValue(stage: RefineMode): String {
     val prefs = LocalAppEnv.current.prefs
     if (prefs.llmModelFor(stage).isNotBlank()) return modelLabel(prefs.llmAccess(stage))
-    val standard = prefs.standardLlmAccess(stage)
-    return if (standard.model.isBlank()) {
-        stringResource(R.string.text_models_standard_missing)
-    } else {
-        stringResource(R.string.text_models_standard, modelLabel(standard))
-    }
+    return stringResource(R.string.text_models_standard, modelLabel(prefs.standardLlmAccess(stage)))
 }
 
 /**
@@ -109,7 +113,6 @@ private fun StageModelSheet(stage: RefineMode, onCustom: () -> Unit, onDismiss: 
     val llm = prefs.llmAccess()
     val provider = llm.provider
     val server = rememberServerModels(llm, ModelKind.LLM)
-    val standard = modelLabel(prefs.standardLlmAccess(stage))
     ModelPickerSheet(
         recommended = provider.llmModels,
         server = server.entry.takeIf { provider.hasLlm && (prefs.serverModelsEnabled || provider.isOllama) },
@@ -118,8 +121,7 @@ private fun StageModelSheet(stage: RefineMode, onCustom: () -> Unit, onDismiss: 
         onCustom = onCustom,
         onDismiss = onDismiss,
         title = stringResource(R.string.text_models_pick_title, levelLabel(stage)),
-        standard = if (standard.isBlank()) stringResource(R.string.text_models_standard_missing)
-        else stringResource(R.string.text_models_standard_option, standard),
+        standard = stringResource(R.string.text_models_standard_option, modelLabel(prefs.standardLlmAccess(stage))),
         footer = {
             TestAccessRow(label = stringResource(R.string.text_models_test)) {
                 AccessTest.llm(prefs.llmAccess(stage), prefs.language, prefs.prefs.modelCache::rememberNoTemperature)

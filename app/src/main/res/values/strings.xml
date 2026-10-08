@@ -433,11 +433,12 @@
     <string name="text_models_intro">„Standard“ ist das Modell des Zugangs, bei „Empfehlung je Stufe“ ein schnelles zum Glätten und ein stärkeres zum Umformulieren. Glätten gilt auch für „Lesbarer glätten“.</string>
     <!-- %1$s = Modell, mit dem die Stufe ohne eigenes Modell rechnet -->
     <string name="text_models_standard">Standard · %1$s</string>
-    <string name="text_models_standard_missing">Standard · noch kein Modell</string>
     <string name="text_models_standard_option">Standard (%1$s)</string>
     <!-- %1$s = Stufe („Verschönern“) -->
     <string name="text_models_pick_title">Modell für %1$s</string>
     <string name="text_models_no_access">Ohne Online-Zugang für die Textverbesserung gibt es hier nichts zu wählen.</string>
+    <!-- Ollama lokal, eigener Server, Together/DeepInfra „wie Erkennung“: ohne Modell des Zugangs wirkt kein Stufen-Modell -->
+    <string name="text_models_no_model">Trag oben zuerst ein Modell ein — es ist der Standard aller Stufen. Danach kannst du hier je Stufe ein anderes wählen.</string>
     <string name="text_models_reset_note">Ein neuer Anbieter setzt alle Stufen auf „Standard“ zurück.</string>
     <string name="text_models_test">Modell prüfen</string>
     <string name="fillers_title">Füllwörter</string>

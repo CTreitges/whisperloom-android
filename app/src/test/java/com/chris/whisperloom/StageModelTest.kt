@@ -2,11 +2,13 @@ package com.chris.whisperloom
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import com.chris.whisperloom.api.AccessResolver
 import com.chris.whisperloom.api.NetworkCheck
 import com.sun.net.httpserver.HttpServer
 import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -97,6 +99,28 @@ class StageModelTest {
         prefs.setLlmModelFor(RefineMode.SUMMARIZE, "claude-opus-5-5")
         assertEquals("claude-sonnet-5", diktat(RefineMode.BEAUTIFY))
         assertEquals("claude-opus-5-5", diktat(RefineMode.SUMMARIZE))
+    }
+
+    // --- Review 3.8.6 (L1): ohne Modell des Zugangs wirkt kein Stufen-Modell -------------------
+
+    @Test fun togetherWieErkennungOhneModellSchicktAuchMitStufenModellNichts() {
+        // Oberflaeche, Tastatur und Banner sagen "kein Modell" — das Diktat darf nicht doch rausgehen.
+        prefs.sttProviderId = "together"
+        prefs.apiKey = "k"
+        prefs.llmProviderId = AccessResolver.LLM_SAME
+        prefs.setLlmModelFor(RefineMode.BEAUTIFY, "Y")
+        prefs.refineMode = RefineMode.BEAUTIFY
+        TranscriptionEngine.transcribe(ctx, speech)
+        assertEquals(0, bodies.size)
+        assertFalse(SetupState.llmReady(prefs.llmAccess(RefineMode.BEAUTIFY)))
+    }
+
+    @Test fun ollamaOhneModellDesZugangsIstAuchMitStufenModellNichtBereit() {
+        prefs.llmProviderId = "ollama"
+        prefs.llmModel = ""
+        prefs.setLlmModelFor(RefineMode.BEAUTIFY, "gemma4:26b")
+        assertFalse(SetupState.llmReady(prefs.llmAccess(RefineMode.BEAUTIFY)))
+        assertEquals("", prefs.llmAccess(RefineMode.BEAUTIFY).model)
     }
 
     @Test fun sprachnachrichtSchicktDasModellIhrerStufe() {
