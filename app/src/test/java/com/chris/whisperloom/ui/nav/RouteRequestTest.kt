@@ -71,6 +71,8 @@ class RouteRequestTest {
             Screen.ButtonKeyboard, Screen.Models, Screen.Advanced, Screen.Widgets(), Screen.Widgets(WidgetTab.NORMAL),
             Screen.Widgets(WidgetTab.PRO), Screen.Widgets(WidgetTab.PRO, "p1"), Screen.Widgets(edit = "default"),
             Screen.Help(4), Screen.Patchnotes, Screen.Tutorial(2),
+            Screen.TextPage(TextSection.DICTATION), Screen.TextPage(TextSection.SHARE), Screen.TextPage(TextSection.ACCESS),
+            Screen.TextPage(TextSection.OFFLINE), Screen.TextPage(TextSection.RULES),
             Screen.Tutorial(1, startBubbleAfter = true), Screen.Tutorial(0, kind = TutorialKind.PRO_WIDGETS),
         )
         screens.forEach { assertEquals(it, Screen.decode(it.encode())) }
@@ -78,6 +80,7 @@ class RouteRequestTest {
         assertEquals("widgets:pro:p1", Screen.Widgets(WidgetTab.PRO, "p1").encode())
         assertEquals("advanced", Screen.Advanced.encode())
         assertEquals("patchnotes", Screen.Patchnotes.encode())
+        assertEquals("text-page:offline", Screen.TextPage(TextSection.OFFLINE).encode())
         // Das Pro-Widgets-Heft behaelt den Schluessel aus 3.7.0 (Sprachauftrag).
         assertEquals("tutorial:0:0:agent", Screen.Tutorial(kind = TutorialKind.PRO_WIDGETS).encode())
     }
@@ -87,5 +90,9 @@ class RouteRequestTest {
         assertEquals(Screen.Advanced, Screen.decode("agent"))
         assertEquals(Screen.Widgets(), Screen.decode("widgets"))
         assertEquals("Unbekannter Tab: der Screen waehlt", Screen.Widgets(), Screen.decode("widgets:quer:"))
+        // Bis 3.8.5 war "text" die ganze Seite, jetzt der Hub; eine unbekannte Unterseite fuehrt dorthin.
+        assertEquals(Screen.TextSettings, Screen.decode("text"))
+        assertEquals(Screen.TextSettings, Screen.decode("text-page:modelle"))
+        assertEquals(Screen.TextSettings, Screen.decode("text-page"))
     }
 }

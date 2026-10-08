@@ -1,0 +1,7 @@
+WhisperLoom 3.8.6
+• New: a model per level – a fast model for polishing, a stronger one for rephrasing
+• New: separate “more readable” switch for voice messages
+• New: “Text” settings split into clear sub-pages
+• New: updated default models per provider – with OpenAI and OpenRouter, rephrasing costs more
+• Fixed: Claude 5 models received every dictation twice, long texts came back empty
+• Fixed: Gemma 4 E2B and E4B can be selected directly

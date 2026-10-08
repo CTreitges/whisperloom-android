@@ -1,231 +1,144 @@
 package com.chris.whisperloom.ui.settings
 
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.dp
 import com.chris.whisperloom.OfflineRefineRule
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
-import com.chris.whisperloom.ui.access.LlmAccessSection
+import com.chris.whisperloom.ui.access.stageModels
 import com.chris.whisperloom.ui.components.DetailScaffold
+import com.chris.whisperloom.ui.components.HubRow
 import com.chris.whisperloom.ui.components.ScrollColumn
-import com.chris.whisperloom.ui.components.SectionCard
+import com.chris.whisperloom.ui.components.SectionHeader
 import com.chris.whisperloom.ui.components.SnackController
-import com.chris.whisperloom.ui.components.SwitchRow
-import com.chris.whisperloom.ui.components.LoomRow
 import com.chris.whisperloom.ui.components.levelLabel
-import com.chris.whisperloom.ui.components.offlineRuleDetails
+import com.chris.whisperloom.ui.components.modelLabel
+import com.chris.whisperloom.ui.components.offlineModelLabel
 import com.chris.whisperloom.ui.components.offlineRuleLabel
+import com.chris.whisperloom.ui.components.providerShortName
 import com.chris.whisperloom.ui.components.rememberSnack
-import com.chris.whisperloom.ui.models.LocalModelRequiredCard
-import com.chris.whisperloom.ui.models.ModelListSection
-import com.chris.whisperloom.ui.models.localModelMissing
 import com.chris.whisperloom.ui.models.offlineRule
 import com.chris.whisperloom.ui.nav.NavState
+import com.chris.whisperloom.ui.nav.Screen
+import com.chris.whisperloom.ui.nav.TextSection
 import com.chris.whisperloom.ui.state.LocalAppEnv
-
-/** Die Stufen-Auswahl fuer geteilte Audios — ihre Labels gibt es in der Diktat-Karte ein zweites Mal. */
-const val SHARE_REFINE_TAG = "share-refine"
+import com.chris.whisperloom.ui.state.PrefsState
 
 /**
- * E2 — Text (UX-Spec §2.5): Stufe, "Lesbarer glaetten", KI-Fuellwoerter, Stufe fuer geteilte Audios,
- * Offline-Erkennung (lokales Textmodell und Regel), Online-Zugang, Regeln ohne KI, Sheet B3.
+ * Text-Hub (3.8.6, vorher eine lange Seite): KI-Stufen (Diktat, Sprachnachrichten), Modelle & Zugang
+ * (Online-Zugang mit Modell je Stufe, Offline-Erkennung nur wo offline geht), Ohne KI (Regeln).
+ * Unterzeile = aktueller Wert, wie im Einstellungen-Hub.
  */
 @Composable
 fun TextSettingsScreen(nav: NavState) {
     val env = LocalAppEnv.current
     val prefs = env.prefs
+    val offline = env.status.offlineSupported
     val snack = rememberSnack()
-    var showFillers by rememberSaveable { mutableStateOf(false) }
-    val off = prefs.refineMode == RefineMode.OFF
-    // "Intelligent entfernen" wirkt auch auf geteilte Audios — bedienbar, sobald irgendeine KI-Stufe gilt.
-    val noAi = off && prefs.shareRefineMode == RefineMode.OFF
-    // "Lesbarer glaetten" aendert nur "Glaetten" — fuers Diktat wie fuer geteilte Audios.
-    val polish = prefs.refineMode == RefineMode.POLISH || prefs.shareRefineMode == RefineMode.POLISH
+    fun open(section: TextSection) = nav.push(Screen.TextPage(section))
+
+    val share = if (prefs.shareRefineMode == RefineMode.OFF) stringResource(R.string.text_hub_val_share_off)
+    else stageLabel(prefs.shareRefineMode, prefs.sharePolishReadable)
+    val rules = textRules(prefs).ifEmpty { listOf(stringResource(R.string.text_hub_val_rules_none)) }.joinToString(" · ")
 
     DetailScaffold(title = stringResource(R.string.text_title), onBack = { nav.pop() }, snack = snack) { padding ->
-        ScrollColumn(padding) {
-            SectionCard(
-                title = stringResource(R.string.text_card_refine),
-                titleIcon = R.drawable.ic_auto_fix_high,
-                titleIconTint = MaterialTheme.colorScheme.tertiary,
-                gap = 4.dp,
-            ) {
-                Column(Modifier.selectableGroup()) {
-                    RefineMode.settings(prefs.promptLevelEnabled).forEach { mode ->
-                        val selected = prefs.refineMode == mode
-                        LoomRow(
-                            headline = levelLabel(mode),
-                            supporting = stringResource(levelSubtitle(mode)),
-                            modifier = Modifier.selectable(selected = selected, role = Role.RadioButton) { prefs.refineMode = mode },
-                            trailing = { RadioButton(selected = selected, onClick = null) },
-                        )
-                    }
+        LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(bottom = 24.dp)) {
+            item { SectionHeader(stringResource(R.string.text_hub_section_stages)) }
+            item {
+                HubRow(R.drawable.ic_mic, stringResource(R.string.text_hub_dictation), stageLabel(prefs.refineMode, prefs.polishReadable)) {
+                    open(TextSection.DICTATION)
                 }
-                Text(
-                    stringResource(R.string.text_level_cost),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                SwitchRow(
-                    headline = stringResource(R.string.pref_polish_readable),
-                    supporting = stringResource(if (polish) R.string.pref_polish_readable_info else R.string.text_readable_needs_polish),
-                    checked = prefs.polishReadable,
-                    onCheckedChange = { prefs.polishReadable = it },
-                    enabled = polish,
-                )
-                SwitchRow(
-                    headline = stringResource(R.string.pref_smart_fillers),
-                    supporting = stringResource(if (noAi) R.string.text_smart_needs_level else R.string.pref_smart_fillers_info),
-                    checked = prefs.smartFillers,
-                    onCheckedChange = { prefs.smartFillers = it },
-                    enabled = !noAi,
-                )
-                SwitchRow(
-                    headline = stringResource(R.string.pref_refine_paragraphs),
-                    supporting = stringResource(if (off) R.string.text_smart_needs_level else R.string.pref_refine_paragraphs_info),
-                    checked = prefs.refineParagraphs,
-                    onCheckedChange = { prefs.refineParagraphs = it },
-                    enabled = !off,
-                )
             }
+            item { HubRow(R.drawable.ic_voicemail, stringResource(R.string.text_hub_share), share, divider = false) { open(TextSection.SHARE) } }
 
-            SectionCard(
-                title = stringResource(R.string.text_card_share),
-                titleIcon = R.drawable.ic_voicemail,
-                gap = 4.dp,
-            ) {
-                Text(
-                    stringResource(R.string.text_share_intro),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Column(Modifier.selectableGroup().testTag(SHARE_REFINE_TAG)) {
-                    RefineMode.SETTINGS.forEach { mode ->
-                        val selected = prefs.shareRefineMode == mode
-                        LoomRow(
-                            headline = levelLabel(mode),
-                            supporting = stringResource(if (mode == RefineMode.OFF) R.string.text_share_off_sub else levelSubtitle(mode)),
-                            modifier = Modifier.selectable(selected = selected, role = Role.RadioButton) { prefs.shareRefineMode = mode },
-                            trailing = { RadioButton(selected = selected, onClick = null) },
-                        )
+            item { SectionHeader(stringResource(R.string.text_hub_section_models)) }
+            item { HubRow(R.drawable.ic_cloud, stringResource(R.string.text_hub_access), accessValue(prefs), divider = offline) { open(TextSection.ACCESS) } }
+            if (offline) {
+                item {
+                    HubRow(R.drawable.ic_offline_bolt, stringResource(R.string.text_card_offline), offlineValue(), divider = false) {
+                        open(TextSection.OFFLINE)
                     }
                 }
             }
 
-            if (env.status.offlineSupported) OfflineRefineCard(snack, noAi)
-
-            SectionCard(title = stringResource(R.string.text_card_access)) {
-                LlmAccessSection(snack)
-            }
-
-            SectionCard(title = stringResource(R.string.text_card_rules), gap = 4.dp) {
-                SwitchRow(
-                    headline = stringResource(R.string.pref_remove_fillers),
-                    supporting = stringResource(R.string.text_fillers_sub),
-                    checked = prefs.removeFillers,
-                    onCheckedChange = { prefs.removeFillers = it },
-                )
-                TextButton(onClick = { showFillers = true }, enabled = prefs.removeFillers) {
-                    Text(stringResource(R.string.text_fillers_edit))
-                }
-                SwitchRow(
-                    headline = stringResource(R.string.pref_auto_cap),
-                    checked = prefs.autoCapitalize,
-                    onCheckedChange = { prefs.autoCapitalize = it },
-                )
-                SwitchRow(
-                    headline = stringResource(R.string.pref_trailing_space),
-                    checked = prefs.trailingSpace,
-                    onCheckedChange = { prefs.trailingSpace = it },
-                )
-                if (prefs.smartFillers && !noAi) {
-                    Text(
-                        stringResource(R.string.text_fillers_paused),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
+            item { SectionHeader(stringResource(R.string.text_hub_section_rules)) }
+            item { HubRow(R.drawable.ic_checklist, stringResource(R.string.text_card_rules), rules, divider = false) { open(TextSection.RULES) } }
         }
     }
-
-    if (showFillers) FillersSheet { showFillers = false }
 }
 
-/**
- * Karte "Offline-Erkennung" (Spec §4): die Textmodelle zur Auswahl wie in Offline-Modelle (Tipp laedt
- * bzw. waehlt) — fehlt das gewaehlte, wo es gebraucht wird, darueber die Pflichtkarte; passt keins ins
- * Geraet, der Grund — und die Regel "Textverbesserung bei Offline-Erkennung" mit drei Optionen.
- * [noAi]: beide Stufen "Aus", die Regel wirkt dann nicht.
- */
+/** Eine Unterseite von "Text" ([Screen.TextPage]). */
 @Composable
-private fun OfflineRefineCard(snack: SnackController, noAi: Boolean) {
-    val env = LocalAppEnv.current
-    val prefs = env.prefs
-    SectionCard(
-        title = stringResource(R.string.text_card_offline),
-        titleIcon = R.drawable.ic_offline_bolt,
-        titleIconTint = MaterialTheme.colorScheme.tertiary,
-        gap = 4.dp,
-    ) {
-        if (!env.status.textModelFits) {
-            LoomRow(headline = stringResource(R.string.text_local_none), supporting = stringResource(R.string.text_local_needs_ram))
-        } else {
-            if (localModelMissing(prefs, env.status)) LocalModelRequiredCard(Modifier.padding(vertical = 8.dp), compact = true)
-            ModelListSection(snack, showEmptyState = false, text = true, inCard = true)
-        }
-        Text(
-            stringResource(R.string.text_rule_title),
-            style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.padding(top = 8.dp),
-        )
-        Column(Modifier.selectableGroup()) {
-            OfflineRefineRule.entries.forEach { rule ->
-                // Passt kein Textmodell ins Geraet, bleibt nur "Ueberspringen" (der Grund steht darueber).
-                val enabled = env.status.textModelFits || rule == OfflineRefineRule.SKIP
-                val selected = offlineRule(prefs, env.status) == rule
-                LoomRow(
-                    headline = offlineRuleLabel(rule),
-                    supporting = offlineRuleDetails(rule),
-                    modifier = Modifier
-                        .selectable(selected = selected, enabled = enabled, role = Role.RadioButton) { prefs.offlineRefine = rule }
-                        .alpha(if (enabled) 1f else 0.38f),
-                    trailing = { RadioButton(selected = selected, onClick = null, enabled = enabled) },
-                )
-            }
-        }
-        if (noAi) {
-            Text(
-                stringResource(R.string.text_smart_needs_level),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+fun TextPageScreen(section: TextSection, nav: NavState) = when (section) {
+    TextSection.DICTATION -> TextDictationScreen(nav)
+    TextSection.SHARE -> TextShareScreen(nav)
+    TextSection.ACCESS -> TextAccessScreen(nav)
+    TextSection.OFFLINE -> TextOfflineScreen(nav)
+    TextSection.RULES -> TextRulesScreen(nav)
+}
+
+/** Geruest der Unterseiten: grosser Titel, Zurueck, scrollende Spalte. */
+@Composable
+internal fun TextPageScaffold(title: Int, nav: NavState, content: @Composable ColumnScope.(SnackController) -> Unit) {
+    val snack = rememberSnack()
+    DetailScaffold(title = stringResource(title), onBack = { nav.pop() }, snack = snack) { padding ->
+        ScrollColumn(padding) { content(snack) }
     }
 }
 
-private fun levelSubtitle(mode: RefineMode): Int = when (mode) {
-    RefineMode.OFF -> R.string.text_level_off_sub
-    RefineMode.POLISH, RefineMode.PARAGRAPHS, RefineMode.READABLE -> R.string.text_level_smooth_sub
-    RefineMode.BEAUTIFY -> R.string.text_level_beautify_sub
-    RefineMode.SUMMARIZE -> R.string.text_level_summarize_sub
-    RefineMode.PROMPT -> R.string.text_level_prompt_sub
+/** Irgendeine KI-Stufe an (Diktat oder Sprachnachrichten) — dann wirken KI-Fuellwoerter und die Offline-Regel. */
+internal fun anyAiStage(prefs: PrefsState): Boolean =
+    prefs.refineMode != RefineMode.OFF || prefs.shareRefineMode != RefineMode.OFF
+
+/** Eingeschaltete Regeln ohne KI als Kurzform ("Füllwörter", "Groß-Schreibung", "Leerzeichen"). */
+@Composable
+internal fun textRules(prefs: PrefsState): List<String> = buildList {
+    if (prefs.removeFillers) add(stringResource(R.string.settings_rule_fillers))
+    if (prefs.autoCapitalize) add(stringResource(R.string.settings_rule_cap))
+    if (prefs.trailingSpace) add(stringResource(R.string.settings_rule_space))
 }
 
-private val Int.dp get() = androidx.compose.ui.unit.Dp(this.toFloat())
+/** "Glätten · lesbarer" mit Schalter, sonst die Stufe. */
+@Composable
+private fun stageLabel(mode: RefineMode, readable: Boolean): String =
+    if (mode == RefineMode.POLISH && readable) stringResource(R.string.text_hub_val_readable, levelLabel(mode)) else levelLabel(mode)
+
+/** "Wie Erkennung · OpenAI · Empfehlung je Stufe", "Anthropic · 1 Stufe mit eigenem Modell" … */
+@Composable
+private fun accessValue(prefs: PrefsState): String {
+    val llm = prefs.llmAccess()
+    if (llm.sameAsOffline) return stringResource(R.string.text_hub_val_access_none)
+    val access = if (prefs.llmUseOwn) providerShortName(llm.provider)
+    else stringResource(R.string.text_hub_val_access_same, providerShortName(llm.provider))
+    if (llm.refineBlock != null) return access
+    // Ohne Modell im Zugang wirken Stufen-Modelle nicht (AccessResolver), also auch nicht mitzaehlen.
+    val custom = if (llm.model.isBlank()) 0
+    else stageModels(prefs.promptLevelEnabled).count { prefs.llmModelFor(it).isNotBlank() }
+    val models = when {
+        custom > 0 -> pluralStringResource(R.plurals.text_hub_val_models_custom, custom, custom)
+        prefs.llmModel.isBlank() && llm.provider.llmModels.isNotEmpty() -> stringResource(R.string.text_models_recommended)
+        else -> modelLabel(llm)
+    }
+    return listOf(access, models).filter { it.isNotBlank() }.joinToString(" · ")
+}
+
+/** "Lokales Textmodell · Gemma 4 E2B", ohne geladenes Modell "… · Textmodell fehlt". */
+@Composable
+private fun offlineValue(): String {
+    val env = LocalAppEnv.current
+    val rule = offlineRule(env.prefs, env.status)
+    val label = offlineRuleLabel(rule)
+    return when {
+        rule == OfflineRefineRule.SKIP -> label
+        env.status.textModelReady(env.prefs.localLlmModel) -> "$label · ${offlineModelLabel(env.prefs.localLlmModel)}"
+        else -> stringResource(R.string.text_hub_val_offline_missing, label)
+    }
+}

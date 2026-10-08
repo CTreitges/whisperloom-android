@@ -13,12 +13,12 @@ Erkennung nach Wahl:
 
 Text nach Bedarf:
 • Füllwörter entfernen (Liste selbst anpassbar), automatische Groß-Schreibung.
-• Optionale Textverbesserung per Sprachmodell in drei Stufen: Glätten (auf Wunsch „lesbarer“, mit deinen Wörtern und deinem Ton), Verschönern, Zusammenfassen – mit eigenem oder dem Erkennungs-Zugang, auch über Ollama: lokal auf deinem Homeserver ohne Key (der Text verlässt dein Netz nicht) oder über Ollama Cloud. Die Modell-Liste kommt direkt vom Server.
+• Optionale Textverbesserung per Sprachmodell in drei Stufen: Glätten (auf Wunsch „lesbarer“, mit deinen Wörtern und deinem Ton), Verschönern, Zusammenfassen – je Stufe mit eigenem Modell, ab Werk ein schnelles zum Glätten und ein stärkeres zum Umformulieren. Mit eigenem oder dem Erkennungs-Zugang, auch über Ollama: lokal auf deinem Homeserver ohne Key (der Text verlässt dein Netz nicht) oder über Ollama Cloud. Die Modell-Liste kommt direkt vom Server.
 • Auch offline mit KI: Gemma 4 verbessert offline erkannten Text direkt auf dem Gerät – ohne Netz, der Text verlässt das Handy nicht. Das Modell lädst du einmalig nach (E2B 2,6 GB ab 6 GB RAM, E4B 3,7 GB ab 8 GB).
 • Für KI-Nutzer, unter „Erweitert“ einschaltbar: die Stufe „Prompt“ formt ein Diktat zu einem gut gegliederten Prompt für ChatGPT, Claude & Co.
 • Schalter „Automatische Absätze“: Die KI gliedert längere Diktate in Absätze – oder, ausgeschaltet, alles als ein durchgehender Text.
 
-Sprachnachrichten abtippen: In WhatsApp, Telegram oder Signal eine Nachricht teilen → WhisperLoom. Der Text erscheint gut lesbar in Absätzen, wahlweise wortgetreu oder ohne Füllwörter, zum Kopieren und Weitergeben. Auf Wunsch mit eigener KI-Stufe: Glätten, Verschönern oder Zusammenfassen.
+Sprachnachrichten abtippen: In WhatsApp, Telegram oder Signal eine Nachricht teilen → WhisperLoom. Der Text erscheint gut lesbar in Absätzen, wahlweise wortgetreu oder ohne Füllwörter, zum Kopieren und Weitergeben. Auf Wunsch mit eigener KI-Stufe: Glätten (auch „lesbarer“), Verschönern oder Zusammenfassen.
 
 Pro Widgets für deinen eigenen Agenten: Tippen, sprechen, tippen – ein Sprach-Command-Widget schreibt mit und schickt den Auftrag an einen Server, den du selbst betreibst; die Antwort kommt dort an, wo du deinem Agenten sonst schreibst. Die Übertragung läuft weiter, auch wenn der Bildschirm ausgeht. Jedes Widget hat seinen eigenen Namen (steht unter dem Widget, abschaltbar), seinen eigenen Server mit Token, ein Symbol oder Galerie-Bild und auf Wunsch Auto-Stopp nach einer Sprechpause; frei skalierbar von 1 × 1 bis 4 × 2. Freischalten unter Einstellungen → Erweitert. Braucht einen eigenen Server (den Quellcode der Gegenstelle gibt es auf GitHub) und bleibt sonst unsichtbar.
 

@@ -76,6 +76,7 @@ import com.chris.whisperloom.ui.models.localModelMissing
 import com.chris.whisperloom.ui.models.offlineRule
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
+import com.chris.whisperloom.ui.nav.TextSection
 import com.chris.whisperloom.ui.nav.SetupRouter
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.theme.loom
@@ -119,7 +120,8 @@ fun HomeScreen(nav: NavState) {
                     when (banner) {
                         HomeStatus.Banner.A11Y -> nav.push(Screen.Setup(SetupRouter.STEP_A11Y))
                         HomeStatus.Banner.MODEL -> nav.push(Screen.Models)
-                        HomeStatus.Banner.TEXT_MODEL -> nav.push(Screen.TextSettings)
+                        // Direkt auf die Seite mit den Textmodellen, nicht in den Text-Hub.
+                        HomeStatus.Banner.TEXT_MODEL -> nav.push(Screen.TextPage(TextSection.OFFLINE))
                         HomeStatus.Banner.NOTIF -> nav.push(Screen.Setup(SetupRouter.STEP_NOTIF))
                         HomeStatus.Banner.NONE -> Unit
                     }
@@ -326,7 +328,8 @@ private fun StatusCard(nav: NavState, modelInstalled: Boolean) {
         }
         null -> stringResource(R.string.setup_chip_open)
     }
-    val llm = prefs.llmAccess()
+    // Das Modell, mit dem das naechste Diktat rechnet: das der Stufe (Modell je Stufe).
+    val llm = prefs.llmAccess(prefs.dictationStage)
     val level = levelLabel(prefs.refineMode)
     // Offline erkannt: die Regel entscheidet (lokal, online mit Ausweg, uebersprungen) — "wie Erkennung" zaehlt nie.
     // Auch wenn nur die Stufe fuer geteilte Sprachnachrichten an ist: fehlt das Modell, warnt die Zeile wie das Banner.

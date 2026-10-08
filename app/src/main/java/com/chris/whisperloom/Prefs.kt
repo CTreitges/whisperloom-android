@@ -23,36 +23,6 @@ enum class Engine(val key: String) {
 }
 
 /**
- * Was das Sprachmodell nach der Erkennung mit dem Text tun soll.
- * [PARAGRAPHS] ist nirgends waehlbar — auch geteilte Audios ([Prefs.shareRefineMode]) nutzen [SETTINGS].
- * [READABLE] ebenso wenig: es ist [POLISH] mit dem Schalter "Lesbarer glaetten" ([Prefs.effective]).
- * [PROMPT] nur, wenn in den erweiterten Optionen eingeschaltet ([Prefs.promptLevelEnabled]).
- */
-enum class RefineMode(val key: String) {
-    OFF("off"),
-    POLISH("polish"),
-    BEAUTIFY("beautify"),
-    SUMMARIZE("summarize"),
-    PARAGRAPHS("paragraphs"),
-
-    /** Glaetten plus behutsames Lektorat: Satzbau lesbar, Wortwahl und Ton bleiben. Nie gespeichert. */
-    READABLE("readable"),
-
-    /** Formt das Diktat zu einem Prompt fuer einen KI-Assistenten (ChatGPT, Claude, Gemini). */
-    PROMPT("prompt");
-
-    companion object {
-        /** Reihenfolge im Einstellungs-Dropdown. */
-        val SETTINGS = listOf(OFF, POLISH, BEAUTIFY, SUMMARIZE)
-
-        /** Die waehlbaren Stufen — "Prompt" nur fuer die, die sie eingeschaltet haben. */
-        fun settings(promptEnabled: Boolean): List<RefineMode> = if (promptEnabled) SETTINGS + PROMPT else SETTINGS
-
-        fun fromKey(key: String?): RefineMode = entries.firstOrNull { it.key == key } ?: OFF
-    }
-}
-
-/**
  * Duenner SharedPreferences-Wrapper fuer die App-Einstellungen.
  *
  * Die Zugangs-Getter liefern die ROHEN gespeicherten Werte ("" = nicht gesetzt); die
@@ -98,6 +68,9 @@ class Prefs(context: Context) {
      * v3 -> v4 (3.8.0): Gemini-Nutzer ohne gewaehltes Modell liefen auf der Voreinstellung
      * gemini-2.5-flash-lite. Die Voreinstellung ist jetzt 3.5 Flash-Lite (fuer neue Konten) — wer
      * schon 2.5 nutzt, behaelt es, statt unbemerkt auf ein anderes, nachdenkendes Modell zu wechseln.
+     *
+     * v4 -> v5 (3.8.6): "Lesbarer glaetten" gibt es getrennt fuer Sprachnachrichten. Bis 3.8.5 galt
+     * der eine Schalter fuer beides — der Startwert ist deshalb sein Wert, neu installiert aus.
      */
     private fun migrate() {
         val version = sp.getInt(KEY_PREFS_VERSION, 0)
@@ -106,6 +79,9 @@ class Prefs(context: Context) {
             if (version < 3) migrateToV3(this)
             if (version < 4 && sp.getString(KEY_LLM_PROVIDER, "") == GEMINI_ID && sp.getString(KEY_LLM_MODEL, "").isNullOrBlank()) {
                 putString(KEY_LLM_MODEL, GEMINI_LEGACY_DEFAULT)
+            }
+            if (version < 5 && !sp.contains(KEY_SHARE_POLISH_READABLE)) {
+                putBoolean(KEY_SHARE_POLISH_READABLE, sp.getBoolean(KEY_POLISH_READABLE, false))
             }
             putInt(KEY_PREFS_VERSION, PREFS_VERSION)
         }
@@ -210,9 +186,34 @@ class Prefs(context: Context) {
         get() = sp.getString(KEY_LLM_KEY, "") ?: ""
         set(v) = sp.edit { putString(KEY_LLM_KEY, v) }
 
+    /** Modell des Online-Zugangs = Standard fuer alle Stufen ohne eigenes ([llmModelFor]); "" = Empfehlung je Stufe. */
     var llmModel: String
         get() = sp.getString(KEY_LLM_MODEL, "") ?: ""
         set(v) = sp.edit { putString(KEY_LLM_MODEL, v) }
+
+    /**
+     * Eigenes Modell der Stufe von [mode] (siehe [RefineMode.modelStage]), roh: "" = Standard.
+     * Schluessel `llm_model_polish`, `…_beautify`, `…_summarize`, `…_prompt`.
+     */
+    fun llmModelFor(mode: RefineMode?): String {
+        val stage = mode?.modelStage ?: return ""
+        return sp.getString(KEY_LLM_MODEL_PREFIX + stage.key, "") ?: ""
+    }
+
+    /** @throws IllegalArgumentException fuer [RefineMode.OFF] — ohne Stufe gibt es kein Modell. */
+    fun setLlmModelFor(mode: RefineMode, model: String) {
+        val stage = requireNotNull(mode.modelStage) { "Stufe aus hat kein Modell" }
+        sp.edit { putString(KEY_LLM_MODEL_PREFIX + stage.key, model) }
+    }
+
+    /**
+     * Anbieterwechsel: das Modell des Zugangs und alle Stufen-Modelle zurueck auf Standard — sie
+     * gehoeren zum alten Anbieter (sonst ginge z. B. claude-sonnet-5 an OpenAI: 404).
+     */
+    fun clearLlmModels() = sp.edit {
+        remove(KEY_LLM_MODEL)
+        RefineMode.MODEL_STAGES.forEach { remove(KEY_LLM_MODEL_PREFIX + it.key) }
+    }
 
     /**
      * Gespeicherte Stufe. "Prompt" gilt nur, solange sie eingeschaltet ist — sonst waere sie
@@ -247,20 +248,24 @@ class Prefs(context: Context) {
         set(v) = sp.edit { putBoolean(KEY_REFINE_PARAGRAPHS, v) }
 
     /**
-     * "Lesbarer glaetten": "Glaetten" repariert auch den Satzbau (Satzabbrueche, Wiederholungen,
-     * Bandwurmsaetze), Wortwahl und Ton bleiben. Ab Werk aus — dann bleibt Glaetten ein reines
-     * Korrektorat. Gilt fuer Diktat und geteilte Audios, siehe [effective].
+     * "Lesbarer glaetten" fuers Diktat: "Glaetten" repariert auch den Satzbau (Satzabbrueche,
+     * Wiederholungen, Bandwurmsaetze), Wortwahl und Ton bleiben. Ab Werk aus — dann bleibt Glaetten
+     * ein reines Korrektorat. Geteilte Audios haben ihren eigenen Schalter ([sharePolishReadable]).
      */
     var polishReadable: Boolean
         get() = sp.getBoolean(KEY_POLISH_READABLE, false)
         set(v) = sp.edit { putBoolean(KEY_POLISH_READABLE, v) }
 
-    /**
-     * Die Stufe, die wirklich an das Sprachmodell geht: [mode] (die gespeicherte Wahl) mit
-     * [polishReadable] verrechnet. Gespeichert und angezeigt wird weiter [mode].
-     */
-    fun effective(mode: RefineMode): RefineMode =
-        if (mode == RefineMode.POLISH && polishReadable) RefineMode.READABLE else mode
+    /** "Lesbarer glaetten" fuer geteilte Sprachnachrichten ([shareRefineMode]); siehe [polishReadable]. */
+    var sharePolishReadable: Boolean
+        get() = sp.getBoolean(KEY_SHARE_POLISH_READABLE, false)
+        set(v) = sp.edit { putBoolean(KEY_SHARE_POLISH_READABLE, v) }
+
+    /** Die Stufe, die beim Diktat wirklich an das Sprachmodell geht ([effective]). */
+    val dictationStage: RefineMode get() = effective(refineMode, polishReadable)
+
+    /** Die Stufe, die bei geteilten Sprachnachrichten wirklich an das Sprachmodell geht ([effective]). */
+    val shareStage: RefineMode get() = effective(shareRefineMode, sharePolishReadable)
 
     // --- Nachbearbeitung -----------------------------------------------------
 
@@ -414,7 +419,11 @@ class Prefs(context: Context) {
         serverModels = modelCache,
     )
 
-    fun llmAccess(): ApiAccess = AccessResolver.resolveLlm(
+    /**
+     * Zugang fuer die Textverbesserung. Mit [mode] (der wirksamen Stufe des Auftrags) gilt das Modell
+     * dieser Stufe; ohne — Bereitschaft, Tastatur, "Zugang pruefen" — das des Zugangs.
+     */
+    fun llmAccess(mode: RefineMode? = null): ApiAccess = AccessResolver.resolveLlm(
         stt = sttAccess(),
         providerId = llmProviderId,
         baseUrl = llmUrl,
@@ -422,10 +431,19 @@ class Prefs(context: Context) {
         model = llmModel,
         serverModels = modelCache,
         sttOffline = engine == Engine.OFFLINE,
+        stageModel = llmModelFor(mode),
+        stage = mode,
     )
 
     companion object {
-        private const val PREFS_VERSION = 4
+        private const val PREFS_VERSION = 5
+
+        /**
+         * Die Stufe, die wirklich an das Sprachmodell geht: [mode] (die gespeicherte Wahl) mit dem
+         * Schalter "Lesbarer glaetten" ([readable]) verrechnet. Gespeichert und angezeigt wird weiter [mode].
+         */
+        fun effective(mode: RefineMode, readable: Boolean): RefineMode =
+            if (mode == RefineMode.POLISH && readable) RefineMode.READABLE else mode
 
         /** v4: Voreinstellung bis 3.7 — bleibt fuer Gemini-Bestandsnutzer ohne gewaehltes Modell. */
         private const val GEMINI_ID = "gemini"
@@ -445,11 +463,15 @@ class Prefs(context: Context) {
         private const val KEY_LLM_URL = "llm_url"
         private const val KEY_LLM_KEY = "llm_key"
         private const val KEY_LLM_MODEL = "llm_model"
+
+        /** + [RefineMode.key] der Stufe: llm_model_polish, llm_model_beautify, llm_model_summarize, llm_model_prompt. */
+        private const val KEY_LLM_MODEL_PREFIX = "llm_model_"
         private const val KEY_REFINE_MODE = "refine_mode"
         private const val KEY_LLM_POLISH_LEGACY = "llm_polish"
         private const val KEY_SMART_FILLERS = "smart_fillers"
         private const val KEY_REFINE_PARAGRAPHS = "refine_paragraphs"
         private const val KEY_POLISH_READABLE = "polish_readable"
+        private const val KEY_SHARE_POLISH_READABLE = "share_polish_readable"
         private const val KEY_PROMPT_LEVEL = "refine_prompt_enabled"
         private const val KEY_REMOVE_FILLERS = "remove_fillers"
         private const val KEY_AUTO_CAP = "auto_capitalize"
@@ -496,8 +518,8 @@ class Prefs(context: Context) {
          */
         const val DEFAULT_API_MODEL = "gpt-transcribe"
 
-        /** Guenstiges Modell fuer die optionale Textveredelung. */
-        const val DEFAULT_LLM_MODEL = "gpt-4o-mini"
+        /** Empfehlung zum Glaetten bei OpenAI (erstes Katalog-Modell, Stand 2026-10-08). */
+        const val DEFAULT_LLM_MODEL = "gpt-6-luna"
 
         const val DEFAULT_OFFLINE_MODEL = "small"
 

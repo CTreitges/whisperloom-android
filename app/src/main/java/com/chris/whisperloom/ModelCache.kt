@@ -16,8 +16,9 @@ import org.json.JSONObject
  *
  * Eigene Datei (`whisperloom_models.xml`) statt der Einstellungen: der Einstellungs-Horcher in
  * [com.chris.whisperloom.ui.state.PrefsState] laedt bei jeder Aenderung dort alle Felder neu.
- * Gespeichert werden nur die Modelle und der Zeitpunkt — nie ein Key. Die Datei bleibt trotzdem
- * wie die anderen aus jedem Backup ausgeschlossen.
+ * Gespeichert werden nur die Modelle und der Zeitpunkt, dazu die Textmodelle, die `temperature`
+ * abgelehnt haben ([rememberNoTemperature]) — nie ein Key. Die Datei bleibt trotzdem wie die
+ * anderen aus jedem Backup ausgeschlossen.
  *
  * @param now Uhr in ms (Tests setzen sie).
  */
@@ -46,6 +47,18 @@ class ModelCache(context: Context, private val now: () -> Long = System::current
     /** Das Modell [id] aus der zuletzt geladenen Liste — fuer die Flags beim Senden ([ServerModelLookup]). */
     override fun find(providerId: String, kind: ModelKind, baseUrl: String, id: String): RemoteModel? =
         get(providerId, kind, baseUrl)?.models?.firstOrNull { it.id == id }
+
+    override fun rejectsTemperature(providerId: String, baseUrl: String, id: String): Boolean =
+        sp.contains(noTemperatureKey(providerId, baseUrl, id))
+
+    /**
+     * Das Textmodell von [access] hat `temperature` abgelehnt (HTTP 400, der zweite Versuch ohne kam
+     * durch): ab jetzt geht es gleich ohne raus. Vergessen ist nie noetig — ohne temperature geht
+     * jedes Modell, es faellt nur temperature 0 weg.
+     */
+    fun rememberNoTemperature(access: ApiAccess) {
+        sp.edit { putLong(noTemperatureKey(access.provider.id, access.baseUrl, access.model), now()) }
+    }
 
     /** Legt die Liste mit dem aktuellen Zeitpunkt ab (ersetzt die alte, vergisst einen Fehlschlag). */
     fun put(access: ApiAccess, kind: ModelKind, models: List<RemoteModel>): Entry {
@@ -101,6 +114,10 @@ class ModelCache(context: Context, private val now: () -> Long = System::current
         /** `<providerId>|<stt|llm>|<baseUrl>`, die Adresse ohne Leerraum und ohne Schraegstrich am Ende. */
         fun key(providerId: String, kind: ModelKind, baseUrl: String): String =
             "$providerId|${kind.key}|${baseUrl.trim().trimEnd('/')}"
+
+        /** `noTemp|<providerId>|<baseUrl>|<Modell>`, die Adresse wie bei [key]. */
+        fun noTemperatureKey(providerId: String, baseUrl: String, model: String): String =
+            "noTemp|$providerId|${baseUrl.trim().trimEnd('/')}|${model.trim()}"
 
         fun encode(entry: Entry): String = JSONObject()
             .put("fetchedAt", entry.fetchedAt)

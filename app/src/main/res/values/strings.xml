@@ -333,14 +333,14 @@
     <!-- §6.6 Text (E2) und Füllwörter-Sheet (B3) -->
     <string name="text_title">Text</string>
     <string name="text_card_refine">Textverbesserung (KI)</string>
-    <string name="text_level_off_sub">Nur die Regeln unten, keine zweite Anfrage.</string>
+    <string name="text_level_off_sub">Nur die Regeln ohne KI, keine zweite Anfrage.</string>
     <string name="text_level_smooth_sub">Zeichensetzung, Groß-/Kleinschreibung, Absätze. Inhalt unverändert.</string>
     <string name="text_level_beautify_sub">Formuliert flüssiger und klarer, behält Inhalt, Ton und deine Wörter.</string>
     <string name="text_level_summarize_sub">Kürzt auf das Wesentliche. Namen, Zahlen und Termine bleiben genau.</string>
     <string name="text_level_prompt_sub">Formt das Diktat zu einem gegliederten Prompt für ChatGPT, Claude &amp; Co.</string>
     <string name="text_level_cost">Zweite Anfrage · ca. 1–2 s länger · geringe Zusatzkosten</string>
     <string name="pref_smart_fillers">Füllwörter intelligent entfernen</string>
-    <string name="pref_smart_fillers_info">Statt fester Wortliste entscheidet die KI selbst, welche Füllwörter, Versprecher und Wiederholungen weg können. Im Zweifel bleibt das Wort.</string>
+    <string name="pref_smart_fillers_info">Statt fester Wortliste entscheidet die KI selbst, welche Füllwörter, Versprecher und Wiederholungen weg können. Im Zweifel bleibt das Wort. Gilt auch für Sprachnachrichten.</string>
     <string name="text_smart_needs_level">Braucht eine Stufe über „Aus“.</string>
     <string name="pref_polish_readable">Lesbarer glätten</string>
     <string name="pref_polish_readable_info">„Glätten“ repariert auch holprige Sätze: Satzabbrüche, Versprecher, Wiederholungen, Füllwörter. Deine Wörter und dein Ton bleiben.</string>
@@ -405,6 +405,42 @@
     <string name="pref_auto_cap">Automatisch groß schreiben</string>
     <string name="pref_trailing_space">Leerzeichen nach Diktat anhängen</string>
     <string name="text_fillers_paused">Die Wortliste pausiert, solange die KI über Füllwörter entscheidet.</string>
+    <!-- 3.8.6 Text-Hub (Unterzeile = aktueller Wert) und Unterseiten; Seitentitel = Zeilentitel -->
+    <string name="text_hub_section_stages">KI-Stufen</string>
+    <string name="text_hub_section_models">Modelle &amp; Zugang</string>
+    <string name="text_hub_section_rules">Ohne KI</string>
+    <string name="text_hub_dictation">Diktat</string>
+    <string name="text_hub_share">Sprachnachrichten</string>
+    <string name="text_hub_access">Online-Zugang &amp; Modelle</string>
+    <!-- %1$s = Stufe („Glätten“) -->
+    <string name="text_hub_val_readable">%1$s · lesbarer</string>
+    <string name="text_hub_val_share_off">Aus · wortgetreu</string>
+    <!-- %1$s = Anbieter der Erkennung -->
+    <string name="text_hub_val_access_same">Wie Erkennung · %1$s</string>
+    <string name="text_hub_val_access_none">Kein Online-Zugang</string>
+    <!-- %1$s = Regel („Lokales Textmodell“) -->
+    <string name="text_hub_val_offline_missing">%1$s · Textmodell fehlt</string>
+    <string name="text_hub_val_rules_none">Keine</string>
+    <plurals name="text_hub_val_models_custom">
+        <item quantity="one">%d Stufe mit eigenem Modell</item>
+        <item quantity="other">%d Stufen mit eigenem Modell</item>
+    </plurals>
+    <!-- Modell je Stufe: "" im Modellfeld des Zugangs = die Empfehlung des Anbieters je Stufe -->
+    <string name="text_models_recommended">Empfehlung je Stufe</string>
+    <!-- %1$s = Modell zum Glätten, %2$s = Modell zum Umformulieren -->
+    <string name="text_models_recommended_sub">Glätten: %1$s · Umformulieren: %2$s</string>
+    <string name="text_models_title">Modell je Stufe</string>
+    <string name="text_models_intro">„Standard“ ist das Modell des Zugangs, bei „Empfehlung je Stufe“ ein schnelles zum Glätten und ein stärkeres zum Umformulieren. Glätten gilt auch für „Lesbarer glätten“.</string>
+    <!-- %1$s = Modell, mit dem die Stufe ohne eigenes Modell rechnet -->
+    <string name="text_models_standard">Standard · %1$s</string>
+    <string name="text_models_standard_option">Standard (%1$s)</string>
+    <!-- %1$s = Stufe („Verschönern“) -->
+    <string name="text_models_pick_title">Modell für %1$s</string>
+    <string name="text_models_no_access">Ohne Online-Zugang für die Textverbesserung gibt es hier nichts zu wählen.</string>
+    <!-- Ollama lokal, eigener Server, Together/DeepInfra „wie Erkennung“: ohne Modell des Zugangs wirkt kein Stufen-Modell -->
+    <string name="text_models_no_model">Trag oben zuerst ein Modell ein — es ist der Standard aller Stufen. Danach kannst du hier je Stufe ein anderes wählen.</string>
+    <string name="text_models_reset_note">Ein neuer Anbieter setzt alle Stufen auf „Standard“ zurück.</string>
+    <string name="text_models_test">Modell prüfen</string>
     <string name="fillers_title">Füllwörter</string>
     <string name="fillers_builtin">Eingebaut</string>
     <string name="fillers_custom">Eigene Wörter</string>
@@ -468,7 +504,7 @@
     <string name="models_source">Quelle: huggingface.co/ggerganov/whisper.cpp</string>
     <string name="models_section_stt">Spracherkennung</string>
     <string name="models_section_llm">Textverbesserung</string>
-    <string name="models_llm_intro">Verbessert offline erkannten Text auf dem Gerät — ohne Netz, der Text verlässt das Handy nicht. Wann es rechnet, stellst du unter Text ein.</string>
+    <string name="models_llm_intro">Verbessert offline erkannten Text auf dem Gerät — ohne Netz, der Text verlässt das Handy nicht. Wann es rechnet, stellst du unter Text › Offline-Erkennung ein.</string>
     <string name="models_gemma_e2b">Gemma 4 E2B</string>
     <string name="models_gemma_e2b_sub">%1$s · ~1,8 GB RAM · Gerät ab 6 GB RAM</string>
     <string name="models_gemma_e4b">Gemma 4 E4B</string>
@@ -558,7 +594,7 @@
     <string name="share_sending">Wird übertragen …</string>
     <string name="share_refining">Text wird verbessert …</string>
     <string name="share_refining_local">Text wird lokal verbessert …</string>
-    <string name="share_refine_note">Textverbesserung: %1$s · änderbar unter Einstellungen › Text</string>
+    <string name="share_refine_note">Textverbesserung: %1$s · änderbar unter Einstellungen › Text › Sprachnachrichten</string>
     <string name="share_refine_local_fallback">Textverbesserung: %1$s · online fehlgeschlagen, lokal verbessert</string>
     <string name="share_refine_partly" tools:ignore="PluralsCandidate">Textverbesserung: %1$s · bei %2$d von %3$d Dateien übersprungen: %4$s</string>
     <string name="share_copy">Kopieren</string>

@@ -1,5 +1,7 @@
 package com.chris.whisperloom.api
 
+import com.chris.whisperloom.RefineMode
+
 /**
  * Aufgeloester Zugang zu einem OpenAI-kompatiblen Endpunkt — alles, was ein Aufruf
  * braucht. [modelOption] kommt aus dem Katalog; fuer IDs ohne Katalog-Treffer (vom Server
@@ -85,6 +87,10 @@ object AccessResolver {
      * @param sttOffline Erkennung laeuft offline. Dann gibt es nichts zu uebernehmen: der noch
      *   gespeicherte Online-Zugang ist abgewaehlt, und der erkannte Text darf nicht still dorthin
      *   gehen ([RefineBlock.OFFLINE], ohne Adresse und Key).
+     * @param stageModel eigenes Modell der Stufe ("" = Standard). Reihenfolge: [stageModel] →
+     *   [model] (das Modell des Zugangs, wenn gesetzt) → Empfehlung des Anbieters fuer [stage]
+     *   ([Provider.recommendedLlmModel]) → erstes Katalog-Modell. Ohne Katalog und ohne [model] gilt
+     *   auch [stageModel] nicht (Ollama lokal, eigener Server, Together "wie Erkennung").
      */
     fun resolveLlm(
         stt: ApiAccess,
@@ -94,6 +100,8 @@ object AccessResolver {
         model: String,
         serverModels: ServerModelLookup = ServerModelLookup.NONE,
         sttOffline: Boolean = false,
+        stageModel: String = "",
+        stage: RefineMode? = null,
     ): ApiAccess {
         val same = providerId.isBlank() || providerId == LLM_SAME
         if (same && sttOffline) {
@@ -109,7 +117,10 @@ object AccessResolver {
         }
         val provider = if (same) stt.provider else ProviderCatalog.byId(providerId)
         val sameProvider = provider.id == stt.provider.id
-        val modelId = model.trim().ifBlank { provider.defaultLlmModel }
+        // Das Stufen-Modell zaehlt nur, wenn der Zugang selbst eins hat (Katalog oder llm_model). Sonst
+        // sagen Bereitschaft, Tastatur und Banner (ohne Stufe) "kein Modell", und die Stufe ginge doch raus.
+        val accessModel = model.trim().ifBlank { provider.recommendedLlmModel(stage) }
+        val modelId = if (accessModel.isBlank()) "" else stageModel.trim().ifBlank { accessModel }
 
         val url = when {
             same -> stt.baseUrl
@@ -133,7 +144,11 @@ object AccessResolver {
         )
     }
 
-    /** Katalog zuerst; nur ohne Treffer den Cache fragen (der liest JSON) und Flags ableiten. */
+    /**
+     * Katalog zuerst; nur ohne Treffer den Cache fragen (der liest JSON) und Flags ableiten. Hat ein
+     * Textmodell `temperature` schon einmal abgelehnt (gemerkt in [serverModels]), geht es ohne raus —
+     * auch ein Katalog-Modell, der Katalog darf irren (Claude Sonnet 5 bis 3.8.5).
+     */
     private fun option(
         provider: Provider,
         kind: ModelKind,
@@ -142,8 +157,14 @@ object AccessResolver {
         serverModels: ServerModelLookup,
     ): ModelOption? {
         val catalog = if (kind == ModelKind.STT) provider.sttModel(id) else provider.llmModel(id)
-        if (catalog != null || id.isBlank()) return catalog
-        return ModelLists.optionFor(provider, kind, id, serverModels.find(provider.id, kind, url, id))
+        val option = if (catalog != null || id.isBlank()) {
+            catalog
+        } else {
+            ModelLists.optionFor(provider, kind, id, serverModels.find(provider.id, kind, url, id))
+        }
+        val rejected = kind == ModelKind.LLM && id.isNotBlank() && option?.temperatureSupported != false &&
+            serverModels.rejectsTemperature(provider.id, url, id)
+        return if (rejected) (option ?: ModelOption(id, id)).copy(temperatureSupported = false) else option
     }
 
     private fun timeoutMs(seconds: Int, provider: Provider): Int =

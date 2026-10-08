@@ -36,6 +36,9 @@ import com.chris.whisperloom.ui.nav.SystemStatus
 import com.chris.whisperloom.ui.settings.ModelsScreen
 import com.chris.whisperloom.ui.settings.RecognitionScreen
 import com.chris.whisperloom.ui.settings.SettingsHubScreen
+import com.chris.whisperloom.ui.nav.TextSection
+import com.chris.whisperloom.ui.settings.TextAccessScreen
+import com.chris.whisperloom.ui.settings.TextOfflineScreen
 import com.chris.whisperloom.ui.settings.TextSettingsScreen
 import com.chris.whisperloom.ui.setup.SetupScreen
 import com.chris.whisperloom.ui.state.AppEnv
@@ -227,7 +230,7 @@ class TextModelUiTest {
         installSparse(ctx, TextModelCatalog.GEMMA4_E2B)
         installSparse(ctx, TextModelCatalog.GEMMA4_E4B)
         val store = ModelStore(ctx)
-        screen(AppEnv(PrefsState(prefs), statusAusDateien(store)) { statusAusDateien(store) }) { TextSettingsScreen(it) }
+        screen(AppEnv(PrefsState(prefs), statusAusDateien(store)) { statusAusDateien(store) }) { TextOfflineScreen(it) }
         compose.onNodeWithContentDescription("Gemma 4 E4B löschen").performClick()
         compose.waitForIdle()
         compose.onNodeWithText("Löschen").performClick()
@@ -385,29 +388,38 @@ class TextModelUiTest {
 
     @Test fun passtKeinTextmodellSindDieLokalenRegelnMitGrundGesperrt() {
         offlineOhneTextmodell()
-        screen(env(SystemStatus(installedModels = setOf("small"), totalRamBytes = vierGb))) { TextSettingsScreen(it) }
+        screen(env(SystemStatus(installedModels = setOf("small"), totalRamBytes = vierGb))) { TextOfflineScreen(it) }
         pflichtkarte.assertCountEquals(0)
         compose.onNodeWithText("Für ein lokales Textmodell braucht das Gerät mindestens 6 GB RAM.").assertExists()
         compose.onNodeWithText("Laden (${size(TextModelCatalog.GEMMA4_E2B.bytes)})").assertDoesNotExist()
         compose.onNode(isSelectable() and hasText("Lokales Textmodell")).assertIsNotEnabled()
         compose.onNode(isSelectable() and hasText("Online, ohne Netz lokal")).assertIsNotEnabled()
         compose.onNode(isSelectable() and hasText("Überspringen")).assertIsEnabled().assertIsSelected()
+    }
+
+    @Test fun passtKeinTextmodellErklaertDerOnlineZugangUeberspringen() {
+        offlineOhneTextmodell()
+        screen(env(SystemStatus(installedModels = setOf("small"), totalRamBytes = vierGb))) { TextAccessScreen(it) }
         // Der Online-Zugang erklaert "Ueberspringen", nicht das lokale Textmodell.
         compose.onNodeWithText("Ohne eigenen Zugang kommt der Text bei Offline-Erkennung ohne KI.", substring = true).assertExists()
     }
 
-    // --- E2 Text: Karte "Offline-Erkennung" und Online-Zugang ---------------------------------
+    // --- E2 Text: Seite "Offline-Erkennung" und Online-Zugang ---------------------------------
 
-    @Test fun karteOfflineErkennungStehtZwischenShareUndOnlineZugang() {
+    @Test fun offlineErkennungStehtImHubZwischenOnlineZugangUndRegeln() {
         screen(env()) { TextSettingsScreen(it) }
-        val reihenfolge = listOf("Geteilte Sprachnachrichten", "Offline-Erkennung", "Online-Zugang für die Textverbesserung", "Regeln ohne KI")
+        val reihenfolge = listOf("Sprachnachrichten", "Online-Zugang & Modelle", "Offline-Erkennung", "Regeln ohne KI")
         val oben = reihenfolge.map { compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
         assertEquals("Von oben nach unten: $reihenfolge", oben.sorted(), oben)
+    }
+
+    @Test fun offlineSeiteZeigtDieRegel() {
+        screen(env()) { TextOfflineScreen(it) }
         compose.onNodeWithText("Textverbesserung bei Offline-Erkennung").assertExists()
     }
 
     @Test fun regelStandardIstLokalUndDasRadioSchreibtDiePref() {
-        screen(env()) { TextSettingsScreen(it) }
+        screen(env()) { TextOfflineScreen(it) }
         compose.onNode(isSelectable() and hasText("Lokales Textmodell")).assertIsSelected()
         compose.onNode(isSelectable() and hasText("Online, ohne Netz lokal")).performClick()
         compose.waitForIdle()
@@ -420,7 +432,7 @@ class TextModelUiTest {
 
     @Test fun textKarteZeigtPflichtkarteUndBeideTextmodelle() {
         offlineOhneTextmodell()
-        screen(env(SystemStatus(installedModels = setOf("small")))) { TextSettingsScreen(it) }
+        screen(env(SystemStatus(installedModels = setOf("small")))) { TextOfflineScreen(it) }
         pflichtkarte.assertCountEquals(1)
         compose.onNode(isSelectable() and hasText("Gemma 4 E2B")).assertIsEnabled().assertIsSelected()
         compose.onNode(isSelectable() and hasText("Gemma 4 E4B")).assertIsEnabled()
@@ -433,7 +445,7 @@ class TextModelUiTest {
         offlineOhneTextmodell()
         ModelDownloads.update("gemma4_e2b", DownloadState.Running(1_294_073_856, TextModelCatalog.GEMMA4_E2B.bytes, 5_000_000))
         try {
-            screen(env(SystemStatus(installedModels = setOf("small")))) { TextSettingsScreen(it) }
+            screen(env(SystemStatus(installedModels = setOf("small")))) { TextOfflineScreen(it) }
             pflichtkarte.assertCountEquals(0)
             compose.onAllNodesWithText("50 %", substring = true).assertCountEquals(1)
         } finally {
@@ -443,7 +455,7 @@ class TextModelUiTest {
 
     @Test fun ohnePflichtLaedtDieModellzeileOhneDieRegelZuAendern() {
         offlineOhneTextmodell(OfflineRefineRule.SKIP)
-        screen(env(SystemStatus(installedModels = setOf("small")))) { TextSettingsScreen(it) }
+        screen(env(SystemStatus(installedModels = setOf("small")))) { TextOfflineScreen(it) }
         pflichtkarte.assertCountEquals(0)
         compose.onNodeWithContentDescription("Gemma 4 E2B herunterladen").performClick()
         compose.waitForIdle()
@@ -458,7 +470,7 @@ class TextModelUiTest {
         installSparse(ctx, TextModelCatalog.GEMMA4_E2B)
         installSparse(ctx, TextModelCatalog.GEMMA4_E4B)
         val status = SystemStatus(installedModels = setOf("small"), installedTextModels = setOf("gemma4_e2b", "gemma4_e4b"), totalRamBytes = 16L shl 30)
-        screen(env(status)) { TextSettingsScreen(it) }
+        screen(env(status)) { TextOfflineScreen(it) }
         compose.onNode(isSelectable() and hasText("Gemma 4 E2B")).assertIsSelected()
         compose.onNode(isSelectable() and hasText("Gemma 4 E4B")).assertIsEnabled().performClick()
         compose.waitForIdle()
@@ -470,7 +482,7 @@ class TextModelUiTest {
         prefs.engine = Engine.OFFLINE
         installSparse(ctx, TextModelCatalog.GEMMA4_E2B)
         val status = SystemStatus(installedModels = setOf("small"), installedTextModels = setOf("gemma4_e2b"), totalRamBytes = 16L shl 30)
-        screen(env(status)) { TextSettingsScreen(it) }
+        screen(env(status)) { TextOfflineScreen(it) }
         compose.onNode(isSelectable() and hasText("Gemma 4 E4B")).performClick()
         compose.waitForIdle()
         compose.onNodeWithText("Laden").performClick() // D2
@@ -480,7 +492,7 @@ class TextModelUiTest {
 
     @Test fun onlineZugangOfflineMitLokalBrauchtKeinenZugang() {
         prefs.engine = Engine.OFFLINE
-        screen(env()) { TextSettingsScreen(it) }
+        screen(env()) { TextAccessScreen(it) }
         compose.onNodeWithText("Bei Offline-Erkennung verbessert das lokale Textmodell — dafür brauchst du keinen Online-Zugang.")
             .assertExists()
         compose.onNodeWithText("Eigenen Zugang eintragen").assertDoesNotExist()
@@ -488,24 +500,25 @@ class TextModelUiTest {
 
     @Test fun schalterSagtOfflineNichtDassDerZugangDerErkennungGenutztWird() {
         prefs.engine = Engine.OFFLINE
-        screen(env()) { TextSettingsScreen(it) }
+        screen(env()) { TextAccessScreen(it) }
         compose.onNodeWithText("Bei Offline-Erkennung geht ohne eigenen Zugang kein Text online.").assertExists()
         compose.onNodeWithText("Nutzt Anbieter und Key der Erkennung", substring = true).assertDoesNotExist()
     }
 
     @Test fun schalterNenntOnlineDenZugangDerErkennung() {
         prefs.engine = Engine.ONLINE
-        screen(env()) { TextSettingsScreen(it) }
+        screen(env()) { TextAccessScreen(it) }
         compose.onNodeWithText("Nutzt Anbieter und Key der Erkennung", substring = true).assertExists()
     }
 
     @Test fun onlineZugangOfflineMitOnlineLokalOderUeberspringenBietetEigenenZugangAn() {
         prefs.engine = Engine.OFFLINE
         prefs.offlineRefine = OfflineRefineRule.ONLINE_LOCAL
-        screen(env()) { TextSettingsScreen(it) }
+        val e = env()
+        screen(e) { TextAccessScreen(it) }
         compose.onNodeWithText("Ohne eigenen Zugang verbessert bei Offline-Erkennung das lokale Textmodell.", substring = true)
             .assertExists()
-        compose.onNode(isSelectable() and hasText("Überspringen")).performClick()
+        compose.runOnIdle { e.prefs.offlineRefine = OfflineRefineRule.SKIP } // Seite Offline-Erkennung
         compose.waitForIdle()
         compose.onNodeWithText("Ohne eigenen Zugang kommt der Text bei Offline-Erkennung ohne KI.", substring = true).assertExists()
         compose.onNodeWithText("Eigenen Zugang eintragen").performClick()
@@ -513,9 +526,10 @@ class TextModelUiTest {
         assertEquals("eigener Zugang an", true, PrefsState(Prefs(ctx)).llmUseOwn)
     }
 
-    @Test fun karteFehltWennOfflineAufDemGeraetNichtGeht() {
+    @Test fun hubZeileFehltWennOfflineAufDemGeraetNichtGeht() {
         screen(env(SystemStatus(offlineSupported = false))) { TextSettingsScreen(it) }
         compose.onNodeWithText("Offline-Erkennung").assertDoesNotExist()
+        compose.onNodeWithText("Online-Zugang & Modelle").assertExists()
     }
 
     // --- Assistent 2b ------------------------------------------------------------------------
@@ -723,14 +737,15 @@ class TextModelUiTest {
         installedModels = setOf("small"), installedTextModels = textModels,
     )
 
-    @Test fun homeWarntOhneTextmodellUndDasBannerFuehrtZuText() {
+    @Test fun homeWarntOhneTextmodellUndDasBannerFuehrtZurOfflineSeite() {
         offlineOhneTextmodell()
         val nav = screen(env(homeStatus())) { HomeScreen(it) }
         compose.onNodeWithText("Glätten · Textmodell fehlt — Text ohne KI").assertExists()
         compose.onNodeWithText("Offline ohne Textmodell — der Text kommt ohne KI.").assertExists()
         compose.onNodeWithText("Beheben").performClick()
         compose.waitForIdle()
-        assertEquals(Screen.TextSettings, nav.current)
+        // Direkt zu den Textmodellen (3.8.6), nicht in den Text-Hub.
+        assertEquals(Screen.TextPage(TextSection.OFFLINE), nav.current)
     }
 
     @Test fun homeNurMitShareStufeWarnenZeileUndBannerGemeinsam() {

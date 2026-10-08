@@ -1,5 +1,6 @@
 package com.chris.whisperloom.ui.components
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -20,6 +21,7 @@ import androidx.compose.ui.platform.testTag
 /**
  * Auswahlfeld (ExposedDropdownMenuBox, Spec §0.2) mit optionalem letzten Eintrag
  * [extraOption] (z. B. "Eigenes Modell …"), der statt einer Auswahl [onExtra] ausloest.
+ * [optionSupporting] = zweite, kleine Zeile eines Eintrags (null = keine).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,6 +36,7 @@ fun <T> LoomDropdown(
     extraOption: String? = null,
     onExtra: () -> Unit = {},
     supportingText: (@Composable () -> Unit)? = null,
+    optionSupporting: (T) -> String? = { null },
 ) {
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(
@@ -61,8 +64,18 @@ fun <T> LoomDropdown(
             containerColor = MaterialTheme.colorScheme.surfaceBright,
         ) {
             options.forEach { option ->
+                val sub = optionSupporting(option)
                 DropdownMenuItem(
-                    text = { Text(optionLabel(option)) },
+                    text = {
+                        if (sub == null) {
+                            Text(optionLabel(option))
+                        } else {
+                            Column {
+                                Text(optionLabel(option))
+                                Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    },
                     onClick = {
                         expanded = false
                         onSelect(option)

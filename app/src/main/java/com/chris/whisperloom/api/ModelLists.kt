@@ -52,6 +52,9 @@ data class ModelListRequest(
 fun interface ServerModelLookup {
     fun find(providerId: String, kind: ModelKind, baseUrl: String, id: String): RemoteModel?
 
+    /** Das Textmodell hat `temperature` schon einmal abgelehnt (dauerhaft gemerkt, siehe `ModelCache`). */
+    fun rejectsTemperature(providerId: String, baseUrl: String, id: String): Boolean = false
+
     companion object {
         val NONE = ServerModelLookup { _, _, _, _ -> null }
     }
@@ -223,6 +226,7 @@ object ModelLists {
             temperatureSupported = temperature ?: true,
             reasoningEffort = effort,
             languageField = languageField ?: "language",
+            thinkingType = base?.thinkingType,
         )
     }
 

@@ -13,12 +13,12 @@ Recognition your way:
 
 Text the way you want it:
 • Remove filler words (editable list), automatic capitalisation.
-• Optional clean-up by a language model in three levels: polish (optionally “more readable”, keeping your words and tone), rephrase, summarise – using your own or the recognition account, including Ollama: locally on your home server without a key (the text never leaves your network) or via Ollama Cloud. The model list comes straight from the server.
+• Optional clean-up by a language model in three levels: polish (optionally “more readable”, keeping your words and tone), rephrase, summarise – each level can use its own model, by default a fast one for polishing and a stronger one for rephrasing. Using your own or the recognition account, including Ollama: locally on your home server without a key (the text never leaves your network) or via Ollama Cloud. The model list comes straight from the server.
 • AI offline too: Gemma 4 refines offline-recognised text right on the device – no network needed, the text never leaves the phone. The model is downloaded once (E2B 2.6 GB from 6 GB RAM, E4B 3.7 GB from 8 GB).
 • For AI users, switchable under Settings → Advanced ("Erweitert"): the "Prompt" level turns a dictation into a well-structured prompt for ChatGPT, Claude & co.
 • "Automatic paragraphs" switch: the AI splits longer dictations into paragraphs – or, when switched off, returns everything as one continuous text.
 
-Transcribe voice messages: share a message from WhatsApp, Telegram or Signal → WhisperLoom. The text appears in readable paragraphs, verbatim or without fillers, ready to copy or forward. Optionally with its own AI level: polish, rephrase or summarise.
+Transcribe voice messages: share a message from WhatsApp, Telegram or Signal → WhisperLoom. The text appears in readable paragraphs, verbatim or without fillers, ready to copy or forward. Optionally with its own AI level: polish (also “more readable”), rephrase or summarise.
 
 Pro Widgets for your own agent: tap, speak, tap – a voice command widget transcribes and sends the task to a server you run yourself; the reply arrives wherever you normally message your agent. Delivery keeps going with the screen off. Each widget has its own name (shown below the widget, can be hidden), its own server and token, an icon or gallery picture and optional auto-stop after a pause; resizes freely from 1 × 1 to 4 × 2. Unlock them under Settings → Advanced ("Erweitert"). Requires your own server (the counterpart's source code is on GitHub) and stays invisible otherwise.
 

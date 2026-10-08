@@ -44,7 +44,7 @@ class ModelFlagsTest {
             assertEquals(id, o.label)
         }
         // Gleiche Familie ueber OpenRouter ohne Metadaten (frei getippt): Name ohne Anbieter-Praefix.
-        val viaRouter = llm("openrouter", "openai/gpt-6-luna")!!
+        val viaRouter = llm("openrouter", "openai/gpt-6-astra")!!
         assertFalse(viaRouter.temperatureSupported)
         assertNull("effort-Heuristik nur bei OpenAI selbst", viaRouter.reasoningEffort)
         // Snapshot eines Katalog-Modells behaelt dessen Stufe (gpt-5-mini: minimal) statt "low".
@@ -93,8 +93,8 @@ class ModelFlagsTest {
         assertTrue(llm("openrouter", "openai/gpt-5.4-mini", RemoteModel("openai/gpt-5.4-mini", temperatureSupported = true))!!.temperatureSupported)
         assertEquals("none", llm("openrouter", "mistralai/x", RemoteModel("mistralai/x", reasoningEffort = "none"))!!.reasoningEffort)
         // Ohne Flags: Anzeigename vom Server, sonst Defaults.
-        val plain = llm("anthropic", "claude-opus-5-5", RemoteModel("claude-opus-5-5", label = "Claude Opus 5.5"))!!
-        assertEquals("Claude Opus 5.5", plain.label)
+        val plain = llm("anthropic", "claude-opus-6", RemoteModel("claude-opus-6", label = "Claude Opus 6"))!!
+        assertEquals("Claude Opus 6", plain.label)
         assertTrue(plain.temperatureSupported)
         assertNull(plain.reasoningEffort)
         assertEquals("language", plain.languageField)
@@ -122,11 +122,21 @@ class ModelFlagsTest {
         assertNull(llm("custom", "gemini-3.6-flash"))
     }
 
+    @Test fun claudeSnapshotErbtTemperatureUndThinking() {
+        // Ein datierter Snapshot vom Server bekommt die Flags seines Katalog-Modells — ohne Namens-Heuristik.
+        val haiku = llm("anthropic", "claude-haiku-5-5-20261007")!!
+        assertFalse(haiku.temperatureSupported)
+        assertEquals("disabled", haiku.thinkingType)
+        assertEquals("between_tools", llm("anthropic", "claude-sonnet-5-5-20260601")!!.thinkingType)
+        // Unbekanntes Claude-Modell: keine Heuristik, der zweite Versuch und das Merken fangen es.
+        assertNull(llm("anthropic", "claude-opus-6"))
+    }
+
     @Test fun gelistetGiltAuchFuerDatierteSnapshots() {
         // Anthropic listet datierte IDs: die Empfehlung "claude-haiku-4-5" ist damit gelistet.
         val anthropic = p("anthropic").llmModels
         assertEquals(
-            setOf("claude-haiku-4-5"),
+            setOf("claude-haiku-4-5", "claude-opus-5-5"),
             ModelLists.listedIds(anthropic, listOf("claude-haiku-4-5-20251001", "claude-opus-5-5")),
         )
         assertEquals(setOf("claude-sonnet-5"), ModelLists.listedIds(anthropic, listOf("claude-sonnet-5")))

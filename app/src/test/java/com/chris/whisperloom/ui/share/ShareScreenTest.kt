@@ -166,7 +166,7 @@ class ShareScreenTest {
         compose.onNodeWithText("Geglätteter Absatz.").assertIsDisplayed()
         compose.onNodeWithText("Erster Absatz.").assertDoesNotExist()
         compose.onNodeWithText("Füllwörter ausblenden").assertDoesNotExist()
-        compose.onNodeWithText("Textverbesserung: Glätten · änderbar unter Einstellungen › Text").assertIsDisplayed()
+        compose.onNodeWithText("Textverbesserung: Glätten · änderbar unter Einstellungen › Text › Sprachnachrichten").assertIsDisplayed()
     }
 
     @Test fun onlineGescheitertLokalVerbessertIstEinHinweisKeinFehler() {

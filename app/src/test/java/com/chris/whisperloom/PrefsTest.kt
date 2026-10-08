@@ -12,6 +12,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -55,7 +56,9 @@ class PrefsTest {
         assertFalse(p.a11ySkipped)
         assertFalse(p.notifSkipped)
         assertFalse(p.keyboardSkipped)
-        assertEquals(4, sp.getInt("prefs_version", 0))
+        assertFalse(p.polishReadable)
+        assertFalse(p.sharePolishReadable)
+        assertEquals(5, sp.getInt("prefs_version", 0))
         // Ohne Engine ist die App nicht eingerichtet — auch nicht mit Key.
         assertFalse(TranscriptionEngine.isConfigured(ctx))
     }
@@ -75,9 +78,9 @@ class PrefsTest {
         assertEquals("openai", stt.provider.id)
         assertEquals("gpt-4o-transcribe", stt.model) // nicht automatisch umgeschrieben
         assertEquals("sk-alt", stt.apiKey)
-        assertEquals("gpt-4o-mini", p.llmAccess().model)
+        assertEquals(Prefs.DEFAULT_LLM_MODEL, p.llmAccess().model)
         assertTrue(TranscriptionEngine.isConfigured(ctx))
-        assertEquals(4, sp.getInt("prefs_version", 0))
+        assertEquals(5, sp.getInt("prefs_version", 0))
     }
 
     // --- Review KOR-2/SEC-3: v2 hatte eine freie api_url ohne Anbieter ---------------------
@@ -146,7 +149,7 @@ class PrefsTest {
         val p = Prefs(ctx)
         assertEquals("gemini-2.5-flash-lite", p.llmModel)
         assertEquals("gemini-2.5-flash-lite", p.llmAccess().model)
-        assertEquals(4, sp.getInt("prefs_version", 0))
+        assertEquals(5, sp.getInt("prefs_version", 0))
     }
 
     @Test fun geminiMitGewaehltemModellUndAndereAnbieterBleibenUnveraendert() {
@@ -200,16 +203,21 @@ class PrefsTest {
 
     @Test fun lesbarerGlaettenIstAbWerkAus() {
         val p = Prefs(ctx)
+        p.refineMode = RefineMode.POLISH
+        p.shareRefineMode = RefineMode.POLISH
         assertFalse(p.polishReadable)
-        assertEquals(RefineMode.POLISH, p.effective(RefineMode.POLISH))
+        assertFalse(p.sharePolishReadable)
+        assertEquals(RefineMode.POLISH, p.dictationStage)
+        assertEquals(RefineMode.POLISH, p.shareStage)
     }
 
     @Test fun lesbarerGlaettenWirktNurAufGlaetten() {
         val p = Prefs(ctx)
         p.polishReadable = true
         assertTrue(Prefs(ctx).polishReadable)
-        assertEquals(RefineMode.READABLE, p.effective(RefineMode.POLISH))
-        for (mode in RefineMode.entries - RefineMode.POLISH) assertEquals(mode.name, mode, p.effective(mode))
+        assertEquals(RefineMode.READABLE, Prefs.effective(RefineMode.POLISH, readable = true))
+        for (mode in RefineMode.entries - RefineMode.POLISH) assertEquals(mode.name, mode, Prefs.effective(mode, readable = true))
+        for (mode in RefineMode.entries) assertEquals(mode.name, mode, Prefs.effective(mode, readable = false))
         // Gespeichert bleibt die Wahl "Glaetten" — READABLE ist nie eine waehlbare Stufe.
         p.refineMode = RefineMode.POLISH
         assertEquals("polish", sp.getString("refine_mode", null))
@@ -222,6 +230,138 @@ class PrefsTest {
         assertTrue(Prefs(ctx).polishReadable)
         Prefs(ctx).polishReadable = false
         assertFalse(state.polishReadable)
+        state.sharePolishReadable = true
+        assertTrue(Prefs(ctx).sharePolishReadable)
+        state.shareRefineMode = RefineMode.POLISH
+        state.refineMode = RefineMode.POLISH
+        assertEquals(RefineMode.READABLE, state.shareStage)
+        assertEquals(RefineMode.POLISH, state.dictationStage)
+        Prefs(ctx).sharePolishReadable = false
+        assertEquals(RefineMode.POLISH, state.shareStage)
+        state.dispose()
+    }
+
+    // --- v5 (3.8.6): "Lesbarer glaetten" getrennt fuer Sprachnachrichten -------------------
+
+    @Test fun lesbarerGlaettenGetrenntFuerDiktatUndSprachnachrichten() {
+        val p = Prefs(ctx)
+        p.refineMode = RefineMode.POLISH
+        p.shareRefineMode = RefineMode.POLISH
+        p.polishReadable = true
+        assertEquals(RefineMode.READABLE, p.dictationStage)
+        assertEquals("Diktat-Schalter faerbt nicht ab", RefineMode.POLISH, p.shareStage)
+        p.polishReadable = false
+        p.sharePolishReadable = true
+        assertEquals(RefineMode.POLISH, Prefs(ctx).dictationStage)
+        assertEquals(RefineMode.READABLE, Prefs(ctx).shareStage)
+        assertTrue(sp.getBoolean("share_polish_readable", false))
+        // Nur "Glaetten" wird lesbarer.
+        p.shareRefineMode = RefineMode.SUMMARIZE
+        assertEquals(RefineMode.SUMMARIZE, Prefs(ctx).shareStage)
+    }
+
+    @Test fun v5UebernimmtDenGemeinsamenSchalterFuerSprachnachrichten() {
+        // Bis 3.8.5 galt "Lesbarer glaetten" auch fuer geteilte Audios — das Verhalten bleibt.
+        sp.edit().putInt("prefs_version", 4).putBoolean("polish_readable", true).commit()
+        val p = Prefs(ctx)
+        assertTrue(p.sharePolishReadable)
+        assertTrue(p.polishReadable)
+        assertEquals(5, sp.getInt("prefs_version", 0))
+
+        sp.edit().clear().putInt("prefs_version", 4).putBoolean("polish_readable", false).commit()
+        assertFalse(Prefs(ctx).sharePolishReadable)
+        assertTrue(sp.contains("share_polish_readable"))
+    }
+
+    @Test fun v5LaeuftNurEinmal() {
+        sp.edit().putInt("prefs_version", 4).putBoolean("polish_readable", true).commit()
+        Prefs(ctx).sharePolishReadable = false
+        assertFalse("die Nutzer-Entscheidung bleibt", Prefs(ctx).sharePolishReadable)
+        assertTrue(Prefs(ctx).polishReadable)
+    }
+
+    // --- Modell je Stufe (3.8.6) ------------------------------------------------------
+
+    @Test fun modellJeStufeHatEigeneSchluessel() {
+        val p = Prefs(ctx)
+        for (mode in RefineMode.entries) assertEquals(mode.name, "", p.llmModelFor(mode))
+        p.setLlmModelFor(RefineMode.POLISH, "a")
+        p.setLlmModelFor(RefineMode.BEAUTIFY, "b")
+        p.setLlmModelFor(RefineMode.SUMMARIZE, "c")
+        p.setLlmModelFor(RefineMode.PROMPT, "d")
+        assertEquals("a", sp.getString("llm_model_polish", null))
+        assertEquals("b", sp.getString("llm_model_beautify", null))
+        assertEquals("c", sp.getString("llm_model_summarize", null))
+        assertEquals("d", sp.getString("llm_model_prompt", null))
+        // "Lesbarer glaetten" und Absaetze rechnen mit dem Glaetten-Modell, "aus" mit keinem.
+        assertEquals("a", Prefs(ctx).llmModelFor(RefineMode.READABLE))
+        assertEquals("a", Prefs(ctx).llmModelFor(RefineMode.PARAGRAPHS))
+        assertEquals("", Prefs(ctx).llmModelFor(RefineMode.OFF))
+        assertEquals("", Prefs(ctx).llmModelFor(null))
+        assertEquals("", p.llmModel)
+    }
+
+    @Test fun stufeAusHatKeinModell() {
+        try {
+            Prefs(ctx).setLlmModelFor(RefineMode.OFF, "x")
+            fail("aus hat kein Modell")
+        } catch (e: IllegalArgumentException) {
+            assertTrue(sp.all.keys.none { it.startsWith("llm_model") })
+        }
+    }
+
+    @Test fun anbieterwechselLeertZugangsModellUndAlleStufen() {
+        val p = Prefs(ctx)
+        p.llmProviderId = "anthropic"
+        p.llmKey = "sk-ant"
+        p.llmModel = "claude-sonnet-5"
+        RefineMode.MODEL_STAGES.forEach { p.setLlmModelFor(it, "claude-opus-5-5") }
+        p.clearLlmModels()
+        val again = Prefs(ctx)
+        assertEquals("", again.llmModel)
+        RefineMode.MODEL_STAGES.forEach { assertEquals(it.name, "", again.llmModelFor(it)) }
+        assertTrue(sp.all.keys.none { it.startsWith("llm_model") })
+        // Anbieter und Key bleiben — die setzt der Aufrufer.
+        assertEquals("anthropic", again.llmProviderId)
+        assertEquals("sk-ant", again.llmKey)
+    }
+
+    @Test fun llmZugangNimmtDasModellDerStufe() {
+        val p = Prefs(ctx)
+        p.engine = Engine.ONLINE
+        p.llmProviderId = "anthropic"
+        p.llmKey = "sk-ant"
+        assertEquals("claude-haiku-5-5", p.llmAccess().model)
+        assertEquals("claude-haiku-5-5", p.llmAccess(RefineMode.READABLE).model)
+        assertEquals("claude-sonnet-5-5", p.llmAccess(RefineMode.BEAUTIFY).model)
+        p.setLlmModelFor(RefineMode.SUMMARIZE, "claude-opus-5-5")
+        assertEquals("claude-opus-5-5", p.llmAccess(RefineMode.SUMMARIZE).model)
+        // Ein bewusst gewaehltes Modell des Zugangs gilt fuer alle Stufen ohne eigenes.
+        p.llmModel = "claude-sonnet-5"
+        assertEquals("claude-sonnet-5", p.llmAccess(RefineMode.POLISH).model)
+        assertEquals("claude-sonnet-5", p.llmAccess(RefineMode.BEAUTIFY).model)
+        assertEquals("claude-opus-5-5", p.llmAccess(RefineMode.SUMMARIZE).model)
+    }
+
+    @Test fun modellJeStufeSpiegeltSichInCompose() {
+        val p = Prefs(ctx)
+        p.llmProviderId = "anthropic"
+        val state = PrefsState(p)
+        state.setLlmModelFor(RefineMode.BEAUTIFY, "claude-opus-5-5")
+        assertEquals("claude-opus-5-5", Prefs(ctx).llmModelFor(RefineMode.BEAUTIFY))
+        assertEquals("claude-opus-5-5", state.llmAccess(RefineMode.BEAUTIFY).model)
+        // Das Standard-Modell der Stufe (fuer "Standard · …") kennt das eigene nicht.
+        assertEquals("claude-sonnet-5-5", state.standardLlmAccess(RefineMode.BEAUTIFY).model)
+        assertEquals("claude-haiku-5-5", state.standardLlmAccess(RefineMode.READABLE).model)
+        // Von aussen geschrieben kommt es an.
+        Prefs(ctx).setLlmModelFor(RefineMode.PROMPT, "claude-sonnet-5")
+        assertEquals("claude-sonnet-5", state.llmModelFor(RefineMode.PROMPT))
+        state.llmModel = "claude-sonnet-5"
+        assertEquals("claude-sonnet-5", state.standardLlmAccess(RefineMode.BEAUTIFY).model)
+        state.clearLlmModels()
+        assertEquals("", state.llmModel)
+        RefineMode.MODEL_STAGES.forEach { assertEquals(it.name, "", state.llmModelFor(it)) }
+        assertEquals("claude-haiku-5-5", state.llmAccess(RefineMode.POLISH).model)
         state.dispose()
     }
 
@@ -248,7 +388,7 @@ class PrefsTest {
         assertEquals(Prefs.DEFAULT_LOCAL_LLM_MODEL, p.localLlmModel)
         assertFalse(sp.contains("offline_refine"))
         assertFalse(sp.contains("local_llm_model"))
-        assertEquals(4, sp.getInt("prefs_version", 0))
+        assertEquals(5, sp.getInt("prefs_version", 0))
     }
 
     @Test fun unbekannteOfflineRegelGiltAlsLokal() {

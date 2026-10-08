@@ -1,6 +1,7 @@
 package com.chris.whisperloom.api
 
 import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.SetupState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -71,8 +72,8 @@ class AccessResolverTest {
         assertEquals("sk-x", l.apiKey)
         assertEquals(45_000, l.readTimeoutMs)
         assertEquals("openai", l.provider.id)
-        assertEquals("gpt-4o-mini", l.model)
-        assertTrue(l.modelOption!!.temperatureSupported)
+        assertEquals("gpt-6-luna", l.model)
+        assertFalse(l.modelOption!!.temperatureSupported)
     }
 
     @Test fun leererProviderZaehltAlsSame() {
@@ -152,6 +153,71 @@ class AccessResolverTest {
         assertTrue(l.provider.isCustom)
     }
 
+    // --- Modell je Stufe (3.8.6) ------------------------------------------------------------
+
+    private fun anthropic(model: String = "", stageModel: String = "", stage: RefineMode?) =
+        AccessResolver.resolveLlm(stt, "anthropic", "", "sk-ant", model, stageModel = stageModel, stage = stage).model
+
+    @Test fun ohneModellGiltDieEmpfehlungJeStufe() {
+        for (mode in listOf(RefineMode.POLISH, RefineMode.READABLE, RefineMode.PARAGRAPHS)) {
+            assertEquals(mode.name, "claude-haiku-5-5", anthropic(stage = mode))
+        }
+        for (mode in listOf(RefineMode.BEAUTIFY, RefineMode.SUMMARIZE, RefineMode.PROMPT)) {
+            assertEquals(mode.name, "claude-sonnet-5-5", anthropic(stage = mode))
+        }
+        // Ohne Stufe (Bereitschaft, Tastatur, "Zugang pruefen") und bei "aus": das erste Katalogmodell.
+        assertEquals("claude-haiku-5-5", anthropic(stage = null))
+        assertEquals("claude-haiku-5-5", anthropic(stage = RefineMode.OFF))
+    }
+
+    @Test fun reihenfolgeStufenModellDannZugangsModellDannEmpfehlung() {
+        assertEquals("claude-opus-5-5", anthropic(model = "claude-sonnet-5", stageModel = " claude-opus-5-5 ", stage = RefineMode.SUMMARIZE))
+        // Das Modell des Zugangs, bewusst gesetzt, gilt fuer alle Stufen ohne eigenes — auch zum Umformulieren.
+        assertEquals("claude-sonnet-5", anthropic(model = "claude-sonnet-5", stage = RefineMode.BEAUTIFY))
+        assertEquals("claude-sonnet-5", anthropic(model = "claude-sonnet-5", stage = RefineMode.POLISH))
+        assertEquals("claude-sonnet-5-5", anthropic(stageModel = "  ", stage = RefineMode.BEAUTIFY))
+    }
+
+    @Test fun ohneUmformulierenEmpfehlungDasErsteKatalogmodell() {
+        val p = Provider(id = "x", name = "X", baseUrl = "https://x", llmModels = listOf(ModelOption("a", "A"), ModelOption("b", "B")))
+        assertEquals("a", p.recommendedLlmModel(RefineMode.BEAUTIFY))
+        assertEquals("b", p.copy(rewriteLlmModel = "b").recommendedLlmModel(RefineMode.PROMPT))
+        assertEquals("a", p.copy(rewriteLlmModel = "b").recommendedLlmModel(RefineMode.READABLE))
+        assertEquals("", ProviderCatalog.custom.recommendedLlmModel(RefineMode.BEAUTIFY))
+    }
+
+    @Test fun wieErkennungNutztDieEmpfehlungDesErkennungsAnbieters() {
+        val l = AccessResolver.resolveLlm(stt, "same", "", "", "", stage = RefineMode.BEAUTIFY)
+        assertEquals("gpt-6-sol", l.model)
+        assertEquals("sk-x", l.apiKey)
+        assertEquals("gpt-4.1-mini", AccessResolver.resolveLlm(stt, "same", "", "", "", stageModel = "gpt-4.1-mini", stage = RefineMode.BEAUTIFY).model)
+        // Offline ohne eigenen Zugang: auch ein Stufen-Modell schickt nichts an den alten Zugang.
+        val offline = AccessResolver.resolveLlm(stt, "same", "", "", "", sttOffline = true, stageModel = "gpt-6-sol", stage = RefineMode.BEAUTIFY)
+        assertEquals(RefineBlock.OFFLINE, offline.refineBlock)
+        assertEquals("", offline.model)
+    }
+
+    @Test fun ollamaLokalOhneKatalogNimmtDasModellDesZugangs() {
+        val url = "http://192.168.1.10:11434"
+        assertEquals("gemma4:12b", AccessResolver.resolveLlm(stt, "ollama", url, "", "gemma4:12b", stage = RefineMode.BEAUTIFY).model)
+        assertEquals("gemma4:26b", AccessResolver.resolveLlm(stt, "ollama", url, "", "gemma4:12b", stageModel = "gemma4:26b", stage = RefineMode.BEAUTIFY).model)
+        assertEquals("", AccessResolver.resolveLlm(stt, "ollama", url, "", "", stage = RefineMode.BEAUTIFY).model)
+    }
+
+    @Test fun stufenModellZaehltNurMitModellDesZugangs() {
+        // Review 3.8.6 (L1): Ohne Modell des Zugangs sagen Bereitschaft, Tastatur und Banner (ohne Stufe)
+        // "kein Modell" — dann darf auch die Stufe nicht mit ihrem eigenen Modell rausgehen.
+        val together = AccessResolver.resolveStt("together", "", "k", "", 0)
+        val same = AccessResolver.resolveLlm(together, "same", "", "", "", stageModel = "Y", stage = RefineMode.BEAUTIFY)
+        assertEquals(RefineBlock.NO_MODEL, same.refineBlock)
+        assertFalse(SetupState.llmReady(same))
+        for (id in listOf("ollama", "custom")) {
+            val l = AccessResolver.resolveLlm(stt, id, "http://192.168.1.10:11434", "", "", stageModel = "gemma4:26b", stage = RefineMode.BEAUTIFY)
+            assertEquals(id, "", l.model)
+            assertFalse(id, SetupState.llmReady(l))
+        }
+    }
+
     // --- Server-Modelle (Flags aus dem Cache bzw. Heuristik) ----------------------------
 
     /** Merkt sich die Anfragen; liefert fuer jede ID ein Modell mit den gegebenen Flags. */
@@ -184,6 +250,27 @@ class AccessResolverTest {
         AccessResolver.resolveLlm(stt, "same", "", "", "gpt-4o-mini", lookup)
         AccessResolver.resolveStt("custom", "http://h/v1", "", "", 0, lookup)
         assertTrue(lookup.asked.isEmpty())
+    }
+
+    /** Merkt sich temperature-Ablehnungen wie der ModelCache: Schluessel Anbieter|Adresse|Modell. */
+    private class RejectingLookup(private vararg val rejected: String) : ServerModelLookup {
+        override fun find(providerId: String, kind: ModelKind, baseUrl: String, id: String): RemoteModel? = null
+        override fun rejectsTemperature(providerId: String, baseUrl: String, id: String) = "$providerId|$baseUrl|$id" in rejected
+    }
+
+    @Test fun abgelehnteTemperatureGiltAuchFuerKatalogModelle() {
+        val lookup = RejectingLookup("openai|https://api.openai.com/v1|gpt-4o-mini", "openai|https://api.openai.com/v1|gpt-neu")
+        val katalog = AccessResolver.resolveLlm(stt, "same", "", "", "gpt-4o-mini", lookup)
+        assertFalse(katalog.modelOption!!.temperatureSupported)
+        assertEquals("GPT-4o mini", katalog.modelOption!!.label)
+        assertNull(ChatPayload.sampling(katalog).temperature)
+        // Frei getippt: eine Option nur fuer das Flag.
+        val frei = AccessResolver.resolveLlm(stt, "same", "", "", "gpt-neu", lookup)
+        assertEquals(ModelOption("gpt-neu", "gpt-neu", temperatureSupported = false), frei.modelOption)
+        // Nicht gemerkt bleibt es beim Katalog.
+        assertTrue(AccessResolver.resolveLlm(stt, "same", "", "", "gpt-4.1-mini", lookup).modelOption!!.temperatureSupported)
+        // Die Erkennung kennt kein temperature-Merken.
+        assertNull(AccessResolver.resolveStt("openai", "", "k", "gpt-neu", 0, lookup).modelOption)
     }
 
     @Test fun erkennungsModellVomServerMitHeuristik() {

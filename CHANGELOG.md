@@ -2,15 +2,41 @@
 
 Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
-## [Unreleased]
+## [3.8.6] — 2026-10-08
+
+### Hinzugefügt
+
+- **Modell je Stufe.** Einstellungen → Text → **Online-Zugang & Modelle** hat unter dem Zugang den neuen Abschnitt **Modell je Stufe**: Glätten, Verschönern, Zusammenfassen und (mit Pro) Prompt rechnen mit „Standard“ oder einem eigenen Modell desselben Zugangs, etwa Claude Haiku 5.5 zum Glätten und Claude Opus 5.5 zum Zusammenfassen. Glätten gilt auch für „Lesbarer glätten“, und die Wahl gilt fürs Diktat wie für geteilte Sprachnachrichten. Ein Tipp auf eine Stufe öffnet die Auswahl mit Standard, den Empfehlungen, „Eigenes Modell …“ und **Modell prüfen**. Ein neuer Anbieter setzt alle Stufen auf „Standard“ zurück.
+- **„Empfehlung je Stufe“.** Das Feld **Modell** des Zugangs hat bei Anbietern mit eingebauten Modellen einen neuen ersten Eintrag: ein schnelles Modell zum Glätten und ein stärkeres zum Umformulieren (Verschönern, Zusammenfassen, Prompt), die Unterzeile nennt beide. Wer kein Modell gewählt hat, bekommt diese Empfehlung automatisch.
+- **„Lesbarer glätten“ für Sprachnachrichten getrennt.** Die Seite **Sprachnachrichten** hat ihren eigenen Schalter, der unter **Diktat** wirkt nur noch aufs Diktat. Beim Update übernimmt der neue Schalter deine bisherige Einstellung.
+
+### Geändert
+
+- **Text ist übersichtlicher.** Einstellungen → **Text** ist jetzt eine Übersicht mit Unterseiten: **Diktat** und **Sprachnachrichten** (KI-Stufen), **Online-Zugang & Modelle** und **Offline-Erkennung** (nur auf Geräten, die offline erkennen) sowie **Regeln ohne KI**. Jede Zeile zeigt, was gerade eingestellt ist. Das Banner „Offline ohne Textmodell“ führt direkt zu Offline-Erkennung. „Füllwörter intelligent entfernen“ bleibt ein Schalter unter Diktat und gilt auch für Sprachnachrichten.
+- **Neue Standardmodelle je Anbieter** (Stand 2026-10-08), jeweils zum Glätten und zum Umformulieren: OpenAI GPT-6 Luna und GPT-6 Sol, Anthropic Claude Haiku 5.5 und Claude Sonnet 5.5, Groq GPT-OSS 20B und GPT-OSS 120B, Mistral Small 4 und Mistral Large 3, Gemini 3.5 Flash-Lite und 3.8 Flash, DeepSeek Flash und V4 Pro, OpenRouter Claude Haiku 5.5 und Claude Sonnet 5.5, Ollama Cloud Gemma 4 31B und Mistral Large 3. Neu wählbar sind außerdem Claude Opus 5.5 und bei OpenRouter GPT-6 Luna. Für ein eigenes Ollama nennt die Anleitung (8.3) passende Modelle je Hardware.
+  - Wer kein Modell gewählt hat, bekommt die neuen Standards automatisch. Ein selbst gewähltes Modell bleibt.
+  - **Kosten:** Gemessen ist nur Anthropic (108 Anfragen, blind bewertet), die übrigen neuen Standards folgen den Angaben der Anbieter und sind ungemessen. Umformulieren rechnet bei OpenAI jetzt mit GPT-6 Sol, bei OpenRouter mit Claude Sonnet 5.5 (je $2/$10 je 1M Token), und kostet damit 13- bis 17-mal so viel wie mit dem bisherigen GPT-4o mini; Glätten mit GPT-6 Luna bzw. Claude Haiku 5.5 wird günstiger. Wer sparen will, stellt unter **Modell je Stufe** Verschönern und Zusammenfassen auf GPT-6 Luna bzw. Claude Haiku 5.5 oder wählt im Feld **Modell** ein festes Modell.
+  - Schneller: DeepSeek denkt nicht mehr bei jedem Diktat nach (vorher Stufe „high“), Gemini 3.8 Flash nur noch auf der kleinsten Stufe, auch über OpenRouter.
+  - GPT-5.4 nano heißt „(Auslauf 04/2027)“ (Abschaltung 2027-04-01), Claude Haiku 4.5 „(Legacy)“; beide bleiben wählbar.
 
 ### Behoben
 
+- **Claude 5 bekam jedes Diktat doppelt.** Claude-5-Modelle lehnen `temperature` ab, und WhisperLoom schickte deshalb jedes Diktat, jedes Stück einer Sprachnachricht und jedes „Zugang prüfen“ zweimal. Die eingebauten Claude-5-Modelle senden kein `temperature` mehr. Lehnt ein anderes Modell es ab, merkt sich WhisperLoom das je Anbieter, Adresse und Modell, und ab dann geht jede Anfrage nur noch einmal raus.
+- **Lange Diktate und Sprachnachrichten mit Claude kamen leer oder abgeschnitten zurück.** Claude 5 denkt ab Werk nach, und das Nachdenken zählte gegen die Grenze von 4.096 Token: Bei Claude Haiku 5.5 reichte sie für 7.700 Zeichen nicht, es kam der Rohtext mit Hinweis. Jetzt ist das Nachdenken bei Haiku 5.5 und Sonnet aus, soweit das Modell es zulässt, und die Grenze liegt bei 16.384 Token. Haiku 5.5 schafft 7.700 Zeichen so in 11 s, Sonnet 5.5 braucht 16 s statt 22 s.
+- **Das Textmodell blieb nach einem Anbieterwechsel stehen.** Schaltetest du „Eigenen Zugang verwenden“ aus oder wechseltest du bei „wie Erkennung“ den Anbieter der Erkennung, blieb das Modell des alten Anbieters eingetragen (etwa `claude-sonnet-5` bei OpenAI), und der Text kam ohne KI mit Hinweis. Jetzt setzt jeder Anbieterwechsel das Modell und alle Stufen auf „Standard“ zurück.
 - **Gemma 4 E4B (und E2B) direkt wählbar.** Bisher war ein Textmodell erst nach dem Download wählbar, und ein fertiges E4B blieb ungenutzt, solange E2B gewählt war. Jetzt lädt ein Tipp auf ein passendes, noch nicht geladenes Textmodell es (wie **Laden**, über mobile Daten mit Nachfrage), und ist der Download fertig, ist es gewählt. Zu große Modelle bleiben ausgegraut („Für dieses Gerät zu groß“).
-- **Auswahl auch unter Text und im Assistenten.** Die Karte **Offline-Erkennung** zeigt beide Textmodelle statt nur des gewählten. Im Assistenten (Schritt 2b) lädt „Lokales Textmodell“ nichts mehr vorab, wenn auch E4B ins Gerät passt: Erst der Tipp auf E2B oder E4B lädt. Standard bleibt Gemma 4 E2B.
+- **Auswahl auch unter Text und im Assistenten.** Die Seite **Offline-Erkennung** unter Text zeigt beide Textmodelle statt nur des gewählten. Im Assistenten (Schritt 2b) lädt „Lokales Textmodell“ nichts mehr vorab, wenn auch E4B ins Gerät passt: Erst der Tipp auf E2B oder E4B lädt. Standard bleibt Gemma 4 E2B.
 - **Kein stummes „Laden“ mehr.** Läuft ein anderer Download, sagt die Textmodell-Zeile „Laden geht, sobald der laufende Download fertig ist.“
 - **Warnkarte nicht mehr doppelt.** Unter Text, in Offline-Modelle und im Assistenten warnt „Offline ohne Textmodell“ nur noch und bietet **Überspringen**; Laden, Fortschritt und Fehler stehen einmal, an der Zeile des Modells.
 - **Gewählt bleibt, was da ist.** Ein abgebrochener Download lässt das Textmodell nicht gewählt zurück (es gilt wieder ein geladenes, sonst E2B), und wer das gewählte Textmodell löscht, während ein anderes geladen ist, hat danach das andere.
+
+### Technik
+
+- Prefs v5: neuer Schlüssel `share_polish_readable`, Startwert ist der bisherige gemeinsame Schalter `polish_readable`. Neue Schlüssel `llm_model_polish`, `llm_model_beautify`, `llm_model_summarize` und `llm_model_prompt` („“ = Standard, ohne Migration). Auflösung in `AccessResolver.resolveLlm`: Stufen-Modell → `llm_model` → `Provider.recommendedLlmModel(stage)` (neues Feld `rewriteLlmModel` fürs Umformulieren) → erstes Katalogmodell. `Prefs.clearLlmModels()` an allen vier Stellen, an denen der Anbieter wechselt.
+- Abgelehnte `temperature`: `TextRefiner` meldet sie erst nach dem geglückten zweiten Versuch (`onTemperatureRejected`), `ModelCache` merkt `noTemp|<Anbieter>|<Adresse>|<Modell>` in der eigenen Datei `whisperloom_models` (ohne Key, nicht im Backup), `AccessResolver.option` liest das auch für Katalog-Modelle. `RefinePlan.access` wird ersetzt, damit weitere Stücke einer Sprachnachricht gleich ohne `temperature` fragen. Keine Namens-Heuristik für Claude.
+- `ModelOption.thinkingType` sendet `"thinking": {"type": …}`, gemessen am 2026-10-08: Claude Haiku 5.5 und Sonnet 5 `disabled`, Sonnet 5.5 `between_tools`, Opus 5.5 nichts (lehnt beides ab); DeepSeek `disabled` laut api-docs.deepseek.com. `ChatPayload.MAX_COMPLETION_TOKENS` 4096 → 16384; abgerechnet wird nur, was das Modell wirklich erzeugt.
+- Oberfläche: `Screen.TextPage(TextSection)` nach dem Muster `Widgets(tab)`, eine Datei je Unterseite, `HubRow` in `ui/components`; `ModelPickerSheet` mit optionalem Titel, Standard-Eintrag und Fußzeile. `RefineMode` in eigener Datei, Anbieter-Typen in `api/Provider.kt`.
+- Doku: Anleitung (Kapitel 8 nach den Unterseiten, 7.1/7.2 mit den neuen Modellen und Kosten), README, Store-Texte.
 
 ## [3.8.5] — 2026-10-06
 

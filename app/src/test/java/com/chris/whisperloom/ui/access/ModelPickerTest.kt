@@ -29,7 +29,7 @@ import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SystemStatus
 import com.chris.whisperloom.ui.settings.RecognitionScreen
-import com.chris.whisperloom.ui.settings.TextSettingsScreen
+import com.chris.whisperloom.ui.settings.TextAccessScreen
 import com.chris.whisperloom.ui.state.AppEnv
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.PrefsState
@@ -111,7 +111,7 @@ class ModelPickerTest {
 
     private fun text() {
         prefs.refineMode = RefineMode.POLISH
-        show { TextSettingsScreen(it) }
+        show { TextAccessScreen(it) }
     }
 
     /** Legt eine Liste ab, als waere sie vor [ageMs] geladen worden. */
@@ -233,10 +233,11 @@ class ModelPickerTest {
         // Anthropic listet claude-haiku-4-5-20251001 statt claude-haiku-4-5 — kein falsches "nicht mehr gelistet".
         prefs.serverModelsEnabled = true
         prefs.llmProviderId = "anthropic"
+        prefs.llmModel = "claude-haiku-4-5"
         cache(prefs.llmAccess(), ModelKind.LLM, "claude-haiku-4-5-20251001", "claude-opus-5-5")
         text()
         openPicker()
-        row("Claude Haiku 4.5").assertIsSelected().assert(!hasText("nicht mehr gelistet", substring = true))
+        row("Claude Haiku 4.5 (Legacy)").assertIsSelected().assert(!hasText("nicht mehr gelistet", substring = true))
         row("Claude Sonnet 5").assertTextContains("nicht mehr gelistet", substring = true)
     }
 
@@ -290,7 +291,9 @@ class ModelPickerTest {
         text()
         compose.onNodeWithTag("dropdown:Modell").assertDoesNotExist()
         openPicker()
-        row("GPT-OSS 20B").assertIsSelected()
+        // Ohne eigenes Modell gilt die Empfehlung je Stufe (3.8.6) — sie steht oben und ist gewaehlt.
+        row("Empfehlung je Stufe").assertIsSelected()
+        row("GPT-OSS 20B").assertIsNotSelected()
         row("Qwen 3.8 27B (Preview)").assertTextContains("nicht mehr gelistet", substring = true)
         row("moonshotai/kimi-k3").performClick()
         compose.waitForIdle()

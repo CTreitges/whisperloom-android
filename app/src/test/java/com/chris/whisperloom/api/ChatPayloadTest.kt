@@ -29,7 +29,8 @@ class ChatPayloadTest {
 
     @Test fun altesGpt5MiniNimmtMinimal() {
         val s = ChatPayload.sampling(llm("openai", "same", "gpt-5-mini"))
-        assertEquals(ChatPayload.Sampling(temperature = null, reasoningEffort = "minimal", maxCompletionTokens = 4096), s)
+        // 16384: die Denk-Token zaehlen mit, 4096 reichten fuer lange Diktate nicht (gemessen 2026-10-08).
+        assertEquals(ChatPayload.Sampling(temperature = null, reasoningEffort = "minimal", maxCompletionTokens = 16384), s)
     }
 
     @Test fun groqGptOssBekommtTemperatureUndLow() {
@@ -55,12 +56,35 @@ class ChatPayloadTest {
 
     @Test fun gemini3OhneTemperature() {
         // Neuer Default und Katalog-Eintraege: kein temperature, dafuer die Laengengrenze.
-        for (model in listOf("", "gemini-3.5-flash-lite", "gemini-3.8-flash")) {
+        for (model in listOf("", "gemini-3.5-flash-lite")) {
             val s = ChatPayload.sampling(llm("openai", "gemini", model))
             assertEquals(model, ChatPayload.Sampling(temperature = null, maxCompletionTokens = ChatPayload.MAX_COMPLETION_TOKENS), s)
         }
+        // 3.8 Flash denkt ohne Angabe auf "medium" — "low" haelt es schnell.
+        assertEquals(
+            ChatPayload.Sampling(temperature = null, reasoningEffort = "low", maxCompletionTokens = ChatPayload.MAX_COMPLETION_TOKENS),
+            ChatPayload.sampling(llm("openai", "gemini", "gemini-3.8-flash")),
+        )
         assertNull(ChatPayload.sampling(llm("openai", "openrouter", "google/gemini-3.8-flash")).temperature)
         // Gemini 2.5 (Bestandskonten) behaelt temperature 0 und schaltet das Denken ab.
         assertEquals(0, ChatPayload.sampling(llm("openai", "gemini", "gemini-2.5-flash-lite")).temperature)
+    }
+
+    @Test fun claudeOhneTemperatureMitThinkingJeModell() {
+        val haiku = ChatPayload.Sampling(maxCompletionTokens = 16384, thinkingType = "disabled")
+        // Standard (leer) ist Haiku 5.5.
+        assertEquals(haiku, ChatPayload.sampling(llm("openai", "anthropic", "")))
+        assertEquals(haiku, ChatPayload.sampling(llm("openai", "anthropic", "claude-haiku-5-5")))
+        assertEquals("between_tools", ChatPayload.sampling(llm("openai", "anthropic", "claude-sonnet-5-5")).thinkingType)
+        assertEquals(ChatPayload.Sampling(maxCompletionTokens = 16384), ChatPayload.sampling(llm("openai", "anthropic", "claude-opus-5-5")))
+        // Ueber OpenRouter: kein temperature, kein thinking.
+        assertEquals(ChatPayload.Sampling(maxCompletionTokens = 16384), ChatPayload.sampling(llm("openai", "openrouter", "anthropic/claude-sonnet-5.5")))
+    }
+
+    @Test fun deepSeekSchaltetDasDenkenAbUndBehaeltTemperature() {
+        // Ohne Denken nimmt DeepSeek temperature wieder an; mit Denken wuerde es still ignoriert.
+        for (model in listOf("", "deepseek-flash", "deepseek-v4-pro")) {
+            assertEquals(model, ChatPayload.Sampling(temperature = 0, thinkingType = "disabled"), ChatPayload.sampling(llm("openai", "deepseek", model)))
+        }
     }
 }
