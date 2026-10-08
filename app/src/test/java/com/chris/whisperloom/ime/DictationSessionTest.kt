@@ -112,6 +112,44 @@ class DictationSessionTest {
         val grenzeMs = 25_000_000L * 1000 / 32_000
         assertTrue(DictationSession.MAX_MS < grenzeMs)
         assertTrue(DictationSession.LONG_MS < DictationSession.MAX_MS)
+        assertTrue("auch, was der Deckel einen Takt zu spaet anhaelt", DictationSession.SEND_MAX_MS < grenzeMs)
+    }
+
+    // --- Erkennung in der Pause umgestellt -------------------------------------------------------
+
+    @Test fun offlineFaelltDerDeckelBeimFortsetzenWeg() {
+        val s = festgestellt()
+        s.update(DictationSession.MAX_MS, limited = true)
+        s.cap()
+        s.recheck(limited = false)
+        assertFalse(s.capped)
+        assertTrue(s.resume())
+    }
+
+    @Test fun onlineHaeltDerDeckelEineZuLangePause() {
+        val s = festgestellt()
+        s.update(DictationSession.MAX_MS + 60_000, limited = false)
+        s.pause()
+        assertFalse("offline aufgenommen: ohne Deckel", s.capped)
+        s.recheck(limited = true)
+        assertTrue(s.capped)
+        assertFalse(s.resume())
+    }
+
+    @Test fun zuLangZumSendenNurOnlineUndUeberDemSpielraumDesDeckels() {
+        val s = festgestellt()
+        s.update(DictationSession.MAX_MS + 2_000, limited = true)
+        assertFalse("vom Deckel angehalten: senden geht", s.tooLong(limited = true))
+        s.update(DictationSession.SEND_MAX_MS + 1, limited = false)
+        assertTrue(s.tooLong(limited = true))
+        assertFalse("offline gibt es keine Grenze", s.tooLong(limited = false))
+    }
+
+    @Test fun neuBewertenNurInDerPause() {
+        val s = festgestellt()
+        s.update(DictationSession.MAX_MS, limited = false)
+        s.recheck(limited = true)
+        assertFalse("laufend deckelt der Takt, nicht das Neu-Bewerten", s.capped)
     }
 
     @Test fun hoechstlaengePausiertUndSperrtWeiter() {

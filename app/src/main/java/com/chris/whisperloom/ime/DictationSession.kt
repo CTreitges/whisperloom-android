@@ -80,6 +80,18 @@ class DictationSession {
     }
 
     /**
+     * Vor dem Fortsetzen aus der Pause: die Erkennung kann gewechselt haben (Zahnrad). Offline faellt
+     * der Deckel weg; online haelt er eine Pause, die schon ueber der Hoechstlaenge liegt (offline
+     * aufgenommen, oder kurz vor dem naechsten Takt von Hand pausiert).
+     */
+    fun recheck(limited: Boolean) {
+        if (isPaused) capped = update(recordedMs, limited) == Length.MAX
+    }
+
+    /** Zu lang zum Senden an die Online-Erkennung ([limited]); siehe [SEND_MAX_MS]. */
+    fun tooLong(limited: Boolean): Boolean = limited && recordedMs > SEND_MAX_MS
+
+    /**
      * Neuer Stand des Recorders. [limited] = Online-Erkennung (nur die hat eine Obergrenze).
      * Liefert die Laengen-Stufe; bei [Length.MAX] muss der Aufrufer [cap] ausloesen.
      */
@@ -104,6 +116,13 @@ class DictationSession {
 
         /** Hier pausiert die Aufnahme von selbst, mit Abstand zur Grenze der Anbieter. */
         const val MAX_MS = 12 * 60_000L
+
+        /**
+         * Bis hier sendet die Tastatur an die Online-Erkennung. Was der Deckel angehalten hat, liegt
+         * hoechstens einen Takt ueber [MAX_MS]; laenger wird ein Diktat nur offline — in der Pause
+         * umgestellt, lehnte der Anbieter es ab.
+         */
+        const val SEND_MAX_MS = MAX_MS + 30_000L
 
         fun length(recordedMs: Long, limited: Boolean): Length = when {
             !limited -> Length.OK

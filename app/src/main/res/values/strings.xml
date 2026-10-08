@@ -686,6 +686,9 @@
     <!-- Nur Online-Erkennung: OpenAI nimmt höchstens rund 13 min, danach wäre das Audio weg. -->
     <string name="kb_long">Aufnahme %1$s — bald senden, höchstens %2$s</string>
     <string name="kb_capped">Höchstlänge erreicht — senden oder verwerfen</string>
+    <!-- Offline über die Höchstlänge aufgenommen, in der Pause auf Online umgestellt: der Anbieter
+         lehnte die Datei ab, und das Audio wäre weg. -->
+    <string name="kb_too_long">Zu lang für Online-Erkennung — offline senden oder verwerfen</string>
     <!-- Ein Tastaturwechsel beendet die Tastatur und würde ein offenes Diktat still verwerfen. -->
     <string name="kb_finish_first">Erst senden oder verwerfen</string>
     <string name="kb_discarded">Aufnahme verworfen</string>

@@ -39,6 +39,7 @@ import com.chris.whisperloom.overlay.BubbleMotion
 import com.chris.whisperloom.overlay.BubbleState
 import com.chris.whisperloom.overlay.MicIcon
 import com.chris.whisperloom.overlay.MicRings
+import com.chris.whisperloom.whisper.OfflineNotAvailableException
 import com.chris.whisperloom.whisper.OfflineSupport
 import java.util.concurrent.Executors
 import kotlin.math.abs
@@ -472,9 +473,13 @@ class WhisperLoomInputMethodService : InputMethodService() {
     /** Aus der Pause weiter; false = gesperrt (Hoechstlaenge) oder das Mikrofon kam nicht. */
     private fun resumeDictation(): Boolean {
         if (!session.isPaused) return false
+        // Die Erkennung kann in der Pause gewechselt haben (Zahnrad): offline faellt der Deckel weg,
+        // online haelt er schon vor dem Mikrofon an, was offline ueber die Hoechstlaenge kam.
+        session.recheck(lengthLimited())
         if (session.capped || !recorder.resume()) {
             haptic(BubbleMotion.Haptic.REJECT)
             showSessionStatus()
+            updateMicDescription()
             return false
         }
         session.resume()
@@ -641,6 +646,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
     /** Senden — auch aus der Pause. */
     private fun stopDictation() {
         if (!recorder.hasSession) return
+        if (session.isPaused && sendBlocked()) return
         endSession()
         privateField = privateField || HistoryPolicy.isPrivateField(currentInputEditorInfo)
         // Sofortiges UI-Feedback auf dem Main-Thread ...
@@ -661,6 +667,22 @@ class WhisperLoomInputMethodService : InputMethodService() {
             }
             send(samples)
         }
+    }
+
+    /**
+     * Senden aus der Pause: die Erkennung kann seit der Aufnahme gewechselt haben (Zahnrad). Zu lang
+     * fuer die Online-Erkennung oder kein Zugang — dann bleibt das Diktat pausiert (die Pause
+     * uebersteht den Weg in die Einstellungen), statt an einem nicht wiederholbaren Fehler verloren
+     * zu gehen. @return true = nicht senden
+     */
+    private fun sendBlocked(): Boolean {
+        when {
+            session.tooLong(lengthLimited()) -> showSessionStatus()
+            !TranscriptionEngine.isConfigured(this) -> showStatus(Status.NOT_CONFIGURED)
+            else -> return false
+        }
+        haptic(BubbleMotion.Haptic.REJECT)
+        return true
     }
 
     /**
@@ -733,14 +755,16 @@ class WhisperLoomInputMethodService : InputMethodService() {
                 }
             }
         } catch (e: ApiNotConfiguredException) {
-            pendingSamples = null
+            // Das Audio bleibt fuer "Erneut senden": der Zugang laesst sich einrichten, ohne neu zu diktieren.
+            pendingSamples = samples
             main.post {
-                applyState(BubbleState.IDLE)
+                applyState(BubbleState.ERROR)
                 showStatus(Status.NOT_CONFIGURED)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Transkription fehlgeschlagen", e)
-            val retryable = e.isRetryable()
+            // Ohne Offline-Modell ebenso: laden oder auf Online umstellen, dann erneut senden.
+            val retryable = e.isRetryable() || e is OfflineNotAvailableException
             pendingSamples = if (retryable) samples else null
             main.post {
                 applyState(if (retryable) BubbleState.ERROR else BubbleState.IDLE)
@@ -805,6 +829,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
     private fun showSessionStatus() {
         val time = Formats.duration(session.recordedMs)
         when {
+            session.tooLong(lengthLimited()) -> showStatus(Status.WARNING, getString(R.string.kb_too_long))
             session.capped -> showStatus(Status.WARNING, getString(R.string.kb_capped))
             session.isPaused -> showStatus(Status.PAUSED, getString(R.string.kb_paused, time))
             session.length == DictationSession.Length.LONG -> showStatus(

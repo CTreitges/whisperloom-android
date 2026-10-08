@@ -368,6 +368,91 @@ class ImePauseTest {
         assertFalse(band.isActive)
     }
 
+    // --- Erkennung in der Pause umgestellt (Zahnrad) -------------------------------------------
+
+    /** Offline ueber die Hoechstlaenge, pausiert, dann auf Online: [feststellen] laeuft online an. */
+    private fun offlineZuLangPausiertDannOnline() {
+        feststellen()
+        Prefs(app).engine = Engine.OFFLINE
+        mikro.sprechen(DictationSession.MAX_MS + 60_000)
+        tippen()
+        assertEquals(pausiert(DictationSession.MAX_MS + 60_000), statusText)
+        Prefs(app).engine = Engine.ONLINE
+    }
+
+    @Test fun zuLangFuerOnlineSendetNichtUndBleibtPausiert() {
+        offlineZuLangPausiertDannOnline()
+
+        send.performClick()
+
+        // Der Anbieter lehnte die Datei mit 413 ab, nicht wiederholbar — das Audio waere weg.
+        assertEquals(app.getString(R.string.kb_too_long), statusText)
+        assertTrue("Senden bleibt", send.isClickable)
+        assertTrue("Verwerfen bleibt", discard.isClickable)
+        aufbauen()
+        assertEquals("auch nach dem Wiederoeffnen", app.getString(R.string.kb_too_long), statusText)
+    }
+
+    @Test fun zuLangFuerOnlineSetztNichtFort() {
+        offlineZuLangPausiertDannOnline()
+
+        tippen()
+
+        assertEquals(app.getString(R.string.kb_too_long), statusText)
+        assertFalse("Mikrofon bleibt zu", band.isActive)
+        // Zurueck auf Offline: weiter geht es wieder.
+        Prefs(app).engine = Engine.OFFLINE
+        tippen()
+        assertEquals(laeuft(DictationSession.MAX_MS + 60_000), statusText)
+    }
+
+    @Test fun gedeckeltUndDannOfflineGehtEsWeiter() {
+        feststellen()
+        mikro.sprechen(DictationSession.MAX_MS)
+        warten(1_000)
+        assertEquals(app.getString(R.string.kb_capped), statusText)
+
+        Prefs(app).engine = Engine.OFFLINE
+        tippen()
+
+        assertEquals(laeuft(DictationSession.MAX_MS), statusText)
+        assertTrue(band.isActive)
+    }
+
+    @Test fun ohneZugangInDerPauseBleibtDasDiktatOffen() {
+        feststellen()
+        mikro.sprechen(1_000)
+        tippen()
+        Prefs(app).apiBaseUrl = ""
+
+        send.performClick()
+
+        assertEquals(app.getString(R.string.kb_not_configured), statusText)
+        assertTrue("Diktat bleibt offen", send.isClickable)
+        // Zugang wieder da: Senden geht (scheitert hier am toten Server, das Audio bleibt fuer die Wiederholung).
+        Prefs(app).apiBaseUrl = "http://127.0.0.1:1/v1"
+        send.performClick()
+        assertEquals(app.getString(R.string.kb_transcribing), statusText)
+        idle()
+    }
+
+    /** Ohne Pause (gehalten): der Zugang fehlt beim Senden — das Audio bleibt fuer "Erneut senden". */
+    @Test fun ohneZugangBeimSendenBleibtDasAudio() {
+        down()
+        mikro.sprechen(1_000)
+        Prefs(app).apiBaseUrl = ""
+        up()
+
+        val bis = System.currentTimeMillis() + 10_000
+        while (statusText == app.getString(R.string.kb_transcribing)) {
+            if (System.currentTimeMillis() > bis) fail("Uebertragung endet nicht")
+            Thread.sleep(10)
+            idle()
+        }
+        assertEquals(app.getString(R.string.kb_not_configured), statusText)
+        assertEquals(View.VISIBLE, root.findViewById<View>(R.id.key_retry).visibility)
+    }
+
     @Test fun offlineGibtEsKeineHoechstlaenge() {
         feststellen()
         // Die Regel liest die Erkennung bei jedem Takt; offline rechnet whisper.cpp ohne Obergrenze.
