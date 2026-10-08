@@ -354,6 +354,20 @@ class ImePauseTest {
         assertEquals(app.getString(R.string.kb_discarded), statusText)
     }
 
+    /**
+     * Die Hoechstlaenge faellt zwischen zwei Takte, und der naechste Takt kommt erst mit dem Neuaufbau
+     * (Drehen): der deckelt dann. Die gedeckelte Pause muss ihre Live-Region behalten — sonst sagt
+     * TalkBack spaetere Statuswechsel nicht mehr an.
+     */
+    @Test fun gedeckeltBeimNeuaufbauBehaeltDieLiveRegion() {
+        feststellen()
+        mikro.sprechen(DictationSession.MAX_MS + 500)
+        aufbauen()
+        assertEquals(app.getString(R.string.kb_capped), statusText)
+        assertEquals(View.ACCESSIBILITY_LIVE_REGION_POLITE, status.accessibilityLiveRegion)
+        assertFalse(band.isActive)
+    }
+
     @Test fun offlineGibtEsKeineHoechstlaenge() {
         feststellen()
         // Die Regel liest die Erkennung bei jedem Takt; offline rechnet whisper.cpp ohne Obergrenze.

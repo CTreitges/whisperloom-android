@@ -493,7 +493,8 @@ class WhisperLoomInputMethodService : InputMethodService() {
      * Ansage pro Sekunde, die dem Nutzer ins eigene Diktat redet und seine Warteschlange nie leer
      * laufen laesst. Der erste Lauf des Tickers passiert noch davor, das Feststellen selbst wird
      * also angesagt; danach ist Ruhe. In der Pause schreibt kein Ticker — dann darf die Zeile
-     * wieder ansagen ("Pausiert bei 0:42"). [endSession] stellt die Live-Region zurueck.
+     * wieder ansagen ("Pausiert bei 0:42"). Deckelt schon der erste Lauf, ist es eine Pause, und
+     * die behaelt ihre Live-Region. [endSession] stellt die Live-Region zurueck.
      */
     private fun enterLockedUi() {
         gestureTargets?.showLocked()
@@ -503,7 +504,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
             showSessionStatus()
         } else {
             lockedTicker.run()
-            statusView?.accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_NONE
+            if (session.isLocked) statusView?.accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_NONE
         }
     }
 
