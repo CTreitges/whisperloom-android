@@ -55,8 +55,9 @@ fun TextSettingsScreen(nav: NavState) {
     val off = prefs.refineMode == RefineMode.OFF
     // "Intelligent entfernen" wirkt auch auf geteilte Audios — bedienbar, sobald irgendeine KI-Stufe gilt.
     val noAi = off && prefs.shareRefineMode == RefineMode.OFF
-    // "Lesbarer glaetten" aendert nur "Glaetten" — fuers Diktat wie fuer geteilte Audios.
-    val polish = prefs.refineMode == RefineMode.POLISH || prefs.shareRefineMode == RefineMode.POLISH
+    // "Lesbarer glaetten" aendert nur "Glaetten" — dieser Schalter nur das Diktat; geteilte Audios
+    // haben ihren eigenen (sharePolishReadable, Startwert per Migration v5).
+    val polish = prefs.refineMode == RefineMode.POLISH
 
     DetailScaffold(title = stringResource(R.string.text_title), onBack = { nav.pop() }, snack = snack) { padding ->
         ScrollColumn(padding) {

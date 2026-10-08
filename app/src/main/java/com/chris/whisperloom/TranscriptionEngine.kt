@@ -79,7 +79,7 @@ object TranscriptionEngine {
         val app = context.applicationContext
         val prefs = Prefs(app)
         if (prefs.engine != Engine.OFFLINE) return
-        if (RefinePlan.of(app, prefs, prefs.effective(prefs.refineMode)).route == RefineRoute.Local) {
+        if (RefinePlan.of(app, prefs, prefs.dictationStage).route == RefineRoute.Local) {
             LocalTextEngine.warmUp(prefs.localLlmModel)
         }
     }
@@ -125,7 +125,7 @@ object TranscriptionEngine {
         if (raw.isBlank()) return ""
 
         val language = effectiveLanguage(prefs.language, result.detectedLanguage)
-        val mode = prefs.effective(prefs.refineMode)
+        val mode = prefs.dictationStage
         val refined = refineOrNull(app, prefs, raw, language, mode, skip, cancelled, onRefineStart, onRefineNote, onRefineSkipped)
 
         val options = PolishPlan.options(

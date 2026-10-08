@@ -46,6 +46,7 @@ class PrefsState(val prefs: Prefs) {
     var polishReadable: Boolean by pref({ prefs.polishReadable }) { prefs.polishReadable = it }
     var promptLevelEnabled: Boolean by pref({ prefs.promptLevelEnabled }) { prefs.promptLevelEnabled = it }
     var shareRefineMode: RefineMode by pref({ prefs.shareRefineMode }) { prefs.shareRefineMode = it }
+    var sharePolishReadable: Boolean by pref({ prefs.sharePolishReadable }) { prefs.sharePolishReadable = it }
 
     // Modell je Stufe (RefineMode.MODEL_STAGES; "" = Standard)
     private val stageModels: Map<RefineMode, PrefField<String>> = RefineMode.MODEL_STAGES.associateWith { stage ->
@@ -92,6 +93,12 @@ class PrefsState(val prefs: Prefs) {
             ProFeature.SERVER_MODELS -> serverModelsEnabled = on
         }
     }
+
+    /** Wie [Prefs.dictationStage], ueber die Spiegel. */
+    val dictationStage: RefineMode get() = Prefs.effective(refineMode, polishReadable)
+
+    /** Wie [Prefs.shareStage], ueber die Spiegel. */
+    val shareStage: RefineMode get() = Prefs.effective(shareRefineMode, sharePolishReadable)
 
     /** Der Nutzer hat einen eigenen LLM-Zugang gewaehlt (sonst gilt der Erkennungs-Zugang). */
     val llmUseOwn: Boolean get() = llmProviderId != AccessResolver.LLM_SAME

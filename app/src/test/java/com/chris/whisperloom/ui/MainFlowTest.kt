@@ -558,15 +558,18 @@ class MainFlowTest {
         assertEquals(true, Prefs(ctx).polishReadable)
         // Gespeichert bleibt "Glaetten" — erst die Anfrage ans Modell wird zu READABLE.
         assertEquals(RefineMode.POLISH, Prefs(ctx).refineMode)
-        assertEquals(RefineMode.READABLE, Prefs(ctx).effective(Prefs(ctx).refineMode))
+        assertEquals(RefineMode.READABLE, Prefs(ctx).dictationStage)
+        // Der Schalter der Diktat-Karte gilt nur fuers Diktat (3.8.6).
+        assertEquals(false, Prefs(ctx).sharePolishReadable)
     }
 
-    @Test fun lesbarerGlaettenMitNurDerShareStufeBedienbar() {
+    /** 3.8.6: Sprachnachrichten haben einen eigenen Schalter — der des Diktats bleibt ohne Diktat-Stufe gesperrt. */
+    @Test fun lesbarerGlaettenDesDiktatsMitNurDerShareStufeGesperrt() {
         screen(env()) { TextSettingsScreen(it) }
         compose.onNode(hasText("Glätten") and hasAnyAncestor(hasTestTag(SHARE_REFINE_TAG))).performClick()
         compose.waitForIdle()
         assertEquals(RefineMode.OFF, Prefs(ctx).refineMode)
-        compose.onNodeWithText("Lesbarer glätten").assertIsEnabled()
+        compose.onNodeWithText("Lesbarer glätten").assertIsNotEnabled()
     }
 
     /** Review 3.5.0 HOCH: nach aus/an darf weder die Ollama-Adresse noch der Ollama-Key haengen bleiben. */

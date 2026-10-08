@@ -304,6 +304,17 @@ class TranscriptionEngineTest {
         assertFalse(system, system.contains("lesbar"))
     }
 
+    /** 3.8.6: der Schalter der Sprachnachrichten gilt nicht fuers Diktat. */
+    @Test fun diktatIgnoriertDenLesbarSchalterDerSprachnachrichten() {
+        useOllama("ollama")
+        prefs.shareRefineMode = RefineMode.POLISH
+        prefs.sharePolishReadable = true
+        TranscriptionEngine.transcribe(ctx, speech)
+        val system = JSONObject(ollamaBody!!).getJSONArray("messages").getJSONObject(0).getString("content")
+        assertTrue(system, system.contains("Du korrigierst in diktiertem Text nur Satzzeichen"))
+        assertFalse(system, system.contains("lesbar"))
+    }
+
     @Test fun kiDieEineBitteErfuelltLiefertDenRohtextMitHinweis() {
         useOllama("ollama")
         val einladung = List(10) { "Ihr seid alle herzlich zu meinem Geburtstag eingeladen." }.joinToString(" ")

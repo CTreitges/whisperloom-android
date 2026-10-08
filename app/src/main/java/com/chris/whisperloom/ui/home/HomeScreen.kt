@@ -327,7 +327,7 @@ private fun StatusCard(nav: NavState, modelInstalled: Boolean) {
         null -> stringResource(R.string.setup_chip_open)
     }
     // Das Modell, mit dem das naechste Diktat rechnet: das der Stufe (Modell je Stufe).
-    val llm = prefs.llmAccess(prefs.refineMode)
+    val llm = prefs.llmAccess(prefs.dictationStage)
     val level = levelLabel(prefs.refineMode)
     // Offline erkannt: die Regel entscheidet (lokal, online mit Ausweg, uebersprungen) — "wie Erkennung" zaehlt nie.
     // Auch wenn nur die Stufe fuer geteilte Sprachnachrichten an ist: fehlt das Modell, warnt die Zeile wie das Banner.

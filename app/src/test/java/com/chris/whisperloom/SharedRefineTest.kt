@@ -63,12 +63,26 @@ class SharedRefineTest {
         assertNull(result.skipped)
     }
 
-    @Test fun lesbarerGlaettenGiltAuchFuerGeteilteAudios() {
+    @Test fun lesbarerGlaettenHatEinenEigenenSchalter() {
         prefs.shareRefineMode = RefineMode.POLISH
-        prefs.polishReadable = true
+        prefs.sharePolishReadable = true
         val result = run(listOf("Hallo."))
         assertEquals(listOf("Hallo." to RefineMode.READABLE), calls)
         assertEquals(RefineMode.READABLE, result.mode)
+    }
+
+    /** 3.8.6: bis 3.8.5 wirkte der eine Schalter auf beides. */
+    @Test fun derSchalterDesDiktatsWirktNichtAufGeteilteAudios() {
+        prefs.refineMode = RefineMode.POLISH
+        prefs.shareRefineMode = RefineMode.POLISH
+        prefs.polishReadable = true
+        val result = run(listOf("Hallo."))
+        assertEquals(listOf("Hallo." to RefineMode.POLISH), calls)
+        assertEquals(RefineMode.POLISH, result.mode)
+        // Und andersherum: der Schalter der Sprachnachrichten aendert das Diktat nicht.
+        prefs.polishReadable = false
+        prefs.sharePolishReadable = true
+        assertEquals(RefineMode.POLISH, prefs.dictationStage)
     }
 
     // --- Was an das Modell geht -------------------------------------------------------------

@@ -117,7 +117,7 @@ internal class RefinePlan(
          * Sammelt die Eingaben der Entscheidungstabelle. Das Netz wird nur gefragt, wenn es zaehlt
          * (Online-Erkennung oder eigener Zugang), das lokale Modell nur bei Offline-Erkennung.
          *
-         * @param mode die wirksame Stufe des Auftrags ([Prefs.effective]), Diktat oder geteilte Audios —
+         * @param mode die wirksame Stufe des Auftrags ([Prefs.dictationStage] bzw. [Prefs.shareStage]) —
          *   sie bestimmt auch das Textmodell ([Prefs.llmModelFor]).
          */
         fun of(context: Context, prefs: Prefs, mode: RefineMode): RefinePlan {

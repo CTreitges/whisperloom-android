@@ -4,8 +4,8 @@ import android.content.Context
 import android.util.Log
 
 /**
- * KI-Stufe fuer geteilte Sprachnachrichten ([Prefs.shareRefineMode]) — getrennt von der Stufe
- * fuers Diktat und ab Werk aus. Ohne Audio und (ueber [run]s `refine`) ohne Netz testbar.
+ * KI-Stufe fuer geteilte Sprachnachrichten ([Prefs.shareStage]: Stufe und "Lesbarer glaetten") —
+ * getrennt von denen fuers Diktat und ab Werk aus. Ohne Audio und (ueber [run]s `refine`) ohne Netz testbar.
  */
 object SharedRefine {
 
@@ -36,7 +36,7 @@ object SharedRefine {
         isCancelled: () -> Boolean = { false },
         onStart: (local: Boolean) -> Unit = {},
     ): Result {
-        val mode = prefs.effective(prefs.shareRefineMode)
+        val mode = prefs.shareStage
         if (mode == RefineMode.OFF) return Result(mode, null, null)
         val plan = RefinePlan.of(context, prefs, mode)
         val route = plan.route
@@ -73,7 +73,7 @@ object SharedRefine {
         onStart: () -> Unit = {},
         refine: (raw: String, mode: RefineMode) -> String,
     ): Result {
-        val mode = prefs.effective(prefs.shareRefineMode)
+        val mode = prefs.shareStage
         if (mode == RefineMode.OFF) return Result(mode, null, null)
         onStart()
         return try {

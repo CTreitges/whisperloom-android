@@ -56,7 +56,9 @@ class PrefsTest {
         assertFalse(p.a11ySkipped)
         assertFalse(p.notifSkipped)
         assertFalse(p.keyboardSkipped)
-        assertEquals(4, sp.getInt("prefs_version", 0))
+        assertFalse(p.polishReadable)
+        assertFalse(p.sharePolishReadable)
+        assertEquals(5, sp.getInt("prefs_version", 0))
         // Ohne Engine ist die App nicht eingerichtet — auch nicht mit Key.
         assertFalse(TranscriptionEngine.isConfigured(ctx))
     }
@@ -78,7 +80,7 @@ class PrefsTest {
         assertEquals("sk-alt", stt.apiKey)
         assertEquals(Prefs.DEFAULT_LLM_MODEL, p.llmAccess().model)
         assertTrue(TranscriptionEngine.isConfigured(ctx))
-        assertEquals(4, sp.getInt("prefs_version", 0))
+        assertEquals(5, sp.getInt("prefs_version", 0))
     }
 
     // --- Review KOR-2/SEC-3: v2 hatte eine freie api_url ohne Anbieter ---------------------
@@ -147,7 +149,7 @@ class PrefsTest {
         val p = Prefs(ctx)
         assertEquals("gemini-2.5-flash-lite", p.llmModel)
         assertEquals("gemini-2.5-flash-lite", p.llmAccess().model)
-        assertEquals(4, sp.getInt("prefs_version", 0))
+        assertEquals(5, sp.getInt("prefs_version", 0))
     }
 
     @Test fun geminiMitGewaehltemModellUndAndereAnbieterBleibenUnveraendert() {
@@ -201,16 +203,21 @@ class PrefsTest {
 
     @Test fun lesbarerGlaettenIstAbWerkAus() {
         val p = Prefs(ctx)
+        p.refineMode = RefineMode.POLISH
+        p.shareRefineMode = RefineMode.POLISH
         assertFalse(p.polishReadable)
-        assertEquals(RefineMode.POLISH, p.effective(RefineMode.POLISH))
+        assertFalse(p.sharePolishReadable)
+        assertEquals(RefineMode.POLISH, p.dictationStage)
+        assertEquals(RefineMode.POLISH, p.shareStage)
     }
 
     @Test fun lesbarerGlaettenWirktNurAufGlaetten() {
         val p = Prefs(ctx)
         p.polishReadable = true
         assertTrue(Prefs(ctx).polishReadable)
-        assertEquals(RefineMode.READABLE, p.effective(RefineMode.POLISH))
-        for (mode in RefineMode.entries - RefineMode.POLISH) assertEquals(mode.name, mode, p.effective(mode))
+        assertEquals(RefineMode.READABLE, Prefs.effective(RefineMode.POLISH, readable = true))
+        for (mode in RefineMode.entries - RefineMode.POLISH) assertEquals(mode.name, mode, Prefs.effective(mode, readable = true))
+        for (mode in RefineMode.entries) assertEquals(mode.name, mode, Prefs.effective(mode, readable = false))
         // Gespeichert bleibt die Wahl "Glaetten" — READABLE ist nie eine waehlbare Stufe.
         p.refineMode = RefineMode.POLISH
         assertEquals("polish", sp.getString("refine_mode", null))
@@ -223,7 +230,54 @@ class PrefsTest {
         assertTrue(Prefs(ctx).polishReadable)
         Prefs(ctx).polishReadable = false
         assertFalse(state.polishReadable)
+        state.sharePolishReadable = true
+        assertTrue(Prefs(ctx).sharePolishReadable)
+        state.shareRefineMode = RefineMode.POLISH
+        state.refineMode = RefineMode.POLISH
+        assertEquals(RefineMode.READABLE, state.shareStage)
+        assertEquals(RefineMode.POLISH, state.dictationStage)
+        Prefs(ctx).sharePolishReadable = false
+        assertEquals(RefineMode.POLISH, state.shareStage)
         state.dispose()
+    }
+
+    // --- v5 (3.8.6): "Lesbarer glaetten" getrennt fuer Sprachnachrichten -------------------
+
+    @Test fun lesbarerGlaettenGetrenntFuerDiktatUndSprachnachrichten() {
+        val p = Prefs(ctx)
+        p.refineMode = RefineMode.POLISH
+        p.shareRefineMode = RefineMode.POLISH
+        p.polishReadable = true
+        assertEquals(RefineMode.READABLE, p.dictationStage)
+        assertEquals("Diktat-Schalter faerbt nicht ab", RefineMode.POLISH, p.shareStage)
+        p.polishReadable = false
+        p.sharePolishReadable = true
+        assertEquals(RefineMode.POLISH, Prefs(ctx).dictationStage)
+        assertEquals(RefineMode.READABLE, Prefs(ctx).shareStage)
+        assertTrue(sp.getBoolean("share_polish_readable", false))
+        // Nur "Glaetten" wird lesbarer.
+        p.shareRefineMode = RefineMode.SUMMARIZE
+        assertEquals(RefineMode.SUMMARIZE, Prefs(ctx).shareStage)
+    }
+
+    @Test fun v5UebernimmtDenGemeinsamenSchalterFuerSprachnachrichten() {
+        // Bis 3.8.5 galt "Lesbarer glaetten" auch fuer geteilte Audios — das Verhalten bleibt.
+        sp.edit().putInt("prefs_version", 4).putBoolean("polish_readable", true).commit()
+        val p = Prefs(ctx)
+        assertTrue(p.sharePolishReadable)
+        assertTrue(p.polishReadable)
+        assertEquals(5, sp.getInt("prefs_version", 0))
+
+        sp.edit().clear().putInt("prefs_version", 4).putBoolean("polish_readable", false).commit()
+        assertFalse(Prefs(ctx).sharePolishReadable)
+        assertTrue(sp.contains("share_polish_readable"))
+    }
+
+    @Test fun v5LaeuftNurEinmal() {
+        sp.edit().putInt("prefs_version", 4).putBoolean("polish_readable", true).commit()
+        Prefs(ctx).sharePolishReadable = false
+        assertFalse("die Nutzer-Entscheidung bleibt", Prefs(ctx).sharePolishReadable)
+        assertTrue(Prefs(ctx).polishReadable)
     }
 
     // --- Modell je Stufe (3.8.6) ------------------------------------------------------
@@ -334,7 +388,7 @@ class PrefsTest {
         assertEquals(Prefs.DEFAULT_LOCAL_LLM_MODEL, p.localLlmModel)
         assertFalse(sp.contains("offline_refine"))
         assertFalse(sp.contains("local_llm_model"))
-        assertEquals(4, sp.getInt("prefs_version", 0))
+        assertEquals(5, sp.getInt("prefs_version", 0))
     }
 
     @Test fun unbekannteOfflineRegelGiltAlsLokal() {
