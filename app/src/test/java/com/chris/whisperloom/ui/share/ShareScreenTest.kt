@@ -302,14 +302,24 @@ class ShareScreenTest {
         compose.onNodeWithText("(nichts erkannt)").assertIsDisplayed()
     }
 
-    @Test fun kopierenZeigtSnackbar() {
+    private fun kopieren(): Boolean {
         var copied = false
         compose.mainClock.autoAdvance = false
         show(ShareUiState(phase = SharePhase.DONE, files = listOf(ShareFile("a.ogg", result = done))), onCopy = { copied = true })
         compose.mainClock.advanceTimeByFrame()
         compose.onNodeWithText("Kopieren").performClick()
         compose.mainClock.advanceTimeBy(500)
-        assertTrue(copied)
+        return copied
+    }
+
+    @Test @Config(sdk = [30])
+    fun bisAndroid12ZeigtKopierenEineSnackbar() {
+        assertTrue(kopieren())
         compose.onNodeWithText("In die Zwischenablage kopiert").assertIsDisplayed()
+    }
+
+    @Test fun abAndroid13BestaetigtNurDasSystemDasKopieren() {
+        assertTrue(kopieren())
+        compose.onNodeWithText("In die Zwischenablage kopiert").assertDoesNotExist()
     }
 }

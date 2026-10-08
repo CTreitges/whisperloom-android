@@ -5,6 +5,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -29,6 +30,12 @@ fun openLink(ctx: Context, url: String, snack: SnackController) {
 fun copyToClipboard(ctx: Context, text: String) {
     ctx.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("WhisperLoom", text))
 }
+
+/**
+ * Braucht das Kopieren eine eigene Bestaetigung (Snackbar)? Ab Android 13 zeigt das System selbst
+ * eine an — eine zweite waere doppelt. Fuer jede Stelle, die Text in die Zwischenablage legt.
+ */
+fun needsOwnCopyConfirmation(): Boolean = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
 
 /** Zeile mit Trailing open_in_new, oeffnet [url]. */
 @Composable

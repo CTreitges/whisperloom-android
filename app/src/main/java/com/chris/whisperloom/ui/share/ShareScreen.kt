@@ -69,6 +69,7 @@ import com.chris.whisperloom.Formats
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.ui.components.levelLabel
+import com.chris.whisperloom.ui.components.needsOwnCopyConfirmation
 import com.chris.whisperloom.ui.theme.loom
 import kotlinx.coroutines.launch
 
@@ -95,10 +96,11 @@ fun ShareScreen(
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val copiedText = stringResource(R.string.share_copied)
-    // Kopieren: Aktion der Activity, Rueckmeldung als Snackbar (nie Toast, Spec §1.3).
+    // Kopieren: Aktion der Activity, Rueckmeldung als Snackbar (nie Toast, Spec §1.3) — ab Android 13
+    // bestaetigt das System selbst.
     val copy: () -> Unit = {
         onCopy()
-        scope.launch { snackbar.showSnackbar(copiedText) }
+        if (needsOwnCopyConfirmation()) scope.launch { snackbar.showSnackbar(copiedText) }
     }
     val done = state.phase == SharePhase.DONE
 
