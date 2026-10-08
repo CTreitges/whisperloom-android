@@ -360,7 +360,7 @@
     <string name="stage_active_share">Bei Sprachnachrichten aktiv</string>
     <string name="stage_cleanup">Bereinigung</string>
     <string name="stage_cleanup_plain">Nur Zeichensetzung</string>
-    <string name="stage_cleanup_plain_sub">Setzt Satzzeichen und Groß-/Kleinschreibung. Kein Wort fällt weg.</string>
+    <string name="stage_cleanup_plain_sub">Setzt Satzzeichen und Groß-/Kleinschreibung. Die KI streicht kein Wort, das macht nur deine Füllwort-Liste.</string>
     <string name="stage_cleanup_clean">Ohne Füllwörter</string>
     <string name="stage_cleanup_clean_sub">Die KI lässt Füllwörter, Versprecher und Wiederholungen weg, im Zweifel bleibt das Wort.</string>
     <string name="stage_cleanup_readable">Lesbar</string>
@@ -561,7 +561,7 @@
     <string name="help_s1_title">So funktioniert\'s</string>
     <string name="help_s1_intro">Drei Wege zum Text: der schwebende Knopf, die Diktat-Tastatur und Sprachnachrichten, die du an WhisperLoom teilst.</string>
     <string name="help_s1_bubble">Schwebender Knopf: antippen = Aufnahme, nochmal = fertig &amp; einfügen, auf ✕ ziehen = verwerfen, rot = Fehler, antippen = erneut.</string>
-    <string name="help_s1_keyboard">Diktat-Tastatur: Mikrofon gedrückt halten, sprechen, loslassen.</string>
+    <string name="help_s1_keyboard">Diktat-Tastatur: Mikrofon gedrückt halten, sprechen, loslassen. Nach rechts wischen stellt fest; dann pausiert ein Tipp, der nächste setzt fort, ➤ sendet, ✕ verwirft.</string>
     <string name="help_s1_share">Sprachnachrichten: in WhatsApp lange drücken → Teilen → WhisperLoom. Der Text erscheint in Absätzen, du kannst ihn kopieren oder weitergeben.</string>
     <string name="help_s1_tutorial">Tutorial erneut ansehen</string>
     <string name="help_s2_title">Einrichtung Schritt für Schritt</string>

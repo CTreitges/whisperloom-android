@@ -73,7 +73,11 @@
     und Aufträge von Pro Widgets. Bei der Diktat-Tastatur werden außerdem keine Texte aus Passwortfeldern und
     aus Feldern gespeichert, die keine Eingaben lernen dürfen (z. B. im Inkognito-Modus eines Browsers). Der
     schwebende Knopf erkennt nur Passwortfelder, und nur bei eingeschalteter Bedienungshilfe: Text aus einem
-    Inkognito-Feld kommt bei ihm in den Verlauf, und ohne Bedienungshilfe auch Text aus einem Passwortfeld.</p>
+    Inkognito-Feld kommt bei ihm in den Verlauf, und ohne Bedienungshilfe auch Text aus einem Passwortfeld.
+    Ist der Verlauf aus und das Eingabefeld beim Einfügen nicht mehr da (App gewechselt, Tastatur zu), kopiert die
+    Diktat-Tastatur den Text in die Zwischenablage, nicht aus Passwort- und Inkognito-Feldern. Was in der
+    Zwischenablage liegt, können andere Apps mit Zwischenablage-Verlauf (etwa eine andere Tastatur) speichern
+    oder synchronisieren.</p>
     <ul>
       <li><strong>Ort:</strong> nur auf deinem Gerät, im privaten App-Speicher in einem Ordner, den Android nie
       sichert – der Verlauf landet weder im Google-Backup noch im Geräte-zu-Gerät-Transfer.</li>
@@ -247,7 +251,10 @@
     fields and from fields that must not learn input (e.g. a browser's incognito mode) is not stored either.
     The floating button only recognises password fields, and only while the accessibility service is on: from
     the button, text from an incognito field goes into the history, and without the accessibility service so
-    does text from a password field.</p>
+    does text from a password field. If the history is off and the input field is gone when the text arrives
+    (app switched, keyboard closed), the dictation keyboard copies the text to the clipboard, but not from
+    password and incognito fields. Whatever is on the clipboard may be kept or synced by other apps with a
+    clipboard history (such as another keyboard).</p>
     <ul>
       <li><strong>Location:</strong> only on your device, in private app storage, in a folder Android never
       backs up – the history ends up neither in Google backup nor in device-to-device transfer.</li>
