@@ -619,7 +619,8 @@ class MainFlowTest {
         prefs.llmProviderId = "ollama-cloud"
         screen(env()) { TextAccessScreen(it) }
         compose.onNodeWithText("https://ollama.com").assertExists()
-        compose.onNodeWithTag("dropdown:Modell").assertTextContains("Gemma 4 31B (empfohlen)")
+        // Leeres Modell = Empfehlung je Stufe (3.8.6), nicht mehr das erste Katalogmodell.
+        compose.onNodeWithTag("dropdown:Modell").assertTextContains("Empfehlung je Stufe")
         compose.onNodeWithTag("dropdown:Modell").performClick()
         compose.waitForIdle()
         compose.onNodeWithText("GLM 5.3 Flash").assertExists()

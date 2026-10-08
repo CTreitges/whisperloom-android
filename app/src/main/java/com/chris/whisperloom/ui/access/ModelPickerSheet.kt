@@ -46,6 +46,9 @@ import java.util.Date
  * geladene Liste sagt darueber nichts.
  *
  * @param checkListed aus bei ElevenLabs: /v1/models listet Scribe wohl gar nicht.
+ * @param standard Zeile ganz oben, die "" waehlt ("Empfehlung je Stufe", "Standard (…)"); null = keine.
+ *   Gewaehlt ist sie bei leerem [selected]. [standardNote] = ihre Unterzeile.
+ * @param footer unter der Liste, z. B. "Modell pruefen".
  */
 @Composable
 fun ModelPickerSheet(
@@ -56,6 +59,10 @@ fun ModelPickerSheet(
     onCustom: () -> Unit,
     onDismiss: () -> Unit,
     checkListed: Boolean = true,
+    title: String = stringResource(R.string.models_pick),
+    standard: String? = null,
+    standardNote: String? = null,
+    footer: (@Composable () -> Unit)? = null,
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     val q = query.trim()
@@ -73,7 +80,7 @@ fun ModelPickerSheet(
     }
     val stale = stringResource(R.string.models_stale)
 
-    LoomSheet(title = stringResource(R.string.models_pick), onDismiss = onDismiss, scroll = false) { dismiss ->
+    LoomSheet(title = title, onDismiss = onDismiss, scroll = false) { dismiss ->
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
@@ -85,6 +92,9 @@ fun ModelPickerSheet(
             fun pick(id: String) {
                 onSelect(id)
                 dismiss()
+            }
+            if (standard != null && hit(standard, standardNote)) {
+                item(key = "standard") { ModelRow(standard, standardNote, selected.isBlank()) { pick("") } }
             }
             if (orphan) {
                 item(key = "selected") { ModelRow(selected, stale.takeIf { canMark }, selected = true, warn = canMark) { dismiss() } }
@@ -108,6 +118,7 @@ fun ModelPickerSheet(
                 }
             }
         }
+        footer?.invoke()
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             TextButton(onClick = onCustom) { Text(stringResource(R.string.rec_model_custom)) }
             TextButton(onClick = dismiss) { Text(stringResource(R.string.common_close)) }

@@ -7,11 +7,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chris.whisperloom.OfflineRefineRule
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.ui.access.stageModels
 import com.chris.whisperloom.ui.components.DetailScaffold
 import com.chris.whisperloom.ui.components.HubRow
 import com.chris.whisperloom.ui.components.ScrollColumn
@@ -32,7 +34,7 @@ import com.chris.whisperloom.ui.state.PrefsState
 
 /**
  * Text-Hub (3.8.6, vorher eine lange Seite): KI-Stufen (Diktat, Sprachnachrichten), Modelle & Zugang
- * (Online-Zugang, Offline-Erkennung nur wo offline geht), Ohne KI (Regeln).
+ * (Online-Zugang mit Modell je Stufe, Offline-Erkennung nur wo offline geht), Ohne KI (Regeln).
  * Unterzeile = aktueller Wert, wie im Einstellungen-Hub.
  */
 @Composable
@@ -109,7 +111,7 @@ internal fun textRules(prefs: PrefsState): List<String> = buildList {
 private fun stageLabel(mode: RefineMode, readable: Boolean): String =
     if (mode == RefineMode.POLISH && readable) stringResource(R.string.text_hub_val_readable, levelLabel(mode)) else levelLabel(mode)
 
-/** "Wie Erkennung · OpenAI · GPT-6 Luna", "Anthropic · Claude Sonnet 5" … */
+/** "Wie Erkennung · OpenAI · Empfehlung je Stufe", "Anthropic · 1 Stufe mit eigenem Modell" … */
 @Composable
 private fun accessValue(prefs: PrefsState): String {
     val llm = prefs.llmAccess()
@@ -117,7 +119,13 @@ private fun accessValue(prefs: PrefsState): String {
     val access = if (prefs.llmUseOwn) providerShortName(llm.provider)
     else stringResource(R.string.text_hub_val_access_same, providerShortName(llm.provider))
     if (llm.refineBlock != null) return access
-    return listOf(access, modelLabel(llm)).filter { it.isNotBlank() }.joinToString(" · ")
+    val custom = stageModels(prefs.promptLevelEnabled).count { prefs.llmModelFor(it).isNotBlank() }
+    val models = when {
+        custom > 0 -> pluralStringResource(R.plurals.text_hub_val_models_custom, custom, custom)
+        prefs.llmModel.isBlank() && llm.provider.llmModels.isNotEmpty() -> stringResource(R.string.text_models_recommended)
+        else -> modelLabel(llm)
+    }
+    return listOf(access, models).filter { it.isNotBlank() }.joinToString(" · ")
 }
 
 /** "Lokales Textmodell · Gemma 4 E2B", ohne geladenes Modell "… · Textmodell fehlt". */

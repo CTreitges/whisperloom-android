@@ -26,6 +26,7 @@ import com.chris.whisperloom.Engine
 import com.chris.whisperloom.ModelCache
 import com.chris.whisperloom.OfflineRefineRule
 import com.chris.whisperloom.R
+import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.api.AccessResolver
 import com.chris.whisperloom.api.ModelKind
 import com.chris.whisperloom.api.Provider
@@ -76,6 +77,20 @@ fun LlmAccessSection(snack: SnackController) {
     // also kein Picker, sondern das freie Feld wie ohne Pro.
     val pickable = pro && provider.hasLlm
     val loadable = !noLlmWithoutOwn && (pickable || provider.isOllama)
+    // Anbieter mit Katalog: leeres Modell = "Empfehlung je Stufe" (3.8.6) — Glaetten und Umformulieren
+    // bekommen je ihre Empfehlung. Ohne Katalog (eigener Server, Ollama lokal) ist das Modell Pflicht.
+    val catalog = provider.llmModels.isNotEmpty()
+    val recommended = stringResource(R.string.text_models_recommended)
+    val recommendedSub = stringResource(
+        R.string.text_models_recommended_sub,
+        recommendedLabel(provider, RefineMode.POLISH),
+        recommendedLabel(provider, RefineMode.BEAUTIFY),
+    )
+    val modelValue = when {
+        catalog && prefs.llmModel.isBlank() -> recommended
+        llm.model.isBlank() -> ""
+        else -> modelLabel(llm)
+    }
 
     // Lokal gibt es kein Default-Modell: das erste gefundene uebernehmen.
     val takeFirst: (ModelCache.Entry) -> Unit = { e ->
@@ -189,16 +204,17 @@ fun LlmAccessSection(snack: SnackController) {
             )
             pickable -> LoomPickerField(
                 label = stringResource(R.string.text_llm_model),
-                value = modelLabel(llm),
+                value = modelValue,
                 onClick = { showPicker = true },
                 isError = llm.model.isBlank(),
                 supportingText = if (provider.llmModels.isEmpty()) ({ Text(stringResource(R.string.model_custom_info)) }) else null,
             )
             provider.isOllama && (server.ids.isNotEmpty() || provider.llmModels.isNotEmpty()) -> LoomDropdown(
                 label = stringResource(R.string.text_llm_model),
-                value = if (llm.model.isBlank()) "" else modelLabel(llm),
-                options = (provider.llmModels.map { it.id } + server.ids).distinct(),
-                optionLabel = { id -> provider.llmModel(id)?.label ?: id },
+                value = modelValue,
+                options = listOfNotNull("".takeIf { catalog }) + (provider.llmModels.map { it.id } + server.ids).distinct(),
+                optionLabel = { id -> if (id.isEmpty()) recommended else provider.llmModel(id)?.label ?: id },
+                optionSupporting = { id -> recommendedSub.takeIf { id.isEmpty() } },
                 onSelect = { prefs.llmModel = it },
                 extraOption = stringResource(R.string.text_model_custom),
                 onExtra = { showCustomModel = true },
@@ -215,10 +231,11 @@ fun LlmAccessSection(snack: SnackController) {
             )
             else -> LoomDropdown(
                 label = stringResource(R.string.text_llm_model),
-                value = modelLabel(llm),
-                options = provider.llmModels,
-                optionLabel = { it.label },
-                onSelect = { prefs.llmModel = it.id },
+                value = modelValue,
+                options = listOf(null) + provider.llmModels,
+                optionLabel = { it?.label ?: recommended },
+                optionSupporting = { option -> recommendedSub.takeIf { option == null } },
+                onSelect = { prefs.llmModel = it?.id.orEmpty() },
                 extraOption = stringResource(R.string.text_model_custom),
                 onExtra = { showCustomModel = true },
             )
@@ -248,13 +265,15 @@ fun LlmAccessSection(snack: SnackController) {
         ModelPickerSheet(
             recommended = provider.llmModels,
             server = server.entry,
-            selected = llm.model,
+            selected = prefs.llmModel.trim(),
             onSelect = { prefs.llmModel = it },
             onCustom = {
                 showPicker = false
                 showCustomModel = true
             },
             onDismiss = { showPicker = false },
+            standard = recommended.takeIf { catalog },
+            standardNote = recommendedSub,
         )
     }
     if (showCustomModel) {
@@ -266,6 +285,10 @@ fun LlmAccessSection(snack: SnackController) {
         )
     }
 }
+
+/** Name der Empfehlung des Anbieters fuer die Stufe von [mode] ("Claude Haiku 5.5"). */
+private fun recommendedLabel(provider: Provider, mode: RefineMode): String =
+    provider.recommendedLlmModel(mode).let { id -> provider.llmModel(id)?.label ?: id }
 
 /**
  * Offline ohne eigenen Zugang: was bei Offline-Erkennung mit dem Text passiert, je nach Regel

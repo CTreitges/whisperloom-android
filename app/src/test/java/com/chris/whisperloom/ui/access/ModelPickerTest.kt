@@ -291,7 +291,9 @@ class ModelPickerTest {
         text()
         compose.onNodeWithTag("dropdown:Modell").assertDoesNotExist()
         openPicker()
-        row("GPT-OSS 20B").assertIsSelected()
+        // Ohne eigenes Modell gilt die Empfehlung je Stufe (3.8.6) — sie steht oben und ist gewaehlt.
+        row("Empfehlung je Stufe").assertIsSelected()
+        row("GPT-OSS 20B").assertIsNotSelected()
         row("Qwen 3.8 27B (Preview)").assertTextContains("nicht mehr gelistet", substring = true)
         row("moonshotai/kimi-k3").performClick()
         compose.waitForIdle()

@@ -105,19 +105,21 @@ class TextHubTest {
         hub()
         compose.onNodeWithText("Glätten · lesbarer").assertExists()
         compose.onNodeWithText("Aus · wortgetreu").assertExists()
-        // "Wie Erkennung" mit OpenAI, kein Modell gewaehlt: die Empfehlung des Anbieters.
-        compose.onNodeWithText("Wie Erkennung · OpenAI · GPT-6 Luna").assertExists()
+        // "Wie Erkennung" mit OpenAI, kein Modell gewaehlt: die Empfehlung je Stufe.
+        compose.onNodeWithText("Wie Erkennung · OpenAI · Empfehlung je Stufe").assertExists()
         compose.onNodeWithText("Lokales Textmodell · Textmodell fehlt").assertExists()
         compose.onNodeWithText("Füllwörter · Groß-Schreibung").assertExists()
     }
 
-    @Test fun hubUnterzeilenMitEigenemZugangUndTextmodell() {
+    @Test fun hubUnterzeilenMitEigenemZugangStufenModellUndTextmodell() {
         prefs.refineMode = RefineMode.BEAUTIFY
         prefs.polishReadable = true // wirkt nur mit Glaetten
         prefs.shareRefineMode = RefineMode.POLISH
         prefs.sharePolishReadable = true
         prefs.llmProviderId = "anthropic"
         prefs.llmKey = "sk-ant"
+        prefs.setLlmModelFor(RefineMode.SUMMARIZE, "claude-opus-5-5")
+        prefs.setLlmModelFor(RefineMode.PROMPT, "claude-opus-5-5") // ohne Pro unsichtbar, zaehlt nicht
         prefs.localLlmModel = "gemma4_e2b"
         prefs.removeFillers = false
         prefs.autoCapitalize = false
@@ -125,7 +127,7 @@ class TextHubTest {
         hub(env(status.copy(installedTextModels = setOf("gemma4_e2b"))))
         compose.onNodeWithText("Verschönern").assertExists()
         compose.onNodeWithText("Glätten · lesbarer").assertExists() // die Sprachnachrichten
-        compose.onNodeWithText("Anthropic · Claude Haiku 5.5").assertExists()
+        compose.onNodeWithText("Anthropic · 1 Stufe mit eigenem Modell").assertExists()
         compose.onNodeWithText("Lokales Textmodell · Gemma 4 E2B").assertExists()
         compose.onNodeWithText("Keine").assertExists()
     }
@@ -180,7 +182,7 @@ class TextHubTest {
         mapOf(
             "Diktat" to "Textverbesserung (KI)",
             "Sprachnachrichten" to "Geteilte Sprachnachrichten",
-            "Online-Zugang & Modelle" to "Online-Zugang für die Textverbesserung",
+            "Online-Zugang & Modelle" to "Modell je Stufe",
             "Offline-Erkennung" to "Textverbesserung bei Offline-Erkennung",
             "Regeln ohne KI" to "Liste bearbeiten",
         ).forEach { (zeile, inhalt) ->

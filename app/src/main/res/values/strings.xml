@@ -421,6 +421,25 @@
     <!-- %1$s = Regel („Lokales Textmodell“) -->
     <string name="text_hub_val_offline_missing">%1$s · Textmodell fehlt</string>
     <string name="text_hub_val_rules_none">Keine</string>
+    <plurals name="text_hub_val_models_custom">
+        <item quantity="one">%d Stufe mit eigenem Modell</item>
+        <item quantity="other">%d Stufen mit eigenem Modell</item>
+    </plurals>
+    <!-- Modell je Stufe: "" im Modellfeld des Zugangs = die Empfehlung des Anbieters je Stufe -->
+    <string name="text_models_recommended">Empfehlung je Stufe</string>
+    <!-- %1$s = Modell zum Glätten, %2$s = Modell zum Umformulieren -->
+    <string name="text_models_recommended_sub">Glätten: %1$s · Umformulieren: %2$s</string>
+    <string name="text_models_title">Modell je Stufe</string>
+    <string name="text_models_intro">„Standard“ ist das Modell des Zugangs, bei „Empfehlung je Stufe“ ein schnelles zum Glätten und ein stärkeres zum Umformulieren. Glätten gilt auch für „Lesbarer glätten“.</string>
+    <!-- %1$s = Modell, mit dem die Stufe ohne eigenes Modell rechnet -->
+    <string name="text_models_standard">Standard · %1$s</string>
+    <string name="text_models_standard_missing">Standard · noch kein Modell</string>
+    <string name="text_models_standard_option">Standard (%1$s)</string>
+    <!-- %1$s = Stufe („Verschönern“) -->
+    <string name="text_models_pick_title">Modell für %1$s</string>
+    <string name="text_models_no_access">Ohne Online-Zugang für die Textverbesserung gibt es hier nichts zu wählen.</string>
+    <string name="text_models_reset_note">Ein neuer Anbieter setzt alle Stufen auf „Standard“ zurück.</string>
+    <string name="text_models_test">Modell prüfen</string>
     <string name="fillers_title">Füllwörter</string>
     <string name="fillers_builtin">Eingebaut</string>
     <string name="fillers_custom">Eigene Wörter</string>
