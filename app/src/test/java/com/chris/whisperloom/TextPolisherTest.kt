@@ -64,6 +64,29 @@ class TextPolisherTest {
         assertEquals("Hallo.\nWelt", TextPolisher.polish("hallo.\nwelt", lines))
     }
 
+    // --- Abkuerzungen beenden keinen Satz (Nebenbefund N1) ----------------------------------
+
+    @Test fun nachAbkuerzungUndOrdnungszahlBleibtKlein() {
+        assertEquals("Obst, z. B. ein Apfel.", TextPolisher.polish("obst, z. B. ein Apfel.", full))
+        assertEquals("Das kostet ca. fünf Euro.", TextPolisher.polish("das kostet ca. fünf Euro.", full))
+        assertEquals("Das heißt d.h. nichts.", TextPolisher.polish("das heißt d.h. nichts.", full))
+        assertEquals("Vom 1. bis 5. Mai", TextPolisher.polish("vom 1. bis 5. Mai", full))
+    }
+
+    @Test fun nachDerKiBleibtKleinNachAbkuerzung() {
+        val afterAi = PolishPlan.options(
+            removeFillers = true, autoCapitalize = true, language = "de", refineMode = RefineMode.POLISH,
+        )
+        assertEquals("Bring z. B. ein Brot mit.", TextPolisher.polish("Bring z. B. ein Brot mit.", afterAi))
+        assertEquals("Wir sind ca. zehn Leute.", TextPolisher.polish("Wir sind ca. zehn Leute.", afterAi))
+    }
+
+    @Test fun satzendeNachEchtemSatzBleibtGross() {
+        assertEquals("Das ist gut. Das auch.", TextPolisher.polish("das ist gut. das auch.", full))
+        assertEquals("Wir waren im Kino. Danach", TextPolisher.polish("wir waren im Kino. ähm danach", full))
+        assertEquals("Er ging (z. B. heim). Dann", TextPolisher.polish("er ging (z. B. heim). dann", full))
+    }
+
     @Test fun punktVorWortBleibtVomVorwortGetrennt() {
         assertEquals(
             "Lösche alle .log-Dateien und die Datei .env.",

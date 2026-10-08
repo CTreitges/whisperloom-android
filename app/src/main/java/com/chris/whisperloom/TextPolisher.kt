@@ -185,12 +185,15 @@ object TextPolisher {
      * Leerraum; Zeichen dazwischen, die weder Buchstabe noch Ziffer sind (Anfuehrungszeichen,
      * Klammern, Emojis, Sternchen), aendern daran nichts. Sonst wuerde aus "config.yaml"
      * "config.Yaml" und aus "Python 3.13 gegenueber" "3.13 Gegenueber". Beginnt ein Satz mit
-     * einer Ziffer, bleibt das folgende Wort, wie es ist ("- 12 people").
+     * einer Ziffer, bleibt das folgende Wort, wie es ist ("- 12 people"). Ein Punkt nach einer
+     * Abkuerzung oder Ordnungszahl beendet keinen Satz ("z. B. ein", "ca. fünf", "vom 1. bis") —
+     * dieselbe Regel wie beim Absatz-Teilen ([Paragrapher.endsWithAbbreviation]).
      */
     private fun capitalizeSentences(text: String): String {
         val sb = StringBuilder(text.length)
         var capitalizeNext = true
         var sentenceEnd = false
+        var wordStart = 0
         for (ch in text) {
             if (capitalizeNext && ch.isLetterOrDigit()) {
                 sb.append(ch.uppercaseChar())
@@ -199,11 +202,13 @@ object TextPolisher {
                 sb.append(ch)
             }
             when {
-                ch == '.' || ch == '!' || ch == '?' -> sentenceEnd = true
+                ch == '.' -> sentenceEnd = !Paragrapher.endsWithAbbreviation(sb.substring(wordStart))
+                ch == '!' || ch == '?' -> sentenceEnd = true
                 ch.isLetterOrDigit() -> sentenceEnd = false
-                sentenceEnd && ch.isWhitespace() -> {
-                    capitalizeNext = true
+                ch.isWhitespace() -> {
+                    if (sentenceEnd) capitalizeNext = true
                     sentenceEnd = false
+                    wordStart = sb.length
                 }
             }
         }

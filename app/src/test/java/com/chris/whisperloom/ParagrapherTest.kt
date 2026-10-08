@@ -47,6 +47,10 @@ class ParagrapherTest {
             listOf("Wir treffen uns am 3. Oktober, z. B. um 10 Uhr bzw. spaeter.", "Danach essen wir."),
             s,
         )
+        assertEquals(
+            listOf("Das gilt z.B. hier, d.h. ueberall.", "Danach essen wir."),
+            Paragrapher.sentences("Das gilt z.B. hier, d.h. ueberall. Danach essen wir."),
+        )
     }
 
     @Test fun satzgrenzenMitVerschiedenenZeichen() {

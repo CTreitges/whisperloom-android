@@ -98,11 +98,18 @@ object Paragrapher {
         return out
     }
 
-    private fun endsWithAbbreviation(piece: String): Boolean {
+    /**
+     * Endet [piece] mit einer Abkuerzung, einem Einzelbuchstaben oder einer Ordnungszahl samt Punkt
+     * ("z. B.", "ca.", "am 3.")? Dann ist der Punkt kein Satzende. Auch [TextPolisher] nutzt das,
+     * damit nach "z. B." kein Gross-Buchstabe folgt.
+     */
+    fun endsWithAbbreviation(piece: String): Boolean {
         if (!piece.endsWith(".")) return false
         val lastWord = piece.dropLast(1).substringAfterLast(' ').trimStart('(', '"', '„', '«')
         if (lastWord.isEmpty()) return false
-        if (lastWord.length == 1 && lastWord[0].isLetter()) return true
+        // "z.B." ohne Leerzeichen: der Teil nach dem letzten Punkt zaehlt wie ein Einzelbuchstabe.
+        val tail = lastWord.substringAfterLast('.')
+        if (tail.length == 1 && tail[0].isLetter()) return true
         if (lastWord.all { it.isDigit() }) return true
         return lastWord.lowercase() in ABBREVIATIONS
     }
