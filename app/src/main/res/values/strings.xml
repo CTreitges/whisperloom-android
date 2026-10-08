@@ -655,7 +655,15 @@
     <string name="kb_error">Fehler bei der Erkennung — erneut versuchen</string>
     <string name="kb_lock_armed">Loslassen stellt die Aufnahme fest</string>
     <string name="kb_cancel_armed">Loslassen verwirft die Aufnahme</string>
-    <string name="kb_locked">Aufnahme %1$s — senden oder verwerfen</string>
+    <!-- Festgestellt ist die Mikro-Taste Pause bzw. Weiter, gesendet wird über ➤. Die Texte sind
+         etwa so lang wie früher, sonst springt die Höhe der Statuszeile. -->
+    <string name="kb_locked">Aufnahme %1$s — Pause, senden, verwerfen</string>
+    <string name="kb_paused">Pausiert bei %1$s — weiter, senden, verwerfen</string>
+    <!-- Nur Online-Erkennung: OpenAI nimmt höchstens rund 13 min, danach wäre das Audio weg. -->
+    <string name="kb_long">Aufnahme %1$s — bald senden, höchstens %2$s</string>
+    <string name="kb_capped">Höchstlänge erreicht — senden oder verwerfen</string>
+    <!-- Ein Tastaturwechsel beendet die Tastatur und würde ein offenes Diktat still verwerfen. -->
+    <string name="kb_finish_first">Erst senden oder verwerfen</string>
     <string name="kb_discarded">Aufnahme verworfen</string>
     <string name="kb_refine_set">Textverbesserung: %1$s</string>
     <string name="kb_refine_needs_llm">Für die KI-Stufen fehlt ein Zugang — tippe zum Einrichten</string>
@@ -673,6 +681,7 @@
     <string name="kb_period">.</string>
     <string name="cd_mic">Diktat-Mikrofon — antippen zum Starten, gedrückt halten zum Sprechen</string>
     <string name="cd_kb_switch">Eingabemethode wechseln</string>
+    <string name="cd_kb_switch_blocked">Eingabemethode wechseln — erst senden oder verwerfen</string>
     <string name="cd_kb_comma">Komma</string>
     <string name="cd_kb_space">Leerzeichen</string>
     <string name="cd_kb_period">Punkt</string>
@@ -686,7 +695,9 @@
     <string name="cd_kb_send">Aufnahme senden</string>
     <string name="cd_kb_lock">Aufnahme feststellen</string>
     <string name="cd_mic_recording">Aufnahme läuft, %1$s — antippen zum Senden</string>
-    <string name="cd_mic_locked">Aufnahme festgestellt, %1$s — antippen zum Senden</string>
+    <string name="cd_mic_locked">Aufnahme festgestellt, %1$s — antippen zum Pausieren</string>
+    <string name="cd_mic_paused">Aufnahme pausiert, %1$s — antippen zum Weitersprechen</string>
+    <string name="cd_mic_capped">Aufnahme pausiert, Höchstlänge erreicht — senden oder verwerfen</string>
     <string name="cd_mic_sending">Wird übertragen</string>
     <string name="cd_mic_refining">Text wird verbessert. Antippen fügt ihn ohne KI ein</string>
     <string name="cd_mic_error">Fehler — antippen für erneuten Versuch</string>

@@ -2,7 +2,6 @@ package com.chris.whisperloom.ime
 
 import android.Manifest
 import android.app.Application
-import android.os.Looper
 import android.view.MotionEvent
 import android.view.View
 import android.widget.ImageButton
@@ -25,11 +24,14 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowAudioRecord
 
 /**
  * Die Wisch-Geste am echten Dienst: Touch-Ereignisse gehen durch denselben Listener wie auf
- * dem Geraet, und die Aufnahme laeuft wirklich (Robolectric laesst AudioRecord zu, es liefert
- * nur Stille).
+ * dem Geraet, und die Aufnahme laeuft wirklich (Robolectric laesst AudioRecord zu). Das
+ * Mikrofon liefert hier nichts: die Aufnahmezeit kommt aus den Samples und steht so auf 0:00 —
+ * ungedeckelt lieferte das Schatten-Mikrofon so schnell, wie die CPU kann, und die Uhr raste.
+ * Pause und Weiter stehen in [ImePauseTest].
  *
  * Zwei Dinge, ohne die diese Tests sich selbst bestaetigen wuerden:
  * - Die inflatete View ist ungemessen 0 x 0 — ohne [layout] ist jede Pruefung auf
@@ -52,6 +54,10 @@ class ImeGestureTest {
     private val lock: ImageButton get() = root.findViewById(R.id.gesture_lock)
     private val statusText: String get() = status.text.toString()
 
+    /** Statuszeile der festgestellten Aufnahme; das Mikrofon liefert hier nichts. */
+    private val festgestellt: String get() = app.getString(R.string.kb_locked, "0:00")
+    private val pausiert: String get() = app.getString(R.string.kb_paused, "0:00")
+
     /** Weit ueber jeder Schwelle: 56 dp Einrasten, 64 dp senkrechte Toleranz. */
     private val weit = 400f
 
@@ -66,6 +72,9 @@ class ImeGestureTest {
             // Ohne Textmodell gilt die KI-Stufe nicht als bereit (Review 3.5.0).
             llmModel = "qwen3:8b"
         }
+        ShadowAudioRecord.setSource(object : ShadowAudioRecord.AudioRecordSource {
+            override fun readInShortArray(data: ShortArray, offset: Int, size: Int, blocking: Boolean) = 0
+        })
         service = Robolectric.buildService(WhisperLoomInputMethodService::class.java).create().get()
         root = service.onCreateInputView()
         layout()
@@ -77,6 +86,7 @@ class ImeGestureTest {
         // einen io-Thread zurueck.
         service.onFinishInputView(true)
         service.onDestroy()
+        ShadowAudioRecord.clearSource()
     }
 
     private fun layout() {
@@ -99,8 +109,6 @@ class ImeGestureTest {
 
     private fun up(dx: Float = 0f, dy: Float = 0f) =
         mitte().let { event(MotionEvent.ACTION_UP, it.first + dx, it.second + dy) }
-
-    private fun idle() = shadowOf(Looper.getMainLooper()).idle()
 
     /**
      * Ereignis mit mehreren Zeigern. `MotionEvent.obtain(..., x, y, ...)` erzeugt immer nur
@@ -202,10 +210,7 @@ class ImeGestureTest {
 
     @Test fun loslassenNachRechtsStelltFest() {
         feststellen()
-        // kb_locked = "Aufnahme %1$s — senden oder verwerfen"; startsWith("Aufnahme") wuerde
-        // auch auf "Aufnahme verworfen" passen.
-        assertTrue("Statuszeile zeigt nicht den festgestellten Zustand: $statusText",
-            statusText.endsWith("senden oder verwerfen"))
+        assertEquals("Statuszeile zeigt nicht den festgestellten Zustand", festgestellt, statusText)
         assertEquals(View.VISIBLE, lock.visibility)
         assertTrue("Senden muss bedienbar sein", lock.isClickable)
         assertEquals(app.getString(R.string.cd_kb_send), lock.contentDescription)
@@ -243,23 +248,25 @@ class ImeGestureTest {
 
     // --- Regressionen aus der Review ----------------------------------------
 
-    @Test fun festgestelltUndNebenDerTasteLosgelassenSendetNicht() {
+    @Test fun festgestelltUndNebenDerTasteLosgelassenTutNichts() {
         feststellen()
         val vorher = statusText
         // Der Finger wandert von der Mikro-Taste zur sichtbaren Verwerfen-Taste und laesst
         // dort los. Die Mikro-Taste haelt den Touch-Strom und bekommt das UP trotzdem —
-        // sie darf das Diktat deshalb nicht abschicken.
+        // sie darf das Diktat deshalb weder pausieren noch abschicken.
         down()
         up(dx = -(mic.width.toFloat() + 10f))
-        assertEquals("Loslassen neben der Taste darf nicht senden", vorher, statusText)
+        assertEquals("Loslassen neben der Taste darf nichts ausloesen", vorher, statusText)
         assertNotEquals(app.getString(R.string.kb_transcribing), statusText)
     }
 
-    @Test fun festgestelltUndAufDerTasteLosgelassenSendet() {
+    @Test fun festgestelltUndAufDerTasteLosgelassenPausiert() {
+        // Frueher sendete dieser Tipp; gesendet wird jetzt nur noch ueber die Senden-Taste.
         feststellen()
         down()
         up()
-        assertEquals(app.getString(R.string.kb_transcribing), statusText)
+        assertEquals(pausiert, statusText)
+        assertNotEquals(app.getString(R.string.kb_transcribing), statusText)
     }
 
     @Test fun konfigurationswechselBehaeltDenFestgestelltenZustand() {
@@ -274,7 +281,7 @@ class ImeGestureTest {
         assertTrue(lock.isClickable)
         assertEquals(app.getString(R.string.cd_kb_send), lock.contentDescription)
         assertEquals(View.VISIBLE, discard.visibility)
-        assertTrue(statusText.endsWith("senden oder verwerfen"))
+        assertEquals(festgestellt, statusText)
         discard.performClick()
         assertEquals(app.getString(R.string.kb_discarded), statusText)
     }
@@ -314,7 +321,7 @@ class ImeGestureTest {
             app.getString(R.string.kb_transcribing),
             statusText,
         )
-        assertTrue(statusText.endsWith("senden oder verwerfen"))
+        assertEquals(festgestellt, statusText)
     }
 
     // --- Tastatur schliessen -------------------------------------------------
@@ -457,16 +464,19 @@ class ImeGestureTest {
         // Der Weg mit TalkBack: Gedrueckthalten kommt dort nicht an, also muss ein Antippen
         // eine Aufnahme starten, die von selbst weiterlaeuft.
         mic.performClick()
-        assertTrue("Klick muss festgestellt starten", statusText.endsWith("senden oder verwerfen"))
+        assertEquals("Klick muss festgestellt starten", festgestellt, statusText)
         assertTrue(lock.isClickable)
         assertEquals(app.getString(R.string.cd_kb_send), lock.contentDescription)
         assertTrue(mic.contentDescription.contains("festgestellt"))
     }
 
-    @Test fun zweiterKlickSendet() {
+    @Test fun zweiterKlickPausiertDritterSetztFort() {
+        // Mit TalkBack: Tipp = Start, Tipp = Pause, Tipp = Weiter; gesendet wird ueber die
+        // Aktion "Aufnahme senden" der Mikro-Taste oder die Senden-Taste (ImePauseTest).
         mic.performClick()
         mic.performClick()
-        assertEquals(app.getString(R.string.kb_transcribing), statusText)
-        idle()
+        assertEquals(pausiert, statusText)
+        mic.performClick()
+        assertEquals(festgestellt, statusText)
     }
 }
