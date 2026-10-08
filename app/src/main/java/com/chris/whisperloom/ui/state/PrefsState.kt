@@ -89,6 +89,11 @@ class PrefsState(val prefs: Prefs) {
     var serverModelsEnabled: Boolean by pref({ prefs.serverModelsEnabled }) { prefs.serverModelsEnabled = it }
     var agentTutorialSeen: Boolean by pref({ prefs.agentTutorialSeen }) { prefs.agentTutorialSeen = it }
 
+    // Verlauf: nur lesen. Ausschalten loescht, Verkleinern kuerzt — beides ueber
+    // com.chris.whisperloom.history.History (setEnabled, setSize); der Horcher zieht die Spiegel nach.
+    val historyEnabled: Boolean by pref({ prefs.historyEnabled }) {}
+    val historySize: Int by pref({ prefs.historySize }) {}
+
     /** Wie [Prefs.isEnabled], aber ueber die Spiegel — damit Compose Aenderungen sieht. */
     fun isEnabled(feature: ProFeature): Boolean = when (feature) {
         ProFeature.WIDGETS -> proWidgetsEnabled

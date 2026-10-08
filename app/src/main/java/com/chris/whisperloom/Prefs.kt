@@ -336,6 +336,21 @@ class Prefs(context: Context) {
         get() = sp.getInt(KEY_FLOAT_Y, DEFAULT_FLOAT_Y)
         set(v) = sp.edit { putInt(KEY_FLOAT_Y, v) }
 
+    // --- Verlauf --------------------------------------------------------------
+
+    /** Diktate im Verlauf speichern (ab Werk an, E7). Aus- und Umschalten ueber [com.chris.whisperloom.history.History]. */
+    var historyEnabled: Boolean
+        get() = sp.getBoolean(KEY_HISTORY_ENABLED, true)
+        set(v) = sp.edit { putBoolean(KEY_HISTORY_ENABLED, v) }
+
+    /** Hoechstzahl der Eintraege, eine aus [HISTORY_SIZES]; Unbekanntes gilt als [DEFAULT_HISTORY_SIZE]. */
+    var historySize: Int
+        get() = sp.getInt(KEY_HISTORY_SIZE, DEFAULT_HISTORY_SIZE).takeIf { it in HISTORY_SIZES } ?: DEFAULT_HISTORY_SIZE
+        set(v) {
+            require(v in HISTORY_SIZES) { "Verlaufsgroesse $v nicht waehlbar" }
+            sp.edit { putInt(KEY_HISTORY_SIZE, v) }
+        }
+
     // --- Pro-Funktionen ("Erweitert") ----------------------------------------
 
     /** Default aus: wer eine Pro-Funktion nicht nutzt, soll sie nirgends bemerken. */
@@ -453,6 +468,8 @@ class Prefs(context: Context) {
         private const val KEY_SERVER_MODELS = "pro_server_models"
         private const val KEY_FLOAT_X = "float_x"
         private const val KEY_FLOAT_Y = "float_y"
+        private const val KEY_HISTORY_ENABLED = "history_enabled"
+        private const val KEY_HISTORY_SIZE = "history_size"
 
         /** Datei der Einstellungen (`shared_prefs/whisperloom.xml`). */
         const val FILE = "whisperloom"
@@ -486,6 +503,10 @@ class Prefs(context: Context) {
         /** Startposition des schwebenden Knopfs, wenn noch nichts verschoben wurde. */
         const val DEFAULT_FLOAT_X = 24
         const val DEFAULT_FLOAT_Y = 320
+
+        /** Waehlbare Groessen des Verlaufs (Eintraege, Plan §6.6). */
+        val HISTORY_SIZES = listOf(10, 25, 50, 100, 250, 500)
+        const val DEFAULT_HISTORY_SIZE = 50
 
         /** Sprachen fuer die Einstellungs-Auswahl. Erste = Default. */
         val LANGUAGES = listOf(

@@ -790,4 +790,48 @@ class PrefsTest {
         assertFalse(state.isEnabled(ProFeature.PROMPT))
         state.dispose()
     }
+
+    // --- Verlauf (3.9.0): ab Werk an mit 50, ohne Versionssprung ------------------------------
+
+    @Test fun verlaufIstAbWerkAnMitFuenfzig() {
+        val p = Prefs(ctx)
+        assertTrue(p.historyEnabled)
+        assertEquals(50, p.historySize)
+    }
+
+    /** E7: ein Standard fuer alle — auch wer von v5 kommt, hat den Verlauf an. */
+    @Test fun bestandsnutzerHabenDenVerlaufOhneMigration() {
+        sp.edit().putInt("prefs_version", 5).putString("engine", "online").commit()
+        val p = Prefs(ctx)
+        assertTrue(p.historyEnabled)
+        assertEquals(50, p.historySize)
+    }
+
+    @Test fun verlaufsgroesseNurAusDerListe() {
+        val p = Prefs(ctx)
+        assertEquals(listOf(10, 25, 50, 100, 250, 500), Prefs.HISTORY_SIZES)
+        for (size in Prefs.HISTORY_SIZES) {
+            p.historySize = size
+            assertEquals(size, p.historySize)
+        }
+        try {
+            p.historySize = 7
+            fail("IllegalArgumentException erwartet")
+        } catch (e: IllegalArgumentException) {
+            // erwartet
+        }
+        sp.edit().putInt("history_size", 7).commit()
+        assertEquals("Unbekanntes gilt als Standard", 50, p.historySize)
+    }
+
+    @Test fun derSpiegelZiehtDenVerlaufNach() {
+        val state = PrefsState(Prefs(ctx))
+        assertTrue(state.historyEnabled)
+        assertEquals(50, state.historySize)
+        Prefs(ctx).historyEnabled = false
+        Prefs(ctx).historySize = 100
+        assertFalse(state.historyEnabled)
+        assertEquals(100, state.historySize)
+        state.dispose()
+    }
 }
