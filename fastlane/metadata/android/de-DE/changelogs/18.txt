@@ -1,0 +1,7 @@
+WhisperLoom 3.8.6
+• Neu: Modell je Stufe – ein schnelles Modell zum Glätten, ein stärkeres zum Umformulieren
+• Neu: „Lesbarer glätten“ für Sprachnachrichten als eigener Schalter
+• Neu: Einstellungen „Text“ mit übersichtlichen Unterseiten
+• Neu: Standardmodelle je Anbieter erneuert – bei OpenAI kostet Umformulieren mit GPT-6 Sol mehr
+• Behoben: Claude bekam jedes Diktat doppelt, lange Texte kamen leer zurück
+• Behoben: Gemma 4 E2B und E4B direkt wählbar
