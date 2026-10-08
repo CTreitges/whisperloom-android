@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.api.RefinePrompt
 import com.chris.whisperloom.api.RefineRejectedException
+import com.chris.whisperloom.api.TextRefiner
 import com.chris.whisperloom.whisper.ModelStore
 import com.chris.whisperloom.whisper.TextModelCatalog
 import org.junit.After
@@ -74,9 +75,15 @@ class LocalRefinerTest {
         }
     }
 
-    @Test fun leereAntwortGibtDenRohtext() {
+    /** N7: eine leere Antwort galt als "verbessert" und kam als Rohtext ohne Hinweis durch. */
+    @Test fun leereAntwortGiltAlsGescheitert() {
         antwort = "  "
-        assertEquals("also ähm hallo welt", refine())
+        try {
+            refine()
+            fail("RefineRejectedException erwartet")
+        } catch (e: RefineRejectedException) {
+            assertEquals(TextRefiner.MSG_EMPTY, e.message)
+        }
     }
 
     /** Review c3: Diktat + Antwort passen nicht in die KV-Tabelle — sonst kaeme nur der Anfang zurueck. */

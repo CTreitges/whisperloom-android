@@ -1,5 +1,6 @@
 package com.chris.whisperloom.api
 
+import com.chris.whisperloom.RefineMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -15,6 +16,20 @@ class TextCleanupTest {
     private val diktat = "also ich wollte nur sagen dass ich morgen nicht kann"
 
     private fun clean(output: String, raw: String = diktat) = TextRefiner.cleanText(raw, output)
+
+    /** N7: keine oder leere Antwort galt als "verbessert" — der Rohtext kam ohne Hinweis und ohne volle Regeln durch. */
+    @Test fun leereAntwortIstGescheitert() {
+        val leer = listOf(null, "", "   ", "<think>nachdenken</think>", "<diktat>\n</diktat>", "<dictation></dictation>")
+        for (mode in listOf(RefineMode.POLISH, RefineMode.SUMMARIZE, RefineMode.PROMPT)) for (output in leer) {
+            try {
+                TextRefiner.finish(diktat, mode, output)
+                fail("${mode.name}: \"$output\" muss scheitern")
+            } catch (e: RefineRejectedException) {
+                assertEquals(TextRefiner.MSG_EMPTY, e.message)
+            }
+        }
+        assertEquals("Hallo.", TextRefiner.finish(diktat, RefineMode.POLISH, "<think>hm</think>Hallo."))
+    }
 
     @Test fun sauberGeglaettetBleibtUnveraendert() {
         val text = "Also, ich wollte nur sagen, dass ich morgen nicht kann.\n\nZweiter Absatz."

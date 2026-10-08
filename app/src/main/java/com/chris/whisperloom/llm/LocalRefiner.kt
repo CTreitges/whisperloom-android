@@ -19,7 +19,7 @@ class LocalRefiner(private val modelId: String, private val cancelled: () -> Boo
      *
      * @throws com.chris.whisperloom.api.RefineRejectedException wenn das Modell geantwortet hat,
      *   statt den Text zu bearbeiten (Ausgabe weit laenger als das Diktat), die Antwort abgeschnitten
-     *   ist ([TextRefiner.MSG_TRUNCATED]) oder das Diktat gar nicht ins Modell passt ([MSG_TOO_LONG]).
+     *   ([TextRefiner.MSG_TRUNCATED]) oder leer ist ([TextRefiner.MSG_EMPTY]) oder das Diktat gar nicht ins Modell passt ([MSG_TOO_LONG]).
      * @throws Exception wenn das Modell fehlt oder die Rechnung scheitert (Init, nativer Fehler, Abbruch).
      */
     fun refine(raw: String, language: String, mode: RefineMode, smartFillers: Boolean, paragraphs: Boolean = true): String {
