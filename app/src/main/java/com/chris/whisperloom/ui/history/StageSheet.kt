@@ -11,6 +11,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.RefineWay
 import com.chris.whisperloom.history.HistoryEntry
 import com.chris.whisperloom.history.Processing
 import com.chris.whisperloom.ui.components.LoomIcon
@@ -44,7 +45,7 @@ fun StageSheet(entry: HistoryEntry, loading: List<Processing>, prompt: Boolean, 
             }
             SectionHeader(stringResource(R.string.history_sheet_more), inset = 0.dp)
             stages.filter { it.stage != RefineMode.POLISH }.forEach { p ->
-                StageOption(levelLabel(p.stage!!), stringResource(levelSubtitle(p.stage)), entry, p, loading, onPick)
+                StageOption(levelLabel(p.stage!!), stringResource(levelSubtitle(p.stage, RefineWay.DICTATION)), entry, p, loading, onPick)
             }
         }
     }
