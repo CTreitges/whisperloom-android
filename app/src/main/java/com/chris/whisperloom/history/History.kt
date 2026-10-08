@@ -65,7 +65,7 @@ object History {
             val result = dictation.result
             val processing = Processing.of(result.refinement)
             val version = HistoryVersion(result.text, now, result.model, result.skipped)
-            synchronized(this) {
+            val saved = synchronized(this) {
                 // Unter der Sperre gelesen: sonst schriebe ein Diktat noch nach dem Ausschalten.
                 val limit = limit(Prefs(app))
                 if (limit <= 0) return false
@@ -76,9 +76,12 @@ object History {
                 )
                 write(dir, entry)
                 trimLocked(dir, limit)
+                // Bei zurueckgestellter Uhr ist die neue Id die aelteste — das Kuerzen kann sie gleich
+                // wieder geloescht haben (wie bei restore).
+                File(dir, entry.id + SUFFIX).exists()
             }
             changed()
-            true
+            saved
         } catch (e: Exception) {
             Log.w(TAG, "Diktat nicht im Verlauf gespeichert (${e.javaClass.simpleName})")
             false

@@ -193,6 +193,22 @@ class HistoryTest {
         assertEquals("keine Datei der zwei aeltesten mehr", 10, History.dir(ctx).list()!!.size)
     }
 
+    /**
+     * Uhr zurueckgestellt (von Hand, RTC vor dem NTP-Abgleich): die neue Id ist die aelteste, das
+     * Kuerzen loescht sie gleich wieder. Dann liegt der Text nicht im Verlauf — die Tastatur darf
+     * nicht "Text liegt im Verlauf" sagen.
+     */
+    @Test fun einEintragDenDasKuerzenGleichWiederLoeschtGiltNichtAlsGespeichert() {
+        History.setSize(ctx, 10)
+        repeat(10) { record(dictation(raw = "diktat $it")) }
+        now -= 3_600_000
+
+        assertFalse(record(dictation(raw = "mit alter Uhr")))
+
+        assertEquals(10, History.count(ctx))
+        assertTrue(History.list(ctx).none { it.raw == "mit alter Uhr" })
+    }
+
     @Test fun verkleinernKuerztSofortVergroessernLoeschtNichts() {
         History.setSize(ctx, 50)
         repeat(30) { record(dictation(raw = "diktat $it")) }
