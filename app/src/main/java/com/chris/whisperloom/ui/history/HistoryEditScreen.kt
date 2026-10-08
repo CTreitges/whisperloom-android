@@ -59,6 +59,7 @@ import kotlinx.coroutines.withContext
  * ersetzt die Fassung [processing] und markiert sie "bearbeitet"; [Processing.EDITED] ist der
  * bearbeitete Ursprung (E8) — gibt es ihn schon, geht es dort weiter, sonst beginnt er beim
  * Ursprung. Schliessen mit Aenderungen fragt nach. Rueckgaengig/Wiederholen: [TextFieldState.undoState].
+ * Ist der Eintrag beim Speichern weg (geloescht, beim Kuerzen rausgefallen), bleibt das Fenster offen.
  */
 @Composable
 fun HistoryEditScreen(id: String, processing: Processing, nav: NavState) {
@@ -95,9 +96,17 @@ private fun Editor(entry: HistoryEntry, processing: Processing, nav: NavState) {
         saving = true
         scope.launch {
             val saved = withContext(Dispatchers.IO) { History.edit(ctx, entry.id, processing, text) }
+            if (saved == null) {
+                // Nicht still schliessen: der Text steht noch hier und laesst sich kopieren.
+                saving = false
+                snack.show(ctx.getString(R.string.history_edit_gone), ctx.getString(R.string.history_copy_text)) {
+                    copyText(ctx, state.text.toString(), snack)
+                }
+                return@launch
+            }
             nav.pop()
             // Zurueck im Eintrag: die gespeicherte Fassung ist sichtbar (beim Ursprung "Bearbeitet").
-            if (saved != null && (nav.current as? Screen.HistoryDetail)?.id == entry.id) {
+            if ((nav.current as? Screen.HistoryDetail)?.id == entry.id) {
                 nav.replaceTop(Screen.HistoryDetail(entry.id, processing.key))
             }
         }

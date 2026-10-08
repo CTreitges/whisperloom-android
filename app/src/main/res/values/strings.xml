@@ -1019,6 +1019,9 @@
     <string name="history_replace">Ersetzen</string>
     <string name="history_edit_title">Bearbeiten</string>
     <string name="history_edit_of">Fassung: %1$s</string>
+    <!-- Speichern, aber der Eintrag ist inzwischen gelöscht oder beim Kürzen rausgefallen. -->
+    <string name="history_edit_gone">Eintrag gibt es nicht mehr · Text nicht gespeichert</string>
+    <string name="history_copy_text">Text kopieren</string>
     <string name="history_save">Speichern</string>
     <string name="history_cd_undo">Rückgängig</string>
     <string name="history_cd_redo">Wiederholen</string>

@@ -149,6 +149,29 @@ class HistoryEditScreenTest {
         assertFalse("Kopieren speichert nicht", History.get(ui.ctx, entry.id)!!.versions.getValue(Processing.SUMMARIZE).edited)
     }
 
+    /**
+     * Der Eintrag faellt waehrend des Bearbeitens raus (geloescht, oder beim Kuerzen: ein neues Diktat
+     * in dieses Feld bei vollem Verlauf). Speichern schliesst dann nicht still — der Text bleibt im
+     * Editor, ein Hinweis sagt es und bietet Kopieren an.
+     */
+    @Test fun eintragWegBeimSpeichernLaesstDenEditorOffenUndBietetKopierenAn() {
+        val entry = ui.record()
+        val nav = bearbeiten(entry.id, Processing.SUMMARIZE)
+        ui.waitFor("Fassung: Zusammenfassen")
+        feld().performTextReplacement("Nicht verlieren.")
+        History.delete(ui.ctx, entry.id)
+
+        compose.onNodeWithText("Speichern").performClick()
+
+        ui.waitFor("Eintrag gibt es nicht mehr · Text nicht gespeichert")
+        assertTrue(nav.current is Screen.HistoryEdit)
+        feld().assertTextEquals("Nicht verlieren.")
+        compose.onNodeWithText("Text kopieren").performClick()
+        val clip = ui.ctx.getSystemService(ClipboardManager::class.java).primaryClip?.getItemAt(0)?.text?.toString()
+        assertEquals("Nicht verlieren.", clip)
+        assertNull("nicht wiederbelebt", History.get(ui.ctx, entry.id))
+    }
+
     @Test fun eintragWegWaehrendDesBearbeitensFuehrtZurueck() {
         val nav = bearbeiten("1791456000000-0badcafe", Processing.SUMMARIZE)
         ui.waitUntil { nav.current !is Screen.HistoryEdit }
