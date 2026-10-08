@@ -6,6 +6,8 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.AppNav
+import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.RefineWay
 import com.chris.whisperloom.ui.tutorial.TutorialKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -92,6 +94,24 @@ class RouteRequestTest {
         assertEquals("llm-access", Screen.LlmAccess.encode())
         // Das Pro-Widgets-Heft behaelt den Schluessel aus 3.7.0 (Sprachauftrag).
         assertEquals("tutorial:0:0:agent", Screen.Tutorial(kind = TutorialKind.PRO_WIDGETS).encode())
+    }
+
+    @Test fun stufenSeitenHabenJeEinenEigenenSchluessel() {
+        val seiten = RefineWay.entries.flatMap { way -> RefineMode.MODEL_STAGES.mapNotNull { Screen.Stage.of(it, way) } }
+        assertEquals("4 fuers Diktat, 3 fuer Sprachnachrichten", 7, seiten.size)
+        seiten.forEach { assertEquals(it, Screen.decode(it.encode())) }
+        assertEquals("stage:polish:dictation", Screen.Stage(RefineMode.POLISH, RefineWay.DICTATION).encode())
+        assertEquals("stage:summarize:share", Screen.Stage(RefineMode.SUMMARIZE, RefineWay.SHARE).key)
+        // Eigener Schluessel je Seite: AnimatedContent blendet auch von Stufe zu Stufe ueber.
+        assertEquals(seiten.size, seiten.map { it.key }.toSet().size)
+    }
+
+    @Test fun unbekannteStufenSeiteLandetAufDerTextverbesserung() {
+        listOf(
+            "stage", "stage:polish", "stage:polish:fax", "stage:quer:dictation", "stage:off:dictation",
+            "stage:readable:dictation", "stage:paragraphs:dictation", "stage:prompt:share",
+        ).forEach { assertEquals(it, Screen.Refine, Screen.decode(it)) }
+        assertEquals(null, Screen.Stage.of(RefineMode.PROMPT, RefineWay.SHARE))
     }
 
     @Test fun alteBackStacksBleibenLesbar() {

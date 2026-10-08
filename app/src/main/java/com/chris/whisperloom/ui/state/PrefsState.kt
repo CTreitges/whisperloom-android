@@ -111,6 +111,14 @@ class PrefsState(val prefs: Prefs) {
         RefineWay.SHARE -> shareRefineMode
     }
 
+    /** Waehlt die Stufe des Wegs ([refineMode] bzw. [shareRefineMode]). */
+    fun setRefineModeFor(way: RefineWay, stage: RefineMode) {
+        when (way) {
+            RefineWay.DICTATION -> refineMode = stage
+            RefineWay.SHARE -> shareRefineMode = stage
+        }
+    }
+
     /** Wie [Prefs.polishCleanupFor], ueber die Spiegel. */
     fun polishCleanupFor(way: RefineWay): PolishCleanup = polishCleanups.getValue(way).value
 

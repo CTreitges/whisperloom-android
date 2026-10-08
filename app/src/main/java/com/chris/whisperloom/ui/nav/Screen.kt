@@ -7,6 +7,8 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.chris.whisperloom.AppNav
+import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.RefineWay
 import com.chris.whisperloom.ui.tutorial.TutorialKind
 
 /** Die Screens der MainActivity (UX-Spec §1.1). [key] ist stabil je Screen-Typ (Uebergangs-Animation). */
@@ -25,6 +27,19 @@ sealed class Screen(val key: String) {
 
     /** "Textverbesserung" (3.9.0): Stufen fuer Diktat und Sprachnachrichten. Bis 3.8.6 "text" und "text-page", siehe [decode]. */
     data object Refine : Screen("refine")
+
+    /**
+     * Seite einer Stufe auf einem Weg (3.9.0): Glaetten, Verschoenern, Zusammenfassen und — nur beim
+     * Diktat — Prompt. Eigener Schluessel je Seite ("stage:polish:dictation"), sonst fehlte beim
+     * Wechsel von einer Stufen-Seite zur anderen die Uebergangsanimation.
+     */
+    data class Stage(val stage: RefineMode, val way: RefineWay) : Screen("stage:${stage.key}:${way.key}") {
+        companion object {
+            /** Die Seite zu [stage] und [way], wenn es sie gibt; sonst null. */
+            fun of(stage: RefineMode, way: RefineWay): Stage? =
+                Stage(stage, way).takeIf { stage in RefineMode.MODEL_STAGES && (stage != RefineMode.PROMPT || way == RefineWay.DICTATION) }
+        }
+    }
 
     /** "Woerterbuch & Regeln" (3.9.0): Vokabular und die festen Regeln ohne KI. */
     data object Dictionary : Screen("dictionary")
@@ -86,6 +101,9 @@ sealed class Screen(val key: String) {
                 "setup" -> Setup(arg ?: Setup.WELCOME)
                 "settings" -> SettingsHub
                 "refine" -> Refine
+                // Unbekannte Stufe oder unbekannter Weg: die Textverbesserung, auf der sie stehen.
+                "stage" -> RefineWay.fromKey(parts.getOrNull(2))
+                    ?.let { way -> Stage.of(RefineMode.fromKey(parts.getOrNull(1)), way) } ?: Refine
                 "dictionary" -> Dictionary
                 "recognition" -> Recognition
                 "llm-access" -> LlmAccess

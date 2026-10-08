@@ -21,8 +21,13 @@ import com.chris.whisperloom.ui.state.PrefsState
 /** Geruest einer Einstellungsseite: grosser Titel, Zurueck, scrollende Spalte. */
 @Composable
 internal fun SettingsPageScaffold(title: Int, nav: NavState, content: @Composable ColumnScope.(SnackController) -> Unit) {
+    SettingsPageScaffold(stringResource(title), nav, content)
+}
+
+@Composable
+internal fun SettingsPageScaffold(title: String, nav: NavState, content: @Composable ColumnScope.(SnackController) -> Unit) {
     val snack = rememberSnack()
-    DetailScaffold(title = stringResource(title), onBack = { nav.pop() }, snack = snack) { padding ->
+    DetailScaffold(title = title, onBack = { nav.pop() }, snack = snack) { padding ->
         ScrollColumn(padding) { content(snack) }
     }
 }

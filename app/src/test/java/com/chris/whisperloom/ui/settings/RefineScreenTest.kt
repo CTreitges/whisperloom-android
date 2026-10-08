@@ -2,9 +2,16 @@ package com.chris.whisperloom.ui.settings
 
 import android.content.Context
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
-import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -17,6 +24,7 @@ import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.RefineWay
 import com.chris.whisperloom.PolishCleanup
+import com.chris.whisperloom.SummarizeForm
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SystemStatus
@@ -34,11 +42,18 @@ import org.robolectric.annotation.Config
 
 /**
  * Seite "Textverbesserung" (3.9.0): beide Stufen-Gruppen auf einer Seite und unabhaengig voneinander,
- * die Verweise auf Woerterbuch & Regeln und auf die Regel bei Offline-Erkennung.
+ * je Stufe zwei Ziele (Text oeffnet die Stufen-Seite, Zone waehlt), "Aus" mit einem, die Unterzeile
+ * mit den Abweichungen, die Verweise auf Woerterbuch & Regeln und auf die Regel bei Offline-Erkennung.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w411dp-h2400dp-xxhdpi")
 class RefineScreenTest {
+
+    private companion object {
+        const val GLAETTEN = "Zeichensetzung und Groß-/Kleinschreibung. Inhalt unverändert."
+        const val VERSCHOENERN = "Formuliert flüssiger und klarer, behält Inhalt, Ton und deine Wörter."
+        const val ZUSAMMENFASSEN = "Kürzt auf das Wesentliche. Namen, Zahlen und Termine bleiben genau."
+    }
 
     @get:Rule
     val compose = createComposeRule()
@@ -66,8 +81,13 @@ class RefineScreenTest {
         return nav
     }
 
+    /** Text-Bereich einer Stufe (oeffnet die Seite) bzw. die Zeile "Aus". */
     private fun diktat(text: String) = compose.onNode(hasText(text) and hasAnyAncestor(hasTestTag(DICTATION_REFINE_TAG)))
     private fun sprachnachrichten(text: String) = compose.onNode(hasText(text) and hasAnyAncestor(hasTestTag(SHARE_REFINE_TAG)))
+
+    /** Auswahl-Zone einer Stufe. */
+    private fun zoneDiktat(stufe: String) = compose.onNode(hasContentDescription("$stufe für Diktat verwenden"))
+    private fun zoneSprachnachrichten(stufe: String) = compose.onNode(hasContentDescription("$stufe für Sprachnachrichten verwenden"))
 
     private fun click(node: SemanticsNodeInteraction) {
         node.performClick()
@@ -78,74 +98,108 @@ class RefineScreenTest {
 
     @Test fun diktatStehtUeberDenSprachnachrichten() {
         page()
-        val reihenfolge = listOf("Beim Diktieren", "Automatische Absätze", "Bei geteilten Sprachnachrichten", "Bei Offline-Erkennung")
+        val reihenfolge = listOf("Beim Diktieren", "Wörterbuch & Regeln", "Bei geteilten Sprachnachrichten", "Bei Offline-Erkennung")
         val oben = reihenfolge.map { compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
         assertEquals("Von oben nach unten: $reihenfolge", oben.sorted(), oben)
     }
 
     @Test fun dieStufeDesDiktatsLaesstDieSprachnachrichtenInRuhe() {
         page()
-        click(diktat("Verschönern"))
+        click(zoneDiktat("Verschönern"))
         assertEquals(RefineMode.BEAUTIFY, Prefs(ctx).refineMode)
         assertEquals(RefineMode.OFF, Prefs(ctx).shareRefineMode)
-        click(sprachnachrichten("Zusammenfassen"))
+        click(zoneSprachnachrichten("Zusammenfassen"))
         assertEquals(RefineMode.SUMMARIZE, Prefs(ctx).shareRefineMode)
         assertEquals(RefineMode.BEAUTIFY, Prefs(ctx).refineMode)
+        zoneDiktat("Verschönern").assertIsSelected()
+        zoneSprachnachrichten("Verschönern").assertIsNotSelected()
     }
 
-    @Test fun lesbarerGlaettenDerSprachnachrichtenWirktNurDort() {
+    /** Die alten Schalter stehen jetzt auf den Stufen-Seiten. */
+    @Test fun keineSchalterMehrAufDerSeite() {
+        page()
+        compose.onNode(isToggleable()).assertDoesNotExist()
+        listOf("Lesbarer glätten", "Füllwörter intelligent entfernen", "Automatische Absätze").forEach {
+            compose.onNodeWithText(it).assertDoesNotExist()
+        }
+    }
+
+    // --- Zwei Ziele je Stufe ------------------------------------------------------------------
+
+    @Test fun derTextEinerStufeOeffnetIhreSeiteUndAendertNichts() {
+        val nav = page()
+        click(diktat("Glätten"))
+        assertEquals(Screen.Stage(RefineMode.POLISH, RefineWay.DICTATION), nav.current)
+        nav.pop()
+        click(sprachnachrichten("Zusammenfassen"))
+        assertEquals(Screen.Stage(RefineMode.SUMMARIZE, RefineWay.SHARE), nav.current)
+        assertEquals(RefineMode.OFF, Prefs(ctx).refineMode)
+        assertEquals(RefineMode.OFF, Prefs(ctx).shareRefineMode)
+    }
+
+    @Test fun promptHatSeineSeiteNurBeimDiktat() {
+        prefs.promptLevelEnabled = true
+        val nav = page()
+        sprachnachrichten("Prompt").assertDoesNotExist()
+        click(zoneDiktat("Prompt"))
+        assertEquals(RefineMode.PROMPT, Prefs(ctx).refineMode)
+        click(diktat("Prompt"))
+        assertEquals(Screen.Stage(RefineMode.PROMPT, RefineWay.DICTATION), nav.current)
+    }
+
+    @Test fun ausHatKeinZweitesZielUndWaehltUeberDieGanzeZeile() {
         prefs.refineMode = RefineMode.POLISH
-        prefs.shareRefineMode = RefineMode.POLISH
-        page()
-        click(sprachnachrichten("Lesbarer glätten"))
-        val p = Prefs(ctx)
-        assertEquals(PolishCleanup.READABLE, p.polishCleanupFor(RefineWay.SHARE))
-        assertEquals(PolishCleanup.PLAIN, p.polishCleanupFor(RefineWay.DICTATION))
-        assertEquals(RefineMode.READABLE, p.refinementFor(RefineWay.SHARE).mode)
-        assertEquals(RefineMode.POLISH, p.refinementFor(RefineWay.DICTATION).mode)
+        val nav = page()
+        compose.onNode(hasContentDescription("Aus für Diktat verwenden")).assertDoesNotExist()
+        val aus = diktat("Aus")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton))
+            .assertIsNotSelected()
+        click(aus)
+        assertEquals(RefineMode.OFF, Prefs(ctx).refineMode)
+        assertEquals("kein Seitenwechsel", Screen.Refine, nav.current)
+        diktat("Aus").assertIsSelected()
     }
 
-    @Test fun lesbarerGlaettenDerSprachnachrichtenNenntIhreStufeGlaetten() {
-        prefs.refineMode = RefineMode.POLISH // die Diktat-Stufe zaehlt hier nicht
-        prefs.shareRefineMode = RefineMode.SUMMARIZE
+    /** "x von y" fuer TalkBack: selectableGroup() zaehlte die Zonen nicht, also selbst gesetzt. */
+    @Test fun listeninfoZaehltAusUndAlleStufen() {
+        prefs.promptLevelEnabled = true
         page()
-        sprachnachrichten("Lesbarer glätten").assertIsEnabled()
-        sprachnachrichten("Wirkt mit der Stufe „Glätten“.").assertExists()
-        diktat("Wirkt mit der Stufe „Glätten“.").assertDoesNotExist()
-        click(sprachnachrichten("Glätten"))
-        assertEquals(RefineMode.POLISH, Prefs(ctx).shareRefineMode)
-        sprachnachrichten("Wirkt mit der Stufe „Glätten“.").assertDoesNotExist()
+        val listen = compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.CollectionInfo)).fetchSemanticsNodes()
+        assertEquals("Diktat mit Prompt, dann Sprachnachrichten", listOf(5, 4), listen.map { it.config[SemanticsProperties.CollectionInfo].rowCount })
+        fun position(node: SemanticsNodeInteraction) = node.fetchSemanticsNode().config[SemanticsProperties.CollectionItemInfo].rowIndex
+        assertEquals(0, position(diktat("Aus")))
+        assertEquals(1, position(zoneDiktat("Glätten")))
+        assertEquals(4, position(zoneDiktat("Prompt")))
+        assertEquals(3, position(zoneSprachnachrichten("Zusammenfassen")))
     }
 
-    /** Nach dem Update auf 3.8.6 (v5 uebernimmt den alten Wert) stand der Schalter bei anderer Stufe an und war gesperrt. */
-    @Test fun lesbarerGlaettenDerSprachnachrichtenLaesstSichOhneGlaettenAbschalten() {
-        prefs.shareRefineMode = RefineMode.SUMMARIZE
-        prefs.setPolishCleanupFor(RefineWay.SHARE, PolishCleanup.READABLE)
-        page()
-        sprachnachrichten("Wirkt mit der Stufe „Glätten“.").assertExists()
-        click(sprachnachrichten("Lesbarer glätten"))
-        assertEquals(PolishCleanup.PLAIN, Prefs(ctx).polishCleanupFor(RefineWay.SHARE))
-    }
+    // --- Unterzeile: Kurzbeschreibung und Abweichungen ----------------------------------------
 
-    @Test fun lesbarerGlaettenDesDiktatsLaesstSichOhneGlaettenAbschalten() {
-        prefs.refineMode = RefineMode.BEAUTIFY
+    /** Mit Abweichung entfaellt der Schlusspunkt der Kurzbeschreibung ("… genau · Fließtext"). */
+    @Test fun unterzeileNenntWasVomStandardAbweicht() {
         prefs.setPolishCleanupFor(RefineWay.DICTATION, PolishCleanup.READABLE)
+        prefs.setParagraphsFor(RefineMode.BEAUTIFY, false)
+        prefs.setSummarizeFormFor(RefineWay.SHARE, SummarizeForm.PROSE)
+        prefs.setPolishCleanupFor(RefineWay.SHARE, PolishCleanup.CLEAN)
         page()
-        click(diktat("Lesbarer glätten"))
-        assertEquals(PolishCleanup.PLAIN, Prefs(ctx).polishCleanupFor(RefineWay.DICTATION))
+        diktat("${GLAETTEN.dropLast(1)} · Lesbar").assertExists()
+        diktat("${VERSCHOENERN.dropLast(1)} · Ohne Absätze").assertExists()
+        diktat(ZUSAMMENFASSEN).assertExists()
+        sprachnachrichten("${GLAETTEN.dropLast(1)} · Ohne Füllwörter").assertExists()
+        // Sprachnachrichten sind immer gegliedert: kein "Ohne Absätze" bei ihnen.
+        sprachnachrichten(VERSCHOENERN).assertExists()
+        sprachnachrichten("${ZUSAMMENFASSEN.dropLast(1)} · Fließtext").assertExists()
     }
 
-    @Test fun lesbarerGlaettenDesDiktatsLaesstDieSprachnachrichtenInRuhe() {
-        prefs.refineMode = RefineMode.POLISH
-        prefs.shareRefineMode = RefineMode.POLISH
-        prefs.setPolishCleanupFor(RefineWay.SHARE, PolishCleanup.READABLE)
+    @Test fun einEigenesModellStehtBeiBeidenWegen() {
+        prefs.llmProviderId = "anthropic"
+        prefs.llmKey = "sk-ant"
+        prefs.setLlmModelFor(RefineMode.SUMMARIZE, "claude-opus-5-5")
         page()
-        click(diktat("Lesbarer glätten"))
-        assertEquals(PolishCleanup.READABLE, Prefs(ctx).polishCleanupFor(RefineWay.DICTATION))
-        assertEquals(PolishCleanup.READABLE, Prefs(ctx).polishCleanupFor(RefineWay.SHARE))
-        click(diktat("Lesbarer glätten"))
-        assertEquals(PolishCleanup.PLAIN, Prefs(ctx).polishCleanupFor(RefineWay.DICTATION))
-        assertEquals(PolishCleanup.READABLE, Prefs(ctx).polishCleanupFor(RefineWay.SHARE))
+        diktat("${ZUSAMMENFASSEN.dropLast(1)} · Claude Opus 5.5").assertExists()
+        sprachnachrichten("${ZUSAMMENFASSEN.dropLast(1)} · Claude Opus 5.5").assertExists()
+        // "Standard" ist keine Abweichung.
+        diktat(GLAETTEN).assertExists()
     }
 
     // --- Verweise ---------------------------------------------------------------------------

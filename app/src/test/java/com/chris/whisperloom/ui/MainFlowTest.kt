@@ -21,7 +21,8 @@ import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.hasAnyAncestor
@@ -73,6 +74,7 @@ import com.chris.whisperloom.ui.settings.LlmAccessScreen
 import com.chris.whisperloom.ui.settings.RefineScreen
 import com.chris.whisperloom.ui.settings.SettingsHubScreen
 import com.chris.whisperloom.ui.settings.SHARE_REFINE_TAG
+import com.chris.whisperloom.ui.settings.StageScreen
 import com.chris.whisperloom.ui.setup.SetupScreen
 import com.chris.whisperloom.ui.state.AppEnv
 import com.chris.whisperloom.ui.state.LocalAppEnv
@@ -141,6 +143,12 @@ class MainFlowTest {
 
     /** Element der Gruppe "Beim Diktieren" auf der Seite Textverbesserung (die Sprachnachrichten haben dieselben). */
     private fun diktat(text: String) = compose.onNode(hasText(text) and hasAnyAncestor(hasTestTag(DICTATION_REFINE_TAG)))
+
+    /** Auswahl-Zone einer Stufe ("Glätten für Diktat verwenden"). */
+    private fun zone(name: String) = compose.onNodeWithContentDescription(name)
+
+    /** Auswahl auf einer Stufen-Seite (Bereinigung, Form). */
+    private fun option(text: String) = compose.onNode(isSelectable() and hasText(text))
 
     // --- Router ----------------------------------------------------------------
 
@@ -491,14 +499,14 @@ class MainFlowTest {
 
     // --- E2 Textverbesserung, Woerterbuch & Regeln, KI-Zugang (3.9.0) -----------------------
 
-    /** 3.9.0: die Bereinigung ist eine Einstellung des Glaettens — bedienbar wie "Lesbarer glaetten", ohne gesperrtes "an". */
-    @Test fun textStufeSchreibtRefineModeUndBereinigungBleibtBedienbar() {
+    /** 3.9.0: gewaehlt wird ueber die Zone rechts; der Text der Stufe oeffnet ihre Seite. */
+    @Test fun textStufeWaehltUeberDieZone() {
         screen(env()) { RefineScreen(it) }
-        compose.onNodeWithText("Füllwörter intelligent entfernen").assertIsEnabled()
-        diktat("Glätten").performClick()
+        zone("Glätten für Diktat verwenden").assertIsNotSelected().performClick()
         compose.waitForIdle()
         assertEquals(RefineMode.POLISH, Prefs(ctx).refineMode)
-        compose.onNodeWithText("Füllwörter intelligent entfernen").assertIsEnabled()
+        zone("Glätten für Diktat verwenden").assertIsSelected()
+        diktat("Aus").assertIsNotSelected()
     }
 
     @Test fun shareStufeIstEigeneKarteUndSchreibtNurShareRefineMode() {
@@ -509,33 +517,32 @@ class MainFlowTest {
         compose.onNode(hasText("Aus") and inShareCard).assertIsSelected()
         // "Prompt" gibt es nur fuers Diktat, nie fuer eine fremde Nachricht.
         compose.onNode(hasText("Prompt") and inShareCard).assertDoesNotExist()
-        compose.onNode(hasText("Zusammenfassen") and inShareCard).performClick()
+        zone("Prompt für Sprachnachrichten verwenden").assertDoesNotExist()
+        zone("Zusammenfassen für Sprachnachrichten verwenden").performClick()
         compose.waitForIdle()
         assertEquals(RefineMode.SUMMARIZE, Prefs(ctx).shareRefineMode)
         assertEquals(RefineMode.OFF, Prefs(ctx).refineMode)
-        compose.onNode(hasText("Zusammenfassen") and inShareCard).assertIsSelected()
+        zone("Zusammenfassen für Sprachnachrichten verwenden").assertIsSelected()
     }
 
     /**
-     * 3.9.0: "intelligent entfernen" ist die Bereinigung "Ohne Füllwörter" beim Glätten des Diktats —
-     * die Sprachnachrichten haben ihre eigene. Mit "Lesbarer glätten" schliesst es sich aus.
+     * 3.9.0: "Füllwörter intelligent entfernen" ist die Bereinigung "Ohne Füllwörter" auf der Seite
+     * Glätten des Diktats; "Lesbarer glätten" ist "Lesbar". Die Sprachnachrichten haben ihre eigene.
      */
-    @Test fun intelligenteFuellwoerterSindDieBereinigungDesDiktats() {
+    @Test fun ohneFuellwoerterIstDieBereinigungDesDiktats() {
         prefs.shareRefineMode = RefineMode.POLISH
-        screen(env()) { RefineScreen(it) }
-        diktat("Füllwörter intelligent entfernen").assertIsEnabled().performClick()
+        screen(env()) { StageScreen(RefineMode.POLISH, RefineWay.DICTATION, it) }
+        option("Ohne Füllwörter").performClick()
         compose.waitForIdle()
         assertEquals(PolishCleanup.CLEAN, Prefs(ctx).polishCleanupFor(RefineWay.DICTATION))
         assertEquals("die Sprachnachrichten bleiben", PolishCleanup.PLAIN, Prefs(ctx).polishCleanupFor(RefineWay.SHARE))
-        diktat("Lesbarer glätten").performClick()
+        option("Lesbar").performClick()
         compose.waitForIdle()
         assertEquals(PolishCleanup.READABLE, Prefs(ctx).polishCleanupFor(RefineWay.DICTATION))
-        diktat("Füllwörter intelligent entfernen").assertIsOff()
-        diktat("Lesbarer glätten").performClick()
+        option("Ohne Füllwörter").assertIsNotSelected()
+        option("Nur Zeichensetzung").performClick()
         compose.waitForIdle()
         assertEquals(PolishCleanup.PLAIN, Prefs(ctx).polishCleanupFor(RefineWay.DICTATION))
-        // Die Absaetze bleiben Sache des Diktats: ohne Diktat-Stufe gesperrt.
-        compose.onNodeWithText("Automatische Absätze").assertIsNotEnabled()
     }
 
     @Test fun fuellwoerterSheetFuegtEigenesWortHinzu() {
@@ -559,45 +566,58 @@ class MainFlowTest {
         compose.onNodeWithText("Wort hinzufügen").assertExists()
     }
 
-    @Test fun absatzSchalterIstAnUndWirktNurMitStufe() {
-        screen(env()) { RefineScreen(it) }
-        compose.onNodeWithText("Automatische Absätze").assertIsNotEnabled()
-        diktat("Glätten").performClick()
+    /** 3.9.0: Absaetze je Stufe statt eines Schalters fuer alle Diktat-Stufen. */
+    @Test fun absatzSchalterIstAnUndGiltNurFuerSeineStufe() {
+        screen(env()) { StageScreen(RefineMode.BEAUTIFY, RefineWay.DICTATION, it) }
+        compose.onNode(isToggleable() and hasText("Absätze")).assertIsOn().performClick()
         compose.waitForIdle()
-        compose.onNodeWithText("Automatische Absätze").assertIsEnabled().performClick()
-        compose.waitForIdle()
-        // Zwischenstand bis zu den Stufen-Seiten: der Schalter gilt fuer alle Diktat-Stufen.
         val p = Prefs(ctx)
-        assertEquals(false, p.paragraphsFor(RefineMode.POLISH))
         assertEquals(false, p.paragraphsFor(RefineMode.BEAUTIFY))
-        assertEquals(SummarizeForm.PROSE, p.summarizeFormFor(RefineWay.DICTATION))
+        assertEquals(true, p.paragraphsFor(RefineMode.POLISH))
+        assertEquals(SummarizeForm.AUTO, p.summarizeFormFor(RefineWay.DICTATION))
         assertEquals("Sprachnachrichten bleiben gegliedert", SummarizeForm.AUTO, p.summarizeFormFor(RefineWay.SHARE))
     }
 
-    @Test fun lesbarerGlaettenIstAusUndWirktNurMitGlaetten() {
-        screen(env()) { RefineScreen(it) }
-        diktat("Wirkt mit der Stufe „Glätten“.").assertExists()
-        diktat("Verschönern").performClick()
+    /**
+     * Ganzer Weg durch die App: Text "Glätten" oeffnet die Seite, dort "Lesbar"; zurueck nennt die
+     * Unterzeile die Bereinigung, die Stufe ist noch nicht gewaehlt. Erst die Zone waehlt sie.
+     */
+    @Test fun lesbarUeberDieStufenSeiteUndZurueck() {
+        lateinit var back: OnBackPressedDispatcher
+        prefs.engine = Engine.ONLINE
+        prefs.apiKey = "sk-test"
+        prefs.tutorialSeen = true
+        compose.setContent {
+            back = LocalOnBackPressedDispatcherOwner.current!!.onBackPressedDispatcher
+            WhisperLoomTheme { WhisperLoomApp(env(readyStatus), route = RouteRequest(AppNav.ROUTE_REFINE)) }
+        }
         compose.waitForIdle()
-        diktat("Wirkt mit der Stufe „Glätten“.").assertExists()
         diktat("Glätten").performClick()
         compose.waitForIdle()
-        diktat("Lesbarer glätten").assertIsEnabled().performClick()
+        compose.onNodeWithText("Für Diktat verwenden").assertExists()
+        option("Lesbar").performClick()
         compose.waitForIdle()
-        assertEquals(PolishCleanup.READABLE, Prefs(ctx).polishCleanupFor(RefineWay.DICTATION))
+        compose.runOnIdle { back.onBackPressed() }
+        compose.waitForIdle()
+        diktat("Zeichensetzung und Groß-/Kleinschreibung. Inhalt unverändert · Lesbar").assertExists()
+        assertEquals(RefineMode.OFF, Prefs(ctx).refineMode)
+        zone("Glätten für Diktat verwenden").performClick()
+        compose.waitForIdle()
+        assertEquals(RefineMode.READABLE, Prefs(ctx).refinementFor(RefineWay.DICTATION).mode)
         // Gespeichert bleibt "Glaetten" — erst die Anfrage ans Modell wird zu READABLE.
         assertEquals(RefineMode.POLISH, Prefs(ctx).refineMode)
-        assertEquals(RefineMode.READABLE, Prefs(ctx).refinementFor(RefineWay.DICTATION).mode)
-        // Der Schalter der Diktat-Gruppe gilt nur fuers Diktat (3.8.6).
         assertEquals(PolishCleanup.PLAIN, Prefs(ctx).polishCleanupFor(RefineWay.SHARE))
     }
 
-    /** 3.8.6: Sprachnachrichten haben einen eigenen Schalter — die Share-Stufe macht den des Diktats nicht wirksam. */
-    @Test fun lesbarerGlaettenDesDiktatsMitNurDerShareStufeOhneWirkung() {
+    /** 3.8.6: Sprachnachrichten haben eine eigene Bereinigung — Lesbar dort macht das Diktat nicht lesbar. */
+    @Test fun lesbarDerSprachnachrichtenWirktNichtAufsDiktat() {
+        prefs.refineMode = RefineMode.POLISH
         prefs.shareRefineMode = RefineMode.POLISH
-        screen(env()) { RefineScreen(it) }
-        assertEquals(RefineMode.OFF, Prefs(ctx).refineMode)
-        diktat("Wirkt mit der Stufe „Glätten“.").assertExists()
+        screen(env()) { StageScreen(RefineMode.POLISH, RefineWay.SHARE, it) }
+        option("Lesbar").performClick()
+        compose.waitForIdle()
+        assertEquals(RefineMode.READABLE, Prefs(ctx).refinementFor(RefineWay.SHARE).mode)
+        assertEquals(RefineMode.POLISH, Prefs(ctx).refinementFor(RefineWay.DICTATION).mode)
     }
 
     /** Review 3.5.0 HOCH: nach aus/an darf weder die Ollama-Adresse noch der Ollama-Key haengen bleiben. */

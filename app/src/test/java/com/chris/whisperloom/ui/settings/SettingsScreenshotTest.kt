@@ -4,7 +4,13 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
@@ -20,12 +26,20 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.Engine
 import com.chris.whisperloom.PolishCleanup
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.RefineWay
+import com.chris.whisperloom.SummarizeForm
+import com.chris.whisperloom.ui.components.LoomRow
+import com.chris.whisperloom.ui.components.SectionCard
+import com.chris.whisperloom.ui.components.StageRadio
+import com.chris.whisperloom.ui.components.StageRow
+import com.chris.whisperloom.ui.components.StageZone
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SystemStatus
@@ -46,7 +60,8 @@ import org.robolectric.annotation.GraphicsMode
 import org.robolectric.shadows.ShadowDialog
 
 /**
- * Screenshots des Einstellungen-Hubs und seiner Seiten (3.9.0) zum Ansehen, keine Pixel-Vergleiche:
+ * Screenshots des Einstellungen-Hubs und seiner Seiten (3.9.0, mit Stufen-Seiten und den zwei Varianten
+ * der Auswahl-Zone aus E11) zum Ansehen, keine Pixel-Vergleiche:
  * PNGs nach app/build/reports/screenshots/. Wie TextModelScreenshotTest: braucht Robolectrics
  * Native-Graphics, auf linux-aarch64 uebersprungen, lokal per x86_64-JVM unter qemu ausfuehrbar.
  */
@@ -91,11 +106,16 @@ class SettingsScreenshotTest {
         save(name, compose.onRoot().captureToImage().asAndroidBitmap())
     }
 
-    private fun screen(status: SystemStatus = online, content: @Composable (NavState) -> Unit) {
+    private fun screen(status: SystemStatus = online, fontScale: Float? = null, content: @Composable (NavState) -> Unit) {
         val env = AppEnv(PrefsState(prefs), status) { status }
         val nav = NavState(listOf(Screen.Home, Screen.SettingsHub))
         compose.setContent {
-            WhisperLoomTheme { CompositionLocalProvider(LocalAppEnv provides env) { content(nav) } }
+            WhisperLoomTheme {
+                val d = LocalDensity.current
+                CompositionLocalProvider(LocalAppEnv provides env, LocalDensity provides Density(d.density, fontScale ?: d.fontScale)) {
+                    content(nav)
+                }
+            }
         }
         compose.waitForIdle()
     }
@@ -134,11 +154,79 @@ class SettingsScreenshotTest {
     }
 
     @Test fun textverbesserung() {
+        // Unterzeilen mit Abweichungen: Bereinigung, Absaetze, Form, eigenes Modell.
+        anthropic()
         prefs.setPolishCleanupFor(RefineWay.DICTATION, PolishCleanup.READABLE)
+        prefs.setParagraphsFor(RefineMode.BEAUTIFY, false)
+        prefs.setLlmModelFor(RefineMode.SUMMARIZE, "claude-opus-5-5")
+        prefs.shareRefineMode = RefineMode.SUMMARIZE
+        prefs.setSummarizeFormFor(RefineWay.SHARE, SummarizeForm.PROSE)
         screen { RefineScreen(it) }
         shot("textverbesserung-diktat")
         nachOben(hasText("Bei geteilten Sprachnachrichten"))
         shot("textverbesserung-sprachnachrichten")
+    }
+
+    /** Schmalstes Zielgeraet und doppelte Schrift: die Textspalte neben der Zone ist nur noch ca. 200 dp breit. */
+    @Test @Config(qualifiers = "w360dp-h891dp-xxhdpi")
+    fun textverbesserungSchmalMitDoppelterSchrift() {
+        prefs.setPolishCleanupFor(RefineWay.DICTATION, PolishCleanup.CLEAN)
+        prefs.setParagraphsFor(RefineMode.POLISH, false)
+        screen(fontScale = 2f) { RefineScreen(it) }
+        nachOben(hasText("Beim Diktieren"), abstandPx = 30f)
+        shot("textverbesserung-360dp-schrift200")
+    }
+
+    // --- Stufen-Seiten (3.9.0) ---------------------------------------------------------------
+
+    @Test fun stufeGlaettenDiktat() {
+        anthropic()
+        prefs.setPolishCleanupFor(RefineWay.DICTATION, PolishCleanup.CLEAN)
+        screen { StageScreen(RefineMode.POLISH, RefineWay.DICTATION, it) }
+        shot("stufe-glaetten-diktat")
+        nachOben(hasText("Absätze"))
+        shot("stufe-glaetten-diktat-unten")
+    }
+
+    @Test fun stufeGlaettenSprachnachrichten() {
+        // Noch nicht gewaehlt: oben der Knopf "Fuer Sprachnachrichten verwenden".
+        anthropic()
+        prefs.setPolishCleanupFor(RefineWay.SHARE, PolishCleanup.READABLE)
+        screen { StageScreen(RefineMode.POLISH, RefineWay.SHARE, it) }
+        shot("stufe-glaetten-sprachnachrichten")
+        nachOben(hasText("Bereinigung"))
+        shot("stufe-glaetten-sprachnachrichten-unten")
+    }
+
+    @Test fun stufeZusammenfassenDiktat() {
+        anthropic()
+        prefs.refineMode = RefineMode.SUMMARIZE
+        prefs.setLlmModelFor(RefineMode.SUMMARIZE, "claude-opus-5-5")
+        screen { StageScreen(RefineMode.SUMMARIZE, RefineWay.DICTATION, it) }
+        shot("stufe-zusammenfassen-diktat")
+    }
+
+    @Test fun stufeOhneTextzugang() {
+        prefs.sttProviderId = "elevenlabs"
+        prefs.apiKey = "xi"
+        screen { StageScreen(RefineMode.BEAUTIFY, RefineWay.DICTATION, it) }
+        shot("stufe-verschoenern-ohne-zugang")
+    }
+
+    /** E11: getoente Flaeche (Standard) gegen nur einen Trenner, je mit Aus und drei Stufen. */
+    @Test fun zoneImVergleich() {
+        var zone by mutableStateOf(StageZone.TONAL)
+        screen {
+            SectionCard(modifier = Modifier.padding(20.dp), title = "Beim Diktieren", gap = 4.dp) {
+                LoomRow("Aus", supporting = "Nur die Regeln ohne KI, keine zweite Anfrage.", trailing = { StageRadio(false) })
+                listOf("Glätten", "Verschönern", "Zusammenfassen").forEachIndexed { i, stufe ->
+                    StageRow(stufe, "Kurzbeschreibung der Stufe · Abweichung", i == 0, "$stufe für Diktat verwenden", i + 1, {}, {}, zone = zone)
+                }
+            }
+        }
+        shot("zone-getoent")
+        zone = StageZone.DIVIDER
+        shot("zone-trenner")
     }
 
     @Test fun textverbesserungMitOfflineErkennung() {
@@ -189,14 +277,13 @@ class SettingsScreenshotTest {
 
     @Test fun modellPickerDerStufeMitStandard() {
         anthropic()
-        screen { LlmAccessScreen(it) }
-        nachOben(hasText("Modell je Stufe"))
-        compose.onNodeWithText("Verschönern").performClick()
+        screen { StageScreen(RefineMode.BEAUTIFY, RefineWay.DICTATION, it) }
+        compose.onNodeWithText("Modell").performClick()
         compose.waitForIdle()
         // Das Sheet ist ein eigener Dialog: die Seite aufnehmen und das Dialog-Fenster darueber zeichnen.
-        val seite = compose.onAllNodes(isRoot()).filterToOne(hasAnyDescendant(hasText("Modell je Stufe")))
+        val seite = compose.onAllNodes(isRoot()).filterToOne(hasAnyDescendant(hasText("Für Diktat verwenden")))
         val bitmap = seite.captureToImage().asAndroidBitmap().copy(Bitmap.Config.ARGB_8888, true)
         ShadowDialog.getLatestDialog().window!!.decorView.draw(Canvas(bitmap))
-        save("ki-zugang-modelle-picker-standard", bitmap)
+        save("stufe-modell-picker-standard", bitmap)
     }
 }

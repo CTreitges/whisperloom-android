@@ -34,6 +34,7 @@ import com.chris.whisperloom.ui.settings.ModelsScreen
 import com.chris.whisperloom.ui.settings.RecognitionScreen
 import com.chris.whisperloom.ui.settings.RefineScreen
 import com.chris.whisperloom.ui.settings.SettingsHubScreen
+import com.chris.whisperloom.ui.settings.StageScreen
 import com.chris.whisperloom.ui.settings.WidgetsScreen
 import com.chris.whisperloom.ui.setup.SetupScreen
 import com.chris.whisperloom.ui.state.AppEnv
@@ -90,6 +91,7 @@ fun WhisperLoomApp(env: AppEnv, route: RouteRequest? = null, onRouteConsumed: ()
                 is Screen.Setup -> SetupScreen(step = (nav.current as? Screen.Setup)?.step ?: screen.step, nav = nav)
                 Screen.SettingsHub -> SettingsHubScreen(nav)
                 Screen.Refine -> RefineScreen(nav)
+                is Screen.Stage -> StageScreen(screen.stage, screen.way, nav)
                 Screen.Dictionary -> DictionaryScreen(nav)
                 Screen.Recognition -> RecognitionScreen(nav)
                 Screen.LlmAccess -> LlmAccessScreen(nav)

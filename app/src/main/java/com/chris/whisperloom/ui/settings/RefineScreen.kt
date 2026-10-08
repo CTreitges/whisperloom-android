@@ -3,9 +3,7 @@ package com.chris.whisperloom.ui.settings
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -18,22 +16,26 @@ import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.RefineWay
 import com.chris.whisperloom.SummarizeForm
+import com.chris.whisperloom.ui.access.ownStageModel
 import com.chris.whisperloom.ui.components.LoomRow
 import com.chris.whisperloom.ui.components.SectionCard
-import com.chris.whisperloom.ui.components.SwitchRow
+import com.chris.whisperloom.ui.components.StageRadio
+import com.chris.whisperloom.ui.components.StageRow
 import com.chris.whisperloom.ui.components.levelLabel
+import com.chris.whisperloom.ui.components.stageList
+import com.chris.whisperloom.ui.components.stageListItem
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.PrefsState
 
-/** Die Gruppen der Seite (Tests: dieselben Stufen und Schalter stehen in beiden). */
+/** Die Gruppen der Seite (Tests: dieselben Stufen stehen in beiden). */
 const val DICTATION_REFINE_TAG = "dictation-refine"
 const val SHARE_REFINE_TAG = "share-refine"
 
 /**
- * Textverbesserung (3.9.0, vorher Text-Hub mit den Seiten Diktat und Sprachnachrichten): beide
- * Stufen-Gruppen auf einer Seite, die Schalter wie bisher bei ihrer Gruppe. Unter dem Diktat der Weg
+ * Textverbesserung (3.9.0, vorher Text-Hub mit den Seiten Diktat und Sprachnachrichten): die Stufen
+ * fuer Diktat und Sprachnachrichten, jede mit eigener Seite ([StageRow]). Unter dem Diktat der Weg
  * zu Woerterbuch & Regeln; wo das Geraet offline erkennen kann, die Regel bei Offline-Erkennung
  * (zweiter Einstieg, die Regel selbst steht bei den Offline-Modellen).
  */
@@ -43,8 +45,37 @@ fun RefineScreen(nav: NavState) {
     val prefs = env.prefs
 
     SettingsPageScaffold(R.string.settings_group_refine, nav) {
-        DictationStages(prefs) { nav.push(Screen.Dictionary) }
-        ShareStages(prefs)
+        SectionCard(
+            modifier = Modifier.testTag(DICTATION_REFINE_TAG),
+            title = stringResource(R.string.text_card_refine),
+            titleIcon = R.drawable.ic_mic,
+            titleIconTint = MaterialTheme.colorScheme.tertiary,
+            gap = 4.dp,
+        ) {
+            StageList(prefs, RefineWay.DICTATION, RefineMode.settings(prefs.promptLevelEnabled), R.string.text_level_off_sub, nav)
+            Text(
+                stringResource(R.string.text_level_cost),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            PageLinkRow(R.drawable.ic_checklist, stringResource(R.string.settings_group_dictionary), dictionaryValue(prefs)) {
+                nav.push(Screen.Dictionary)
+            }
+        }
+        // Eigene Stufe ohne "Prompt": nie fuer eine fremde Nachricht.
+        SectionCard(
+            modifier = Modifier.testTag(SHARE_REFINE_TAG),
+            title = stringResource(R.string.text_card_share),
+            titleIcon = R.drawable.ic_voicemail,
+            gap = 4.dp,
+        ) {
+            Text(
+                stringResource(R.string.text_share_intro),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            StageList(prefs, RefineWay.SHARE, RefineMode.SETTINGS, R.string.text_share_off_sub, nav)
+        }
         if (env.status.offlineSupported) {
             SectionCard(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp)) {
                 PageLinkRow(R.drawable.ic_offline_bolt, stringResource(R.string.refine_offline), offlineValue()) {
@@ -56,106 +87,72 @@ fun RefineScreen(nav: NavState) {
 }
 
 /**
- * "Beim Diktieren": Stufe und — bis die Stufen-Seiten kommen — die Bereinigung beim Glaetten als
- * zwei Schalter ("Lesbarer glaetten", "Fuellwoerter intelligent", schliessen sich aus) und die
- * Absaetze (gelten fuer alle Diktat-Stufen). Alles nur fuers Diktat.
+ * Die Stufen eines Wegs. "Aus" hat keine Einstellungen und waehlt ueber die ganze Zeile; jede andere
+ * Stufe ist eine [StageRow]: der Text oeffnet ihre Seite, die Zone rechts waehlt sie.
  */
 @Composable
-private fun DictationStages(prefs: PrefsState, onRules: () -> Unit) {
-    val off = prefs.refineMode == RefineMode.OFF
-
-    SectionCard(
-        modifier = Modifier.testTag(DICTATION_REFINE_TAG),
-        title = stringResource(R.string.text_card_refine),
-        titleIcon = R.drawable.ic_mic,
-        titleIconTint = MaterialTheme.colorScheme.tertiary,
-        gap = 4.dp,
-    ) {
-        Column(Modifier.selectableGroup()) {
-            RefineMode.settings(prefs.promptLevelEnabled).forEach { mode ->
-                val selected = prefs.refineMode == mode
+private fun StageList(prefs: PrefsState, way: RefineWay, stages: List<RefineMode>, offSubtitle: Int, nav: NavState) {
+    val current = prefs.refineModeFor(way)
+    Column(Modifier.stageList(stages.size)) {
+        stages.forEachIndexed { index, stage ->
+            val selected = current == stage
+            if (stage == RefineMode.OFF) {
                 LoomRow(
-                    headline = levelLabel(mode),
-                    supporting = stringResource(levelSubtitle(mode)),
-                    modifier = Modifier.selectable(selected = selected, role = Role.RadioButton) { prefs.refineMode = mode },
-                    trailing = { RadioButton(selected = selected, onClick = null) },
+                    headline = levelLabel(stage),
+                    supporting = stringResource(offSubtitle),
+                    modifier = Modifier
+                        .selectable(selected = selected, role = Role.RadioButton) { prefs.setRefineModeFor(way, stage) }
+                        .stageListItem(index),
+                    trailing = { StageRadio(selected) },
+                )
+            } else {
+                StageRow(
+                    headline = levelLabel(stage),
+                    supporting = stageSupporting(prefs, stage, way),
+                    selected = selected,
+                    selectLabel = stringResource(useLabel(way), levelLabel(stage)),
+                    index = index,
+                    onOpen = { nav.push(Screen.Stage(stage, way)) },
+                    onSelect = { prefs.setRefineModeFor(way, stage) },
                 )
             }
         }
-        Text(
-            stringResource(R.string.text_level_cost),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        ReadableSwitch(prefs, RefineWay.DICTATION)
-        // Die Unterzeile nennt "Glaetten" schon — kein zweites "Wirkt mit der Stufe" daneben.
-        CleanupSwitch(prefs, RefineWay.DICTATION, PolishCleanup.CLEAN, R.string.pref_smart_fillers, stringResource(R.string.pref_smart_fillers_info))
-        SwitchRow(
-            headline = stringResource(R.string.pref_refine_paragraphs),
-            supporting = stringResource(if (off) R.string.text_smart_needs_level else R.string.pref_refine_paragraphs_info),
-            checked = prefs.paragraphsFor(RefineMode.POLISH),
-            onCheckedChange = { on ->
-                RefineMode.PARAGRAPH_STAGES.forEach { prefs.setParagraphsFor(it, on) }
-                prefs.setSummarizeFormFor(RefineWay.DICTATION, if (on) SummarizeForm.AUTO else SummarizeForm.PROSE)
-            },
-            enabled = !off,
-        )
-        PageLinkRow(R.drawable.ic_checklist, stringResource(R.string.settings_group_dictionary), dictionaryValue(prefs), onRules)
     }
 }
 
-/** "Bei geteilten Sprachnachrichten": eigene Stufe (ohne "Prompt") und eigene Bereinigung beim Glaetten. */
-@Composable
-private fun ShareStages(prefs: PrefsState) {
-    SectionCard(
-        modifier = Modifier.testTag(SHARE_REFINE_TAG),
-        title = stringResource(R.string.text_card_share),
-        titleIcon = R.drawable.ic_voicemail,
-        gap = 4.dp,
-    ) {
-        Text(
-            stringResource(R.string.text_share_intro),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Column(Modifier.selectableGroup()) {
-            RefineMode.SETTINGS.forEach { mode ->
-                val selected = prefs.shareRefineMode == mode
-                LoomRow(
-                    headline = levelLabel(mode),
-                    supporting = stringResource(if (mode == RefineMode.OFF) R.string.text_share_off_sub else levelSubtitle(mode)),
-                    modifier = Modifier.selectable(selected = selected, role = Role.RadioButton) { prefs.shareRefineMode = mode },
-                    trailing = { RadioButton(selected = selected, onClick = null) },
-                )
-            }
-        }
-        ReadableSwitch(prefs, RefineWay.SHARE)
-    }
-}
-
-/** "Lesbarer glaetten" des Wegs; ohne "Glaetten" sagt die Unterzeile, wann es wirkt. */
-@Composable
-private fun ReadableSwitch(prefs: PrefsState, way: RefineWay) {
-    val polish = prefs.refineModeFor(way) == RefineMode.POLISH
-    val supporting = stringResource(if (polish) R.string.pref_polish_readable_info else R.string.text_readable_needs_polish)
-    CleanupSwitch(prefs, way, PolishCleanup.READABLE, R.string.pref_polish_readable, supporting)
+/** TalkBack-Name der Auswahl-Zone: "Glaetten fuer Diktat verwenden". */
+private fun useLabel(way: RefineWay): Int = when (way) {
+    RefineWay.DICTATION -> R.string.stage_use_dictation_cd
+    RefineWay.SHARE -> R.string.stage_use_share_cd
 }
 
 /**
- * Zwischenstand bis zu den Stufen-Seiten: eine Bereinigung des Wegs als Schalter. An = [cleanup],
- * aus = "Nur Zeichensetzung". Immer bedienbar (ein gesperrter Schalter taeuschte sonst ein "an" vor).
+ * Unterzeile einer Stufe: die Kurzbeschreibung, dahinter, was vom Standard abweicht
+ * ("… Inhalt unverändert · Lesbar · Claude Opus 5.5"; der Schlusspunkt entfaellt dann).
  */
 @Composable
-private fun CleanupSwitch(prefs: PrefsState, way: RefineWay, cleanup: PolishCleanup, headline: Int, supporting: String) {
-    SwitchRow(
-        headline = stringResource(headline),
-        supporting = supporting,
-        checked = prefs.polishCleanupFor(way) == cleanup,
-        onCheckedChange = { prefs.setPolishCleanupFor(way, if (it) cleanup else PolishCleanup.PLAIN) },
-    )
+internal fun stageSupporting(prefs: PrefsState, stage: RefineMode, way: RefineWay): String {
+    val description = stringResource(levelSubtitle(stage))
+    val state = stageState(prefs, stage, way)
+    return if (state.isEmpty()) description else (listOf(description.removeSuffix(".")) + state).joinToString(" · ")
 }
 
-/** Unterzeile einer Stufe in den Radios von Diktat und Sprachnachrichten. */
+/** Abweichungen vom Standard der Stufe auf dem Weg; das Modell gilt fuer beide Wege. */
+@Composable
+private fun stageState(prefs: PrefsState, stage: RefineMode, way: RefineWay): List<String> = buildList {
+    if (stage == RefineMode.POLISH) {
+        prefs.polishCleanupFor(way).takeIf { it != PolishCleanup.PLAIN }?.let { add(stringResource(cleanupLabel(it))) }
+    }
+    if (stage == RefineMode.SUMMARIZE && prefs.summarizeFormFor(way) == SummarizeForm.PROSE) {
+        add(stringResource(R.string.stage_form_prose))
+    }
+    if (way == RefineWay.DICTATION && stage in RefineMode.PARAGRAPH_STAGES && !prefs.paragraphsFor(stage)) {
+        add(stringResource(R.string.stage_paragraphs_off))
+    }
+    ownStageModel(prefs, stage)?.let { add(it) }
+}
+
+/** Unterzeile einer Stufe ohne ihre Einstellungen (Liste, Kopf der Stufen-Seite). */
 internal fun levelSubtitle(mode: RefineMode): Int = when (mode) {
     RefineMode.OFF -> R.string.text_level_off_sub
     RefineMode.POLISH, RefineMode.READABLE -> R.string.text_level_smooth_sub

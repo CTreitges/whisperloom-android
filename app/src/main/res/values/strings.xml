@@ -336,25 +336,48 @@
     <!-- §6.6 Textverbesserung (E2, 3.9.0 eine Seite) und Füllwörter-Sheet (B3) -->
     <string name="text_card_refine">Beim Diktieren</string>
     <string name="text_level_off_sub">Nur die Regeln ohne KI, keine zweite Anfrage.</string>
-    <string name="text_level_smooth_sub">Zeichensetzung, Groß-/Kleinschreibung, Absätze. Inhalt unverändert.</string>
+    <string name="text_level_smooth_sub">Zeichensetzung und Groß-/Kleinschreibung. Inhalt unverändert.</string>
     <string name="text_level_beautify_sub">Formuliert flüssiger und klarer, behält Inhalt, Ton und deine Wörter.</string>
     <string name="text_level_summarize_sub">Kürzt auf das Wesentliche. Namen, Zahlen und Termine bleiben genau.</string>
     <string name="text_level_prompt_sub">Formt das Diktat zu einem gegliederten Prompt für ChatGPT, Claude &amp; Co.</string>
     <string name="text_level_cost">Zweite Anfrage · ca. 1–2 s länger · geringe Zusatzkosten</string>
-    <string name="pref_smart_fillers">Füllwörter intelligent entfernen</string>
-    <string name="pref_smart_fillers_info">Beim Glätten lässt die KI Füllwörter, Versprecher und Wiederholungen weg, im Zweifel bleibt das Wort. Die Wortliste räumt danach Reste auf.</string>
     <string name="text_smart_needs_level">Braucht eine Stufe über „Aus“.</string>
-    <string name="pref_polish_readable">Lesbarer glätten</string>
-    <string name="pref_polish_readable_info">„Glätten“ repariert auch holprige Sätze: Satzabbrüche, Versprecher, Wiederholungen, Füllwörter. Deine Wörter und dein Ton bleiben.</string>
-    <string name="text_readable_needs_polish">Wirkt mit der Stufe „Glätten“.</string>
-    <string name="pref_refine_paragraphs">Automatische Absätze</string>
-    <string name="pref_refine_paragraphs_info">Die KI gliedert längere Diktate in Absätze. Ausgeschaltet kommt alles als ein durchgehender Text.</string>
     <string name="text_card_share">Bei geteilten Sprachnachrichten</string>
     <string name="text_share_intro">Für Audios, die du per Teilen an WhisperLoom schickst (z. B. aus WhatsApp). Eigene Stufe, unabhängig vom Diktat; bei „Aus“ bleibt der Text wortgetreu.</string>
     <string name="text_share_off_sub">Wortgetreu, Füllwörter per Schalter ausblendbar. Keine zweite Anfrage.</string>
     <string name="refine_offline">Bei Offline-Erkennung</string>
     <!-- Stufen-Zeile (3.9.0): der Text öffnet die Seite der Stufe, die Zone rechts wählt sie -->
     <string name="stage_open_settings">Einstellungen öffnen</string>
+    <!-- %1$s = Stufe („Glätten“); TalkBack-Name der Auswahl-Zone -->
+    <string name="stage_use_dictation_cd">%1$s für Diktat verwenden</string>
+    <string name="stage_use_share_cd">%1$s für Sprachnachrichten verwenden</string>
+    <!-- Stufen-Seiten (je Stufe und Weg) -->
+    <string name="stage_use_dictation">Für Diktat verwenden</string>
+    <string name="stage_use_share">Für Sprachnachrichten verwenden</string>
+    <string name="stage_active_dictation">Beim Diktat aktiv</string>
+    <string name="stage_active_share">Bei Sprachnachrichten aktiv</string>
+    <string name="stage_cleanup">Bereinigung</string>
+    <string name="stage_cleanup_plain">Nur Zeichensetzung</string>
+    <string name="stage_cleanup_plain_sub">Setzt Satzzeichen und Groß-/Kleinschreibung. Kein Wort fällt weg.</string>
+    <string name="stage_cleanup_clean">Ohne Füllwörter</string>
+    <string name="stage_cleanup_clean_sub">Die KI lässt Füllwörter, Versprecher und Wiederholungen weg, im Zweifel bleibt das Wort.</string>
+    <string name="stage_cleanup_readable">Lesbar</string>
+    <string name="stage_cleanup_readable_sub">Repariert auch holprige Sätze und Satzabbrüche. Deine Wörter und dein Ton bleiben.</string>
+    <string name="stage_paragraphs">Absätze</string>
+    <string name="stage_paragraphs_sub">Die KI gliedert längere Diktate in Absätze. Aus: alles als ein durchgehender Text.</string>
+    <string name="stage_paragraphs_off">Ohne Absätze</string>
+    <string name="stage_paragraphs_share">Sprachnachrichten werden immer in Absätze gegliedert.</string>
+    <string name="stage_form">Form</string>
+    <string name="stage_form_auto">Automatisch</string>
+    <string name="stage_form_auto_sub">Als Liste ab drei Aufgaben, Terminen oder Fragen, sonst in kurzen Absätzen.</string>
+    <string name="stage_form_prose">Fließtext</string>
+    <string name="stage_form_prose_sub">Wenige Sätze am Stück, ohne Liste.</string>
+    <string name="stage_model">Modell</string>
+    <string name="stage_model_both">Gilt beim Diktat und für Sprachnachrichten. Ein neuer Anbieter setzt es auf „Standard“ zurück.</string>
+    <!-- Sprachnachrichten übernehmen das Modell des Diktats; %1$s = Modell der Stufe -->
+    <string name="stage_model_like_dictation">Wie beim Diktat · %1$s</string>
+    <string name="stage_model_like_dictation_plain">Wie beim Diktat</string>
+    <string name="stage_model_no_model">Trag unter „KI-Zugang“ zuerst ein Modell ein. Es ist der Standard aller Stufen, danach kannst du hier ein anderes wählen.</string>
     <string name="text_local_needs_ram">Für ein lokales Textmodell braucht das Gerät mindestens 6 GB RAM.</string>
     <string name="text_rule_title">Textverbesserung bei Offline-Erkennung</string>
     <string name="text_rule_local">Lokales Textmodell</string>
@@ -424,7 +447,7 @@
     <!-- %1$s = Modell zum Glätten, %2$s = Modell zum Umformulieren -->
     <string name="text_models_recommended_sub">Glätten: %1$s · Umformulieren: %2$s</string>
     <string name="text_models_title">Modell je Stufe</string>
-    <string name="text_models_intro">„Standard“ ist das Modell des Zugangs, bei „Empfehlung je Stufe“ ein schnelles zum Glätten und ein stärkeres zum Umformulieren. Glätten gilt auch für „Lesbarer glätten“.</string>
+    <string name="text_models_intro">„Standard“ ist das Modell des Zugangs, bei „Empfehlung je Stufe“ ein schnelles zum Glätten und ein stärkeres zum Umformulieren. Gilt für Diktat und Sprachnachrichten.</string>
     <!-- %1$s = Modell, mit dem die Stufe ohne eigenes Modell rechnet -->
     <string name="text_models_standard">Standard · %1$s</string>
     <string name="text_models_standard_option">Standard (%1$s)</string>
