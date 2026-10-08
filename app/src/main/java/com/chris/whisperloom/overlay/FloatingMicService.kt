@@ -25,6 +25,7 @@ import android.view.View
 import android.view.ViewConfiguration
 import android.view.WindowManager
 import android.widget.Toast
+import androidx.annotation.VisibleForTesting
 import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.AudioRecorder
 import com.chris.whisperloom.Prefs
@@ -34,6 +35,8 @@ import com.chris.whisperloom.TranscriptionEngine
 import com.chris.whisperloom.a11y.TextInserterAccessibilityService
 import com.chris.whisperloom.api.ApiNotConfiguredException
 import com.chris.whisperloom.api.isRetryable
+import com.chris.whisperloom.history.History
+import com.chris.whisperloom.history.HistorySource
 import java.util.concurrent.Executors
 import kotlin.math.abs
 
@@ -427,6 +430,8 @@ class FloatingMicService : Service() {
             )
             val text = dictation.text
             val out = if (prefs.trailingSpace && text.isNotEmpty()) "$text " else text
+            // Vor dem Einfuegen, nie aus einem Passwortfeld (Ziel = Fokusfeld der Bedienungshilfe).
+            if (!targetIsPassword()) History.record(applicationContext, HistorySource.BUBBLE, dictation)
             pendingSamples = null
             main.post {
                 var copied = false
@@ -495,6 +500,13 @@ class FloatingMicService : Service() {
         /** Assistenten-Schritt "Mikrofon erlauben" (UX-Spec §2.2). */
         private const val SETUP_STEP_MIC = 3
         const val ACTION_STOP = "com.chris.whisperloom.STOP_FLOAT"
+
+        /**
+         * Naht fuer Tests: ist das Zielfeld ein Passwortfeld? Robolectric hat kein aktives Fenster
+         * fuer die Bedienungshilfe. Ohne Bedienungshilfe ist das Ziel unbekannt (false).
+         */
+        @VisibleForTesting
+        internal var targetIsPassword: () -> Boolean = TextInserterAccessibilityService::focusedIsPassword
 
         /** Ob der schwebende Knopf aktuell laeuft (fuer die Setup-Statusanzeige). */
         @Volatile
