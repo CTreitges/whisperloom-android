@@ -132,6 +132,14 @@ class TextHubTest {
         compose.onNodeWithText("Keine").assertExists()
     }
 
+    @Test fun hubZaehltStufenModelleOhneModellImZugangNicht() {
+        prefs.llmProviderId = "ollama"
+        prefs.llmModel = "" // Pflicht bei Ollama: ohne Modell wirken die Stufen-Modelle nicht
+        prefs.setLlmModelFor(RefineMode.POLISH, "qwen3:8b")
+        hub()
+        compose.onNodeWithText("Stufe mit eigenem Modell", substring = true).assertDoesNotExist()
+    }
+
     @Test fun hubNenntDasModellDesZugangs() {
         prefs.llmProviderId = "anthropic"
         prefs.llmModel = "claude-sonnet-5"

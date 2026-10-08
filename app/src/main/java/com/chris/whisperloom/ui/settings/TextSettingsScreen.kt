@@ -119,7 +119,9 @@ private fun accessValue(prefs: PrefsState): String {
     val access = if (prefs.llmUseOwn) providerShortName(llm.provider)
     else stringResource(R.string.text_hub_val_access_same, providerShortName(llm.provider))
     if (llm.refineBlock != null) return access
-    val custom = stageModels(prefs.promptLevelEnabled).count { prefs.llmModelFor(it).isNotBlank() }
+    // Ohne Modell im Zugang wirken Stufen-Modelle nicht (AccessResolver), also auch nicht mitzaehlen.
+    val custom = if (llm.model.isBlank()) 0
+    else stageModels(prefs.promptLevelEnabled).count { prefs.llmModelFor(it).isNotBlank() }
     val models = when {
         custom > 0 -> pluralStringResource(R.plurals.text_hub_val_models_custom, custom, custom)
         prefs.llmModel.isBlank() && llm.provider.llmModels.isNotEmpty() -> stringResource(R.string.text_models_recommended)
