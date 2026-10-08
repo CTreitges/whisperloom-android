@@ -55,7 +55,7 @@ class StageRowTest {
     private var selected by mutableStateOf(false)
     private var schrift by mutableStateOf(1f)
 
-    private val beschreibung = "Zeichensetzung und Groß-/Kleinschreibung. Inhalt unverändert · Lesbar · Claude Opus 5.5"
+    private val beschreibung = "Zeichensetzung und Groß-/Kleinschreibung, nah an deinen Worten · Lesbar · Claude Opus 5.5"
 
     private fun zeile() {
         compose.setContent {

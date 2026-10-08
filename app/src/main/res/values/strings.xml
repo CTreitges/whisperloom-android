@@ -336,7 +336,8 @@
     <!-- §6.6 Textverbesserung (E2, 3.9.0 eine Seite) und Füllwörter-Sheet (B3) -->
     <string name="text_card_refine">Beim Diktieren</string>
     <string name="text_level_off_sub">Nur die Regeln ohne KI, keine zweite Anfrage.</string>
-    <string name="text_level_smooth_sub">Zeichensetzung und Groß-/Kleinschreibung. Inhalt unverändert.</string>
+    <!-- Gilt für alle drei Bereinigungen; was wegfällt, sagt die gewählte Bereinigung dahinter. -->
+    <string name="text_level_smooth_sub">Zeichensetzung und Groß-/Kleinschreibung, nah an deinen Worten.</string>
     <string name="text_level_beautify_sub">Formuliert flüssiger und klarer, behält Inhalt, Ton und deine Wörter.</string>
     <string name="text_level_summarize_sub">Kürzt auf das Wesentliche. Namen, Zahlen und Termine bleiben genau.</string>
     <string name="text_level_prompt_sub">Formt das Diktat zu einem gegliederten Prompt für ChatGPT, Claude &amp; Co.</string>
@@ -432,7 +433,8 @@
     <string name="dict_card_vocab">Wörterbuch</string>
     <string name="dict_card_rules">Feste Regeln</string>
     <string name="pref_remove_fillers">Füllwörter entfernen (ähm, äh …)</string>
-    <string name="text_fillers_sub">Feste Wortliste je Sprache</string>
+    <!-- Die Liste läuft nach jeder Stufe außer „Prompt“, auch wenn die KI schon Füllwörter weglässt. -->
+    <string name="text_fillers_sub">Feste Wortliste je Sprache · läuft zuletzt, mit und ohne KI</string>
     <string name="text_fillers_edit">Liste bearbeiten</string>
     <string name="pref_auto_cap">Automatisch groß schreiben</string>
     <string name="pref_trailing_space">Leerzeichen nach Diktat anhängen</string>

@@ -108,7 +108,7 @@ private fun useLabel(way: RefineWay): Int = when (way) {
 
 /**
  * Unterzeile einer Stufe: die Kurzbeschreibung, dahinter, was vom Standard abweicht
- * ("… Inhalt unverändert · Lesbar · Claude Opus 5.5"; der Schlusspunkt entfaellt dann).
+ * ("… nah an deinen Worten · Lesbar · Claude Opus 5.5"; der Schlusspunkt entfaellt dann).
  */
 @Composable
 internal fun stageSupporting(prefs: PrefsState, stage: RefineMode, way: RefineWay): String {

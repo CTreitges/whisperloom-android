@@ -599,7 +599,7 @@ class MainFlowTest {
         compose.waitForIdle()
         compose.runOnIdle { back.onBackPressed() }
         compose.waitForIdle()
-        diktat("Zeichensetzung und Groß-/Kleinschreibung. Inhalt unverändert · Lesbar").assertExists()
+        diktat("Zeichensetzung und Groß-/Kleinschreibung, nah an deinen Worten · Lesbar").assertExists()
         assertEquals(RefineMode.OFF, Prefs(ctx).refineMode)
         zone("Glätten für Diktat verwenden").performClick()
         compose.waitForIdle()

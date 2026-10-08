@@ -50,7 +50,7 @@ import org.robolectric.annotation.Config
 class RefineScreenTest {
 
     private companion object {
-        const val GLAETTEN = "Zeichensetzung und Groß-/Kleinschreibung. Inhalt unverändert."
+        const val GLAETTEN = "Zeichensetzung und Groß-/Kleinschreibung, nah an deinen Worten."
         const val VERSCHOENERN = "Formuliert flüssiger und klarer, behält Inhalt, Ton und deine Wörter."
         const val ZUSAMMENFASSEN = "Kürzt auf das Wesentliche. Namen, Zahlen und Termine bleiben genau."
     }
