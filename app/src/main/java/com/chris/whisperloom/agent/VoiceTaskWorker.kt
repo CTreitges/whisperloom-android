@@ -276,12 +276,14 @@ class VoiceTaskWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, para
                     // Abgeloest oder verworfen: die lokale Rechnung bricht ab und blockiert das
                     // Textmodell nicht fuer den neuen Auftrag. Bewusst NICHT bei isStopped allein —
                     // der vom System gestoppte Lauf cacht seinen Text fuer den naechsten Versuch.
-                    TranscriptionEngine.transcribe(ctx, samples, cancelled = { store.requestId != id }) { hinweis ->
+                    val dictation = TranscriptionEngine.transcribe(ctx, samples, cancelled = { store.requestId != id })
+                    dictation.result.skipped?.let { hinweis ->
                         // Nicht nur ins Log: sonst bekaeme der Nutzer stillschweigend Rohtext,
                         // obwohl "Glaetten" eingeschaltet ist, und hielte die Erkennung fuer schlecht.
                         Log.w(TAG, ctx.getString(R.string.refine_skipped, hinweis))
                         if (store.requestId == id) store.refineSkipped = hinweis
                     }
+                    dictation.text
                 },
                 send = { text -> bridgeFor(ctx, profileId).send(id, text, at, dur) },
                 stillCurrent = stillCurrent,

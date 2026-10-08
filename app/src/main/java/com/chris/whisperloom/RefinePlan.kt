@@ -12,6 +12,7 @@ import com.chris.whisperloom.api.TextRefiner
 import com.chris.whisperloom.llm.LocalRefiner
 import com.chris.whisperloom.llm.LocalTextEngine
 import com.chris.whisperloom.whisper.OfflineSupport
+import com.chris.whisperloom.whisper.TextModelCatalog
 
 /**
  * Die Textverbesserung eines Auftrags, wie [RefineDecision] sie entscheidet, samt Ausfuehrung —
@@ -19,7 +20,7 @@ import com.chris.whisperloom.whisper.OfflineSupport
  * [of] sammelt die Eingaben: Regel, eigener Online-Zugang, Netz und lokales Textmodell. Das Netz
  * wird VOR jeder Online-Anfrage geprueft: ohne Netz geht keine raus, statt dass das Diktat im
  * Connect-Timeout haengt. Nach einer Online-Erkennung reicht ein aktives Netz — sie hat es gerade
- * bewiesen; VALIDATED verlangt nur die Offline-Erkennung.
+ * bewiesen; VALIDATED verlangen die Offline-Erkennung und das Neu-Verarbeiten aus dem Verlauf.
  */
 internal class RefinePlan(
     val route: RefineRoute,
@@ -65,6 +66,17 @@ internal class RefinePlan(
                 local(raw, language, refinement, cancelled).also { onNote(MSG_ONLINE_FAILED_LOCAL) }
             }
         }
+    }
+
+    /**
+     * Womit [refine] gerechnet hat, als Anzeige: das Modell des Online-Zugangs oder — auf der Route
+     * [RefineRoute.Local] bzw. nach einem Online-Fehler — das lokale Textmodell. null auf [RefineRoute.Raw].
+     */
+    fun modelLabel(): String? = when {
+        route is RefineRoute.Raw -> null
+        route == RefineRoute.Local || onlineFailed -> TextModelCatalog.byId(localModelId).label
+        // Wie ui.components.modelLabel: Katalog-Label, sonst die freie ID.
+        else -> access.modelOption?.label ?: access.model
     }
 
     private fun temperatureRejected(withoutTemperature: ApiAccess) {
@@ -116,8 +128,15 @@ internal class RefinePlan(
          *
          * @param mode die wirksame Stufe des Auftrags ([Refinement.mode] aus [Prefs.refinementFor]) —
          *   sie bestimmt auch das Textmodell ([Prefs.llmModelFor], fuer beide Wege dasselbe).
+         * @param networkProven eine Anfrage hat das Netz gerade getragen ([NetworkCheck.availableFor]):
+         *   ab Werk nach einer Online-Erkennung. Das Neu-Verarbeiten aus dem Verlauf hat keinen Nachweis.
          */
-        fun of(context: Context, prefs: Prefs, mode: RefineMode): RefinePlan {
+        fun of(
+            context: Context,
+            prefs: Prefs,
+            mode: RefineMode,
+            networkProven: Boolean = prefs.engine != Engine.OFFLINE,
+        ): RefinePlan {
             val access = prefs.llmAccess(mode)
             val engine = prefs.engine
             val stageActive = mode != RefineMode.OFF
@@ -125,7 +144,7 @@ internal class RefinePlan(
             // nur ein eigener, vollstaendiger Zugang.
             val ownOnlineReady = SetupState.llmReady(access)
             val network = stageActive && (engine != Engine.OFFLINE || ownOnlineReady) &&
-                networkCheck(context).availableFor(access.baseUrl, proven = engine != Engine.OFFLINE)
+                networkCheck(context).availableFor(access.baseUrl, proven = networkProven)
             val localModelId = prefs.localLlmModel
             val localReady = stageActive && engine == Engine.OFFLINE && LocalTextEngine.isReady(context, localModelId)
             // Passt kein Textmodell ins Geraet, wirkt jede Regel wie "Ueberspringen".

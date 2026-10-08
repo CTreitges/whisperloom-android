@@ -419,15 +419,13 @@ class FloatingMicService : Service() {
         val skip = RefineSkip()
         refineSkip = skip
         try {
-            var refineSkipped: String? = null
-            var refineNote: String? = null
-            val text = TranscriptionEngine.transcribe(
+            val dictation = TranscriptionEngine.transcribe(
                 applicationContext,
                 samples,
                 skip = skip,
                 onRefineStart = { main.post { showRefining(skip) } },
-                onRefineNote = { refineNote = it },
-            ) { refineSkipped = it }
+            )
+            val text = dictation.text
             val out = if (prefs.trailingSpace && text.isNotEmpty()) "$text " else text
             pendingSamples = null
             main.post {
@@ -438,7 +436,8 @@ class FloatingMicService : Service() {
                 }
                 applyState(BubbleState.IDLE, copied = copied)
                 renderer?.flashSuccess()
-                refineSkipped?.let { toast(getString(R.string.refine_skipped, it)) } ?: refineNote?.let { toast(it) }
+                dictation.result.skipped?.let { toast(getString(R.string.refine_skipped, it)) }
+                    ?: dictation.result.note?.let { toast(it) }
             }
         } catch (e: ApiNotConfiguredException) {
             pendingSamples = null

@@ -104,11 +104,18 @@ class TranscriptionEngineTest {
 
     private val speech = FloatArray(AudioUtils.SAMPLE_RATE) { 0.3f }
 
+    /** Text des Diktats; der Grund "ohne KI" geht an [onSkipped], wie bis 3.8.6 der Rueckruf. */
+    private fun transcribe(onSkipped: (String) -> Unit = {}): String {
+        val dictation = TranscriptionEngine.transcribe(ctx, speech)
+        dictation.result.skipped?.let(onSkipped)
+        return dictation.text
+    }
+
     @Test fun ohneEngineNichtKonfiguriert() {
         prefs.apiKey = "sk"
         assertFalse(TranscriptionEngine.isConfigured(ctx))
         try {
-            TranscriptionEngine.transcribe(ctx, speech)
+            transcribe()
             fail("ApiNotConfiguredException erwartet")
         } catch (e: ApiNotConfiguredException) {
             // erwartet
@@ -137,7 +144,7 @@ class TranscriptionEngineTest {
         assertTrue(backend is OfflineBackend)
         assertEquals("Offline · Small", backend.label)
         try {
-            TranscriptionEngine.transcribe(ctx, speech)
+            transcribe()
             fail("OfflineNotAvailableException erwartet")
         } catch (e: OfflineNotAvailableException) {
             assertEquals(OfflineNotAvailableException.MSG_NO_MODEL, e.message)
@@ -156,7 +163,7 @@ class TranscriptionEngineTest {
             assertEquals("Offline · Base", TranscriptionEngine.backend(prefs).label)
             // In der JVM gibt es keine libwhisperloom.so: die Engine meldet "nicht unterstuetzt" statt abzustuerzen.
             try {
-                TranscriptionEngine.transcribe(ctx, speech)
+                transcribe()
                 fail("OfflineNotAvailableException erwartet")
             } catch (e: OfflineNotAvailableException) {
                 assertEquals(OfflineNotAvailableException.MSG_UNSUPPORTED, e.message)
@@ -177,7 +184,7 @@ class TranscriptionEngineTest {
 
     @Test fun diktatGegenEigenenServerOhneKeyUndOhneKi() {
         useLocalServer()
-        val text = TranscriptionEngine.transcribe(ctx, speech)
+        val text = transcribe()
 
         assertEquals("Also hallo welt", text) // Fuellwort weg, Satzanfang gross
         assertNull(sttAuth)
@@ -194,7 +201,7 @@ class TranscriptionEngineTest {
         useLocalServer()
         prefs.refineMode = RefineMode.POLISH
         prefs.apiPrompt = "Chris"
-        val text = TranscriptionEngine.transcribe(ctx, speech)
+        val text = transcribe()
 
         assertEquals("Hallo Welt.", text) // <think>-Block entfernt
         assertTrue(sttBody.contains("name=\"prompt\"\r\n\r\nChris\r\n"))
@@ -223,7 +230,7 @@ class TranscriptionEngineTest {
 
     @Test fun diktatMitOllamaImHeimnetz() {
         useOllama("ollama")
-        val text = TranscriptionEngine.transcribe(ctx, speech)
+        val text = transcribe()
 
         assertEquals("Hallo Welt.", text) // nur content, das Nachdenken bleibt draussen
         assertNull(chatBody) // nicht ueber /v1/chat/completions
@@ -241,7 +248,7 @@ class TranscriptionEngineTest {
 
     @Test fun diktatMitOllamaCloudSendetDenKey() {
         useOllama("ollama-cloud", key = "ok-cloud", model = "gpt-oss:20b")
-        assertEquals("Hallo Welt.", TranscriptionEngine.transcribe(ctx, speech))
+        assertEquals("Hallo Welt.", transcribe())
         assertEquals("Bearer ok-cloud", ollamaAuth)
         assertEquals("low", JSONObject(ollamaBody!!).getString("think"))
     }
@@ -251,7 +258,7 @@ class TranscriptionEngineTest {
         ollamaStatus = 401
         ollamaResponse = """{"error":"Unauthorized"}"""
         var hinweis = ""
-        val text = TranscriptionEngine.transcribe(ctx, speech) { hinweis = it }
+        val text = transcribe { hinweis = it }
         assertEquals("Also hallo welt", text)
         assertTrue(hinweis, hinweis.contains("Unauthorized"))
     }
@@ -261,7 +268,7 @@ class TranscriptionEngineTest {
         useOllama("ollama")
         prefs.setPolishCleanupFor(RefineWay.DICTATION, PolishCleanup.CLEAN)
         ollamaStatus = 500
-        assertEquals("Also hallo welt", TranscriptionEngine.transcribe(ctx, speech))
+        assertEquals("Also hallo welt", transcribe())
     }
 
     // --- Fuellwort-Netz und leere Antwort (3.9.0) -------------------------------------------
@@ -274,7 +281,7 @@ class TranscriptionEngineTest {
         // Ein kleines Modell uebersieht ein "ähm" — bis 3.8.6 pausierte die Liste dann und es blieb stehen.
         ollamaResponse = """{"message":{"content":"Also, ähm, hallo Welt, sozusagen."}}"""
 
-        assertEquals("Also, hallo Welt.", TranscriptionEngine.transcribe(ctx, speech))
+        assertEquals("Also, hallo Welt.", transcribe())
         val system = JSONObject(ollamaBody!!).getJSONArray("messages").getJSONObject(0).getString("content")
         assertTrue(system, system.contains("nie Wörter außer Füllwörtern"))
     }
@@ -287,7 +294,7 @@ class TranscriptionEngineTest {
         ollamaResponse = """{"message":{"content":""},"done":true}"""
         var hinweis: String? = null
 
-        val text = TranscriptionEngine.transcribe(ctx, speech) { hinweis = it }
+        val text = transcribe { hinweis = it }
 
         assertEquals("Rohtext mit den vollen Regeln", "Also hallo welt", text)
         assertEquals(com.chris.whisperloom.api.TextRefiner.MSG_EMPTY, hinweis)
@@ -298,7 +305,7 @@ class TranscriptionEngineTest {
         prefs.refineMode = RefineMode.BEAUTIFY
         chatResponse = """{"choices":[{"message":{"content":"<think>hm</think>  "},"finish_reason":"stop"}]}"""
         var hinweis: String? = null
-        assertEquals("Also hallo welt", TranscriptionEngine.transcribe(ctx, speech) { hinweis = it })
+        assertEquals("Also hallo welt", transcribe { hinweis = it })
         assertEquals(com.chris.whisperloom.api.TextRefiner.MSG_EMPTY, hinweis)
     }
 
@@ -309,7 +316,7 @@ class TranscriptionEngineTest {
         prefs.setPolishCleanupFor(RefineWay.DICTATION, PolishCleanup.CLEAN)
         ollamaResponse = """{"message":{"content":"Also, ähm, hallo Welt."}}"""
 
-        assertEquals("die Liste raeumt auf", "Also, hallo Welt.", TranscriptionEngine.transcribe(ctx, speech))
+        assertEquals("die Liste raeumt auf", "Also, hallo Welt.", transcribe())
         val system = JSONObject(ollamaBody!!).getJSONArray("messages").getJSONObject(0).getString("content")
         assertTrue(system, system.contains("Du überarbeitest diktierten Text"))
         assertEquals(system, com.chris.whisperloom.api.RefinePrompt.build(RefineMode.BEAUTIFY, german = true, smartFillers = false, short = true))
@@ -320,7 +327,7 @@ class TranscriptionEngineTest {
         useOllama("ollama")
         prefs.shareRefineMode = RefineMode.POLISH
         prefs.setPolishCleanupFor(RefineWay.SHARE, PolishCleanup.CLEAN)
-        TranscriptionEngine.transcribe(ctx, speech)
+        transcribe()
         val system = JSONObject(ollamaBody!!).getJSONArray("messages").getJSONObject(0).getString("content")
         assertTrue(system, system.contains("Du korrigierst in diktiertem Text nur Satzzeichen"))
         assertFalse(system, system.contains("Füllwörtern"))
@@ -331,7 +338,7 @@ class TranscriptionEngineTest {
     @Test fun absaetzeBleibenStandardmaessigErhalten() {
         useOllama("ollama")
         ollamaResponse = """{"message":{"content":"Erster Absatz.\n\nZweiter Absatz."}}"""
-        assertEquals("Erster Absatz.\n\nZweiter Absatz.", TranscriptionEngine.transcribe(ctx, speech))
+        assertEquals("Erster Absatz.\n\nZweiter Absatz.", transcribe())
     }
 
     @Test fun ohneAbsaetzeKommtEinFliesstext() {
@@ -339,7 +346,7 @@ class TranscriptionEngineTest {
         prefs.setParagraphsFor(RefineMode.POLISH, false)
         // Auch wenn das Modell die Anweisung ignoriert: die Nachbearbeitung zieht zusammen.
         ollamaResponse = """{"message":{"content":"Erster Absatz.\n\nZweiter Absatz."}}"""
-        assertEquals("Erster Absatz. Zweiter Absatz.", TranscriptionEngine.transcribe(ctx, speech))
+        assertEquals("Erster Absatz. Zweiter Absatz.", transcribe())
         val system = JSONObject(ollamaBody!!).getJSONArray("messages").getJSONObject(0).getString("content")
         assertTrue(system, system.contains("einen einzigen durchgehenden Absatz"))
     }
@@ -348,10 +355,10 @@ class TranscriptionEngineTest {
         useOllama("ollama")
         prefs.setParagraphsFor(RefineMode.BEAUTIFY, false)
         ollamaResponse = """{"message":{"content":"Erster Absatz.\n\nZweiter Absatz."}}"""
-        assertEquals("Glaetten behaelt sie", "Erster Absatz.\n\nZweiter Absatz.", TranscriptionEngine.transcribe(ctx, speech))
+        assertEquals("Glaetten behaelt sie", "Erster Absatz.\n\nZweiter Absatz.", transcribe())
 
         prefs.refineMode = RefineMode.BEAUTIFY
-        assertEquals("Erster Absatz. Zweiter Absatz.", TranscriptionEngine.transcribe(ctx, speech))
+        assertEquals("Erster Absatz. Zweiter Absatz.", transcribe())
         val system = JSONObject(ollamaBody!!).getJSONArray("messages").getJSONObject(0).getString("content")
         assertTrue(system, system.contains("einen einzigen durchgehenden Absatz"))
     }
@@ -361,13 +368,13 @@ class TranscriptionEngineTest {
         prefs.refineMode = RefineMode.SUMMARIZE
         prefs.setSummarizeFormFor(RefineWay.DICTATION, SummarizeForm.PROSE)
         ollamaResponse = """{"message":{"content":"Kurz gesagt.\n- Eins.\n- Zwei."}}"""
-        assertEquals("Kurz gesagt. - Eins. - Zwei.", TranscriptionEngine.transcribe(ctx, speech))
+        assertEquals("Kurz gesagt. - Eins. - Zwei.", transcribe())
         val system = JSONObject(ollamaBody!!).getJSONArray("messages").getJSONObject(0).getString("content")
         assertTrue(system, system.contains("ohne Liste und ohne Zeilenumbruch"))
 
         // Automatisch: die Liste bleibt.
         prefs.setSummarizeFormFor(RefineWay.DICTATION, SummarizeForm.AUTO)
-        assertEquals("Kurz gesagt.\n- Eins.\n- Zwei.", TranscriptionEngine.transcribe(ctx, speech))
+        assertEquals("Kurz gesagt.\n- Eins.\n- Zwei.", transcribe())
     }
 
     @Test fun lesbarerGlaettenSchicktDenLesbarPromptUndDieWortlisteFaengtReste() {
@@ -376,7 +383,7 @@ class TranscriptionEngineTest {
         // Ein kleines Modell laesst ein "ähm" stehen — die Wortliste raeumt es danach weg.
         ollamaResponse = """{"message":{"content":"Also, ähm, hallo Welt."}}"""
 
-        assertEquals("Also, hallo Welt.", TranscriptionEngine.transcribe(ctx, speech))
+        assertEquals("Also, hallo Welt.", transcribe())
         val messages = JSONObject(ollamaBody!!).getJSONArray("messages")
         val system = messages.getJSONObject(0).getString("content")
         assertTrue(system, system.contains("Du machst diktierten Text lesbar"))
@@ -386,7 +393,7 @@ class TranscriptionEngineTest {
 
     @Test fun ohneLesbarBleibtGlaettenKorrektorat() {
         useOllama("ollama")
-        TranscriptionEngine.transcribe(ctx, speech)
+        transcribe()
         val system = JSONObject(ollamaBody!!).getJSONArray("messages").getJSONObject(0).getString("content")
         assertTrue(system, system.contains("Du korrigierst in diktiertem Text nur Satzzeichen"))
         assertFalse(system, system.contains("lesbar"))
@@ -397,7 +404,7 @@ class TranscriptionEngineTest {
         useOllama("ollama")
         prefs.shareRefineMode = RefineMode.POLISH
         prefs.setPolishCleanupFor(RefineWay.SHARE, PolishCleanup.READABLE)
-        TranscriptionEngine.transcribe(ctx, speech)
+        transcribe()
         val system = JSONObject(ollamaBody!!).getJSONArray("messages").getJSONObject(0).getString("content")
         assertTrue(system, system.contains("Du korrigierst in diktiertem Text nur Satzzeichen"))
         assertFalse(system, system.contains("lesbar"))
@@ -408,14 +415,14 @@ class TranscriptionEngineTest {
         val einladung = List(10) { "Ihr seid alle herzlich zu meinem Geburtstag eingeladen." }.joinToString(" ")
         ollamaResponse = """{"message":{"content":"$einladung"}}"""
         var hinweis = ""
-        assertEquals("Also hallo welt", TranscriptionEngine.transcribe(ctx, speech) { hinweis = it })
+        assertEquals("Also hallo welt", transcribe { hinweis = it })
         assertTrue(hinweis, hinweis.contains("statt den Text zu bearbeiten"))
     }
 
     @Test fun markierungUndVorredeKommenNieInsTextfeld() {
         useOllama("ollama")
         ollamaResponse = """{"message":{"content":"Hier ist der geglättete Text:\n<diktat>\nAlso, hallo Welt.\n</diktat>"}}"""
-        assertEquals("Also, hallo Welt.", TranscriptionEngine.transcribe(ctx, speech))
+        assertEquals("Also, hallo Welt.", transcribe())
     }
 
     // --- Stufe "Prompt" -------------------------------------------------------------------
@@ -431,7 +438,7 @@ class TranscriptionEngineTest {
         prefs.setParagraphsFor(RefineMode.POLISH, false) // die Gliederung ist der Zweck — kein Schalter hier
         ollamaResponse = """{"message":{"content":"Hier ist dein Prompt:\nErstelle mir eine Einkaufsliste.\n- 12 Personen\n- Budget höchstens 100 Euro"}}"""
 
-        val text = TranscriptionEngine.transcribe(ctx, speech)
+        val text = transcribe()
 
         assertEquals("Erstelle mir eine Einkaufsliste.\n- 12 Personen\n- Budget höchstens 100 Euro", text)
         val messages = JSONObject(ollamaBody!!).getJSONArray("messages")
@@ -448,7 +455,7 @@ class TranscriptionEngineTest {
         ollamaResponse = """{"message":{"content":"$gedicht"}}"""
         var hinweis = ""
 
-        val text = TranscriptionEngine.transcribe(ctx, speech) { hinweis = it }
+        val text = transcribe { hinweis = it }
 
         assertEquals("Also hallo welt", text)
         assertTrue(hinweis, hinweis.contains("statt einen Prompt"))
@@ -457,7 +464,7 @@ class TranscriptionEngineTest {
     @Test fun promptOhneSchalterLaeuftAlsGlaetten() {
         useOllama("ollama")
         prefs.refineMode = RefineMode.PROMPT // gespeichert, aber in den erweiterten Optionen aus
-        TranscriptionEngine.transcribe(ctx, speech)
+        transcribe()
         val messages = JSONObject(ollamaBody!!).getJSONArray("messages")
         assertTrue(messages.getJSONObject(0).getString("content").contains("Du korrigierst in diktiertem Text"))
         assertEquals("<diktat>\nalso ähm hallo welt\n</diktat>", messages.getJSONObject(1).getString("content"))
@@ -472,13 +479,13 @@ class TranscriptionEngineTest {
         file.writeText("# Namen\n- Treitges\n- anna\n")
         prefs.vocabFileUri = android.net.Uri.fromFile(file).toString()
 
-        TranscriptionEngine.transcribe(ctx, speech)
+        transcribe()
         // Datei vorn, eigene Begriffe am Ende (Whisper beachtet das Ende); "anna" doppelt -> faellt weg.
         assertTrue(sttBody, sttBody.contains("name=\"prompt\"\r\n\r\nTreitges, Anna, Kubernetes\r\n"))
 
         // Bei jedem Diktat neu gelesen: eine Aenderung an der Datei wirkt sofort.
         file.writeText("- Treitges\n- WhisperLoom\n")
-        TranscriptionEngine.transcribe(ctx, speech)
+        transcribe()
         assertTrue(sttBody, sttBody.contains("name=\"prompt\"\r\n\r\nTreitges, WhisperLoom, Anna, Kubernetes\r\n"))
     }
 
@@ -487,7 +494,7 @@ class TranscriptionEngineTest {
         prefs.apiPrompt = "Anna"
         prefs.vocabFileUri = android.net.Uri.fromFile(java.io.File(ctx.filesDir, "gibtsnicht.md")).toString()
 
-        assertEquals("Also hallo welt", TranscriptionEngine.transcribe(ctx, speech))
+        assertEquals("Also hallo welt", transcribe())
         assertTrue(sttBody, sttBody.contains("name=\"prompt\"\r\n\r\nAnna\r\n"))
         assertEquals(null, VocabularySource.fileTerms(ctx, prefs.vocabFileUri))
     }
@@ -500,7 +507,7 @@ class TranscriptionEngineTest {
         chatStatus = 401
         chatResponse = """{"error":{"message":"invalid api key"}}"""
         var hint: String? = null
-        val text = TranscriptionEngine.transcribe(ctx, speech) { hint = it }
+        val text = transcribe { hint = it }
 
         assertEquals("Also hallo welt", text) // STT-Ergebnis poliert, nicht verworfen
         assertTrue(hint!!, hint!!.contains("401"))
@@ -512,13 +519,13 @@ class TranscriptionEngineTest {
         prefs.refineMode = RefineMode.BEAUTIFY
         chatStatus = 500
         var hint: String? = null
-        assertEquals("Also hallo welt", TranscriptionEngine.transcribe(ctx, speech) { hint = it })
+        assertEquals("Also hallo welt", transcribe { hint = it })
         assertTrue(hint!!.contains("500"))
 
         chatStatus = 200
         chatResponse = "<html>Not JSON</html>"
         hint = null
-        assertEquals("Also hallo welt", TranscriptionEngine.transcribe(ctx, speech) { hint = it })
+        assertEquals("Also hallo welt", transcribe { hint = it })
         assertTrue(hint != null)
     }
 
@@ -528,12 +535,12 @@ class TranscriptionEngineTest {
         prefs.refineMode = RefineMode.POLISH
         chatResponse = """{"choices":[{"message":{"content":"Also hallo"},"finish_reason":"length"}]}"""
         var hint: String? = null
-        assertEquals("Also hallo welt", TranscriptionEngine.transcribe(ctx, speech) { hint = it })
+        assertEquals("Also hallo welt", transcribe { hint = it })
         assertEquals(com.chris.whisperloom.api.TextRefiner.MSG_TRUNCATED, hint)
 
         chatResponse = """{"choices":[{"message":{"content":"Hallo Welt."},"finish_reason":"stop"}]}"""
         hint = null
-        assertEquals("Hallo Welt.", TranscriptionEngine.transcribe(ctx, speech) { hint = it })
+        assertEquals("Hallo Welt.", transcribe { hint = it })
         assertNull(hint)
     }
 
@@ -541,7 +548,7 @@ class TranscriptionEngineTest {
         useOllama("ollama")
         ollamaResponse = """{"message":{"content":"Also hallo"},"done":true,"done_reason":"length"}"""
         var hint: String? = null
-        assertEquals("Also hallo welt", TranscriptionEngine.transcribe(ctx, speech) { hint = it })
+        assertEquals("Also hallo welt", transcribe { hint = it })
         assertEquals(com.chris.whisperloom.api.TextRefiner.MSG_TRUNCATED, hint)
     }
 
@@ -576,7 +583,7 @@ class TranscriptionEngineTest {
             ex.responseBody.use { it.write(out) }
         }
         try {
-            TranscriptionEngine.transcribe(ctx, speech)
+            transcribe()
             fail("ApiHttpException erwartet")
         } catch (e: com.chris.whisperloom.api.ApiHttpException) {
             assertEquals(500, e.code)
@@ -596,7 +603,7 @@ class TranscriptionEngineTest {
     @Test fun diktatMitElevenLabsSchicktRohesPcmUndKeyterms() {
         useElevenLabs()
         prefs.apiPrompt = "Treitges\nWhisperLoom"
-        val text = TranscriptionEngine.transcribe(ctx, speech)
+        val text = transcribe()
 
         // "deu" -> "de": die deutschen Fuellwoerter greifen (mit "deu" bliebe das "ähm" stehen).
         assertEquals("Also hallo welt", text)
@@ -621,7 +628,7 @@ class TranscriptionEngineTest {
     @Test fun elevenLabsSchicktDieGewaehlteSprache() {
         useElevenLabs()
         prefs.language = "de"
-        TranscriptionEngine.transcribe(ctx, speech)
+        transcribe()
         assertTrue(elevenBody.contains("name=\"language_code\"\r\n\r\nde\r\n"))
     }
 
@@ -629,7 +636,7 @@ class TranscriptionEngineTest {
         useElevenLabs()
         prefs.refineMode = RefineMode.POLISH
         var hint: String? = null
-        assertEquals("Also hallo welt", TranscriptionEngine.transcribe(ctx, speech) { hint = it })
+        assertEquals("Also hallo welt", transcribe { hint = it })
         assertEquals(com.chris.whisperloom.api.TextRefiner.MSG_NO_LLM, hint)
         assertNull(chatBody) // keine Anfrage an einen Chat-Endpunkt, den es bei ElevenLabs nicht gibt
     }
@@ -640,7 +647,7 @@ class TranscriptionEngineTest {
         prefs.refineMode = RefineMode.POLISH
         prefs.llmModel = "gpt-4o-mini"
         var hint: String? = null
-        assertEquals("Also hallo welt", TranscriptionEngine.transcribe(ctx, speech) { hint = it })
+        assertEquals("Also hallo welt", transcribe { hint = it })
         assertEquals(com.chris.whisperloom.api.TextRefiner.MSG_NO_LLM, hint)
         assertNull(chatBody)
     }
@@ -651,7 +658,7 @@ class TranscriptionEngineTest {
         prefs.llmProviderId = "custom"
         prefs.llmUrl = "http://127.0.0.1:${server.address.port}/v1"
         prefs.llmModel = "qwen3:8b"
-        assertEquals("Hallo Welt.", TranscriptionEngine.transcribe(ctx, speech))
+        assertEquals("Hallo Welt.", transcribe())
         // Erkannte Sprache "deu" kam als "de" an: deutscher Prompt.
         val system = JSONObject(chatBody!!).getJSONArray("messages").getJSONObject(0).getString("content")
         assertTrue(system, system.contains("nur Satzzeichen"))
@@ -662,7 +669,7 @@ class TranscriptionEngineTest {
         elevenStatus = 401
         elevenResponse = """{"detail":{"type":"authentication_error","code":"unauthorized","message":"Invalid API key","status":"invalid_api_key"}}"""
         try {
-            TranscriptionEngine.transcribe(ctx, speech)
+            transcribe()
             fail("ApiHttpException erwartet")
         } catch (e: com.chris.whisperloom.api.ApiHttpException) {
             assertEquals(401, e.code)
@@ -673,7 +680,7 @@ class TranscriptionEngineTest {
         elevenStatus = 402
         elevenResponse = """{"detail":{"code":"insufficient_credits","message":"You have run out of credits"}}"""
         try {
-            TranscriptionEngine.transcribe(ctx, speech)
+            transcribe()
             fail("ApiHttpException erwartet")
         } catch (e: com.chris.whisperloom.api.ApiHttpException) {
             assertEquals(402, e.code)
@@ -684,7 +691,7 @@ class TranscriptionEngineTest {
     @Test fun keyWirdAlsBearerGesendet() {
         useLocalServer()
         prefs.apiKey = "geheim"
-        TranscriptionEngine.transcribe(ctx, speech)
+        transcribe()
         assertEquals("Bearer geheim", sttAuth)
     }
 
@@ -692,14 +699,14 @@ class TranscriptionEngineTest {
         useLocalServer()
         prefs.language = "auto"
         sttResponse = """{"text":"i um think so","language":"en"}"""
-        assertEquals("I think so", TranscriptionEngine.transcribe(ctx, speech))
+        assertEquals("I think so", transcribe())
         assertFalse(sttBody.contains("name=\"language\""))
     }
 
     @Test fun leereAntwortBleibtLeer() {
         useLocalServer()
         sttResponse = """{"text":"   "}"""
-        assertEquals("", TranscriptionEngine.transcribe(ctx, speech))
+        assertEquals("", transcribe())
     }
 
     @Test fun effektiveSprache() {
@@ -724,14 +731,14 @@ class TranscriptionEngineTest {
         // Wie auf main: Together kann /chat/completions, der Katalog kennt dort nur kein Modell.
         useTogether()
         prefs.llmModel = "meta-llama/Llama-3.3-70B-Instruct-Turbo"
-        assertEquals("Hallo Welt.", TranscriptionEngine.transcribe(ctx, speech))
+        assertEquals("Hallo Welt.", transcribe())
         assertEquals("meta-llama/Llama-3.3-70B-Instruct-Turbo", JSONObject(chatBody!!).getString("model"))
     }
 
     @Test fun togetherWieErkennungOhneModellUeberspringtMitHinweis() {
         useTogether()
         var hint: String? = null
-        assertEquals("Also hallo welt", TranscriptionEngine.transcribe(ctx, speech) { hint = it })
+        assertEquals("Also hallo welt", transcribe { hint = it })
         assertEquals(com.chris.whisperloom.api.TextRefiner.MSG_NO_MODEL, hint)
         assertNull(chatBody) // kein Request mit "model":""
     }

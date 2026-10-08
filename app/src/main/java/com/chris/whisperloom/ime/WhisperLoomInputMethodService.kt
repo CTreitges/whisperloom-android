@@ -696,24 +696,21 @@ class WhisperLoomInputMethodService : InputMethodService() {
         val skip = RefineSkip()
         refineSkip = skip
         try {
-            var refineSkipped: String? = null
-            var refineNote: String? = null
-            val text = TranscriptionEngine.transcribe(
+            val dictation = TranscriptionEngine.transcribe(
                 applicationContext,
                 samples,
                 skip = skip,
                 onRefineStart = { main.post { showRefining(skip) } },
-                onRefineNote = { refineNote = it },
-            ) { refineSkipped = it }
+            )
             pendingSamples = null
             main.post {
-                commitDictation(text)
+                commitDictation(dictation.text)
                 applyState(BubbleState.IDLE)
                 rings?.flashSuccess()
                 showIdleStatus()
                 // Text ist eingefuegt, nur die Veredelung fiel aus — Hinweis statt Fehlerzustand.
-                refineSkipped?.let { showStatus(Status.ERROR, getString(R.string.refine_skipped, it)) }
-                    ?: refineNote?.let { showStatus(Status.HINT, it) }
+                dictation.result.skipped?.let { showStatus(Status.ERROR, getString(R.string.refine_skipped, it)) }
+                    ?: dictation.result.note?.let { showStatus(Status.HINT, it) }
             }
         } catch (e: ApiNotConfiguredException) {
             pendingSamples = null
