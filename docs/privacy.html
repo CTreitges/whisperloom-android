@@ -53,7 +53,10 @@
     <p>Beim Diktieren nimmt WhisperLoom Ton auf, um ihn in Text umzuwandeln. Die Aufnahme wird nur für
     die laufende Erkennung genutzt und <strong>nicht dauerhaft gespeichert</strong>. Ein fehlgeschlagenes
     Diktat bleibt nur bis zum erneuten Senden oder Verwerfen im Arbeitsspeicher. Ein pausiertes Diktat bleibt
-    bis zum Senden oder Verwerfen im Arbeitsspeicher. Einzige Ausnahme sind
+    bis zum Senden oder Verwerfen im Arbeitsspeicher. Wechselst du bei offenem Diktat die Tastatur über die
+    Navigationsleiste oder die Systemeinstellungen, wird es wie beim Senden erkannt und sein Text im Verlauf
+    abgelegt – nur bei eingeschaltetem Verlauf und nicht aus Passwort- oder Inkognito-Feldern, sonst wird es
+    verworfen. Einzige Ausnahme sind
     Pro Widgets (siehe Abschnitt 3): Deren Auftrag bleibt samt Aufnahme auf dem Gerät, bis er gesendet
     oder verworfen ist.</p>
 
@@ -66,9 +69,11 @@
     <strong>Verlauf</strong>, damit du sie wiederfinden, kopieren, bearbeiten und nachträglich anders verbessern
     kannst. Gespeichert werden je Diktat der erkannte Rohtext, die verbesserten Fassungen samt Name des
     verwendeten Sprachmodells, Sprache, Quelle (Tastatur oder Knopf), Zeitpunkt und Dauer – <strong>kein
-    Audio</strong> und nicht die App, in die der Text ging. Nicht gespeichert werden Texte aus Passwortfeldern
-    und aus Feldern, die keine Eingaben lernen dürfen (z. B. im Inkognito-Modus eines Browsers), geteilte
-    Sprachnachrichten und Aufträge von Pro Widgets.</p>
+    Audio</strong> und nicht die App, in die der Text ging. Nicht gespeichert werden geteilte Sprachnachrichten
+    und Aufträge von Pro Widgets. Bei der Diktat-Tastatur werden außerdem keine Texte aus Passwortfeldern und
+    aus Feldern gespeichert, die keine Eingaben lernen dürfen (z. B. im Inkognito-Modus eines Browsers). Der
+    schwebende Knopf erkennt nur Passwortfelder, und nur bei eingeschalteter Bedienungshilfe: Text aus einem
+    Inkognito-Feld kommt bei ihm in den Verlauf, und ohne Bedienungshilfe auch Text aus einem Passwortfeld.</p>
     <ul>
       <li><strong>Ort:</strong> nur auf deinem Gerät, im privaten App-Speicher in einem Ordner, den Android nie
       sichert – der Verlauf landet weder im Google-Backup noch im Geräte-zu-Gerät-Transfer.</li>
@@ -179,10 +184,12 @@
       <li><strong>Vordergrund-Dienste</strong> – laufende Aufnahme (Knopf, Pro Widgets) und Modell-Download.</li>
       <li><strong>Hintergrundaufträge (Android WorkManager)</strong> – nur für Pro Widgets: ein Auftrag
       wird weiter übertragen, auch wenn der Bildschirm ausgeht.</li>
-      <li><strong>Bedienungshilfe („WhisperLoom Text-Einfügen")</strong> – fügt ausschließlich den
-      diktierten Text in das gerade fokussierte Eingabefeld ein. Sie liest keine Bildschirminhalte mit
-      und speichert nichts; vom fokussierten Feld prüft sie nur, ob es ein Passwortfeld ist, damit dessen Text
-      nicht in den Verlauf kommt. Die Nutzung erfolgt nur nach deiner aktiven Aktion (Antippen des Knopfs).
+      <li><strong>Bedienungshilfe („WhisperLoom Text-Einfügen")</strong> – fügt den diktierten Text in das
+      gerade fokussierte Eingabefeld ein. Dafür liest sie nur dieses Feld (Text und Cursor, um an der richtigen
+      Stelle einzufügen) und prüft, ob es ein Passwortfeld ist, damit dessen Text nicht in den Verlauf kommt.
+      Andere Bildschirminhalte liest sie nicht, den Feldinhalt speichert sie nicht. Die Diktate vom Knopf hebt
+      der Verlauf auf, solange er eingeschaltet ist (siehe Abschnitt 2). Die Nutzung erfolgt nur nach deiner
+      aktiven Aktion (Antippen des Knopfs).
       Die Aktivierung ist optional; ohne sie wird der Text in die Zwischenablage kopiert.</li>
     </ul>
 
@@ -221,7 +228,10 @@
     <p>When you dictate, WhisperLoom records audio to convert it into text. The recording is used only for
     the current recognition and is <strong>not stored permanently</strong>. A failed dictation stays in
     memory only until you resend or discard it. A paused dictation stays in memory until you send or discard
-    it. The only exception are Pro Widgets (see section 3): their
+    it. If you switch keyboards via the navigation bar or the system settings while a dictation is open, it is
+    recognised as if you had sent it and its text is put into the history – only while the history is switched
+    on and not from password or incognito fields, otherwise it is discarded. The only exception are Pro Widgets
+    (see section 3): their
     task, including the recording, stays on the device until it has been sent or discarded.</p>
 
     <h3>Shared audio files</h3>
@@ -233,8 +243,11 @@
     <strong>history</strong>, so you can find, copy, edit and re-process them later. For each dictation it
     stores the raw recognised text, the refined versions with the name of the language model used, language,
     source (keyboard or button), time and length – <strong>no audio</strong> and not the app the text went into.
-    Text from password fields and from fields that must not learn input (e.g. a browser's incognito mode),
-    shared voice messages and Pro Widget tasks are not stored.</p>
+    Shared voice messages and Pro Widget tasks are not stored. With the dictation keyboard, text from password
+    fields and from fields that must not learn input (e.g. a browser's incognito mode) is not stored either.
+    The floating button only recognises password fields, and only while the accessibility service is on: from
+    the button, text from an incognito field goes into the history, and without the accessibility service so
+    does text from a password field.</p>
     <ul>
       <li><strong>Location:</strong> only on your device, in private app storage, in a folder Android never
       backs up – the history ends up neither in Google backup nor in device-to-device transfer.</li>
@@ -332,10 +345,12 @@
       <li><strong>Foreground services</strong> – ongoing recording (button, Pro Widgets) and model download.</li>
       <li><strong>Background work (Android WorkManager)</strong> – Pro Widgets only: a task keeps being
       delivered even when the screen turns off.</li>
-      <li><strong>Accessibility service (“WhisperLoom text insertion")</strong> – inserts only the dictated
-      text into the currently focused input field. It does not read screen content and stores nothing; of the
-      focused field it only checks whether it is a password field, so that its text stays out of the history. It
-      acts only after your explicit action (tapping the button). It is optional; without it the text is
+      <li><strong>Accessibility service (“WhisperLoom text insertion")</strong> – inserts the dictated text
+      into the currently focused input field. To do so it reads only that field (text and cursor, to insert at
+      the right place) and checks whether it is a password field, so that its text stays out of the history. It
+      does not read any other screen content and does not store the field's content. Dictations from the button
+      are kept in the history while it is switched on (see section 2). It acts only after your explicit action
+      (tapping the button). It is optional; without it the text is
       copied to the clipboard.</li>
     </ul>
 
