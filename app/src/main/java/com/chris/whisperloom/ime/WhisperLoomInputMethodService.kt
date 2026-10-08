@@ -985,8 +985,16 @@ class WhisperLoomInputMethodService : InputMethodService() {
 
     override fun onDestroy() {
         main.removeCallbacks(lockedTicker)
-        // Auch eine Pause: der Dienst geht, und mit ihm das Audio im Speicher.
-        if (recorder.hasSession) recorder.cancel()
+        // Offenes Diktat: der Globus ist gesperrt, ein Wechsel ueber die Navigationsleiste oder die
+        // Systemeinstellungen beendet den Dienst trotzdem. Anhalten (Mikrofon sofort frei) und die
+        // Sitzung schliessen — super.onDestroy ruft noch onFinishInputView, das darf nichts mehr
+        // verwerfen —, dann im Hintergrund in den Verlauf retten. Ein schon gesendetes Diktat stoppt
+        // der io-Thread selbst; shutdown laesst ihn zu Ende laufen.
+        if (session.isOpen) {
+            recorder.pause()
+            endSession()
+            DictationRescue.rescue(this, recorder, privateField)
+        }
         rings?.release()
         io.shutdown()
         super.onDestroy()

@@ -65,11 +65,21 @@ class ImeHistoryTest {
         feld(InputType.TYPE_CLASS_TEXT)
     }
 
+    /** Ein Test hat den Dienst schon beendet — ein zweites onDestroy wirft im Framework. */
+    private var beendet = false
+
     @After fun abbau() {
         fixture.tearDown()
-        service.onFinishInputView(true)
-        service.onDestroy()
+        if (!beendet) {
+            service.onFinishInputView(true)
+            service.onDestroy()
+        }
         History.clear(app)
+    }
+
+    private fun beenden() {
+        beendet = true
+        service.onDestroy()
     }
 
     /** Ein Eingabefeld, das mitschreibt (wie ImeRefineTest), mit diesem Eingabetyp. */
@@ -115,6 +125,17 @@ class ImeHistoryTest {
 
     private fun clipboard(): String? =
         app.getSystemService(ClipboardManager::class.java).primaryClip?.getItemAt(0)?.text?.toString()
+
+    /** Festgestellt aufnehmen und pausieren. */
+    private fun pausieren() {
+        touch(MotionEvent.ACTION_DOWN)
+        touch(MotionEvent.ACTION_MOVE, 400f)
+        touch(MotionEvent.ACTION_UP, 400f) // festgestellt
+        fixture.awaitRecorded()
+        touch(MotionEvent.ACTION_DOWN)
+        touch(MotionEvent.ACTION_UP) // Pause
+        assertTrue(statusText, statusText.startsWith("Pausiert"))
+    }
 
     /** Halten, sprechen, loslassen — und warten, bis der Text eingefuegt ist. */
     private fun diktieren() {
@@ -242,5 +263,52 @@ class ImeHistoryTest {
         assertNull(clipboard())
         assertEquals(0, History.count(app))
         assertNotEquals(R.drawable.bubble_ring_success, ring())
+    }
+
+    // --- Dienst endet mit offenem Diktat (Tastaturwechsel ueber die Navigationsleiste) -----------
+
+    @Test fun pausiertesDiktatKommtBeimEndeDesDienstesInDenVerlauf() {
+        pausieren()
+
+        beenden()
+
+        fixture.waitFor("Diktat nicht gerettet") { History.count(app) == 1 }
+        val entry = History.list(app).single()
+        assertEquals(HistorySource.KEYBOARD, entry.source)
+        assertEquals("also ähm hallo welt", entry.raw)
+        assertEquals("Lokal verbessert.", entry.versions.getValue(Processing.POLISH_PLAIN).text)
+        assertTrue("kein Feld mehr", committed.isEmpty())
+    }
+
+    @Test fun laufendesFestgestelltesDiktatKommtBeimEndeDesDienstesInDenVerlauf() {
+        touch(MotionEvent.ACTION_DOWN)
+        touch(MotionEvent.ACTION_MOVE, 400f)
+        touch(MotionEvent.ACTION_UP, 400f)
+        fixture.awaitRecorded()
+
+        beenden()
+
+        fixture.waitFor("Diktat nicht gerettet") { History.count(app) == 1 }
+        assertEquals("also ähm hallo welt", History.list(app).single().raw)
+    }
+
+    @Test fun ausEinemPasswortfeldWirdBeimEndeDesDienstesVerworfen() {
+        feld(InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD)
+        pausieren()
+
+        beenden()
+
+        Thread.sleep(500)
+        assertEquals(0, History.count(app))
+    }
+
+    @Test fun ohneVerlaufWirdBeimEndeDesDienstesVerworfen() {
+        History.setEnabled(app, false)
+        pausieren()
+
+        beenden()
+
+        Thread.sleep(500)
+        assertEquals(0, History.count(app))
     }
 }
