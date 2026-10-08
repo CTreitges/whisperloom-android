@@ -56,6 +56,21 @@ class HomeStageModelTest {
         compose.waitForIdle()
     }
 
+    @Test fun openAiAbWerkVerschoenernNenntDieEmpfehlungZumUmformulieren() {
+        // OpenAI "wie Erkennung", Modell leer = "Empfehlung je Stufe": Verschoenern rechnet mit GPT-6 Sol.
+        prefs.refineMode = RefineMode.BEAUTIFY
+        home()
+        compose.onNodeWithText("Verschönern · GPT-6 Sol").assertExists()
+    }
+
+    @Test fun eigenesModellDerStufeStehtInDerZeile() {
+        prefs.refineMode = RefineMode.BEAUTIFY
+        prefs.setLlmModelFor(RefineMode.BEAUTIFY, "gpt-4.1-mini")
+        home()
+        compose.onNodeWithText("Verschönern · GPT-4.1 mini").assertExists()
+        compose.onNodeWithText("Verschönern · GPT-6 Sol").assertDoesNotExist()
+    }
+
     @Test fun togetherOhneModellSagtKeinModellAuchMitStufenModell() {
         // Review 3.8.6 (UI-1): Die Zeile darf nicht das Stufen-Modell nennen, waehrend Banner und
         // Tastatur "kein Modell" sagen — ohne Modell des Zugangs zaehlt es nicht.

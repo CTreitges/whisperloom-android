@@ -29,6 +29,8 @@ import com.chris.whisperloom.ui.state.AppEnv
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.PrefsState
 import com.chris.whisperloom.ui.theme.WhisperLoomTheme
+import com.sun.net.httpserver.HttpServer
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
@@ -36,12 +38,14 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.net.InetSocketAddress
+import java.util.Collections
 
 /**
  * Seite "Online-Zugang & Modelle" (3.8.6): Abschnitt "Modell je Stufe" (Standard-Label je Rolle,
  * eigenes Modell schreiben, Zuruecksetzen beim Anbieterwechsel, Hinweis ohne Online-Zugang oder ohne Modell
- * des Zugangs) und der Eintrag "Empfehlung je Stufe" im Modellfeld des Zugangs. Keine Anfrage geht raus
- * (Liste im Cache).
+ * des Zugangs, "Modell pruefen") und der Eintrag "Empfehlung je Stufe" im Modellfeld des Zugangs. Nur
+ * "Modell pruefen" fragt, und zwar einen lokalen JDK-HttpServer; sonst geht nichts raus (Liste im Cache).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w411dp-h2400dp-xxhdpi")
@@ -264,5 +268,32 @@ class StageModelsUiTest {
         compose.waitForIdle()
         assertEquals("", Prefs(ctx).llmModel)
         compose.onNodeWithTag("picker:Modell").assertTextContains("Empfehlung je Stufe")
+    }
+
+    // --- "Modell pruefen" im Sheet der Stufe ----------------------------------------------------
+
+    @Test fun modellPruefenPrueftDasModellDerStufe() {
+        // Review 3.8.6 (UI-4): geprueft wird das Modell, mit dem die Stufe rechnet, nicht das des Zugangs.
+        val bodies: MutableList<JSONObject> = Collections.synchronizedList(mutableListOf())
+        val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+        server.createContext("/v1/chat/completions") { ex ->
+            bodies += JSONObject(ex.requestBody.readBytes().toString(Charsets.UTF_8))
+            val out = """{"choices":[{"message":{"content":"Hallo."},"finish_reason":"stop"}]}""".toByteArray()
+            ex.sendResponseHeaders(200, out.size.toLong())
+            ex.responseBody.use { it.write(out) }
+        }
+        server.start()
+        try {
+            anthropic()
+            prefs.llmUrl = "http://127.0.0.1:${server.address.port}/v1"
+            prefs.setLlmModelFor(RefineMode.SUMMARIZE, "claude-opus-5-5")
+            show()
+            click("Zusammenfassen")
+            click("Modell prüfen")
+            compose.waitUntil(5_000) { compose.onAllNodesWithText("Verbunden", substring = true).fetchSemanticsNodes().isNotEmpty() }
+            assertEquals("claude-opus-5-5", bodies.single().getString("model"))
+        } finally {
+            server.stop(0)
+        }
     }
 }
