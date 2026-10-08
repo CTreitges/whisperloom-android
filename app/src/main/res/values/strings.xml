@@ -954,6 +954,12 @@
     <string name="patchnotes_unavailable_action">Auf GitHub ansehen</string>
     <!-- Verlauf (3.9.0, Plan §6): Liste, Eintrag, Andere Stufe, Bearbeiten, Verlauf-Einstellungen.
          Nie Diktat-Text in Benachrichtigungen oder Logs — hier stehen nur Bezeichnungen. -->
+    <string name="settings_section_history">Verlauf</string>
+    <string name="settings_group_history">Verlauf</string>
+    <string name="settings_history_on" tools:ignore="PluralsCandidate">An · %1$d von %2$d</string>
+    <string name="settings_history_on_plain">An</string>
+    <string name="settings_history_off">Aus</string>
+    <string name="home_cd_history">Verlauf</string>
     <string name="cd_more">Weitere Optionen</string>
     <string name="history_title">Verlauf</string>
     <string name="history_today">Heute</string>

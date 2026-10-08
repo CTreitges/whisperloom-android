@@ -983,14 +983,15 @@ class MainFlowTest {
         assertEquals(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS, shadowOf(ctx as Application).nextStartedActivity?.action)
     }
 
-    @Test fun hubZeigtZehnZeilenInFuenfGruppen() {
-        // 3.9.0 nach Gegenstaenden: Text, Modelle & Zugaenge, Bedienung, Pro, Info — in genau dieser Reihenfolge.
+    @Test fun hubZeigtElfZeilenInSechsGruppen() {
+        // 3.9.0 nach Gegenstaenden: Text, Modelle & Zugaenge, Bedienung, Verlauf, Pro, Info — in genau dieser Reihenfolge.
         prefs.engine = Engine.ONLINE
         screen(env()) { SettingsHubScreen(it) }
         val reihenfolge = listOf(
             "TEXT", "Textverbesserung", "Wörterbuch & Regeln",
             "MODELLE & ZUGÄNGE", "Spracherkennung", "KI-Zugang", "Offline-Modelle",
             "BEDIENUNG", "Knopf & Tastatur", "Widgets",
+            "VERLAUF", "Verlauf",
             "PRO", "Erweitert",
             "INFO", "Anleitung & Hilfe", "Über WhisperLoom",
         )
@@ -1005,7 +1006,7 @@ class MainFlowTest {
         screen(env()) { SettingsHubScreen(it) }
         val zeilen = listOf(
             "Textverbesserung", "Wörterbuch & Regeln", "Spracherkennung", "KI-Zugang", "Offline-Modelle",
-            "Knopf & Tastatur", "Widgets", "Erweitert", "Anleitung & Hilfe", "Über WhisperLoom",
+            "Knopf & Tastatur", "Widgets", "Verlauf", "Erweitert", "Anleitung & Hilfe", "Über WhisperLoom",
         ).map { it to compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
         // Jeder Trenner gehoert zur naechsthoeheren Zeile ueber ihm.
         val mitTrenner = compose.onAllNodesWithTag(HUB_DIVIDER_TAG).fetchSemanticsNodes().map { trenner ->
@@ -1019,7 +1020,8 @@ class MainFlowTest {
         prefs.engine = Engine.ONLINE
         screen(env()) { SettingsHubScreen(it) }
         mapOf(
-            "TEXT" to "Text", "MODELLE & ZUGÄNGE" to "Modelle & Zugänge", "BEDIENUNG" to "Bedienung", "PRO" to "Pro", "INFO" to "Info",
+            "TEXT" to "Text", "MODELLE & ZUGÄNGE" to "Modelle & Zugänge", "BEDIENUNG" to "Bedienung", "VERLAUF" to "Verlauf",
+            "PRO" to "Pro", "INFO" to "Info",
         ).forEach { (sichtbar, gelesen) ->
             compose.onNodeWithText(sichtbar)
                 .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))

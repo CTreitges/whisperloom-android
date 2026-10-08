@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -16,11 +17,13 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chris.whisperloom.BuildConfig
 import com.chris.whisperloom.Engine
 import com.chris.whisperloom.ProFeature
 import com.chris.whisperloom.R
 import com.chris.whisperloom.agent.Tier
+import com.chris.whisperloom.history.History
 import com.chris.whisperloom.ui.components.DetailScaffold
 import com.chris.whisperloom.ui.components.HubRow
 import com.chris.whisperloom.ui.components.SectionHeader
@@ -33,10 +36,12 @@ import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.WidgetProfilesState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * E — Einstellungen-Hub (UX-Spec §2.3), seit 3.9.0 nach Gegenstaenden: Text, Modelle & Zugaenge,
- * Bedienung, Pro, Info. Unterzeile = aktueller Wert, Zeilenname = Seitentitel.
+ * Bedienung, Verlauf, Pro, Info. Unterzeile = aktueller Wert, Zeilenname = Seitentitel.
  */
 @Composable
 fun SettingsHubScreen(nav: NavState) {
@@ -70,6 +75,14 @@ fun SettingsHubScreen(nav: NavState) {
     else pluralStringResource(R.plurals.widgets_sub_profiles, proCount, proCount) + " · " +
         if (placed == 0) stringResource(R.string.widgets_sub_none_placed)
         else pluralStringResource(R.plurals.widgets_sub_placed, placed, placed)
+    // Verlauf: Zustand und Fuellstand ("An · 12 von 50"); gezaehlt wird im Hintergrund (Dateizugriff).
+    val historyChanges by History.changes.collectAsStateWithLifecycle()
+    val historyCount by produceState<Int?>(null, historyChanges) { value = withContext(Dispatchers.IO) { History.count(ctx) } }
+    val history = when {
+        !prefs.historyEnabled -> stringResource(R.string.settings_history_off)
+        else -> historyCount?.let { stringResource(R.string.settings_history_on, it, prefs.historySize) }
+            ?: stringResource(R.string.settings_history_on_plain)
+    }
     val n = status.installedCount
     val models = if (n > 0) stringResource(R.string.home_val_models, n, fileSize(status.modelsUsedBytes))
     else stringResource(R.string.settings_models_none)
@@ -93,6 +106,9 @@ fun SettingsHubScreen(nav: NavState) {
             item { SectionHeader(stringResource(R.string.settings_section_controls)) }
             item { HubRow(R.drawable.ic_touch_app, stringResource(R.string.settings_group_button), button) { nav.push(Screen.ButtonKeyboard) } }
             item { HubRow(R.drawable.ic_layers, stringResource(R.string.settings_group_widgets), widgets, divider = false) { nav.push(Screen.Widgets()) } }
+
+            item { SectionHeader(stringResource(R.string.settings_section_history)) }
+            item { HubRow(R.drawable.ic_history, stringResource(R.string.settings_group_history), history, divider = false) { nav.push(Screen.History) } }
 
             item { SectionHeader(stringResource(R.string.settings_section_pro)) }
             item { HubRow(R.drawable.ic_build, stringResource(R.string.settings_group_advanced), advanced, divider = false) { nav.push(Screen.Advanced) } }

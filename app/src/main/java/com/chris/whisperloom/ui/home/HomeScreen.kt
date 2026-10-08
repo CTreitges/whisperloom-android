@@ -95,6 +95,9 @@ fun HomeScreen(nav: NavState) {
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             SmallTopBar(title = stringResource(R.string.app_name)) {
+                IconButton(onClick = { nav.push(Screen.History) }) {
+                    LoomIcon(R.drawable.ic_history, stringResource(R.string.home_cd_history))
+                }
                 IconButton(onClick = { nav.push(Screen.Help(1)) }) {
                     LoomIcon(R.drawable.ic_help, stringResource(R.string.home_cd_help))
                 }
