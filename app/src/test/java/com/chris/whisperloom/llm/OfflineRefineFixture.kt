@@ -38,6 +38,9 @@ class OfflineRefineFixture(private val app: Context) {
     lateinit var recorded: CountDownLatch
         private set
 
+    /** Nach dem Ton wirft das Mikrofon, statt "nichts da" zu melden (der Aufnahme-Thread stirbt). */
+    @Volatile var micFails = false
+
     fun setUp() {
         app.getSharedPreferences(Prefs.FILE, Context.MODE_PRIVATE).edit().clear().commit()
         shadowOf(app as android.app.Application).grantPermissions(Manifest.permission.RECORD_AUDIO)
@@ -81,6 +84,7 @@ class OfflineRefineFixture(private val app: Context) {
                 val n = minOf(size, SAMPLES_PER_READ)
                 if (reads.getAndIncrement() >= READS) {
                     recorded.countDown()
+                    if (micFails) throw IllegalStateException("Mikrofon weg")
                     return 0
                 }
                 for (i in 0 until n) data[offset + i] = if (i % 2 == 0) 8000 else -8000

@@ -89,6 +89,12 @@ class FloatingMicService : Service() {
     private val tick = object : Runnable {
         override fun run() {
             if (state != BubbleState.RECORDING) return
+            // Der Aufnahme-Thread ist an einem Fehler gestorben: senden, was schon aufgenommen ist,
+            // statt ins geschlossene Mikrofon weiterzuzaehlen.
+            if (!recorder.isRecording) {
+                stopRec()
+                return
+            }
             val elapsed = elapsedMs()
             renderer?.updateTimer(elapsed)
             main.postDelayed(this, BubbleUi.DOT_PERIOD_MS - elapsed % BubbleUi.DOT_PERIOD_MS)
@@ -489,7 +495,7 @@ class FloatingMicService : Service() {
         renderer = null
         runCatching { bubbleView?.let { wm.removeView(it) } }
         bubbleView = null
-        if (recorder.isRecording) recorder.cancel()
+        if (recorder.hasSession) recorder.cancel()
         io.shutdown()
         super.onDestroy()
     }

@@ -94,8 +94,12 @@ class ImePauseTest {
         private var rest = 0L
         private var leer = CountDownLatch(0)
 
+        /** Der naechste Lesevorgang wirft — wie ein Mikrofon, das mitten im Diktat wegfaellt. */
+        @Volatile var kaputt = false
+
         @Synchronized
         override fun readInShortArray(data: ShortArray, offset: Int, size: Int, blocking: Boolean): Int {
+            if (kaputt) throw IllegalStateException("Mikrofon weg")
             if (rest <= 0) {
                 // Erst beim Lesen NACH dem letzten Stueck: dann ist alles geschrieben.
                 leer.countDown()
@@ -222,6 +226,23 @@ class ImePauseTest {
         }
         assertNotEquals(app.getString(R.string.kb_hint_hold), statusText)
         assertEquals(View.VISIBLE, root.findViewById<View>(R.id.key_retry).visibility)
+    }
+
+    /** Stirbt der Aufnahme-Thread, zeigt die Tastatur die Pause — das Aufgenommene bleibt zum Senden. */
+    @Test fun mikrofonFaelltWegUndDieTastaturPausiert() {
+        feststellen()
+        mikro.sprechen(1_000)
+        mikro.kaputt = true
+        val bis = System.currentTimeMillis() + 10_000
+        while (statusText != pausiert(1_000)) {
+            if (System.currentTimeMillis() > bis) fail("Tastatur zaehlt weiter: $statusText")
+            Thread.sleep(10)
+            warten(1_000)
+        }
+        assertFalse("Pegelband steht", band.isActive)
+        assertEquals(R.drawable.ic_mic, shadowOf(mic.drawable).createdFromResId)
+        assertEquals(View.ACCESSIBILITY_LIVE_REGION_POLITE, status.accessibilityLiveRegion)
+        assertTrue("Senden bleibt bedienbar", send.isClickable)
     }
 
     @Test fun verwerfenAusDerPause() {

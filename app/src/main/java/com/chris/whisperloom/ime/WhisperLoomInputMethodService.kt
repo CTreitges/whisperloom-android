@@ -143,6 +143,12 @@ class WhisperLoomInputMethodService : InputMethodService() {
     private val lockedTicker = object : Runnable {
         override fun run() {
             if (!session.isLocked) return
+            // Der Aufnahme-Thread ist an einem Fehler gestorben (Mikrofon weg, kein Speicher): Das
+            // Aufgenommene bleibt, die Tastatur zeigt die Pause, statt ins geschlossene Mikrofon zu zaehlen.
+            if (!recorder.isRecording) {
+                if (session.pause()) enterPause(BubbleMotion.Haptic.REJECT)
+                return
+            }
             if (session.update(recorder.recordedMs, lengthLimited()) == DictationSession.Length.MAX) {
                 capDictation()
                 return

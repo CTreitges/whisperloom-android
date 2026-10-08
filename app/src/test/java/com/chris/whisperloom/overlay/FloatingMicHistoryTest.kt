@@ -3,6 +3,7 @@ package com.chris.whisperloom.overlay
 import android.app.Application
 import android.content.ClipboardManager
 import android.content.Context
+import android.os.Looper
 import android.text.InputType
 import android.view.View
 import android.view.accessibility.AccessibilityNodeInfo
@@ -17,16 +18,19 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.android.controller.ServiceController
 import org.robolectric.annotation.Config
 import org.robolectric.shadow.api.Shadow
 import org.robolectric.shadows.ShadowSettings
 import org.robolectric.shadows.ShadowWindowManagerImpl
+import java.time.Duration
 
 /**
  * Der schwebende Knopf schreibt jedes Diktat VOR dem Einfuegen in den Verlauf — nie, wenn das
@@ -77,6 +81,20 @@ class FloatingMicHistoryTest {
         assertEquals(HistorySource.BUBBLE, entry.source)
         assertEquals("also ähm hallo welt", entry.raw)
         assertEquals("Lokal verbessert.", entry.versions.getValue(Processing.POLISH_PLAIN).text)
+    }
+
+    /** Stirbt der Aufnahme-Thread, sendet der Knopf das Aufgenommene, statt weiter "Aufnahme" zu zeigen. */
+    @Test fun mikrofonFaelltWegUndDerKnopfSendetDasAufgenommene() {
+        fixture.micFails = true
+        bubble.performClick()
+        fixture.awaitRecorded()
+        val until = System.currentTimeMillis() + 5_000
+        while (clip() == null) {
+            if (System.currentTimeMillis() > until) fail("Knopf bleibt in der Aufnahme")
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(500))
+            Thread.sleep(10)
+        }
+        assertEquals("also ähm hallo welt", History.list(app).single().raw)
     }
 
     @Test fun ausDemPasswortfeldNicht() {
