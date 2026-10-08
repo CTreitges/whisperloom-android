@@ -40,8 +40,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.chris.whisperloom.R
 import com.chris.whisperloom.history.History
@@ -147,13 +145,7 @@ private fun Editor(entry: HistoryEntry, processing: Processing, nav: NavState) {
         ) {
             val of = if (processing == Processing.EDITED && processing !in entry.versions) stringResource(R.string.history_origin)
             else processingLabel(processing)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    stringResource(R.string.history_edit_of, of),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f),
-                )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { state.undoState.undo() }, enabled = state.undoState.canUndo) {
                     LoomIcon(R.drawable.ic_undo, stringResource(R.string.history_cd_undo))
                 }
@@ -161,12 +153,13 @@ private fun Editor(entry: HistoryEntry, processing: Processing, nav: NavState) {
                     LoomIcon(R.drawable.ic_redo, stringResource(R.string.history_cd_redo))
                 }
             }
-            // Der Hinweis "Fassung: …" darueber ist ein eigener Knoten — TalkBack nennt das Feld sonst namenlos.
-            val fieldName = stringResource(R.string.history_edit_field_cd, of)
+            // Das Label ist der Name des Felds fuer TalkBack. Eine contentDescription ersetzte beim
+            // editierbaren Feld die Ansage des Texts selbst.
             TextField(
                 state = state,
-                modifier = Modifier.fillMaxWidth().weight(1f).semantics { contentDescription = fieldName },
+                modifier = Modifier.fillMaxWidth().weight(1f),
                 textStyle = MaterialTheme.typography.bodyLarge,
+                label = { Text(stringResource(R.string.history_edit_of, of)) },
                 lineLimits = TextFieldLineLimits.MultiLine(),
                 shape = RoundedCornerShape(16.dp),
                 colors = TextFieldDefaults.colors(

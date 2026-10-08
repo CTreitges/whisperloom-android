@@ -1,18 +1,21 @@
 package com.chris.whisperloom.ui.history
 
 import android.content.ClipboardManager
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.assertTextEquals
-import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.text.AnnotatedString
 import com.chris.whisperloom.history.History
 import com.chris.whisperloom.history.Processing
 import com.chris.whisperloom.ui.nav.NavState
@@ -48,11 +51,15 @@ class HistoryEditScreenTest {
 
     private fun feld() = compose.onNode(hasSetTextAction())
 
+    /** Nur der Text im Feld; das Label "Fassung: …" gehoert zum selben Knoten. */
+    private fun assertFeld(text: String) =
+        feld().assert(SemanticsMatcher.expectValue(SemanticsProperties.EditableText, AnnotatedString(text)))
+
     @Test fun speichernErsetztDieFassungUndMarkiertSieBearbeitet() {
         val entry = ui.record()
         val nav = bearbeiten(entry.id, Processing.SUMMARIZE)
         ui.waitFor("Fassung: Zusammenfassen")
-        feld().assertTextEquals("Komme morgen später.")
+        assertFeld("Komme morgen später.")
         compose.onNodeWithText("Speichern").assertIsNotEnabled()
 
         feld().performTextReplacement("Komme morgen erst um zehn.")
@@ -70,7 +77,7 @@ class HistoryEditScreenTest {
         val entry = ui.record()
         val nav = bearbeiten(entry.id, Processing.EDITED, Screen.HistoryDetail.ORIGIN)
         ui.waitFor("Fassung: Ursprung")
-        feld().assertTextEquals(entry.raw)
+        assertFeld(entry.raw)
 
         feld().performTextReplacement("Ich komme morgen später.")
         compose.onNodeWithText("Speichern").performClick()
@@ -87,7 +94,7 @@ class HistoryEditScreenTest {
         History.edit(ui.ctx, entry.id, Processing.EDITED, "Schon einmal bearbeitet.")
         bearbeiten(entry.id, Processing.EDITED)
         ui.waitFor("Fassung: Bearbeitet")
-        feld().assertTextEquals("Schon einmal bearbeitet.")
+        assertFeld("Schon einmal bearbeitet.")
     }
 
     @Test fun schliessenMitAenderungenFragtUndVerwerfenLaesstAllesWieEsWar() {
@@ -101,7 +108,7 @@ class HistoryEditScreenTest {
         compose.onNodeWithText("Weiter bearbeiten").performClick()
         compose.waitForIdle()
         assertTrue(nav.current is Screen.HistoryEdit)
-        feld().assertTextEquals("Verworfen.")
+        assertFeld("Verworfen.")
 
         compose.onNodeWithContentDescription("Schließen").performClick()
         compose.onNodeWithText("Verwerfen").performClick()
@@ -131,10 +138,10 @@ class HistoryEditScreenTest {
 
         feld().performTextInput(" Bis dann.")
         compose.onNodeWithContentDescription("Rückgängig").assertIsEnabled().performClick()
-        feld().assertTextEquals("Komme morgen später.")
+        assertFeld("Komme morgen später.")
 
         compose.onNodeWithContentDescription("Wiederholen").assertIsEnabled().performClick()
-        feld().assertTextEquals("Komme morgen später. Bis dann.")
+        assertFeld("Komme morgen später. Bis dann.")
     }
 
     @Test fun kopierenNimmtDenGeradeBearbeitetenText() {
@@ -166,20 +173,26 @@ class HistoryEditScreenTest {
 
         ui.waitFor("Eintrag gibt es nicht mehr · Text nicht gespeichert")
         assertTrue(nav.current is Screen.HistoryEdit)
-        feld().assertTextEquals("Nicht verlieren.")
+        assertFeld("Nicht verlieren.")
         compose.onNodeWithText("Text kopieren").performClick()
         val clip = ui.ctx.getSystemService(ClipboardManager::class.java).primaryClip?.getItemAt(0)?.text?.toString()
         assertEquals("Nicht verlieren.", clip)
         assertNull("nicht wiederbelebt", History.get(ui.ctx, entry.id))
     }
 
-    /** TalkBack nennt das Feld mit der Fassung, auch wenn es leer ist (der Hinweis darueber ist ein eigener Knoten). */
+    /**
+     * TalkBack nennt das Feld mit der Fassung (Label im Feld) und liest weiter den Text vor:
+     * eine contentDescription haette beim editierbaren Feld den Text in der Ansage ersetzt.
+     */
     @Test fun dasTextfeldTraegtDenNamenDerFassung() {
         val entry = ui.record()
         bearbeiten(entry.id, Processing.SUMMARIZE)
         ui.waitFor("Fassung: Zusammenfassen")
 
-        compose.onNode(hasSetTextAction() and hasContentDescription("Text der Fassung Zusammenfassen")).assertExists()
+        val field = compose.onNode(hasSetTextAction() and hasText("Fassung: Zusammenfassen")).fetchSemanticsNode()
+        assertFalse("keine contentDescription am Feld", SemanticsProperties.ContentDescription in field.config)
+        feld().performTextReplacement("")
+        compose.onNode(hasSetTextAction() and hasText("Fassung: Zusammenfassen")).assertExists()
     }
 
     @Test fun eintragWegWaehrendDesBearbeitensFuehrtZurueck() {
