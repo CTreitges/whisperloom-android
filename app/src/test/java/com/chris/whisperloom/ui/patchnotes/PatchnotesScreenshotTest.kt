@@ -139,6 +139,8 @@ class PatchnotesScreenshotTest {
 
     @Test fun heroAufgeklappt() {
         patchnotes()
+        // Bei vielen Highlights liegt der Knopf unter dem sichtbaren Bereich; ein Klick dort ginge ins Leere.
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("im Detail", substring = true))
         compose.onNode(hasText("im Detail", substring = true)).performClick()
         compose.waitForIdle()
         nachOben(hasText("Weniger anzeigen"))
