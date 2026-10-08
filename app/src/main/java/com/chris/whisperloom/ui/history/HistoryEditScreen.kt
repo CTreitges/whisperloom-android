@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -82,6 +83,7 @@ fun HistoryEditScreen(id: String, processing: Processing, nav: NavState) {
 @Composable
 private fun Editor(entry: HistoryEntry, processing: Processing, nav: NavState) {
     val ctx = LocalContext.current
+    val res = LocalResources.current
     val snack = rememberSnack()
     val scope = rememberCoroutineScope()
     val original = entry.versions[processing]?.text ?: entry.raw
@@ -101,7 +103,7 @@ private fun Editor(entry: HistoryEntry, processing: Processing, nav: NavState) {
             if (saved == null) {
                 // Nicht still schliessen: der Text steht noch hier und laesst sich kopieren.
                 saving = false
-                snack.show(ctx.getString(R.string.history_edit_gone), ctx.getString(R.string.history_copy_text)) {
+                snack.show(res.getString(R.string.history_edit_gone), res.getString(R.string.history_copy_text)) {
                     copyText(ctx, state.text.toString(), snack)
                 }
                 return@launch
