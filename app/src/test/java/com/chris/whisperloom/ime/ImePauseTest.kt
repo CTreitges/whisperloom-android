@@ -2,6 +2,7 @@ package com.chris.whisperloom.ime
 
 import android.Manifest
 import android.app.Application
+import android.inputmethodservice.InputMethodService
 import android.os.Looper
 import android.view.MotionEvent
 import android.view.View
@@ -145,6 +146,16 @@ class ImePauseTest {
 
     private fun idle() = shadowOf(Looper.getMainLooper()).idle()
     private fun warten(ms: Long) = shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(ms))
+
+    /** Das Feld, das der Dienst als aktuelles meldet (wie ImeHistoryTest). */
+    private fun feld(paket: String, id: Int): EditorInfo = EditorInfo().also { info ->
+        info.packageName = paket
+        info.fieldId = id
+        InputMethodService::class.java.getDeclaredField("mInputEditorInfo").apply {
+            isAccessible = true
+            set(service, info)
+        }
+    }
 
     private fun zeit(ms: Long) = Formats.duration(ms)
     private fun laeuft(ms: Long) = app.getString(R.string.kb_locked, zeit(ms))
@@ -472,6 +483,38 @@ class ImePauseTest {
         }
         assertEquals(app.getString(R.string.kb_not_configured), statusText)
         assertEquals(View.VISIBLE, root.findViewById<View>(R.id.key_retry).visibility)
+    }
+
+    /**
+     * Den Zugang richtet man in der App ein. Zurueck im selben Feld bleibt das Audio fuer "Erneut
+     * senden"; ein anderes Feld beginnt frisch.
+     */
+    @Test fun nachDemUmwegInDieAppBleibtErneutSendenImSelbenFeld() {
+        val chat = feld("com.example.chat", 7)
+        down()
+        mikro.sprechen(1_000)
+        Prefs(app).apiBaseUrl = ""
+        up()
+        val bis = System.currentTimeMillis() + 10_000
+        while (statusText == app.getString(R.string.kb_transcribing)) {
+            if (System.currentTimeMillis() > bis) fail("Uebertragung endet nicht")
+            Thread.sleep(10)
+            idle()
+        }
+        val retry = root.findViewById<View>(R.id.key_retry)
+        assertEquals(View.VISIBLE, retry.visibility)
+
+        // Umweg ueber die eigene App (dort ein Eingabefeld, etwa fuer den Schluessel) und zurueck.
+        service.onFinishInputView(true)
+        service.onStartInputView(feld(app.packageName, 3), false)
+        assertEquals("Feld der eigenen App", View.VISIBLE, retry.visibility)
+        service.onFinishInputView(true)
+        service.onStartInputView(feld(chat.packageName, chat.fieldId), false)
+        assertEquals("Zurueck im selben Feld", View.VISIBLE, retry.visibility)
+
+        service.onFinishInputView(true)
+        service.onStartInputView(feld(chat.packageName, 8), false)
+        assertEquals("Anderes Feld beginnt frisch", View.GONE, retry.visibility)
     }
 
     @Test fun offlineGibtEsKeineHoechstlaenge() {

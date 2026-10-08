@@ -78,6 +78,9 @@ class WhisperLoomInputMethodService : InputMethodService() {
     /** Audio des letzten fehlgeschlagenen Versuchs. */
     private var pendingSamples: FloatArray? = null
 
+    /** Feld, in dem der letzte Versuch scheiterte ([fieldKey]); dort bleibt "Erneut senden" stehen. */
+    private var errorField: String? = null
+
     /** Ausweg der laufenden Uebertragung; null = keine. */
     @Volatile private var refineSkip: RefineSkip? = null
 
@@ -274,11 +277,13 @@ class WhisperLoomInputMethodService : InputMethodService() {
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
-        // Ein alter Fehlerzustand gilt fuer das NEUE Feld nicht mehr. Bei [restarting] ist es
-        // aber dasselbe Feld — das Framework baut nur neu auf (Drehen, Dunkelmodus). Dann den
-        // Puffer behalten, sonst verliert eine Drehung das Audio eines fehlgeschlagenen
-        // Diktats, obwohl die Wiederholen-Taste danebensteht.
-        if (state == BubbleState.ERROR && !restarting) {
+        // Ein alter Fehlerzustand gilt fuer das NEUE Feld nicht mehr. Dasselbe Feld behaelt den
+        // Puffer: bei [restarting] baut das Framework nur neu auf (Drehen, Dunkelmodus), und nach
+        // einem Umweg kommt es zurueck — etwa ueber die App, um Zugang oder Offline-Modell
+        // einzurichten. Felder der eigenen App unterwegs zaehlen nicht als Wechsel.
+        val keep = restarting || info?.packageName == packageName ||
+            fieldKey(info)?.let { it == errorField } == true
+        if (state == BubbleState.ERROR && !keep) {
             pendingSamples = null
             applyState(BubbleState.IDLE)
         }
@@ -793,6 +798,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
     /** Mikro-Taste (Fuellung, Icon, Ringe), Wiederholen-Taste und Pegelband auf [next] setzen. */
     private fun applyState(next: BubbleState, animate: Boolean = true) {
         state = next
+        if (next == BubbleState.ERROR) errorField = fieldKey(currentInputEditorInfo)
         if (next != BubbleState.SENDING) refining = false
         val visual = ImeMetrics.micVisual(next, paused = session.isPaused, reduceMotion = reduceMotion())
         micButton?.let {
@@ -988,6 +994,10 @@ class WhisperLoomInputMethodService : InputMethodService() {
         // Laufend schreibt der Ticker die Zeile ohnehin neu; in der Pause kehrt sie hier zurueck.
         main.postDelayed({ if (session.isPaused) showSessionStatus() }, DISCARD_HINT_MS)
     }
+
+    /** Ein Feld ueber App-Wechsel hinweg: App und Feld-Id. null = unbekannt (gilt nie als dasselbe). */
+    private fun fieldKey(info: EditorInfo?): String? =
+        info?.packageName?.let { "$it#${info.fieldId}" }
 
     override fun onDestroy() {
         main.removeCallbacks(lockedTicker)
