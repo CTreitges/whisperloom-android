@@ -29,7 +29,6 @@ import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -47,6 +46,7 @@ import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.overlay.FloatingMicService
+import com.chris.whisperloom.ui.components.HUB_DIVIDER_TAG
 import com.chris.whisperloom.ui.components.hasIllustration
 import com.chris.whisperloom.ui.home.HomeScreen
 import com.chris.whisperloom.ui.nav.NavState
@@ -55,7 +55,6 @@ import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SetupRouter
 import com.chris.whisperloom.ui.nav.SystemStatus
 import com.chris.whisperloom.ui.settings.ButtonKeyboardScreen
-import com.chris.whisperloom.ui.settings.HUB_DIVIDER_TAG
 import com.chris.whisperloom.ui.settings.HelpScreen
 import com.chris.whisperloom.ui.settings.ModelsScreen
 import com.chris.whisperloom.ui.settings.RecognitionScreen
@@ -66,7 +65,10 @@ import com.chris.whisperloom.whisper.ModelStore
 import java.io.RandomAccessFile
 import com.chris.whisperloom.ui.settings.SettingsHubScreen
 import com.chris.whisperloom.ui.settings.SHARE_REFINE_TAG
-import com.chris.whisperloom.ui.settings.TextSettingsScreen
+import com.chris.whisperloom.ui.settings.TextAccessScreen
+import com.chris.whisperloom.ui.settings.TextDictationScreen
+import com.chris.whisperloom.ui.settings.TextRulesScreen
+import com.chris.whisperloom.ui.settings.TextShareScreen
 import com.chris.whisperloom.ui.setup.SetupScreen
 import com.chris.whisperloom.ui.state.AppEnv
 import com.chris.whisperloom.ui.state.LocalAppEnv
@@ -480,13 +482,12 @@ class MainFlowTest {
         compose.onNode(hasSetTextAction() and hasText("Modell-ID")).assertTextContains("gpt-transcribe-2026-08-01")
     }
 
-    // --- E2 Text -----------------------------------------------------------------
+    // --- E2 Text: Unterseiten (3.8.6) ----------------------------------------------
 
     @Test fun textStufeSchreibtRefineModeUndSchaltetSmartFillersFrei() {
-        screen(env()) { TextSettingsScreen(it) }
+        screen(env()) { TextDictationScreen(it) }
         compose.onNodeWithText("Füllwörter intelligent entfernen").assertIsNotEnabled()
-        // Die erste "Glätten"-Zeile gehoert zum Diktat, die zweite zu geteilten Audios.
-        compose.onAllNodesWithText("Glätten").onFirst().performClick()
+        compose.onNodeWithText("Glätten").performClick()
         compose.waitForIdle()
         assertEquals(RefineMode.POLISH, Prefs(ctx).refineMode)
         compose.onNodeWithText("Füllwörter intelligent entfernen").assertIsEnabled()
@@ -494,7 +495,7 @@ class MainFlowTest {
 
     @Test fun shareStufeIstEigeneKarteUndSchreibtNurShareRefineMode() {
         prefs.promptLevelEnabled = true
-        screen(env()) { TextSettingsScreen(it) }
+        screen(env()) { TextShareScreen(it) }
         compose.onNodeWithText("Geteilte Sprachnachrichten").assertExists()
         val inShareCard = hasAnyAncestor(hasTestTag(SHARE_REFINE_TAG))
         compose.onNode(hasText("Aus") and inShareCard).assertIsSelected()
@@ -509,10 +510,13 @@ class MainFlowTest {
 
     /** Review: "intelligent entfernen" wirkt auch auf geteilte Audios — also auch dann bedienbar. */
     @Test fun intelligenteFuellwoerterSindMitNurDerShareStufeBedienbar() {
-        screen(env()) { TextSettingsScreen(it) }
+        val e = env()
+        screen(e) { TextDictationScreen(it) }
         compose.onNodeWithText("Füllwörter intelligent entfernen").assertIsNotEnabled()
-        compose.onNode(hasText("Glätten") and hasAnyAncestor(hasTestTag(SHARE_REFINE_TAG))).performClick()
+        compose.onNodeWithText("Gilt auch für Sprachnachrichten.", substring = true).assertDoesNotExist()
+        compose.runOnIdle { e.prefs.shareRefineMode = RefineMode.POLISH } // Seite Sprachnachrichten
         compose.waitForIdle()
+        compose.onNodeWithText("Gilt auch für Sprachnachrichten.", substring = true).assertExists()
         assertEquals(RefineMode.OFF, Prefs(ctx).refineMode)
         compose.onNodeWithText("Füllwörter intelligent entfernen").assertIsEnabled().performClick()
         compose.waitForIdle()
@@ -522,7 +526,7 @@ class MainFlowTest {
     }
 
     @Test fun fuellwoerterSheetFuegtEigenesWortHinzu() {
-        screen(env()) { TextSettingsScreen(it) }
+        screen(env()) { TextRulesScreen(it) }
         compose.onNodeWithText("Liste bearbeiten").performClick()
         compose.waitForIdle()
         compose.onNodeWithText("Noch keine eigenen Wörter").assertExists()
@@ -534,10 +538,9 @@ class MainFlowTest {
     }
 
     @Test fun absatzSchalterIstAnUndWirktNurMitStufe() {
-        screen(env()) { TextSettingsScreen(it) }
+        screen(env()) { TextDictationScreen(it) }
         compose.onNodeWithText("Automatische Absätze").assertIsNotEnabled()
-        // Die erste "Glätten"-Zeile gehoert zum Diktat, die zweite zu geteilten Audios.
-        compose.onAllNodesWithText("Glätten").onFirst().performClick()
+        compose.onNodeWithText("Glätten").performClick()
         compose.waitForIdle()
         compose.onNodeWithText("Automatische Absätze").assertIsEnabled().performClick()
         compose.waitForIdle()
@@ -545,13 +548,13 @@ class MainFlowTest {
     }
 
     @Test fun lesbarerGlaettenIstAusUndWirktNurMitGlaetten() {
-        screen(env()) { TextSettingsScreen(it) }
+        screen(env()) { TextDictationScreen(it) }
         compose.onNodeWithText("Lesbarer glätten").assertIsNotEnabled()
         compose.onNodeWithText("Wirkt mit der Stufe „Glätten“.").assertExists()
-        compose.onAllNodesWithText("Verschönern").onFirst().performClick()
+        compose.onNodeWithText("Verschönern").performClick()
         compose.waitForIdle()
         compose.onNodeWithText("Lesbarer glätten").assertIsNotEnabled()
-        compose.onAllNodesWithText("Glätten").onFirst().performClick()
+        compose.onNodeWithText("Glätten").performClick()
         compose.waitForIdle()
         compose.onNodeWithText("Lesbarer glätten").assertIsEnabled().performClick()
         compose.waitForIdle()
@@ -559,15 +562,14 @@ class MainFlowTest {
         // Gespeichert bleibt "Glaetten" — erst die Anfrage ans Modell wird zu READABLE.
         assertEquals(RefineMode.POLISH, Prefs(ctx).refineMode)
         assertEquals(RefineMode.READABLE, Prefs(ctx).dictationStage)
-        // Der Schalter der Diktat-Karte gilt nur fuers Diktat (3.8.6).
+        // Der Schalter der Diktat-Seite gilt nur fuers Diktat (3.8.6).
         assertEquals(false, Prefs(ctx).sharePolishReadable)
     }
 
     /** 3.8.6: Sprachnachrichten haben einen eigenen Schalter — der des Diktats bleibt ohne Diktat-Stufe gesperrt. */
     @Test fun lesbarerGlaettenDesDiktatsMitNurDerShareStufeGesperrt() {
-        screen(env()) { TextSettingsScreen(it) }
-        compose.onNode(hasText("Glätten") and hasAnyAncestor(hasTestTag(SHARE_REFINE_TAG))).performClick()
-        compose.waitForIdle()
+        prefs.shareRefineMode = RefineMode.POLISH
+        screen(env()) { TextDictationScreen(it) }
         assertEquals(RefineMode.OFF, Prefs(ctx).refineMode)
         compose.onNodeWithText("Lesbarer glätten").assertIsNotEnabled()
     }
@@ -582,7 +584,7 @@ class MainFlowTest {
         prefs.llmUrl = "http://homeserver:11434"
         prefs.llmKey = "ollama-key"
         prefs.llmModel = "gemma3"
-        screen(env()) { TextSettingsScreen(it) }
+        screen(env()) { TextAccessScreen(it) }
         compose.onNodeWithText("Eigenen Zugang verwenden").performClick() // aus
         compose.waitForIdle()
         compose.onNodeWithText("Eigenen Zugang verwenden").performClick() // wieder an
@@ -599,7 +601,7 @@ class MainFlowTest {
     @Test fun ollamaImHeimnetzFragtNachDerServerAdresse() {
         prefs.refineMode = RefineMode.POLISH
         prefs.llmProviderId = "ollama"
-        screen(env()) { TextSettingsScreen(it) }
+        screen(env()) { TextAccessScreen(it) }
         compose.onNodeWithText("Dein eigenes Ollama", substring = true).assertExists()
         compose.onNodeWithText("Modelle vom Server laden").assertIsNotEnabled()
         compose.onNode(hasSetTextAction() and hasText("Server-Adresse")).performTextInput("http://127.0.0.1:1")
@@ -615,7 +617,7 @@ class MainFlowTest {
     @Test fun ollamaCloudZeigtModellAuswahlUndFreieEingabe() {
         prefs.refineMode = RefineMode.POLISH
         prefs.llmProviderId = "ollama-cloud"
-        screen(env()) { TextSettingsScreen(it) }
+        screen(env()) { TextAccessScreen(it) }
         compose.onNodeWithText("https://ollama.com").assertExists()
         compose.onNodeWithTag("dropdown:Modell").assertTextContains("Gemma 4 31B (empfohlen)")
         compose.onNodeWithTag("dropdown:Modell").performClick()
@@ -635,7 +637,7 @@ class MainFlowTest {
         prefs.sttProviderId = "elevenlabs"
         prefs.apiKey = "xi-stt"
         prefs.refineMode = RefineMode.POLISH
-        screen(env()) { TextSettingsScreen(it) }
+        screen(env()) { TextAccessScreen(it) }
         compose.onNodeWithText("ElevenLabs erkennt nur Sprache und bietet keine Textverbesserung.").assertExists()
         // Kein Modellfeld fuer einen Anbieter ohne Textmodelle, keine Pruefung ins Leere.
         compose.onNode(hasSetTextAction() and hasText("Modell")).assertDoesNotExist()
@@ -653,7 +655,7 @@ class MainFlowTest {
         prefs.sttProviderId = "together"
         prefs.apiKey = "tg"
         prefs.refineMode = RefineMode.POLISH
-        screen(env()) { TextSettingsScreen(it) }
+        screen(env()) { TextAccessScreen(it) }
         compose.onNodeWithText("bietet keine Textverbesserung", substring = true).assertDoesNotExist()
         compose.onNodeWithText("Zugang prüfen").assertIsNotEnabled() // ohne Modell ginge die Pruefung ins Leere
         compose.onNode(hasSetTextAction() and hasText("Modell")).performTextInput("meta-llama/Llama-3.3-70B-Instruct-Turbo")
@@ -669,7 +671,7 @@ class MainFlowTest {
         prefs.sttProviderId = "together"
         prefs.serverModelsEnabled = true
         prefs.refineMode = RefineMode.POLISH
-        screen(env()) { TextSettingsScreen(it) }
+        screen(env()) { TextAccessScreen(it) }
         compose.onNodeWithTag("picker:Modell").assertDoesNotExist()
         compose.onNodeWithText("Modelle aktualisieren").assertDoesNotExist()
         compose.onNode(hasSetTextAction() and hasText("Modell")).assertExists()

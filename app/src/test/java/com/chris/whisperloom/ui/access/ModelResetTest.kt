@@ -16,7 +16,7 @@ import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SystemStatus
 import com.chris.whisperloom.ui.settings.RecognitionScreen
-import com.chris.whisperloom.ui.settings.TextSettingsScreen
+import com.chris.whisperloom.ui.settings.TextAccessScreen
 import com.chris.whisperloom.ui.state.AppEnv
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.PrefsState
@@ -80,7 +80,7 @@ class ModelResetTest {
         prefs.llmProviderId = "anthropic"
         prefs.llmKey = "sk-ant"
         modelleGewaehlt("claude-sonnet-5")
-        show { TextSettingsScreen(it) }
+        show { TextAccessScreen(it) }
         compose.onNodeWithTag("dropdown:Anbieter").performClick()
         compose.waitForIdle()
         compose.onNodeWithText("OpenRouter").performClick()
@@ -93,7 +93,7 @@ class ModelResetTest {
         prefs.llmProviderId = "anthropic"
         prefs.llmKey = "sk-ant"
         modelleGewaehlt("claude-sonnet-5")
-        show { TextSettingsScreen(it) }
+        show { TextAccessScreen(it) }
         compose.onNodeWithText("Eigenen Zugang verwenden").performClick()
         compose.waitForIdle()
         assertEquals("same", Prefs(ctx).llmProviderId)
@@ -103,7 +103,7 @@ class ModelResetTest {
     @Test fun eigenerZugangAnStartetOhneAlteModelle() {
         // "Wie Erkennung" mit Groq, Modelle fuer Groq gewaehlt — der eigene Zugang beginnt bei Standard.
         modelleGewaehlt("openai/gpt-oss-120b")
-        show { TextSettingsScreen(it) }
+        show { TextAccessScreen(it) }
         compose.onNodeWithText("Eigenen Zugang verwenden").performClick()
         compose.waitForIdle()
         assertEquals("groq", Prefs(ctx).llmProviderId)

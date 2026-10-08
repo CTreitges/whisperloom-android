@@ -29,7 +29,7 @@ import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SystemStatus
 import com.chris.whisperloom.ui.settings.RecognitionScreen
-import com.chris.whisperloom.ui.settings.TextSettingsScreen
+import com.chris.whisperloom.ui.settings.TextAccessScreen
 import com.chris.whisperloom.ui.state.AppEnv
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.PrefsState
@@ -111,7 +111,7 @@ class ModelPickerTest {
 
     private fun text() {
         prefs.refineMode = RefineMode.POLISH
-        show { TextSettingsScreen(it) }
+        show { TextAccessScreen(it) }
     }
 
     /** Legt eine Liste ab, als waere sie vor [ageMs] geladen worden. */

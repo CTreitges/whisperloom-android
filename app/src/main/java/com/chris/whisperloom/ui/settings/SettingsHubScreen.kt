@@ -1,33 +1,19 @@
 package com.chris.whisperloom.ui.settings
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.chris.whisperloom.BuildConfig
@@ -37,7 +23,7 @@ import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.agent.Tier
 import com.chris.whisperloom.ui.components.DetailScaffold
-import com.chris.whisperloom.ui.components.LoomIcon
+import com.chris.whisperloom.ui.components.HubRow
 import com.chris.whisperloom.ui.components.SectionHeader
 import com.chris.whisperloom.ui.components.fileSize
 import com.chris.whisperloom.ui.components.levelLabel
@@ -51,9 +37,6 @@ import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.WidgetProfilesState
-
-/** Trenner zwischen zwei Hub-Zeilen — fuer Tests, die pruefen, dass eine Gruppe ohne Trenner endet. */
-const val HUB_DIVIDER_TAG = "hub-divider"
 
 /**
  * E — Einstellungen-Hub (UX-Spec §2.3): Grundlagen, Bedienung, Pro, Info; Supporting = aktueller Wert.
@@ -73,11 +56,7 @@ fun SettingsHubScreen(nav: NavState) {
         Engine.OFFLINE -> "Offline · ${offlineModelLabel(prefs.offlineModel)}"
         null -> stringResource(R.string.setup_chip_open)
     }
-    val rules = buildList {
-        if (prefs.removeFillers) add(stringResource(R.string.settings_rule_fillers))
-        if (prefs.autoCapitalize) add(stringResource(R.string.settings_rule_cap))
-        if (prefs.trailingSpace) add(stringResource(R.string.settings_rule_space))
-    }
+    val rules = textRules(prefs)
     // Offline erkannt mit KI-Stufe: die Regel dazu, als Kurzform ("Glaetten · lokal bei Offline").
     val level = listOfNotNull(
         levelLabel(prefs.refineMode),
@@ -137,30 +116,5 @@ fun SettingsHubScreen(nav: NavState) {
             showAbout = false
             nav.push(Screen.Patchnotes)
         }) { showAbout = false }
-    }
-}
-
-@Composable
-private fun HubRow(icon: Int, headline: String, value: String, divider: Boolean = true, onClick: () -> Unit) {
-    ListItem(
-        headlineContent = { Text(headline, style = MaterialTheme.typography.titleMedium) },
-        supportingContent = { Text(value, style = MaterialTheme.typography.bodyMedium) },
-        leadingContent = {
-            Box(
-                Modifier.size(40.dp).background(MaterialTheme.colorScheme.surfaceContainerHigh, CircleShape),
-                contentAlignment = Alignment.Center,
-            ) { LoomIcon(icon, null, Modifier.size(24.dp), MaterialTheme.colorScheme.onSurface) }
-        },
-        trailingContent = { LoomIcon(R.drawable.ic_chevron_right, null, Modifier.size(24.dp), MaterialTheme.colorScheme.onSurfaceVariant) },
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.background),
-        modifier = Modifier
-            .clickable(onClick = onClick)
-            .semantics(mergeDescendants = true) { stateDescription = value },
-    )
-    if (divider) {
-        HorizontalDivider(
-            Modifier.padding(start = 76.dp).testTag(HUB_DIVIDER_TAG),
-            color = MaterialTheme.colorScheme.outlineVariant,
-        )
     }
 }

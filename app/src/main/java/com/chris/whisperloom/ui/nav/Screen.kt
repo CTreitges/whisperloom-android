@@ -23,7 +23,11 @@ sealed class Screen(val key: String) {
 
     data object SettingsHub : Screen("settings")
     data object Recognition : Screen("recognition")
+    /** Text-Hub: Zeilen zu den Unterseiten ([TextPage]). Schluessel "text" wie vor 3.8.6. */
     data object TextSettings : Screen("text")
+
+    /** Eine Unterseite von "Text" (3.8.6), Muster [Widgets]. */
+    data class TextPage(val section: TextSection) : Screen("text-page")
     data object ButtonKeyboard : Screen("button")
     data object Models : Screen("models")
 
@@ -62,6 +66,7 @@ sealed class Screen(val key: String) {
         is Setup -> "$key:$step"
         is Help -> "$key:$section"
         is Widgets -> "$key:${tab?.key.orEmpty()}:${edit.orEmpty()}"
+        is TextPage -> "$key:${section.key}"
         is Tutorial -> "$key:$startPage:${if (startBubbleAfter) 1 else 0}:${kind.key}"
         else -> key
     }
@@ -75,6 +80,8 @@ sealed class Screen(val key: String) {
                 "settings" -> SettingsHub
                 "recognition" -> Recognition
                 "text" -> TextSettings
+                // Unbekannte Seite (aus einer spaeteren Version): der Hub.
+                "text-page" -> TextSection.fromKey(parts.getOrNull(1))?.let(::TextPage) ?: TextSettings
                 "button" -> ButtonKeyboard
                 "models" -> Models
                 // "agent" = Name bis 3.7.0, steht noch in gespeicherten Back-Stacks.
@@ -101,6 +108,20 @@ enum class WidgetTab(val key: String) {
 
     companion object {
         fun fromKey(key: String?): WidgetTab? = entries.firstOrNull { it.key == key }
+    }
+}
+
+/** Unterseiten von "Text" in der Reihenfolge des Hubs. Gespeichert wird [key], nie der Enum-Name. */
+enum class TextSection(val key: String) {
+    DICTATION("dictation"),
+    SHARE("share"),
+    ACCESS("access"),
+    OFFLINE("offline"),
+    RULES("rules"),
+    ;
+
+    companion object {
+        fun fromKey(key: String?): TextSection? = entries.firstOrNull { it.key == key }
     }
 }
 

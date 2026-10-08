@@ -21,7 +21,7 @@ import com.chris.whisperloom.ui.theme.WhisperLoomTheme
  * Darstellung in [ShareScreen] (UX-Spec §2.9).
  *
  * Der Text wird ab Werk WORTGETREU erkannt; "Fuellwoerter ausblenden" ist ein Schalter in der
- * Ansicht. Eine KI-Stufe gibt es nur ueber die Einstellungen (Text › Geteilte Sprachnachrichten).
+ * Ansicht. Eine KI-Stufe gibt es nur ueber die Einstellungen (Text › Sprachnachrichten).
  * Die Zwischenablage wird bewusst NICHT automatisch ueberschrieben — nur auf Knopfdruck.
  */
 class ShareTranscribeActivity : ComponentActivity() {
