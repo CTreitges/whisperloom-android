@@ -87,6 +87,44 @@ class TextPolisherTest {
         assertEquals("Er ging (z. B. heim). Dann", TextPolisher.polish("er ging (z. B. heim). dann", full))
     }
 
+    // --- Ein entferntes Fuellwort am Satzanfang gibt die Gross-Schreibung weiter (Review 3.9.0) ----
+
+    @Test fun nachZahlOderEinzelbuchstabeAmSatzendeUebernimmtDasFolgewortDieGrossSchreibung() {
+        // Die Abkuerzungs-Regel (N1) haelt "2021." und "B." fuer kein Satzende — das gross
+        // geschriebene "Ähm" stand aber am Satzanfang, also gilt das fuer das Wort danach.
+        assertEquals(
+            "Das Projekt begann 2021. Dann kam die Pandemie.",
+            TextPolisher.polish("Das Projekt begann 2021. Ähm, dann kam die Pandemie.", full),
+        )
+        assertEquals("Plan B. Also los.", TextPolisher.polish("Plan B. Ähm, also los.", full))
+        assertEquals(
+            "We met in room 204. Then we left.",
+            TextPolisher.polish("We met in room 204. Um, then we left.", PolishOptions(language = "en")),
+        )
+    }
+
+    @Test fun nachDerKiUebernimmtDasFolgewortDieGrossSchreibung() {
+        // Werkseinstellung: Glaetten · Nur Zeichensetzung laesst jedes "Ähm" stehen, die Liste raeumt danach auf.
+        val afterAi = PolishPlan.options(
+            removeFillers = true, autoCapitalize = true, language = "de", refineMode = RefineMode.POLISH,
+        )
+        assertEquals(
+            "Das Projekt begann 2021. Dann kam die Pandemie.",
+            TextPolisher.polish("Das Projekt begann 2021. Ähm, dann kam die Pandemie.", afterAi),
+        )
+        assertEquals("Zimmer 12. Bring Brot mit.", TextPolisher.polish("Zimmer 12. Äh, bring Brot mit.", afterAi))
+    }
+
+    @Test fun mehrereFuellwoerterAmSatzanfangGebenDieGrossSchreibungWeiter() {
+        assertEquals("Das war 2021. Dann kam X.", TextPolisher.polish("Das war 2021. Ähm, äh, dann kam X.", full))
+        assertEquals("Dann kam X.", TextPolisher.polish("Ähm, äh, dann kam X.", PolishOptions(language = "de", autoCapitalize = false)))
+    }
+
+    @Test fun grossesFuellwortMittenImSatzMachtNichtsGross() {
+        assertEquals("Er sagte nein.", TextPolisher.polish("er sagte Ähm, nein.", full))
+        assertEquals("Vom 1. bis 5. Mai", TextPolisher.polish("vom 1. ähm bis 5. Mai", full))
+    }
+
     @Test fun punktVorWortBleibtVomVorwortGetrennt() {
         assertEquals(
             "Lösche alle .log-Dateien und die Datei .env.",

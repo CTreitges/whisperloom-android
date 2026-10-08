@@ -144,7 +144,7 @@ object TextPolisher {
                     "(?<!\\p{L})" + Pattern.quote(filler.trim()) + "(?!\\p{L}),?",
                     Pattern.CASE_INSENSITIVE or Pattern.UNICODE_CASE,
                 )
-                text = p.matcher(text).replaceAll(" ")
+                text = removeFiller(text, p)
             }
             // "gut, ähm." -> "gut, ." -> "gut." — ein Komma direkt vor dem Satzende ist nie gewollt.
             text = COMMA_BEFORE_END.matcher(text).replaceAll("")
@@ -158,6 +158,48 @@ object TextPolisher {
             text = capitalizeSentences(text)
         }
         return text
+    }
+
+    /**
+     * Jeden Treffer von [filler] durch ein Leerzeichen ersetzen. Stand ein Treffer gross am Satzanfang
+     * (Textanfang oder nach . ! ? und Leerraum), uebernimmt das Folgewort die Gross-Schreibung: aus
+     * "2021. Ähm, dann" wird "2021. Dann". Die Satzanfang-Regel ([capitalizeSentences]) koennte das
+     * nicht — hinter einer Zahl oder Abkuerzung setzt sie bewusst keinen Satzanfang.
+     */
+    private fun removeFiller(text: String, filler: Pattern): String {
+        val m = filler.matcher(text)
+        val sb = StringBuilder(text.length)
+        var last = 0
+        var capitalize = false
+        while (m.find()) {
+            capitalize = appendCapitalized(sb, text, last, m.start(), capitalize)
+            if (text[m.start()].isUpperCase() && startsSentence(text, m.start())) capitalize = true
+            sb.append(' ')
+            last = m.end()
+        }
+        appendCapitalized(sb, text, last, text.length, capitalize)
+        return sb.toString()
+    }
+
+    /** text[from, to) anhaengen, mit [capitalize] das erste Wortzeichen gross. @return ob es noch aussteht */
+    private fun appendCapitalized(sb: StringBuilder, text: String, from: Int, to: Int, capitalize: Boolean): Boolean {
+        var pending = capitalize
+        for (i in from until to) {
+            val ch = text[i]
+            if (pending && ch.isLetterOrDigit()) {
+                sb.append(ch.uppercaseChar())
+                pending = false
+            } else {
+                sb.append(ch)
+            }
+        }
+        return pending
+    }
+
+    /** Beginnt bei [index] ein Satz? Am Textanfang oder nach . ! ? mit Leerraum dazwischen. */
+    private fun startsSentence(text: String, index: Int): Boolean {
+        val before = text.substring(0, index).trimEnd()
+        return before.isEmpty() || (before.length < index && before.last() in ".!?")
     }
 
     /** Alles auf eine Zeile — oder je Zeile normalisieren und hoechstens eine Leerzeile lassen. */
