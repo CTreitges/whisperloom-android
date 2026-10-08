@@ -34,7 +34,10 @@ class AudioRecorder {
 
     /** Der lesende Thread; ein ueberholter Thread (nach [pause] + [resume]) hoert damit von selbst auf. */
     @Volatile private var thread: Thread? = null
-    private val pcm = ByteArrayOutputStream()
+
+    /** Schuetzt [pcm]. Der Puffer wird nach [stop] und [cancel] ersetzt, nicht nur geleert — so kommt sein Speicher frei. */
+    private val lock = Any()
+    private var pcm = ByteArrayOutputStream()
 
     /** Optionaler Pegel-Callback (0..1) fuer eine simple Waveform-Anzeige. */
     var onAmplitude: ((Float) -> Unit)? = null
@@ -48,12 +51,12 @@ class AudioRecorder {
     val hasSession: Boolean get() = recording || paused
 
     /** Bisher aufgenommene Zeit, ueber alle Teile summiert (aus den Samples, nicht der Uhr). */
-    val recordedMs: Long get() = synchronized(pcm) { pcm.size() / 2 }.toLong() * 1000 / SAMPLE_RATE
+    val recordedMs: Long get() = synchronized(lock) { pcm.size() / 2 }.toLong() * 1000 / SAMPLE_RATE
 
     /** Neue Aufnahme; das Aufgenommene einer vorigen wird verworfen. */
     fun start(): Boolean {
         if (recording) return true
-        synchronized(pcm) { pcm.reset() }
+        synchronized(lock) { pcm = ByteArrayOutputStream() }
         paused = false
         return capture()
     }
@@ -120,11 +123,18 @@ class AudioRecorder {
                         bytes[i * 2] = (s and 0xFF).toByte()
                         bytes[i * 2 + 1] = ((s shr 8) and 0xFF).toByte()
                     }
-                    synchronized(pcm) { pcm.write(bytes, 0, n * 2) }
+                    synchronized(lock) { pcm.write(bytes, 0, n * 2) }
                     onAmplitude?.invoke(peak / 32768f)
                 }
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
+                // Auch ein Error (OutOfMemoryError beim Wachsen des Puffers): die Aufnahme endet wie
+                // eine Pause — Mikrofon frei, das Aufgenommene bleibt zum Senden —, statt den Prozess
+                // zu beenden.
                 Log.e(TAG, "Aufnahme-Loop-Fehler", e)
+                if (recording && thread === Thread.currentThread()) {
+                    recording = false
+                    paused = true
+                }
             } finally {
                 try { recorder.stop() } catch (_: Exception) {}
                 recorder.release()
@@ -142,7 +152,7 @@ class AudioRecorder {
         paused = false
         awaitThread(2_000)
 
-        val raw = synchronized(pcm) { pcm.toByteArray() }
+        val raw = synchronized(lock) { pcm.toByteArray().also { pcm = ByteArrayOutputStream() } }
         val sampleCount = raw.size / 2
         val out = FloatArray(sampleCount)
         for (i in 0 until sampleCount) {
@@ -159,7 +169,7 @@ class AudioRecorder {
         recording = false
         paused = false
         awaitThread(1_000)
-        synchronized(pcm) { pcm.reset() }
+        synchronized(lock) { pcm = ByteArrayOutputStream() }
     }
 
     private fun awaitThread(millis: Long) {

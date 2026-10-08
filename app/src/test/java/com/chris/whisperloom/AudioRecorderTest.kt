@@ -173,4 +173,39 @@ class AudioRecorderTest {
         assertFalse("Weiter ohne Pause startet keine Aufnahme", recorder.resume())
         assertFalse(recorder.isRecording)
     }
+
+    /** Nach dem Senden haelt der Recorder das Audio nicht weiter fest (bei 20 min offline sind das 38 MB). */
+    @Test fun stopGibtDenPufferFrei() {
+        val teil = quelle(16_000, 1000)
+        recorder.start()
+        teil.abwarten()
+        assertEquals(16_000, recorder.stop().size)
+        assertEquals(0L, recorder.recordedMs)
+        assertEquals("ein zweites stop() liefert nichts mehr", 0, recorder.stop().size)
+    }
+
+    /**
+     * Ein Error im Lese-Thread (OutOfMemoryError beim Wachsen des Puffers) beendet die Aufnahme
+     * sauber, statt den Tastatur-Prozess zu beenden: das Mikrofon ist frei, das bis dahin
+     * Aufgenommene laesst sich noch senden. Hier wirft der Pegel-Rueckruf aus demselben Lesevorgang.
+     */
+    @Test fun einErrorImLeseThreadPausiertStattZuAbstuerzen() {
+        quelle(16_000, 1000)
+        val uncaught = AtomicInteger()
+        val handler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { _, _ -> uncaught.incrementAndGet() }
+        try {
+            recorder.onAmplitude = { throw OutOfMemoryError("Test") }
+            recorder.start()
+            val bis = System.currentTimeMillis() + 5_000
+            while (recorder.isRecording && System.currentTimeMillis() < bis) Thread.sleep(10)
+
+            assertFalse("Aufnahme endet", recorder.isRecording)
+            assertTrue("das Aufgenommene bleibt", recorder.hasSession)
+            assertTrue(recorder.stop().isNotEmpty())
+            assertEquals("nicht bis zum Prozess durchgereicht", 0, uncaught.get())
+        } finally {
+            Thread.setDefaultUncaughtExceptionHandler(handler)
+        }
+    }
 }
