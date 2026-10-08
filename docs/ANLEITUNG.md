@@ -529,7 +529,7 @@ Die Wahl gilt fürs Diktat (Knopf und Tastatur) und für geteilte Sprachnachrich
 **Sonderfälle:**
 
 - **Kein Online-Zugang** (Offline-Erkennung ohne eigenen Zugang, ElevenLabs „wie Erkennung", Together AI oder DeepInfra ohne eingetipptes Modell): Statt der Zeilen steht „Ohne Online-Zugang für die Textverbesserung gibt es hier nichts zu wählen."
-- **Ollama (lokal) und Eigener Server:** Es gibt keine eingebauten Modelle. „Standard" ist das Modell im Feld **Modell** (ohne es: „Standard · noch kein Modell"); je Stufe wählst du aus der Liste des Servers oder per **Eigenes Modell …**.
+- **Ollama (lokal / Homeserver) und Eigener Server:** Es gibt keine eingebauten Modelle. „Standard" ist das Modell im Feld **Modell** (ohne es: „Standard · noch kein Modell"); je Stufe wählst du aus der Liste des Servers (beim Eigenen Server mit der Pro-Funktion **Modelle vom Server**) oder per **Eigenes Modell …**.
 - **Lokales Textmodell:** Modell je Stufe gilt nur online. Offline rechnet Gemma 4 alle Stufen selbst ([9.7](#97-lokales-textmodell-gemma-4)).
 
 ### 8.5 Offline-Erkennung
