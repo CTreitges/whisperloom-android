@@ -16,7 +16,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * KI-Stufe fuer geteilte Sprachnachrichten (Einstellungen › Text › Geteilte Sprachnachrichten):
+ * KI-Stufe fuer geteilte Sprachnachrichten (Einstellungen › Textverbesserung › Bei geteilten Sprachnachrichten):
  * welche Stufe gilt, was je Stueck an das Modell geht und dass kein KI-Fehler die erkannte
  * Nachricht kostet. Das Modell ist hier ein Lambda — kein Netz, kein Audio.
  */

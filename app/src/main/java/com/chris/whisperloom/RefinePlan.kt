@@ -98,7 +98,7 @@ internal class RefinePlan(
         const val MSG_NO_NET = "Kein Netz für den Online-Zugang"
 
         /** Regel "lokal", aber das Textmodell fehlt oder passt nicht in den RAM (refine_local_missing). */
-        const val MSG_LOCAL_MISSING = "Kein Textmodell geladen — unter „Text“ laden oder „Überspringen“ wählen"
+        const val MSG_LOCAL_MISSING = "Kein Textmodell geladen — unter „Offline-Modelle“ laden oder „Überspringen“ wählen"
 
         /** Die lokale Rechnung ist gescheitert: Init, Speicher, nativer Fehler (refine_local_failed). */
         const val MSG_LOCAL_FAILED = "Lokales Textmodell fehlgeschlagen"

@@ -114,13 +114,13 @@ class TextRefiner(
         const val MSG_TRUNCATED = "Antwort des Modells abgeschnitten (Längengrenze)"
 
         /** Der Erkennungs-Anbieter hat keinen Chat (ElevenLabs), und es ist kein eigener Zugang eingetragen. */
-        const val MSG_NO_LLM = "Der Erkennungs-Anbieter kann keinen Text verbessern — unter „Text“ einen eigenen Zugang eintragen"
+        const val MSG_NO_LLM = "Der Erkennungs-Anbieter kann keinen Text verbessern — unter „KI-Zugang“ einen eigenen Zugang eintragen"
 
         /** "Wie Erkennung" bei Together/DeepInfra: der Katalog kennt dort kein Textmodell, eingetragen ist keins. */
-        const val MSG_NO_MODEL = "Kein Textmodell eingetragen — unter „Text“ ein Modell eintragen"
+        const val MSG_NO_MODEL = "Kein Textmodell eingetragen — unter „KI-Zugang“ ein Modell eintragen"
 
         /** "Wie Erkennung" bei Offline-Erkennung: kein Online-Zugang, an den der Text gehen duerfte. */
-        const val MSG_OFFLINE = "Offline-Erkennung ohne Textverbesserung — unter „Text“ einen eigenen Zugang eintragen"
+        const val MSG_OFFLINE = "Offline-Erkennung ohne Textverbesserung — unter „KI-Zugang“ einen eigenen Zugang eintragen"
         private const val LENGTH = "length"
 
         /** OpenAI: "Unsupported parameter: 'temperature' is not supported with this model." Claude 5.x ebenso mit 400. */

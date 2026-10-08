@@ -67,7 +67,7 @@
     <!-- §6.2 Home (H) -->
     <string name="home_cd_help">Anleitung und Hilfe</string>
     <string name="home_cd_settings">Einstellungen</string>
-    <string name="home_hero_title">Schwebender Mikro-Knopf</string>
+    <string name="home_hero_title">Schwebender Knopf</string>
     <string name="home_hero_sub_off">Aus — startet den Knopf über allen Apps</string>
     <string name="home_hero_sub_on">Läuft — antippen zum Diktieren, ziehen zum Verschieben</string>
     <string name="home_hero_btn_start">Mikro-Knopf starten</string>
@@ -172,7 +172,7 @@
     <string name="setup_s3_btn">Mikrofon erlauben</string>
     <string name="setup_s3_denied">Du hast das Mikrofon abgelehnt. Bitte in den App-Einstellungen erlauben.</string>
     <string name="setup_s4_title">Über anderen Apps anzeigen</string>
-    <string name="setup_s4_body">Der schwebende Mikro-Knopf liegt über anderen Apps. Dafür braucht Android deine Erlaubnis: In den Systemeinstellungen „WhisperLoom“ einschalten und zurück.</string>
+    <string name="setup_s4_body">Der schwebende Knopf liegt über anderen Apps. Dafür braucht Android deine Erlaubnis: In den Systemeinstellungen „WhisperLoom“ einschalten und zurück.</string>
     <string name="setup_s4_step_1">Die Systemeinstellung öffnet sich</string>
     <string name="setup_s4_step_2">Schalter „Über anderen Apps anzeigen“ einschalten</string>
     <string name="setup_s4_step_3">Zurück-Taste — WhisperLoom prüft automatisch</string>
@@ -217,14 +217,14 @@
     <string name="tutorial_cd_page" tools:ignore="PluralsCandidate">Seite %1$d von %2$d</string>
     <string name="tutorial_p1_title">Diktieren mit dem Knopf</string>
     <string name="tutorial_p1_body">Tippe den schwebenden Knopf an: Er wird rot und nimmt auf. Nochmal antippen — der Text landet im aktiven Feld. Auf ✕ ziehen verwirft. Rot mit ↻: antippen versucht es erneut.</string>
-    <string name="tutorial_p2_title">Diktier-Tastatur</string>
+    <string name="tutorial_p2_title">Diktat-Tastatur</string>
     <string name="tutorial_p2_body">Zeigt eine App den Knopf nicht, hilft die WhisperLoom-Tastatur: über das Tastatur-Symbol wechseln, Mikrofon gedrückt halten, sprechen. Loslassen fügt den Text ein.</string>
     <string name="tutorial_p3_title">Sprachnachrichten abtippen</string>
     <string name="tutorial_p3_body">Halte in WhatsApp, Telegram oder Signal die Sprachnachricht lange gedrückt, tippe auf „Teilen“ und wähle WhisperLoom. Kurz darauf steht der Text da — auch für mehrere.</string>
     <string name="tutorial_p4_title">Der Text ist da</string>
     <string name="tutorial_p4_body">Der Text erscheint in Absätzen. Der Schalter „Füllwörter ausblenden“ nimmt „ähm“ und „äh“ heraus. Dann kopieren oder teilen. Alles hier steht auch unter Anleitung &amp; Hilfe.</string>
-    <string name="tutorial_img_button">Handy mit Textfeld und schwebendem Mikro-Knopf, der rot pulsiert; ein Pfeil zeigt vom Knopf ins Textfeld.</string>
-    <string name="tutorial_img_keyboard">Handy mit dunkler Diktier-Tastatur; ein Finger hält die große Mikrofon-Taste gedrückt, darüber Pegelbalken.</string>
+    <string name="tutorial_img_button">Handy mit Textfeld und schwebendem Knopf, der rot pulsiert; ein Pfeil zeigt vom Knopf ins Textfeld.</string>
+    <string name="tutorial_img_keyboard">Handy mit dunkler Diktat-Tastatur; ein Finger hält die große Mikrofon-Taste gedrückt, darüber Pegelbalken.</string>
     <string name="tutorial_img_share">Chat mit einer Sprachnachricht, die lange gedrückt wird; darüber der Menüpunkt „Teilen“ und daneben ein Teilen-Blatt, in dem die WhisperLoom-Kachel hervorgehoben ist.</string>
     <string name="tutorial_img_result">Ergebniskarte von WhisperLoom mit drei Textabsätzen, dem eingeschalteten Schalter „Füllwörter ausblenden“ und den Knöpfen Kopieren und Teilen.</string>
 
@@ -498,7 +498,7 @@
     <string name="models_source">Quelle: huggingface.co/ggerganov/whisper.cpp</string>
     <string name="models_section_stt">Spracherkennung</string>
     <string name="models_section_llm">Textverbesserung</string>
-    <string name="models_llm_intro">Verbessert offline erkannten Text auf dem Gerät — ohne Netz, der Text verlässt das Handy nicht. Wann es rechnet, stellst du unter Text › Offline-Erkennung ein.</string>
+    <string name="models_llm_intro">Verbessert offline erkannten Text auf dem Gerät — ohne Netz, der Text verlässt das Handy nicht. Wann es rechnet, stellst du darunter bei „Textverbesserung bei Offline-Erkennung“ ein.</string>
     <string name="models_gemma_e2b">Gemma 4 E2B</string>
     <string name="models_gemma_e2b_sub">%1$s · ~1,8 GB RAM · Gerät ab 6 GB RAM</string>
     <string name="models_gemma_e4b">Gemma 4 E4B</string>
@@ -528,9 +528,9 @@
     <!-- §6.9 Hilfe (E5, B1). Reihenfolge im Screen: s1–s5, widgets, s6 (Datenschutz), s7 (Probleme). -->
     <string name="help_title">Anleitung &amp; Hilfe</string>
     <string name="help_s1_title">So funktioniert\'s</string>
-    <string name="help_s1_intro">Drei Wege zum Text: der schwebende Knopf, die Diktier-Tastatur und Sprachnachrichten, die du an WhisperLoom teilst.</string>
+    <string name="help_s1_intro">Drei Wege zum Text: der schwebende Knopf, die Diktat-Tastatur und Sprachnachrichten, die du an WhisperLoom teilst.</string>
     <string name="help_s1_bubble">Schwebender Knopf: antippen = Aufnahme, nochmal = fertig &amp; einfügen, auf ✕ ziehen = verwerfen, rot = Fehler, antippen = erneut.</string>
-    <string name="help_s1_keyboard">Diktier-Tastatur: Mikrofon gedrückt halten, sprechen, loslassen.</string>
+    <string name="help_s1_keyboard">Diktat-Tastatur: Mikrofon gedrückt halten, sprechen, loslassen.</string>
     <string name="help_s1_share">Sprachnachrichten: in WhatsApp lange drücken → Teilen → WhisperLoom. Der Text erscheint in Absätzen, du kannst ihn kopieren oder weitergeben.</string>
     <string name="help_s1_tutorial">Tutorial erneut ansehen</string>
     <string name="help_s2_title">Einrichtung Schritt für Schritt</string>
@@ -550,7 +550,7 @@
     <string name="help_key_ollama_cloud">ollama.com registrieren → Settings → Keys → Add API Key. Nur Textverbesserung. Für ein lokales Ollama brauchst du keinen Key.</string>
     <string name="help_prices_note">Preise Stand 09/2026, ohne Gewähr.</string>
     <string name="help_s4_title">Eigener Server</string>
-    <string name="help_s4_intro">Jeder OpenAI-kompatible Server geht, z. B. speaches, whisper.cpp-server oder LocalAI. Eintragen unter Erkennung → Anbieter „Eigener Server“.</string>
+    <string name="help_s4_intro">Jeder OpenAI-kompatible Server geht, z. B. speaches, whisper.cpp-server oder LocalAI. Eintragen unter Spracherkennung → Anbieter „Eigener Server“.</string>
     <string name="help_s4_body">Base-URL eintragen, Key nur falls verlangt. Endpunkte: /v1/audio/transcriptions und /v1/chat/completions.\nTextverbesserung auch über Ollama: lokal ohne Key, Cloud mit Key.\nhttp:// nur im eigenen Netz oder per VPN.</string>
     <string name="help_s5_title">Offline-Modus</string>
     <string name="help_s5_body">Ein Offline-Modell erkennt Sprache auf dem Gerät (Small: etwa 5–12 s). Einmal laden (32–574 MB), löschen unter Offline-Modelle. Für Deutsch empfohlen: Small.</string>
@@ -844,7 +844,7 @@
     <string name="agent_widget_hint">Widget platzieren: Startbildschirm lange drücken → Widgets → WhisperLoom → „Sprach-Command“.</string>
     <string name="settings_prompt_sub">Stufe „Prompt“</string>
     <string name="prompt_enable">Stufe „Prompt“ anbieten</string>
-    <string name="prompt_enable_sub">Zusätzliche Stufe in Tastatur und Einstellungen → Text: formt ein Diktat zu einem gegliederten Prompt für KI-Assistenten wie ChatGPT oder Claude.</string>
+    <string name="prompt_enable_sub">Zusätzliche Stufe in Tastatur und Einstellungen → Textverbesserung: formt ein Diktat zu einem gegliederten Prompt für KI-Assistenten wie ChatGPT oder Claude.</string>
     <string name="tutorial_pro_p1_title">Pro Widgets freischalten</string>
     <string name="tutorial_pro_p1_body">Unter Einstellungen → Erweitert schaltest du „Pro Widgets“ ein. Danach hat das Widget-Menü einen eigenen Tab dafür.</string>
     <string name="tutorial_pro_p2_title">Widget anlegen</string>

@@ -3,6 +3,8 @@ package com.chris.whisperloom.ui
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.R
+import com.chris.whisperloom.RefinePlan
+import com.chris.whisperloom.api.TextRefiner
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -89,6 +91,16 @@ class AnleitungsTexteTest {
             it.matches(Regex("help_(s\\d|widgets)_intro|help_s5_body|welcome_body|setup_s\\d[ab]?_body|a11y_description"))
         }
         assertEquals(emptyMap<String, Int>(), zuLang(kurz, 160))
+    }
+
+    @Test fun verweiseNennenDieSeitenDerNeuenOrdnung() {
+        // 3.9.0: den Menuepunkt "Text" gibt es nicht mehr, die Erkennung heisst "Spracherkennung",
+        // die Tastatur "Diktat-Tastatur" und der Knopf "Schwebender Knopf".
+        val alt = Regex("""[›→] Text(?![a-zäöü])|„Text“|unter Erkennung\b|Diktier-Tastatur|chwebende[rm]? Mikro-Knopf""")
+        assertEquals(emptyMap<String, String>(), texte.filterValues { alt.containsMatchIn(it) })
+        // Meldungen aus dem Code nennen die Seite, auf der man es beheben kann.
+        listOf(TextRefiner.MSG_NO_LLM, TextRefiner.MSG_NO_MODEL, TextRefiner.MSG_OFFLINE).forEach { assertTrue(it, it.contains("„KI-Zugang“")) }
+        assertTrue(RefinePlan.MSG_LOCAL_MISSING, RefinePlan.MSG_LOCAL_MISSING.contains("„Offline-Modelle“"))
     }
 
     @Test fun jedeIllustrationHatEinenKurzenBildtext() {
