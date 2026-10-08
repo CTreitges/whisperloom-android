@@ -45,7 +45,7 @@ class MainActivityRecreateTest {
         ActivityScenario.launch<MainActivity>(AppNav.settings(ctx)).use { scenario ->
             compose.waitForIdle()
             compose.onNodeWithText("Einstellungen").assertIsDisplayed() // Hub per Deep-Link
-            compose.onNodeWithText("Erkennung").performClick()
+            compose.onNodeWithText("Spracherkennung").performClick()
             compose.waitForIdle()
             compose.onNodeWithTag("dropdown:Anbieter").assertIsDisplayed() // Erkennungs-Screen
 

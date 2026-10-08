@@ -22,13 +22,21 @@ sealed class Screen(val key: String) {
     }
 
     data object SettingsHub : Screen("settings")
-    data object Recognition : Screen("recognition")
-    /** Text-Hub: Zeilen zu den Unterseiten ([TextPage]). Schluessel "text" wie vor 3.8.6. */
-    data object TextSettings : Screen("text")
 
-    /** Eine Unterseite von "Text" (3.8.6), Muster [Widgets]. */
-    data class TextPage(val section: TextSection) : Screen("text-page")
+    /** "Textverbesserung" (3.9.0): Stufen fuer Diktat und Sprachnachrichten. Bis 3.8.6 "text" und "text-page", siehe [decode]. */
+    data object Refine : Screen("refine")
+
+    /** "Woerterbuch & Regeln" (3.9.0): Vokabular und die festen Regeln ohne KI. */
+    data object Dictionary : Screen("dictionary")
+
+    /** "Spracherkennung". */
+    data object Recognition : Screen("recognition")
+
+    /** "KI-Zugang" (3.9.0, vorher Text › Online-Zugang & Modelle): Zugang und Modell je Stufe. */
+    data object LlmAccess : Screen("llm-access")
     data object ButtonKeyboard : Screen("button")
+
+    /** "Offline-Modelle": Erkennungs- und Textmodelle, dazu die Regel bei Offline-Erkennung (3.9.0). */
     data object Models : Screen("models")
 
     /** "Erweitert": Pro-/Entwickler-Funktionen freischalten (bis 3.7.0 "agent", siehe [decode]). */
@@ -66,7 +74,6 @@ sealed class Screen(val key: String) {
         is Setup -> "$key:$step"
         is Help -> "$key:$section"
         is Widgets -> "$key:${tab?.key.orEmpty()}:${edit.orEmpty()}"
-        is TextPage -> "$key:${section.key}"
         is Tutorial -> "$key:$startPage:${if (startBubbleAfter) 1 else 0}:${kind.key}"
         else -> key
     }
@@ -78,10 +85,19 @@ sealed class Screen(val key: String) {
             return when (parts[0]) {
                 "setup" -> Setup(arg ?: Setup.WELCOME)
                 "settings" -> SettingsHub
+                "refine" -> Refine
+                "dictionary" -> Dictionary
                 "recognition" -> Recognition
-                "text" -> TextSettings
-                // Unbekannte Seite (aus einer spaeteren Version): der Hub.
-                "text-page" -> TextSection.fromKey(parts.getOrNull(1))?.let(::TextPage) ?: TextSettings
+                "llm-access" -> LlmAccess
+                // Bis 3.8.6 der Text-Hub und seine Unterseiten: jede landet auf ihrer neuen Seite,
+                // Diktat, Sprachnachrichten und eine unbekannte Unterseite auf der Textverbesserung.
+                "text" -> Refine
+                "text-page" -> when (parts.getOrNull(1)) {
+                    "access" -> LlmAccess
+                    "offline" -> Models
+                    "rules" -> Dictionary
+                    else -> Refine
+                }
                 "button" -> ButtonKeyboard
                 "models" -> Models
                 // "agent" = Name bis 3.7.0, steht noch in gespeicherten Back-Stacks.
@@ -108,20 +124,6 @@ enum class WidgetTab(val key: String) {
 
     companion object {
         fun fromKey(key: String?): WidgetTab? = entries.firstOrNull { it.key == key }
-    }
-}
-
-/** Unterseiten von "Text" in der Reihenfolge des Hubs. Gespeichert wird [key], nie der Enum-Name. */
-enum class TextSection(val key: String) {
-    DICTATION("dictation"),
-    SHARE("share"),
-    ACCESS("access"),
-    OFFLINE("offline"),
-    RULES("rules"),
-    ;
-
-    companion object {
-        fun fromKey(key: String?): TextSection? = entries.firstOrNull { it.key == key }
     }
 }
 

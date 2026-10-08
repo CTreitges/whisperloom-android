@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.Engine
 import com.chris.whisperloom.Prefs
@@ -15,6 +16,7 @@ import com.chris.whisperloom.ui.state.AppEnv
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.PrefsState
 import com.chris.whisperloom.ui.theme.WhisperLoomTheme
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -23,8 +25,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Home-Zeile "Text" mit Modell je Stufe (3.8.6): Sie nennt das Modell, mit dem das naechste Diktat
- * rechnet — das der Diktat-Stufe, mit dem Anzeigenamen aus dem Katalog.
+ * Home-Zeile "Textverbesserung" mit Modell je Stufe (3.8.6): Sie nennt das Modell, mit dem das naechste
+ * Diktat rechnet — das der Diktat-Stufe, mit dem Anzeigenamen aus dem Katalog. Seit 3.9.0 fuehren die
+ * Zeilen der Statuskarte auf die neuen Seiten.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w411dp-h2400dp-xxhdpi")
@@ -47,13 +50,30 @@ class HomeStageModelTest {
         prefs.tutorialSeen = true
     }
 
-    private fun home() {
+    private fun home(): NavState {
         val env = AppEnv(PrefsState(prefs), readyStatus) { readyStatus }
         val nav = NavState(listOf(Screen.Home))
         compose.setContent {
             WhisperLoomTheme { CompositionLocalProvider(LocalAppEnv provides env) { HomeScreen(nav) } }
         }
         compose.waitForIdle()
+        return nav
+    }
+
+    @Test fun statuszeilenFuehrenAufIhreSeiten() {
+        val nav = home()
+        mapOf(
+            "Spracherkennung" to Screen.Recognition,
+            "Textverbesserung" to Screen.Refine,
+            "Berechtigungen" to Screen.ButtonKeyboard,
+            "Diktat-Tastatur" to Screen.ButtonKeyboard,
+        ).forEach { (zeile, seite) ->
+            compose.onNodeWithText(zeile).performClick()
+            compose.waitForIdle()
+            assertEquals(zeile, seite, nav.current)
+            nav.pop()
+            compose.waitForIdle()
+        }
     }
 
     @Test fun openAiAbWerkVerschoenernNenntDieEmpfehlungZumUmformulieren() {

@@ -89,7 +89,7 @@ fun offlineRuleDetails(rule: OfflineRefineRule): String = when (rule) {
     OfflineRefineRule.SKIP -> stringResource(R.string.text_rule_skip_sub)
 }
 
-/** Kurzform der Regel fuer die Hub-Unterzeile von "Text". */
+/** Kurzform der Regel fuer die Hub-Unterzeile von "Textverbesserung". */
 @Composable
 fun offlineRuleShort(rule: OfflineRefineRule): String = when (rule) {
     OfflineRefineRule.LOCAL -> stringResource(R.string.settings_rule_offline_local)

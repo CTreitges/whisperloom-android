@@ -10,12 +10,12 @@ import com.chris.whisperloom.ui.components.SectionCard
 import com.chris.whisperloom.ui.nav.NavState
 
 /**
- * Text › Online-Zugang & Modelle (3.8.6): der Zugang fuer die Textverbesserung und darunter
- * "Modell je Stufe" — die Modellwahl an einem Ort.
+ * KI-Zugang (3.9.0, vorher Text › Online-Zugang & Modelle): der Zugang fuer die Textverbesserung und
+ * darunter "Modell je Stufe" — gilt fuer Diktat und Sprachnachrichten.
  */
 @Composable
-fun TextAccessScreen(nav: NavState) {
-    TextPageScaffold(R.string.text_hub_access, nav) { snack ->
+fun LlmAccessScreen(nav: NavState) {
+    SettingsPageScaffold(R.string.settings_group_llm, nav) { snack ->
         SectionCard(title = stringResource(R.string.text_card_access)) {
             LlmAccessSection(snack)
         }

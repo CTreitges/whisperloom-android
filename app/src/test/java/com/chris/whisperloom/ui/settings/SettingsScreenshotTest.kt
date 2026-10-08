@@ -44,14 +44,14 @@ import org.robolectric.annotation.GraphicsMode
 import org.robolectric.shadows.ShadowDialog
 
 /**
- * Screenshots von Text-Hub und Unterseiten (3.8.6) zum Ansehen, keine Pixel-Vergleiche: PNGs nach
- * app/build/reports/screenshots/. Wie TextModelScreenshotTest: braucht Robolectrics Native-Graphics,
- * auf linux-aarch64 uebersprungen, lokal per x86_64-JVM unter qemu ausfuehrbar.
+ * Screenshots des Einstellungen-Hubs und seiner Seiten (3.9.0) zum Ansehen, keine Pixel-Vergleiche:
+ * PNGs nach app/build/reports/screenshots/. Wie TextModelScreenshotTest: braucht Robolectrics
+ * Native-Graphics, auf linux-aarch64 uebersprungen, lokal per x86_64-JVM unter qemu ausfuehrbar.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [35], qualifiers = "w411dp-h891dp-xxhdpi")
-class TextScreenshotTest {
+class SettingsScreenshotTest {
 
     companion object {
         /** Der Fehler kommt schon beim Sandbox-Setup, also vor @Before: nur @BeforeClass greift rechtzeitig. */
@@ -91,7 +91,7 @@ class TextScreenshotTest {
 
     private fun screen(status: SystemStatus = online, content: @Composable (NavState) -> Unit) {
         val env = AppEnv(PrefsState(prefs), status) { status }
-        val nav = NavState(listOf(Screen.Home, Screen.SettingsHub, Screen.TextSettings))
+        val nav = NavState(listOf(Screen.Home, Screen.SettingsHub))
         compose.setContent {
             WhisperLoomTheme { CompositionLocalProvider(LocalAppEnv provides env) { content(nav) } }
         }
@@ -109,7 +109,7 @@ class TextScreenshotTest {
         compose.waitForIdle()
     }
 
-    /** Geraet ohne Offline-Erkennung: der Hub hat vier Zeilen. */
+    /** Geraet ohne Offline-Erkennung: die Textverbesserung hat keine Zeile "Bei Offline-Erkennung". */
     private val online = SystemStatus(micGranted = true, canDrawOverlays = true, a11yRunning = true, offlineSupported = false)
 
     private fun anthropic() {
@@ -118,52 +118,76 @@ class TextScreenshotTest {
     }
 
     @Test fun hub() {
-        prefs.polishReadable = true
         prefs.shareRefineMode = RefineMode.SUMMARIZE
-        screen { TextSettingsScreen(it) }
-        shot("text-hub")
+        prefs.apiPrompt = "Anna\nKubernetes"
+        screen { SettingsHubScreen(it) }
+        shot("einstellungen-hub")
     }
 
     @Test fun hubOffline() {
-        // Offline ohne Textmodell (das Home-Banner): die Zeile sagt es, ohne eigenen Zugang kein Online-Zugang.
+        // Offline ohne eigenen Zugang: der KI-Zugang sagt "Kein Online-Zugang".
         prefs.engine = Engine.OFFLINE
-        screen(SystemStatus(installedModels = setOf("small"), totalRamBytes = 16L shl 30)) { TextSettingsScreen(it) }
-        shot("text-hub-offline")
+        screen(SystemStatus(installedModels = setOf("small"), totalRamBytes = 16L shl 30)) { SettingsHubScreen(it) }
+        shot("einstellungen-hub-offline")
     }
 
-    @Test fun diktat() {
+    @Test fun textverbesserung() {
         prefs.polishReadable = true
-        screen { TextDictationScreen(it) }
-        shot("text-diktat")
+        screen { RefineScreen(it) }
+        shot("textverbesserung-diktat")
+        nachOben(hasText("Bei geteilten Sprachnachrichten"))
+        shot("textverbesserung-sprachnachrichten")
     }
 
-    @Test fun sprachnachrichtenLesbar() {
+    @Test fun textverbesserungMitOfflineErkennung() {
+        // Offline ohne Textmodell (das Home-Banner): die Zeile "Bei Offline-Erkennung" sagt es.
+        prefs.engine = Engine.OFFLINE
         prefs.shareRefineMode = RefineMode.POLISH
         prefs.sharePolishReadable = true
-        screen { TextShareScreen(it) }
-        shot("text-sprachnachrichten-lesbar")
+        screen(SystemStatus(installedModels = setOf("small"), totalRamBytes = 16L shl 30)) { RefineScreen(it) }
+        nachOben(hasText("Bei geteilten Sprachnachrichten"))
+        shot("textverbesserung-offline")
     }
 
-    @Test fun zugangUndModelleJeStufe() {
+    @Test fun woerterbuchUndRegeln() {
+        prefs.apiPrompt = "Anna\nKubernetes"
+        screen { DictionaryScreen(it) }
+        shot("woerterbuch-regeln")
+    }
+
+    @Test fun spracherkennung() {
+        screen { RecognitionScreen(it) }
+        shot("spracherkennung")
+    }
+
+    @Test fun knopfUndTastatur() {
+        screen { ButtonKeyboardScreen(it) }
+        nachOben(hasText("Schwebender Knopf"))
+        shot("knopf-tastatur-einstellungen")
+        nachOben(hasText("Einfügen"))
+        shot("knopf-tastatur-einfuegen")
+    }
+
+    @Test fun kiZugangUndModelleJeStufe() {
         anthropic()
         prefs.setLlmModelFor(RefineMode.SUMMARIZE, "claude-opus-5-5")
-        screen { TextAccessScreen(it) }
-        shot("text-zugang-oben")
+        screen { LlmAccessScreen(it) }
+        shot("ki-zugang-oben")
         nachOben(hasText("Modell je Stufe"))
-        shot("text-zugang-modelle")
+        shot("ki-zugang-modelle")
     }
 
     @Test fun modelleGesperrtBeiElevenLabs() {
         prefs.sttProviderId = "elevenlabs"
         prefs.apiKey = "xi"
-        screen { TextAccessScreen(it) }
+        screen { LlmAccessScreen(it) }
         nachOben(hasText("Modell je Stufe"), abstandPx = 200f)
-        shot("text-modelle-gesperrt")
+        shot("ki-zugang-modelle-gesperrt")
     }
 
     @Test fun modellPickerDerStufeMitStandard() {
         anthropic()
-        screen { TextAccessScreen(it) }
+        screen { LlmAccessScreen(it) }
         nachOben(hasText("Modell je Stufe"))
         compose.onNodeWithText("Verschönern").performClick()
         compose.waitForIdle()
@@ -171,6 +195,6 @@ class TextScreenshotTest {
         val seite = compose.onAllNodes(isRoot()).filterToOne(hasAnyDescendant(hasText("Modell je Stufe")))
         val bitmap = seite.captureToImage().asAndroidBitmap().copy(Bitmap.Config.ARGB_8888, true)
         ShadowDialog.getLatestDialog().window!!.decorView.draw(Canvas(bitmap))
-        save("text-modelle-picker-standard", bitmap)
+        save("ki-zugang-modelle-picker-standard", bitmap)
     }
 }

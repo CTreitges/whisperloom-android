@@ -76,7 +76,6 @@ import com.chris.whisperloom.ui.models.localModelMissing
 import com.chris.whisperloom.ui.models.offlineRule
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
-import com.chris.whisperloom.ui.nav.TextSection
 import com.chris.whisperloom.ui.nav.SetupRouter
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.theme.loom
@@ -120,8 +119,8 @@ fun HomeScreen(nav: NavState) {
                     when (banner) {
                         HomeStatus.Banner.A11Y -> nav.push(Screen.Setup(SetupRouter.STEP_A11Y))
                         HomeStatus.Banner.MODEL -> nav.push(Screen.Models)
-                        // Direkt auf die Seite mit den Textmodellen, nicht in den Text-Hub.
-                        HomeStatus.Banner.TEXT_MODEL -> nav.push(Screen.TextPage(TextSection.OFFLINE))
+                        // Textmodelle und die Regel bei Offline-Erkennung stehen seit 3.9.0 bei den Offline-Modellen.
+                        HomeStatus.Banner.TEXT_MODEL -> nav.push(Screen.Models)
                         HomeStatus.Banner.NOTIF -> nav.push(Screen.Setup(SetupRouter.STEP_NOTIF))
                         HomeStatus.Banner.NONE -> Unit
                     }
@@ -388,7 +387,7 @@ private fun StatusCard(nav: NavState, modelInstalled: Boolean) {
             nav.push(Screen.Recognition)
         }
         StatusRow(stringResource(R.string.home_row_refine), refineText, refineTone, R.drawable.ic_auto_fix_high) {
-            nav.push(Screen.TextSettings)
+            nav.push(Screen.Refine)
         }
         StatusRow(stringResource(R.string.home_row_permissions), permText, permTone) { nav.push(Screen.ButtonKeyboard) }
         StatusRow(

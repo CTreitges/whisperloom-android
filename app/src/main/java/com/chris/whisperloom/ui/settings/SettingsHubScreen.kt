@@ -20,17 +20,13 @@ import com.chris.whisperloom.BuildConfig
 import com.chris.whisperloom.Engine
 import com.chris.whisperloom.ProFeature
 import com.chris.whisperloom.R
-import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.agent.Tier
 import com.chris.whisperloom.ui.components.DetailScaffold
 import com.chris.whisperloom.ui.components.HubRow
 import com.chris.whisperloom.ui.components.SectionHeader
 import com.chris.whisperloom.ui.components.fileSize
-import com.chris.whisperloom.ui.components.levelLabel
 import com.chris.whisperloom.ui.components.modelLabel
 import com.chris.whisperloom.ui.components.offlineModelLabel
-import com.chris.whisperloom.ui.components.offlineRuleShort
-import com.chris.whisperloom.ui.models.offlineRule
 import com.chris.whisperloom.ui.components.providerShortName
 import com.chris.whisperloom.ui.components.rememberSnack
 import com.chris.whisperloom.ui.nav.NavState
@@ -39,7 +35,8 @@ import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.WidgetProfilesState
 
 /**
- * E — Einstellungen-Hub (UX-Spec §2.3): Grundlagen, Bedienung, Pro, Info; Supporting = aktueller Wert.
+ * E — Einstellungen-Hub (UX-Spec §2.3), seit 3.9.0 nach Gegenstaenden: Text, Modelle & Zugaenge,
+ * Bedienung, Pro, Info. Unterzeile = aktueller Wert, Zeilenname = Seitentitel.
  */
 @Composable
 fun SettingsHubScreen(nav: NavState) {
@@ -56,13 +53,6 @@ fun SettingsHubScreen(nav: NavState) {
         Engine.OFFLINE -> "Offline · ${offlineModelLabel(prefs.offlineModel)}"
         null -> stringResource(R.string.setup_chip_open)
     }
-    val rules = textRules(prefs)
-    // Offline erkannt mit KI-Stufe: die Regel dazu, als Kurzform ("Glaetten · lokal bei Offline").
-    val level = listOfNotNull(
-        levelLabel(prefs.refineMode),
-        if (prefs.engine == Engine.OFFLINE && prefs.refineMode != RefineMode.OFF) offlineRuleShort(offlineRule(prefs, status)) else null,
-    ).joinToString(" · ")
-    val text = if (rules.isEmpty()) level else stringResource(R.string.settings_val_text, level, rules.joinToString(" · "))
     val button = stringResource(if (status.bubbleRunning) R.string.settings_val_bubble_on else R.string.settings_val_bubble_off) +
         " · " + stringResource(if (status.imeEnabled) R.string.settings_val_kb_on else R.string.settings_val_kb_off)
     // Kein Schalter auf Hub-Ebene (Spec §2.3) — nur die eingeschalteten Pro-Funktionen als Unterzeile.
@@ -87,10 +77,18 @@ fun SettingsHubScreen(nav: NavState) {
     DetailScaffold(title = stringResource(R.string.settings_title), onBack = { nav.pop() }, snack = snack) { padding ->
         // Gruppen mit Ueberschrift (User-Entscheidung U3); die letzte Zeile einer Gruppe ohne Trenner.
         LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(bottom = 24.dp)) {
-            item { SectionHeader(stringResource(R.string.settings_section_basics)) }
+            item { SectionHeader(stringResource(R.string.settings_section_text)) }
+            item { HubRow(R.drawable.ic_auto_fix_high, stringResource(R.string.settings_group_refine), refineValue(prefs)) { nav.push(Screen.Refine) } }
+            item {
+                HubRow(R.drawable.ic_checklist, stringResource(R.string.settings_group_dictionary), dictionaryValue(prefs), divider = false) {
+                    nav.push(Screen.Dictionary)
+                }
+            }
+
+            item { SectionHeader(stringResource(R.string.settings_section_models)) }
             item { HubRow(R.drawable.ic_graphic_eq, stringResource(R.string.settings_group_recognition), recognition) { nav.push(Screen.Recognition) } }
-            item { HubRow(R.drawable.ic_download_for_offline, stringResource(R.string.settings_group_models), models) { nav.push(Screen.Models) } }
-            item { HubRow(R.drawable.ic_auto_fix_high, stringResource(R.string.settings_group_text), text, divider = false) { nav.push(Screen.TextSettings) } }
+            item { HubRow(R.drawable.ic_cloud, stringResource(R.string.settings_group_llm), accessValue(prefs)) { nav.push(Screen.LlmAccess) } }
+            item { HubRow(R.drawable.ic_download_for_offline, stringResource(R.string.settings_group_models), models, divider = false) { nav.push(Screen.Models) } }
 
             item { SectionHeader(stringResource(R.string.settings_section_controls)) }
             item { HubRow(R.drawable.ic_touch_app, stringResource(R.string.settings_group_button), button) { nav.push(Screen.ButtonKeyboard) } }

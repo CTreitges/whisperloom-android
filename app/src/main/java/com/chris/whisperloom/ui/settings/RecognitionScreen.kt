@@ -9,20 +9,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chris.whisperloom.Engine
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
-import com.chris.whisperloom.Vocabulary
-import com.chris.whisperloom.api.ApiStyle
 import com.chris.whisperloom.ui.access.PrivacyLine
 import com.chris.whisperloom.ui.access.SttAccessSection
 import com.chris.whisperloom.ui.components.DetailScaffold
@@ -46,7 +39,10 @@ import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.theme.loom
 import com.chris.whisperloom.whisper.ModelCatalog
 
-/** E1 — Erkennung (UX-Spec §2.4): Engine, Transkriptions-Zugang bzw. Offline-Modell, Sprache & Kontext. */
+/**
+ * E1 — Spracherkennung (UX-Spec §2.4): Engine, Transkriptions-Zugang bzw. Offline-Modell, Sprache.
+ * Das Vokabular steht seit 3.9.0 unter Woerterbuch & Regeln.
+ */
 @Composable
 fun RecognitionScreen(nav: NavState) {
     val env = LocalAppEnv.current
@@ -56,7 +52,6 @@ fun RecognitionScreen(nav: NavState) {
     val offline = prefs.engine == Engine.OFFLINE
     val modelInstalled = prefs.offlineModel in status.installedModels
     val stt = prefs.sttAccess()
-    var showVocabulary by rememberSaveable { mutableStateOf(false) }
 
     DetailScaffold(title = stringResource(R.string.rec_title), onBack = { nav.pop() }, snack = snack) { padding ->
         ScrollColumn(padding) {
@@ -95,39 +90,14 @@ fun RecognitionScreen(nav: NavState) {
                 }
             }
 
-            SectionCard(title = stringResource(R.string.rec_card_language)) {
+            // Bis 3.8.6 "Sprache & Kontext"; der Kontext (Vokabular) steht jetzt im Woerterbuch.
+            SectionCard {
                 LoomDropdown(
                     label = stringResource(R.string.rec_language),
                     value = languageLabel(prefs.language),
                     options = Prefs.LANGUAGES,
                     optionLabel = { it.second },
                     onSelect = { prefs.language = it.first },
-                )
-                // Mistral/OpenRouter kennen kein prompt-Feld; eine context_bias-Wortliste ist nicht
-                // umgesetzt (Spec §2.4, offen) — also ehrlich sagen, dass der Kontext dort nicht ankommt.
-                // ElevenLabs bekommt das Vokabular als keyterms, aber mit Aufpreis.
-                val contextInfo = when {
-                    offline -> R.string.pref_api_prompt_info
-                    !stt.provider.sttSendsPrompt -> R.string.rec_context_unsupported
-                    stt.provider.api == ApiStyle.ELEVENLABS -> R.string.rec_context_keyterms
-                    else -> R.string.pref_api_prompt_info
-                }
-                val count = Vocabulary.entries(prefs.apiPrompt).size
-                LoomRow(
-                    headline = stringResource(R.string.vocab_title),
-                    supporting = listOfNotNull(
-                        if (count == 0) stringResource(R.string.vocab_none) else pluralStringResource(R.plurals.vocab_count, count, count),
-                        prefs.vocabFileName.takeIf { prefs.vocabFileUri.isNotBlank() }
-                            ?.let { stringResource(R.string.vocab_row_file, it.ifBlank { "…" }) },
-                    ).joinToString(" · "),
-                    trailing = {
-                        FilledTonalButton(onClick = { showVocabulary = true }) { Text(stringResource(R.string.vocab_open)) }
-                    },
-                )
-                Text(
-                    stringResource(contextInfo),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
@@ -137,6 +107,4 @@ fun RecognitionScreen(nav: NavState) {
             )
         }
     }
-
-    if (showVocabulary) VocabularySheet(snack) { showVocabulary = false }
 }

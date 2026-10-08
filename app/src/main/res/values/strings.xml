@@ -84,7 +84,7 @@
     <string name="home_banner_notif">Ohne Benachrichtigung kannst du den Knopf nur hier beenden.</string>
     <string name="home_banner_fix">Beheben</string>
     <string name="home_status_title">Status</string>
-    <string name="home_row_recognition">Erkennung</string>
+    <string name="home_row_recognition">Spracherkennung</string>
     <string name="home_row_refine">Textverbesserung</string>
     <string name="home_row_permissions">Berechtigungen</string>
     <string name="home_row_keyboard">Diktat-Tastatur</string>
@@ -230,14 +230,18 @@
 
     <!-- §6.4 Einstellungen-Hub (E), Über (E6) -->
     <string name="settings_title">Einstellungen</string>
-    <string name="settings_group_recognition">Erkennung</string>
-    <string name="settings_group_text">Text</string>
+    <!-- 3.9.0: Zeilenname = Seitentitel (die neuen Seiten nutzen diese Strings als Titel) -->
+    <string name="settings_group_refine">Textverbesserung</string>
+    <string name="settings_group_dictionary">Wörterbuch &amp; Regeln</string>
+    <string name="settings_group_recognition">Spracherkennung</string>
+    <string name="settings_group_llm">KI-Zugang</string>
     <string name="settings_group_button">Knopf &amp; Tastatur</string>
     <string name="settings_group_models">Offline-Modelle</string>
     <string name="settings_group_help">Anleitung &amp; Hilfe</string>
     <string name="settings_group_about">Über WhisperLoom</string>
     <!-- Gruppen im Hub (angezeigt in Großbuchstaben) -->
-    <string name="settings_section_basics">Grundlagen</string>
+    <string name="settings_section_text">Text</string>
+    <string name="settings_section_models">Modelle &amp; Zugänge</string>
     <string name="settings_section_controls">Bedienung</string>
     <string name="settings_section_pro">Pro</string>
     <string name="settings_section_info">Info</string>
@@ -247,10 +251,10 @@
     <string name="settings_val_bubble_off">Knopf aus</string>
     <string name="settings_val_kb_on">Tastatur aktiv</string>
     <string name="settings_val_kb_off">Tastatur nicht aktiviert</string>
-    <string name="settings_val_text">%1$s · %2$s</string>
+    <!-- %1$s = Stufe beim Diktat, %2$s = Stufe für Sprachnachrichten -->
+    <string name="settings_val_refine">Diktat: %1$s · Sprachnachrichten: %2$s</string>
     <string name="settings_rule_fillers">Füllwörter</string>
     <string name="settings_rule_cap">Groß-Schreibung</string>
-    <string name="settings_rule_space">Leerzeichen</string>
     <string name="settings_rule_offline_local">lokal bei Offline</string>
     <string name="settings_rule_offline_online_local">online, ohne Netz lokal</string>
     <string name="settings_rule_offline_skip">ohne lokales Modell</string>
@@ -261,7 +265,7 @@
     <string name="about_source">Quellcode auf GitHub</string>
 
     <!-- §6.5 Erkennung (E1) und Zugangs-Felder (auch Schritt 2a) -->
-    <string name="rec_title">Erkennung</string>
+    <string name="rec_title">Spracherkennung</string>
     <string name="rec_engine_online">Online-Dienst</string>
     <string name="rec_engine_offline">Offline-Modell</string>
     <string name="rec_no_model">Kein Modell geladen</string>
@@ -269,7 +273,6 @@
     <string name="rec_card_transcription">Transkription</string>
     <string name="rec_card_offline">Offline-Modell</string>
     <string name="rec_offline_first_use">Erste Nutzung lädt das Modell in den Speicher (2–5 s).</string>
-    <string name="rec_card_language">Sprache &amp; Kontext</string>
     <string name="rec_language">Sprache</string>
     <string name="rec_provider">Anbieter</string>
     <string name="rec_base_url">Base-URL</string>
@@ -330,9 +333,8 @@
     <string name="model_custom_info">Genau so, wie der Anbieter die ID nennt.</string>
     <string name="key_sheet_title">Wo bekomme ich einen Key?</string>
 
-    <!-- §6.6 Text (E2) und Füllwörter-Sheet (B3) -->
-    <string name="text_title">Text</string>
-    <string name="text_card_refine">Textverbesserung (KI)</string>
+    <!-- §6.6 Textverbesserung (E2, 3.9.0 eine Seite) und Füllwörter-Sheet (B3) -->
+    <string name="text_card_refine">Beim Diktieren</string>
     <string name="text_level_off_sub">Nur die Regeln ohne KI, keine zweite Anfrage.</string>
     <string name="text_level_smooth_sub">Zeichensetzung, Groß-/Kleinschreibung, Absätze. Inhalt unverändert.</string>
     <string name="text_level_beautify_sub">Formuliert flüssiger und klarer, behält Inhalt, Ton und deine Wörter.</string>
@@ -347,11 +349,10 @@
     <string name="text_readable_needs_polish">Wirkt mit der Stufe „Glätten“.</string>
     <string name="pref_refine_paragraphs">Automatische Absätze</string>
     <string name="pref_refine_paragraphs_info">Die KI gliedert längere Diktate in Absätze. Ausgeschaltet kommt alles als ein durchgehender Text.</string>
-    <string name="text_card_share">Geteilte Sprachnachrichten</string>
+    <string name="text_card_share">Bei geteilten Sprachnachrichten</string>
     <string name="text_share_intro">Für Audios, die du per Teilen an WhisperLoom schickst (z. B. aus WhatsApp). Eigene Stufe, unabhängig vom Diktat; bei „Aus“ bleibt der Text wortgetreu.</string>
     <string name="text_share_off_sub">Wortgetreu, Füllwörter per Schalter ausblendbar. Keine zweite Anfrage.</string>
-    <string name="text_card_offline">Offline-Erkennung</string>
-    <string name="text_local_none">Kein Textmodell geladen</string>
+    <string name="refine_offline">Bei Offline-Erkennung</string>
     <string name="text_local_needs_ram">Für ein lokales Textmodell braucht das Gerät mindestens 6 GB RAM.</string>
     <string name="text_rule_title">Textverbesserung bei Offline-Erkennung</string>
     <string name="text_rule_local">Lokales Textmodell</string>
@@ -398,29 +399,21 @@
     <string name="text_no_llm">%1$s erkennt nur Sprache und bietet keine Textverbesserung.</string>
     <string name="text_add_access">Eigenen Zugang eintragen</string>
     <string name="text_test">Zugang prüfen</string>
-    <string name="text_card_rules">Regeln ohne KI</string>
+    <!-- Wörterbuch & Regeln (3.9.0): Vokabular und die festen Regeln ohne KI -->
+    <string name="dict_card_vocab">Wörterbuch</string>
+    <string name="dict_card_rules">Feste Regeln</string>
     <string name="pref_remove_fillers">Füllwörter entfernen (ähm, äh …)</string>
     <string name="text_fillers_sub">Feste Wortliste je Sprache</string>
     <string name="text_fillers_edit">Liste bearbeiten</string>
     <string name="pref_auto_cap">Automatisch groß schreiben</string>
     <string name="pref_trailing_space">Leerzeichen nach Diktat anhängen</string>
     <string name="text_fillers_paused">Die Wortliste pausiert, solange die KI über Füllwörter entscheidet.</string>
-    <!-- 3.8.6 Text-Hub (Unterzeile = aktueller Wert) und Unterseiten; Seitentitel = Zeilentitel -->
-    <string name="text_hub_section_stages">KI-Stufen</string>
-    <string name="text_hub_section_models">Modelle &amp; Zugang</string>
-    <string name="text_hub_section_rules">Ohne KI</string>
-    <string name="text_hub_dictation">Diktat</string>
-    <string name="text_hub_share">Sprachnachrichten</string>
-    <string name="text_hub_access">Online-Zugang &amp; Modelle</string>
-    <!-- %1$s = Stufe („Glätten“) -->
-    <string name="text_hub_val_readable">%1$s · lesbarer</string>
-    <string name="text_hub_val_share_off">Aus · wortgetreu</string>
+    <!-- Unterzeilen (aktueller Wert) von KI-Zugang und „Bei Offline-Erkennung“ -->
     <!-- %1$s = Anbieter der Erkennung -->
     <string name="text_hub_val_access_same">Wie Erkennung · %1$s</string>
     <string name="text_hub_val_access_none">Kein Online-Zugang</string>
     <!-- %1$s = Regel („Lokales Textmodell“) -->
     <string name="text_hub_val_offline_missing">%1$s · Textmodell fehlt</string>
-    <string name="text_hub_val_rules_none">Keine</string>
     <plurals name="text_hub_val_models_custom">
         <item quantity="one">%d Stufe mit eigenem Modell</item>
         <item quantity="other">%d Stufen mit eigenem Modell</item>
@@ -466,7 +459,8 @@
     <string name="perm_notif">Benachrichtigungen</string>
     <string name="perm_allow">Erlauben</string>
     <string name="perm_open">Öffnen</string>
-    <string name="button_card_keyboard">Diktier-Tastatur</string>
+    <string name="button_card_keyboard">Diktat-Tastatur</string>
+    <string name="button_card_insert">Einfügen</string>
     <string name="button_keyboard_intro">Alternative zum Knopf: WhisperLoom als Tastatur mit Halten-zum-Sprechen. Nützlich, wenn eine App kein Overlay erlaubt.</string>
     <string name="button_card_howto">Kurzanleitung</string>
     <string name="help_dictate_1">Knopf antippen = Aufnahme</string>

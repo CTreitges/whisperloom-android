@@ -24,7 +24,7 @@ import com.chris.whisperloom.api.RemoteModel
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SystemStatus
-import com.chris.whisperloom.ui.settings.TextAccessScreen
+import com.chris.whisperloom.ui.settings.LlmAccessScreen
 import com.chris.whisperloom.ui.state.AppEnv
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.PrefsState
@@ -42,7 +42,7 @@ import java.net.InetSocketAddress
 import java.util.Collections
 
 /**
- * Seite "Online-Zugang & Modelle" (3.8.6): Abschnitt "Modell je Stufe" (Standard-Label je Rolle,
+ * Seite "KI-Zugang" (3.9.0, vorher Text › Online-Zugang & Modelle): Abschnitt "Modell je Stufe" (Standard-Label je Rolle,
  * eigenes Modell schreiben, Zuruecksetzen beim Anbieterwechsel, Hinweis ohne Online-Zugang oder ohne Modell
  * des Zugangs, "Modell pruefen") und der Eintrag "Empfehlung je Stufe" im Modellfeld des Zugangs. Nur
  * "Modell pruefen" fragt, und zwar einen lokalen JDK-HttpServer; sonst geht nichts raus (Liste im Cache).
@@ -80,9 +80,9 @@ class StageModelsUiTest {
     private fun show() {
         val status = SystemStatus()
         val env = AppEnv(PrefsState(prefs), status) { status }
-        val nav = NavState(listOf(Screen.Home, Screen.TextSettings))
+        val nav = NavState(listOf(Screen.Home, Screen.SettingsHub, Screen.LlmAccess))
         compose.setContent {
-            WhisperLoomTheme { CompositionLocalProvider(LocalAppEnv provides env) { TextAccessScreen(nav) } }
+            WhisperLoomTheme { CompositionLocalProvider(LocalAppEnv provides env) { LlmAccessScreen(nav) } }
         }
         compose.waitForIdle()
     }
