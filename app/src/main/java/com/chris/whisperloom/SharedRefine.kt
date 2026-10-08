@@ -100,7 +100,6 @@ object SharedRefine {
         autoCapitalize = prefs.autoCapitalize,
         language = language,
         refineMode = mode,
-        smartFillers = prefs.smartFillers,
         customFillers = prefs.customFillers,
         disabledFillers = prefs.disabledFillers,
         paragraphs = true,

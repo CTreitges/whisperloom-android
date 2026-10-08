@@ -54,17 +54,16 @@ object PolishPlan {
     )
 
     /**
-     * Wenn ein Sprachmodell selbst ueber Fuellwoerter entscheidet, darf die feste
-     * Wortliste nicht nochmal daruebergehen — sonst wuerde zweimal gefiltert und die
-     * Entscheidung der KI ("im Zweifel behalten") wieder ausgehebelt. Die restliche
-     * Normalisierung (Whitespace, Satzzeichen, Gross-Schreibung) laeuft weiter.
+     * Nachbearbeitung nach der Textverbesserung. Die Fuellwort-Liste (eingebaut und eigene Woerter)
+     * ist das Sicherheitsnetz: sie laeuft nach jeder KI-Stufe, auch wenn die KI selbst ueber
+     * Fuellwoerter entscheidet (Glaetten · Ohne Fuellwoerter, Lesbar). Bei "Glaetten" laesst der
+     * Prompt jedes "ähm" stehen (Claude-Vergleich: 36 von 36 Antworten), und kleine Modelle uebersehen
+     * auch dort viele, wo sie streichen duerfen (gemma3:4b, Korpus 2026-10-05). Die Liste enthaelt nur
+     * eindeutige Fuellsilben — nach der KI kann sie kaum Schaden anrichten.
      *
      * Ausnahme "Prompt": Fuellwoerter und Gross-Schreibung erledigt dort das Modell (steht im
      * System-Prompt), und diktiertes Material zwischen `<text>`-Tags soll unveraendert bleiben —
      * die Satzanfang-Regel machte sonst aus `</text>` nach einem Punkt `</Text>`.
-     * "Lesbarer glaetten" ([RefineMode.READABLE]) zaehlt nicht dazu: kleine Modelle liessen "ähm"
-     * dort stehen (gemma3:4b, Korpus 2026-10-05). Die Liste laeuft danach wie beim Glaetten — mit den
-     * eingebauten Fuellsilben und den eigenen Woertern des Nutzers; nur smartFillers pausiert sie.
      *
      * Ist die Textverbesserung gescheitert, uebergibt der Aufrufer [RefineMode.OFF]: der
      * Rohtext wurde von niemandem bearbeitet und braucht die vollen Regeln.
@@ -74,24 +73,22 @@ object PolishPlan {
         autoCapitalize: Boolean,
         language: String,
         refineMode: RefineMode,
-        smartFillers: Boolean,
         customFillers: Collection<String> = emptyList(),
         disabledFillers: Set<String> = emptySet(),
         paragraphs: Boolean = true,
     ): PolishOptions {
         val refined = refineMode != RefineMode.OFF
         val prompt = refineMode == RefineMode.PROMPT
-        val aiDecidesFillers = refined && (smartFillers || prompt)
         return PolishOptions(
-            removeFillers = removeFillers && !aiDecidesFillers,
+            removeFillers = removeFillers && !prompt,
             autoCapitalize = autoCapitalize && !prompt,
             language = language,
             customFillers = customFillers,
             disabledFillers = disabledFillers,
-            // Das Sprachmodell setzt Absaetze/Stichpunkte bewusst — nicht plattziehen. Mit
-            // "Automatische Absaetze" aus werden Umbrueche, die das Modell trotzdem liefert,
-            // hier zuverlaessig zu einem Fliesstext zusammengezogen. Die Stufe "Prompt" ist
-            // ausgenommen: ihre Gliederung ist der Zweck, nicht Beiwerk.
+            // Das Sprachmodell setzt Absaetze/Stichpunkte bewusst — nicht plattziehen. Ohne Absaetze
+            // (Schalter der Stufe, Zusammenfassen als Fliesstext) werden Umbrueche, die das Modell
+            // trotzdem liefert, hier zuverlaessig zu einem Fliesstext zusammengezogen. Die Stufe
+            // "Prompt" ist ausgenommen: ihre Gliederung ist der Zweck, nicht Beiwerk.
             keepLineBreaks = refined && (paragraphs || prompt),
         )
     }

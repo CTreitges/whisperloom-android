@@ -73,14 +73,6 @@ fun DictionaryScreen(nav: NavState) {
                 checked = prefs.autoCapitalize,
                 onCheckedChange = { prefs.autoCapitalize = it },
             )
-            // Die KI entscheidet ueber Fuellwoerter (Schalter bei der Textverbesserung) — die Liste pausiert dann.
-            if (prefs.smartFillers && anyAiStage(prefs)) {
-                Text(
-                    stringResource(R.string.text_fillers_paused),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
         }
 
         if (showVocabulary) VocabularySheet(snack) { showVocabulary = false }

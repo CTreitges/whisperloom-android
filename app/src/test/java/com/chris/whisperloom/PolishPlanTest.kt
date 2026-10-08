@@ -13,7 +13,6 @@ class PolishPlanTest {
     private fun plan(
         removeFillers: Boolean = true,
         refineMode: RefineMode = RefineMode.OFF,
-        smartFillers: Boolean = false,
         customFillers: List<String> = emptyList(),
         disabledFillers: Set<String> = emptySet(),
         paragraphs: Boolean = true,
@@ -22,7 +21,6 @@ class PolishPlanTest {
         autoCapitalize = true,
         language = "de",
         refineMode = refineMode,
-        smartFillers = smartFillers,
         customFillers = customFillers,
         disabledFillers = disabledFillers,
         paragraphs = paragraphs,
@@ -60,32 +58,40 @@ class PolishPlanTest {
         assertFalse(plan(removeFillers = false).removeFillers)
     }
 
-    @Test fun kiEntscheidungSchaltetDieWortlisteAb() {
-        // Sonst wuerde zweimal gefiltert und das "im Zweifel behalten" der KI
-        // waere wieder ausgehebelt — in jedem Modus, nicht nur beim Glaetten.
+    /**
+     * 3.9.0 (Plan §4): die Liste ist das Sicherheitsnetz nach jeder KI-Stufe ausser "Prompt" — auch
+     * wenn die KI selbst ueber Fuellwoerter entscheidet. Bis 3.8.6 pausierte sie dann, und ein "ähm",
+     * das die KI uebersah, blieb stehen.
+     */
+    @Test fun dieWortlisteLaeuftNachJederKiStufeAusserPrompt() {
+        for (mode in listOf(RefineMode.POLISH, RefineMode.READABLE, RefineMode.BEAUTIFY, RefineMode.SUMMARIZE)) {
+            val o = plan(removeFillers = true, refineMode = mode)
+            assertTrue(mode.name, o.removeFillers)
+            assertEquals(mode.name, "Also, ich komme morgen.", TextPolisher.polish("Also, ähm, ich komme morgen.", o))
+        }
+        assertFalse(plan(removeFillers = true, refineMode = RefineMode.PROMPT).removeFillers)
+    }
+
+    /** E6: eigene Woerter traegt der Nutzer bewusst ein — sie laufen nach jeder KI-Stufe mit. */
+    @Test fun eigeneWoerterLaufenNachDerKiMit() {
         for (mode in listOf(RefineMode.POLISH, RefineMode.BEAUTIFY, RefineMode.SUMMARIZE)) {
-            assertFalse(mode.name, plan(removeFillers = true, refineMode = mode, smartFillers = true).removeFillers)
+            val o = plan(refineMode = mode, customFillers = listOf("halt"))
+            assertEquals(mode.name, "Das ist gut.", TextPolisher.polish("Das ist halt gut.", o))
         }
     }
 
     @Test fun lesbarerGlaettenBehaeltDieWortlisteAlsNetz() {
         // Review: gemma3:4b liess bei "Lesbar" ein "ähm" stehen — die Liste faengt es (wie beim Glaetten, samt eigener Woerter).
-        val o = plan(removeFillers = true, refineMode = RefineMode.READABLE, smartFillers = false)
+        val o = plan(removeFillers = true, refineMode = RefineMode.READABLE)
         assertTrue(o.removeFillers)
         assertEquals("Also, ich komme morgen.", TextPolisher.polish("Also, ähm, ich komme morgen.", o))
-        assertFalse("mit smartFillers pausiert sie wie in jeder Stufe", plan(refineMode = RefineMode.READABLE, smartFillers = true).removeFillers)
         assertTrue("Gross-Schreibung wie beim Glaetten", o.autoCapitalize)
         assertTrue(o.keepLineBreaks)
         assertFalse(plan(refineMode = RefineMode.READABLE, paragraphs = false).keepLineBreaks)
     }
 
-    @Test fun glaettenAlleinLaesstDieWortlisteAktiv() {
-        assertTrue(plan(removeFillers = true, refineMode = RefineMode.POLISH, smartFillers = false).removeFillers)
-    }
-
-    @Test fun intelligenteFilterOhneKiBleibtWirkungslos() {
-        // smartFillers braucht den zweiten Aufruf — ohne ihn muss die Wortliste ran.
-        assertTrue(plan(removeFillers = true, refineMode = RefineMode.OFF, smartFillers = true).removeFillers)
+    @Test fun ausgeschalteteListeBleibtAuchNachDerKiAus() {
+        for (mode in RefineMode.entries) assertFalse(mode.name, plan(removeFillers = false, refineMode = mode).removeFillers)
     }
 
     @Test fun kiTextBehaeltSeineAbsaetze() {

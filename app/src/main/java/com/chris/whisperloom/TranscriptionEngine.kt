@@ -133,9 +133,8 @@ object TranscriptionEngine {
             autoCapitalize = prefs.autoCapitalize,
             language = language,
             // Ohne KI (aus, gescheitert, uebersprungen) = Rohtext, den keine KI bearbeitet hat: volle
-            // Regeln, sonst blieben mit "Fuellwoerter intelligent entfernen" (oder bei "Prompt") die "ähm"s stehen.
+            // Regeln, sonst blieben bei "Prompt" die "ähm"s stehen und Umbrueche ungeglaettet.
             refineMode = if (refined == null) RefineMode.OFF else mode,
-            smartFillers = prefs.smartFillers,
             customFillers = prefs.customFillers,
             disabledFillers = prefs.disabledFillers,
             paragraphs = prefs.refineParagraphs,

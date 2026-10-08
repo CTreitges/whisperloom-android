@@ -407,7 +407,6 @@
     <string name="text_fillers_edit">Liste bearbeiten</string>
     <string name="pref_auto_cap">Automatisch groß schreiben</string>
     <string name="pref_trailing_space">Leerzeichen nach Diktat anhängen</string>
-    <string name="text_fillers_paused">Die Wortliste pausiert, solange die KI über Füllwörter entscheidet.</string>
     <!-- Unterzeilen (aktueller Wert) von KI-Zugang und „Bei Offline-Erkennung“ -->
     <!-- %1$s = Anbieter der Erkennung -->
     <string name="text_hub_val_access_same">Wie Erkennung · %1$s</string>

@@ -129,9 +129,10 @@ class SharedRefineTest {
         assertTrue(options.autoCapitalize)
     }
 
-    @Test fun intelligenteFuellwoerterPausierenDieWortlisteWieBeimDiktat() {
+    /** 3.9.0 (Plan §4): die Liste laeuft auch nach "intelligent" — bis 3.8.6 pausierte sie. */
+    @Test fun intelligenteFuellwoerterLassenDieWortlisteAlsNetzLaufen() {
         prefs.smartFillers = true
-        assertEquals(false, SharedRefine.options(prefs, "de", RefineMode.POLISH).removeFillers)
+        assertEquals(true, SharedRefine.options(prefs, "de", RefineMode.POLISH).removeFillers)
     }
 
     // --- Kein KI-Fehler kostet die Nachricht -------------------------------------------------
