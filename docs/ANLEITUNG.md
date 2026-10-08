@@ -146,7 +146,7 @@ Der schwebende Knopf liegt über anderen Apps — dafür braucht Android deine E
 
 ### Schritt 5 — Text automatisch einfügen (empfohlen)
 
-Die **Bedienungshilfe** „WhisperLoom Text-Einfügen" fügt den diktierten Text ins gerade fokussierte Feld ein, damit du beim Diktieren nicht die Tastatur wechseln musst. Es wird nichts mitgelesen oder gespeichert.
+Die **Bedienungshilfe** „WhisperLoom Text-Einfügen" fügt den diktierten Text ins gerade fokussierte Feld ein, damit du beim Diktieren nicht die Tastatur wechseln musst. Dafür liest sie nur dieses Feld (Text und Cursor) und prüft, ob es ein Passwortfeld ist; andere Bildschirminhalte liest sie nicht, den Feldinhalt speichert sie nicht. Die Diktate vom Knopf kommen in den Verlauf, wenn er an ist ([11](#11-verlauf)).
 
 Ohne diesen Schritt landet der Text in der **Zwischenablage** — du fügst ihn dann selbst ein (langes Drücken im Textfeld → Einfügen). Das funktioniert, ist aber ein Handgriff mehr.
 
@@ -219,7 +219,7 @@ Der Knopf (68 dp groß) schwebt über allen Apps, solange er läuft. Er startet 
 | **Sendet** | dunkeltürkiser Kreis mit rotierendem Bogen, Label „sendet …", während der Textverbesserung „verbessert … tippen = ohne KI" | bei „sendet …" ignoriert; bei „verbessert …" sofort ohne KI einfügen ([9.7](#97-lokales-textmodell-gemma-4)) | Knopf verschieben |
 | **Fehler** | dunkelroter Kreis, Wiederholen-Symbol, Label „tippen = erneut" | erneut senden — das Audio ist noch da | aufs Abbrechen-Ziel ziehen = verwerfen |
 
-Der Ablauf im Normalfall: **antippen → sprechen → nochmal antippen**. Kurz darauf steht der Text im Feld, in dem der Cursor stand. Wichtig: Der Cursor muss in einem Textfeld stehen, *bevor* du die Aufnahme beendest — WhisperLoom fügt dort ein, wo gerade der Fokus ist. Außerdem landet der Text im Verlauf ([11](#11-verlauf)), außer das Feld ist ein Passwortfeld.
+Der Ablauf im Normalfall: **antippen → sprechen → nochmal antippen**. Kurz darauf steht der Text im Feld, in dem der Cursor stand. Wichtig: Der Cursor muss in einem Textfeld stehen, *bevor* du die Aufnahme beendest — WhisperLoom fügt dort ein, wo gerade der Fokus ist. Außerdem landet der Text im Verlauf ([11](#11-verlauf)), außer die Bedienungshilfe meldet das Feld als Passwortfeld.
 
 Beim Diktieren gilt: normal sprechen, ohne Kunstpausen. Satzzeichen musst du nicht diktieren — die Online-Modelle setzen sie selbst; mit der Stufe „Glätten" der Textverbesserung ([Kapitel 8](#8-textverbesserung)) werden Zeichensetzung und Groß-/Kleinschreibung zusätzlich korrigiert. Vor dem Senden schneidet WhisperLoom Stille am Anfang und Ende weg.
 
@@ -237,7 +237,7 @@ Bei Fehlern, die sich durch Wiederholen nicht beheben lassen (z. B. ungültiger 
 
 ### 4.4 Ohne Bedienungshilfe: Zwischenablage
 
-Ist die Bedienungshilfe nicht aktiv, kann WhisperLoom den Text nicht direkt einfügen. Er wird stattdessen in die **Zwischenablage** kopiert; der Knopf zeigt zwei Sekunden lang „Kopiert — einfügen". Dann im Textfeld lange drücken → Einfügen. Auf dem Startbildschirm erinnert das Banner „Ohne Bedienungshilfe landet der Text nur in der Zwischenablage." mit **Beheben** an den fehlenden Schritt.
+Ist die Bedienungshilfe nicht aktiv, kann WhisperLoom den Text nicht direkt einfügen. Er wird stattdessen in die **Zwischenablage** kopiert; der Knopf zeigt zwei Sekunden lang „Kopiert — einfügen". Dann im Textfeld lange drücken → Einfügen. Auf dem Startbildschirm erinnert das Banner „Ohne Bedienungshilfe landet der Text nur in der Zwischenablage." mit **Beheben** an den fehlenden Schritt. Unter Einstellungen → Knopf & Tastatur zeigt die Zeile **Textausgabe**, welcher Weg gerade gilt („Bedienungshilfe: fügt direkt ins Feld ein“ oder „Zwischenablage (Bedienungshilfe aus)“); ein Tipp darauf führt zur Bedienungshilfe, beim Einschalten mit dem Hinweis vorab. Ohne Bedienungshilfe kennt der Knopf das Zielfeld nicht und erkennt deshalb auch kein Passwortfeld: Das Diktat kommt dann immer in den Verlauf, wenn er an ist.
 
 ### 4.5 Beenden
 
@@ -263,7 +263,7 @@ Die Tastatur besteht aus drei Zonen:
 
 Rechts über dem Mikrofon sitzt außerdem ein **Zauberstab** — er klappt die Textverbesserung auf, siehe [5.4](#54-textverbesserung-direkt-in-der-tastatur).
 
-Der erkannte Text wird direkt an der Cursor-Position eingefügt — die Bedienungshilfe ist bei der Tastatur nicht nötig — und vorher in den Verlauf geschrieben ([11](#11-verlauf)), außer aus Passwort- und Inkognito-Feldern. Nach einem Fehler („Fehler bei der Erkennung — erneut versuchen") bleibt das Audio erhalten; die Taste **Erneut senden** wiederholt den Versuch.
+Der erkannte Text wird direkt an der Cursor-Position eingefügt — die Bedienungshilfe ist bei der Tastatur nicht nötig — und vorher in den Verlauf geschrieben ([11](#11-verlauf)), außer aus Passwort- und Inkognito-Feldern. Nach einem Fehler („Fehler bei der Erkennung — erneut versuchen") bleibt das Audio erhalten; die Taste **Erneut senden** wiederholt den Versuch. Seit 3.9.0 gilt das auch, wenn beim Senden der Zugang („Kein Zugang eingerichtet — tippe zum Einrichten“) oder das Offline-Modell fehlt. Wechselst du in ein anderes Feld, verfällt das Audio eines Fehlers.
 
 Wenn du „Leerzeichen nach Diktat anhängen" (Einstellungen → Knopf & Tastatur → Einfügen) aktiv hast, kannst du mehrere Diktate direkt hintereinander sprechen, ohne zwischendurch ein Leerzeichen zu tippen.
 
@@ -284,10 +284,10 @@ Die Aufnahme läuft dann **freihändig weiter**. Die Statuszeile zählt die Daue
 **Tastatur zu, anderes Feld:**
 
 - **Pausiert** bleibt die Pause, wenn du die Tastatur schließt oder in eine andere App wechselst, etwa um etwas nachzuschlagen. Beim nächsten Öffnen steht wieder „Pausiert bei …“, und du machst weiter, sendest oder verwirfst. Wechselst du in der Pause das Feld, fügt **Senden** in das Feld ein, das dann gerade offen ist. Das Audio liegt bis dahin nur im Arbeitsspeicher; beendet Android die App in der Pause, ist es weg.
-- **Läuft** die festgestellte Aufnahme noch, wenn du die Tastatur schließt, wird sie wie bisher fertig übertragen und eingefügt, solange das Eingabefeld erhalten bleibt. Ist auch das Feld weg (Eingabe beendet), wird die Aufnahme verworfen. Kommt ein fertiger Text in kein Feld mehr, liegt er im Verlauf ([11](#11-verlauf)).
-- Solange ein Diktat offen ist (laufend oder pausiert), ist der **Globus gesperrt**: Ein Tipp sagt „Erst senden oder verwerfen“. Ein Tastaturwechsel würde die Tastatur beenden und die Aufnahme still verwerfen.
+- **Läuft** die festgestellte Aufnahme noch, wenn du die Tastatur schließt, wird sie wie bisher fertig übertragen und eingefügt, solange das Eingabefeld erhalten bleibt. Ist auch das Feld weg (Eingabe beendet), wird die Aufnahme verworfen. Kommt ein fertiger Text in kein Feld mehr, liegt er im Verlauf ([11](#11-verlauf)); ist der Verlauf aus, in der Zwischenablage. Aus Passwort- und Inkognito-Feldern hebt WhisperLoom ihn nirgends auf, die Statuszeile sagt dann „Feld nicht mehr da — Text nicht eingefügt“.
+- Solange ein Diktat offen ist (laufend oder pausiert), ist der **Globus gesperrt**: Ein Tipp sagt „Erst senden oder verwerfen“. Wechselst du trotzdem über das Tastatur-Symbol der Navigationsleiste oder die Systemeinstellungen, endet die Diktat-Tastatur. Das offene Diktat überträgt WhisperLoom dann im Hintergrund wie beim Senden und legt den Text im Verlauf ab, ohne Hinweis. Ist der Verlauf aus, war das Feld ein Passwort- oder Inkognito-Feld oder scheitert die Erkennung (etwa ohne Netz), ist das Diktat weg.
 
-**Lange Diktate (nur Online-Erkennung):** Ab 10 Minuten Aufnahmezeit sagt die Statuszeile „Aufnahme 10:00 — bald senden, höchstens 12:00“. Bei 12 Minuten pausiert die Aufnahme von selbst: „Höchstlänge erreicht — senden oder verwerfen“, weitersprechen geht dann nicht mehr. Gezählt wird nur die aufgenommene Zeit, Pausen nicht. Grund: OpenAI lehnt Aufnahmen ab etwa 13 Minuten ab, und das Audio wäre dann weg. Offline gibt es diese Grenze nicht.
+**Lange Diktate (nur Online-Erkennung):** Ab 10 Minuten Aufnahmezeit sagt die Statuszeile „Aufnahme 10:00 — bald senden, höchstens 12:00“. Bei 12 Minuten pausiert die Aufnahme von selbst: „Höchstlänge erreicht — senden oder verwerfen“, weitersprechen geht dann nicht mehr. Gezählt wird nur die aufgenommene Zeit, Pausen nicht. Grund: OpenAI lehnt Aufnahmen ab etwa 13 Minuten ab, und das Audio wäre dann weg. Offline gibt es diese Grenze nicht. Stellst du in der Pause über das Zahnrad die Spracherkennung um, prüft WhisperLoom neu: Ist die Aufnahme für die Online-Erkennung zu lang (etwa offline über 12 Minuten aufgenommen), sind **Senden** und **Weiter** gesperrt, und die Statuszeile sagt „Zu lang für Online-Erkennung — offline senden oder verwerfen“. Fehlt beim **Senden** der Zugang, bleibt das Diktat ebenfalls pausiert („Kein Zugang eingerichtet — tippe zum Einrichten“). Zurück auf Offline geht es ohne Höchstlänge weiter.
 
 **Mit TalkBack:** Gedrückthalten funktioniert dort nicht. Deshalb **startet ein Antippen** des Mikrofons die Aufnahme, und sie ist sofort festgestellt. Der Ablauf: Tipp = Start, Tipp = Pause, Tipp = Weiter. Gesendet und verworfen wird über die Aktionen der Mikro-Taste — im TalkBack-Aktionsmenü „Aufnahme senden“ und „Aufnahme verwerfen“ —, ohne dass du den Fokus auf die kleinen Tasten daneben bringen musst; die Tasten Verwerfen und Senden sind aber auch ganz normal ansteuerbar. Die Mikro-Taste sagt ihren Zustand an („Aufnahme festgestellt, 0:42 — antippen zum Pausieren“, „Aufnahme pausiert, 0:42 — antippen zum Weitersprechen“), der gesperrte Globus „Eingabemethode wechseln — erst senden oder verwerfen“.
 
@@ -323,7 +323,7 @@ WhisperLoom öffnet den Bildschirm **Transkription**. Oben steht die Quelle mit 
 
 ### 6.2 Das Ergebnis
 
-- Der Text erscheint in **Absätzen** — WhisperLoom setzt sie an Satzgrenzen, bevorzugt vor Wörtern wie „Also", „Außerdem", „Dann". Bei mehreren Dateien gibt es je Datei einen Abschnitt mit Quelle und Dauer. Der Text ist markierbar.
+- Der Text erscheint in **Absätzen** — WhisperLoom setzt sie an Satzgrenzen, bevorzugt vor Wörtern wie „Also", „Außerdem", „Dann". Ausnahme: „Zusammenfassen“ mit der Form „Fließtext“ ([8.2](#82-sprachnachrichten)) gibt je Stück einen Absatz. Bei mehreren Dateien gibt es je Datei einen Abschnitt mit Quelle und Dauer. Der Text ist markierbar.
 - Schalter **Füllwörter ausblenden** (standardmäßig **an**): Blendet „ähm, äh …" aus. Ausgeschaltet zeigt WhisperLoom den Text **wortgetreu, 100 %** — bei fremden Nachrichten will man manchmal genau wissen, was gesagt wurde. Der Schalter wirkt sofort auf die Anzeige und auf Kopieren/Teilen; es wird nichts neu hochgeladen.
 - Ist unter Einstellungen → Textverbesserung → **Bei geteilten Sprachnachrichten** eine KI-Stufe gewählt ([Kapitel 8.2](#82-sprachnachrichten)), zeigt der Bildschirm die verbesserte Fassung; der Füllwort-Schalter entfällt dann, darunter steht z. B. „Textverbesserung: Glätten · änderbar unter Einstellungen › Textverbesserung“ — ein Tipp auf den Link öffnet diese Seite. Scheitert die KI (Netz, Anbieter, kein Zugang), erscheint wie gewohnt die Fassung ohne KI mit Schalter und dem Hinweis „Textverbesserung übersprungen: …"; bei mehreren Dateien nennt die Zeile, bei wie vielen die KI übersprungen wurde. Bei Offline-Erkennung mit der Regel „Online, ohne Netz lokal" springt nach einem Online-Fehler das lokale Textmodell ein („Textverbesserung: Glätten · online fehlgeschlagen, lokal verbessert"); die weiteren Stücke gehen dann gleich lokal ([9.7](#97-lokales-textmodell-gemma-4)).
 - **Kopieren** legt den angezeigten Text in die Zwischenablage (bis Android 12 mit dem Hinweis „In die Zwischenablage kopiert", ab Android 13 bestätigt das System selbst); **Teilen** gibt ihn als Text an eine andere App weiter. Die Zwischenablage wird nie automatisch überschrieben.
@@ -458,7 +458,7 @@ Einstellungen → **Textverbesserung**, Karte **Beim Diktieren**: die Stufen als
 | Stufe | Was passiert | Auf ihrer Seite |
 |---|---|---|
 | **Aus** | Nur die festen Regeln, keine zweite Anfrage. | was ohne KI mit dem Text passiert, Weg zu Wörterbuch & Regeln |
-| **Glätten** | Zeichensetzung und Groß-/Kleinschreibung. Inhalt unverändert. | Bereinigung, Absätze, Modell |
+| **Glätten** | Zeichensetzung und Groß-/Kleinschreibung, nah an deinen Worten. | Bereinigung, Absätze, Modell |
 | **Verschönern** | Formuliert flüssiger und klarer, behält Inhalt, Ton und deine Wörter. | Absätze, Modell |
 | **Zusammenfassen** | Kürzt auf das Wesentliche. Namen, Zahlen und Termine bleiben genau. | Form, Modell |
 | **Prompt** (Pro) | Formt das Diktat zu einem gegliederten Prompt für ChatGPT, Claude & Co. | Modell |
@@ -498,7 +498,7 @@ Die Seiten der Sprachnachrichten haben eigene Werte, unabhängig vom Diktat:
 
 - **Glätten → Bereinigung** wie beim Diktat ([8.1](#81-diktat)), aber nur für geteilte Sprachnachrichten. Du kannst etwa Diktate mit „Nur Zeichensetzung“ glätten und Sprachnachrichten „Lesbar“.
 - **Zusammenfassen → Form** (Automatisch oder Fließtext), ebenfalls eigener Wert.
-- **Absätze:** „Sprachnachrichten werden immer in Absätze gegliedert.“ Einen Schalter gibt es hier nicht.
+- **Glätten und Verschönern → Absätze:** „Sprachnachrichten werden immer in Absätze gegliedert.“ Einen Schalter gibt es hier nicht. Beim Zusammenfassen entscheidet die Form: „Automatisch“ gliedert, „Fließtext“ gibt je Stück einen Absatz.
 - **Modell:** „Wie beim Diktat · …“ — Sprachnachrichten rechnen mit demselben Modell je Stufe wie das Diktat ([8.4](#84-modell-je-stufe)); ein Tipp auf die Zeile öffnet die Seite der Stufe beim Diktat, wo du es änderst.
 - **Aus:** „Die Nachricht bleibt wortgetreu, ohne KI und ohne die festen Regeln. Im Fenster blendet der Schalter „Füllwörter ausblenden“ die Wörter der Füllwort-Liste aus.“ Darunter der Weg zu **Wörterbuch & Regeln**, wo du die Liste bearbeitest.
 
@@ -576,9 +576,9 @@ Nur auf Geräten, die offline erkennen können, steht auf der Seite **Textverbes
 
 Einstellungen → **Wörterbuch & Regeln** → Karte **Feste Regeln**. Lokal, kostenlos, ohne KI und nach jeder KI-Stufe außer „Prompt“ ([8.1](#81-diktat)):
 
-- **Füllwörter entfernen (ähm, äh …)** — „Feste Wortliste je Sprache“ (Deutsch: ähm, äh, öhm, ähem, hmm, öh; Englisch: um, uh, uhm, erm, hmm; dazu Listen für Spanisch, Französisch, Italienisch). Ein Komma, das durch das Entfernen direkt vor dem Satzende landen würde, verschwindet mit.
+- **Füllwörter entfernen (ähm, äh …)** — „Feste Wortliste je Sprache · läuft zuletzt, mit und ohne KI“ (Deutsch: ähm, äh, öhm, ähem, hmm, öh; Englisch: um, uh, uhm, erm, hmm; dazu Listen für Spanisch, Französisch, Italienisch). Ein Komma, das durch das Entfernen direkt vor dem Satzende landen würde, verschwindet mit.
 - **Liste bearbeiten** öffnet das Blatt **Füllwörter** (immer bedienbar, die Liste gilt auch fürs Ausblenden im Sprachnachrichten-Fenster): Sprache wählen, unter **Eingebaut** einzelne Standardwörter abwählen (z. B. wenn „hmm" bei dir ein echtes Wort ist), unter **Eigene Wörter** weitere hinzufügen (Feld „Wort hinzufügen", auch Zwei-Wort-Floskeln). **Standard wiederherstellen** setzt beides zurück. Hinweis aus der App: „Nur eindeutige Füllsilben — echte Wörter wie „halt" bleiben, sonst kaputte Sätze."
-- **Automatisch groß schreiben** — Satzanfänge groß (kein Title-Case). Nach Abkürzungen wie „z. B.“, „ca.“, „d.h.“ und nach Ordnungszahlen („vom 1. bis“) bleibt das nächste Wort klein.
+- **Automatisch groß schreiben** — Satzanfänge groß (kein Title-Case). Nach Abkürzungen wie „z. B.“, „ca.“, „d.h.“, nach Ordnungszahlen („vom 1. bis“) und überhaupt nach Zahl oder Einzelbuchstabe mit Punkt („2021.“, „Plan B.“) schreibt die Regel das nächste Wort nicht groß, es bleibt, wie Erkennung oder KI es liefern. Fällt dort ein groß geschriebenes Füllwort weg („2021. Ähm, dann“), wird das Wort danach groß („2021. Dann“).
 
 **Leerzeichen nach Diktat anhängen** — damit das nächste Diktat oder Tippen nicht am letzten Wort klebt — steht seit 3.9.0 unter Einstellungen → **Knopf & Tastatur** → Karte **Einfügen**.
 
@@ -869,7 +869,12 @@ Seit 3.9.0 merkt sich WhisperLoom deine Diktate: Was du mit der **Diktat-Tastatu
 
 Der Verlauf ist **ab Werk an**, mit höchstens 50 Einträgen — auch nach dem Update. Er liegt nur auf dem Gerät ([12](#12-datenschutz)). Abschalten: [11.4](#114-verlauf-einstellungen).
 
-**Was nicht in den Verlauf kommt:** nichts aus Passwortfeldern und aus Feldern, die keine Vorschläge lernen dürfen (Inkognito-Modus des Browsers u. Ä.; beim Knopf zählt das Passwortfeld, das die Bedienungshilfe als fokussiert meldet), keine Aufnahmen (Audio wird nie gespeichert), keine leeren Erkennungen, nicht die Ziel-App. Geteilte Sprachnachrichten und Pro Widgets zeichnen nicht auf. Ohne Bedienungshilfe kennt der Knopf das Zielfeld nicht: Der Text kommt dann in die Zwischenablage und in den Verlauf.
+**Was nicht in den Verlauf kommt:** keine Aufnahmen (Audio wird nie gespeichert), keine leeren Erkennungen, nicht die Ziel-App. Geteilte Sprachnachrichten und Pro Widgets zeichnen nicht auf. Private Felder erkennen Tastatur und Knopf unterschiedlich gut:
+
+- **Diktat-Tastatur:** nichts aus Passwortfeldern und aus Feldern, die keine Vorschläge lernen dürfen (Inkognito-Modus des Browsers u. Ä.). Beides meldet das Feld der Tastatur selbst.
+- **Schwebender Knopf:** nichts aus Feldern, die die Bedienungshilfe als Passwortfeld meldet. Ein Inkognito-Feld kann die Bedienungshilfe nicht erkennen, dessen Text kommt also in den Verlauf. Ohne Bedienungshilfe kennt der Knopf das Zielfeld gar nicht: Der Text kommt dann in die Zwischenablage und in den Verlauf, auch aus einem Passwortfeld.
+
+Wer das nicht will, diktiert in solche Felder mit der Diktat-Tastatur oder schaltet den Verlauf aus ([11.4](#114-verlauf-einstellungen)).
 
 ### 11.1 Die Liste
 
@@ -895,19 +900,19 @@ Unten: **Kopieren** nimmt die gerade sichtbare Fassung (bis Android 12 mit „In
 
 - Gerechnet wird immer aus dem Ursprung, mit den **aktuellen Einstellungen fürs Diktat**: KI-Zugang und Modell je Stufe, Absätze und Form, bei Offline-Erkennung die Regel aus [9.7](#97-lokales-textmodell-gemma-4). Online geht dafür der Rohtext an deinen KI-Zugang — eine Anfrage, wie beim Diktat.
 - Während der Rechnung zeigt der neue Chip eine Ladeanzeige; die Rechnung läuft weiter, auch wenn du das Handy drehst. Danach erscheint die Fassung als Chip.
-- Klappt es nicht (kein Netz, kein Zugang, Fehler beim Anbieter), bleibt der Eintrag unverändert, und die Hinweiszeile sagt warum („… · Eintrag unverändert“). Vor dem Neu-Verarbeiten prüft WhisperLoom das Netz streng, damit nichts in einem WLAN mit Anmeldeseite hängen bleibt.
-- Dieselbe Stufe noch einmal ersetzt ihre Fassung; war sie bearbeitet, fragt WhisperLoom vorher „Bearbeitete Fassung ersetzen?“.
+- Klappt es nicht (kein Netz, kein Zugang, Fehler beim Anbieter), bleibt der Eintrag unverändert, und eine kurze Meldung unten am Bildschirm (Snackbar) sagt warum („… · Eintrag unverändert“). Hast du den Eintrag inzwischen verlassen, kommt sie beim nächsten Öffnen. Vor dem Neu-Verarbeiten prüft WhisperLoom das Netz streng, damit nichts in einem WLAN mit Anmeldeseite hängen bleibt.
+- Dieselbe Stufe noch einmal ersetzt ihre Fassung; war sie bearbeitet, fragt WhisperLoom vorher „Bearbeitete Fassung ersetzen?“. Solange eine Fassung neu gerechnet wird, ist ✎ für sie gesperrt.
 
 ### 11.4 Verlauf-Einstellungen
 
 Im Verlauf → **⋮** → **Verlauf-Einstellungen**:
 
-- **Verlauf speichern** — „Diktate aus Tastatur und Knopf, nichts aus Passwort- und Inkognito-Feldern“. Ausschalten fragt „Verlauf ausschalten? — Alle Einträge werden gelöscht, neue Diktate nicht mehr gespeichert.“ und löscht dann alles.
+- **Verlauf speichern** — „Diktate aus Tastatur und Knopf. Ausgenommen: bei der Tastatur Passwort- und Inkognito-Felder, beim Knopf Passwortfelder, wenn die Bedienungshilfe an ist.“ Ausschalten fragt „Verlauf ausschalten? — Alle Einträge werden gelöscht, neue Diktate nicht mehr gespeichert.“ und löscht dann alles.
 - **Größe** — 10, 25, **50** (ab Werk), 100, 250 oder 500 Einträge. Ist der Verlauf voll, fällt beim nächsten Diktat der älteste Eintrag weg. Verkleinern fragt „Verlauf verkleinern? — Die 12 ältesten Einträge werden gelöscht.“ und kürzt sofort. Ein Eintrag braucht grob geschätzt 2–5 KB, 500 Einträge also etwa 1–2,5 MB.
 - **Alle löschen** (mit Rückfrage).
 - Hinweis: „Der Verlauf liegt nur auf diesem Gerät und kommt nie in ein Backup. Audio wird nicht gespeichert.“
 
-**Text bei verschwundenem Feld:** War das Eingabefeld beim Einfügen weg (App gewechselt, Tastatur zu), ging der fertige Text der Diktat-Tastatur bis 3.8.6 still verloren. Jetzt liegt er im Verlauf, und die Statuszeile der Tastatur sagt bis zum nächsten Diktat „Feld nicht mehr da — Text liegt im Verlauf“. Das setzt einen eingeschalteten Verlauf voraus.
+**Text bei verschwundenem Feld:** War das Eingabefeld beim Einfügen weg (App gewechselt, Tastatur zu), ging der fertige Text der Diktat-Tastatur bis 3.8.6 still verloren. Jetzt liegt er im Verlauf, und die Statuszeile der Tastatur sagt bis zum nächsten Diktat „Feld nicht mehr da — Text liegt im Verlauf“. Ist der Verlauf aus, kommt er in die Zwischenablage („Feld nicht mehr da — Text in der Zwischenablage“). Aus einem Passwort- oder Inkognito-Feld hebt WhisperLoom ihn nirgends auf, die Zeile sagt dann „Feld nicht mehr da — Text nicht eingefügt“. Den Erfolgs-Ring gibt es nur, wenn der Text im Feld oder im Verlauf liegt.
 
 ---
 
@@ -929,11 +934,11 @@ WhisperLoom hat keinen eigenen Server, kein Konto, keine Telemetrie. Was mit dei
 
 **Ollama:** Beim Anbieter **Ollama (lokal / Homeserver)** geht der Text für die Textverbesserung nur an dein eigenes Ollama — er verlässt dein Netz nicht. Bei **Ollama Cloud** geht er an ollama.com.
 
-**Verlauf:** Den Text deiner Diktate aus Knopf und Tastatur speichert WhisperLoom im Verlauf ([11](#11-verlauf)) — Rohtext der Erkennung, die Fassungen der Stufen mit dem Namen des Modells, Sprache, Quelle (Tastatur oder Knopf), Zeitpunkt und Dauer. Er liegt nur auf dem Gerät, in einem Ordner, den Android nie sichert: nie im Google-Backup, nie im Geräteumzug. Nichts aus Passwortfeldern und aus Feldern, die keine Vorschläge lernen dürfen (Inkognito), kein Audio, keine Ziel-App, keine geteilten Sprachnachrichten. Den Verlauf schickt WhisperLoom nirgends hin — nur wenn du bei einem Eintrag **Andere Stufe …** wählst, geht dessen Rohtext an das Sprachmodell deiner Textverbesserung, genau wie bei einem Diktat (bei Offline-Erkennung je nach Regel ans lokale Textmodell). Größe 10–500 Einträge (ab Werk 50), ältere fallen von selbst weg; Löschen einzeln per Wischen, **Alle löschen** im ⋮-Menü, und **Verlauf speichern** auszuschalten löscht alles. Eine eigene Verschlüsselung gibt es nicht; Android verschlüsselt den App-Speicher. Die Texte erscheinen nie in Logs oder Benachrichtigungen.
+**Verlauf:** Den Text deiner Diktate aus Knopf und Tastatur speichert WhisperLoom im Verlauf ([11](#11-verlauf)) — Rohtext der Erkennung, die Fassungen der Stufen mit dem Namen des Modells, Sprache, Quelle (Tastatur oder Knopf), Zeitpunkt und Dauer. Er liegt nur auf dem Gerät, in einem Ordner, den Android nie sichert: nie im Google-Backup, nie im Geräteumzug. Kein Audio, keine Ziel-App, keine geteilten Sprachnachrichten. Die Diktat-Tastatur nimmt nichts aus Passwortfeldern und aus Feldern auf, die keine Vorschläge lernen dürfen (Inkognito). Der Knopf erkennt nur Passwortfelder, und nur mit eingeschalteter Bedienungshilfe; Inkognito-Felder erkennt er nie ([11](#11-verlauf)). Den Verlauf schickt WhisperLoom nirgends hin — nur wenn du bei einem Eintrag **Andere Stufe …** wählst, geht dessen Rohtext an das Sprachmodell deiner Textverbesserung, genau wie bei einem Diktat (bei Offline-Erkennung je nach Regel ans lokale Textmodell). Größe 10–500 Einträge (ab Werk 50), ältere fallen von selbst weg; Löschen einzeln per Wischen, **Alle löschen** im ⋮-Menü, und **Verlauf speichern** auszuschalten löscht alles. Eine eigene Verschlüsselung gibt es nicht; Android verschlüsselt den App-Speicher. Die Texte erscheinen nie in Logs oder Benachrichtigungen.
 
-**Bedienungshilfe:** Die Bedienungshilfe „WhisperLoom Text-Einfügen" liest nichts mit und speichert nichts; sie fügt nur den diktierten Text in das fokussierte Feld ein. Vom fokussierten Feld prüft sie nur, ob es ein Passwortfeld ist, damit dessen Text nicht in den Verlauf kommt. Android zeigt beim Aktivieren die übliche Warnung für Bedienungshilfen („kann Bildschirminhalte lesen") — WhisperLoom nutzt davon ausschließlich das Einfügen.
+**Bedienungshilfe:** Die Bedienungshilfe „WhisperLoom Text-Einfügen" fügt den diktierten Text in das fokussierte Feld ein. Dafür liest sie nur dieses Feld — Text und Cursor, damit an der richtigen Stelle eingefügt wird — und prüft, ob es ein Passwortfeld ist, damit dessen Text nicht in den Verlauf kommt. Andere Bildschirminhalte liest sie nicht, den Feldinhalt speichert sie nicht. Die Diktate vom Knopf hebt der Verlauf auf, solange er an ist (siehe oben). Android zeigt beim Aktivieren die übliche Warnung für Bedienungshilfen („kann Bildschirminhalte lesen") — WhisperLoom nutzt davon nur das Einfügen und diese Prüfung.
 
-**Auf dem Gerät gespeichert:** Deine Einstellungen inklusive API-Key (im privaten App-Speicher, für andere Apps unzugänglich), die heruntergeladenen Modelle (Whisper- und Textmodelle, dazu der Zwischenspeicher, den ein Textmodell beim ersten Start anlegt), dein Vokabular (bei einer verknüpften Datei nur der Verweis darauf), die zuletzt geladenen Modell-Listen der Anbieter (ohne Key) und die Position des Knopfs, der Verlauf (siehe oben); mit Pro Widgets außerdem die Widgets samt Server-Adressen, Tokens und Galerie-Bildern sowie ein noch nicht gesendeter Auftrag, bis er draußen oder verworfen ist ([14.9](#149-was-dabei-gesendet-wird)). Sonst keine Aufnahmen und keine Texte; geteilte Sprachnachrichten werden nirgends gespeichert. Ein fehlgeschlagenes oder pausiertes Diktat bleibt nur so lange im Arbeitsspeicher, bis du es sendest oder verwirfst. WhisperLoom ist vom Android-System-Backup ausgenommen (`allowBackup=false`), und weil manche Hersteller den Geräteumzug trotzdem zulassen, sind Einstellungen, Widgets, Modelle und Modell-Listen dafür zusätzlich ausdrücklich ausgeschlossen: die Einstellungen inklusive Key und Widget-Tokens landen weder im Google-Backup noch im Geräte-zu-Gerät-Transfer — nach einem Gerätewechsel richtest du den Zugang neu ein. Der Verlauf liegt ohnehin in einem Ordner, den Android nie sichert.
+**Auf dem Gerät gespeichert:** Deine Einstellungen inklusive API-Key (im privaten App-Speicher, für andere Apps unzugänglich), die heruntergeladenen Modelle (Whisper- und Textmodelle, dazu der Zwischenspeicher, den ein Textmodell beim ersten Start anlegt), dein Vokabular (bei einer verknüpften Datei nur der Verweis darauf), die zuletzt geladenen Modell-Listen der Anbieter (ohne Key) und die Position des Knopfs, der Verlauf (siehe oben); mit Pro Widgets außerdem die Widgets samt Server-Adressen, Tokens und Galerie-Bildern sowie ein noch nicht gesendeter Auftrag, bis er draußen oder verworfen ist ([14.9](#149-was-dabei-gesendet-wird)). Sonst keine Aufnahmen und keine Texte; geteilte Sprachnachrichten werden nirgends gespeichert. Ein fehlgeschlagenes oder pausiertes Diktat bleibt nur so lange im Arbeitsspeicher, bis du es sendest oder verwirfst. Wechselst du bei offenem Diktat die Tastatur über die Navigationsleiste oder die Systemeinstellungen, wird es wie beim Senden erkannt und landet im Verlauf, wenn er an ist ([5.3](#53-ohne-halten-diktieren-wisch-geste-und-pause)). WhisperLoom ist vom Android-System-Backup ausgenommen (`allowBackup=false`), und weil manche Hersteller den Geräteumzug trotzdem zulassen, sind Einstellungen, Widgets, Modelle und Modell-Listen dafür zusätzlich ausdrücklich ausgeschlossen: die Einstellungen inklusive Key und Widget-Tokens landen weder im Google-Backup noch im Geräte-zu-Gerät-Transfer — nach einem Gerätewechsel richtest du den Zugang neu ein. Der Verlauf liegt ohnehin in einem Ordner, den Android nie sichert.
 
 **Berechtigungen:** Mikrofon (Aufnahme), Internet (Online-Dienst und Modell-Download), Über anderen Apps anzeigen (Knopf), Benachrichtigungen (Beenden-Aktion und Download-Fortschritt), Netzwerkstatus (Nachfrage vor Downloads über mobile Daten und Prüfung, ob vor einer Online-Textverbesserung Netz da ist), Vordergrund-Dienste (Knopf, Modell-Download und Aufnahme eines Pro Widgets). Das lokale Textmodell braucht keine neue Berechtigung.
 
@@ -947,7 +952,7 @@ Die häufigsten Punkte stehen auch in der App unter Anleitung & Hilfe → **Wenn
 „Über anderen Apps anzeigen" muss erlaubt sein (Einstellungen → Knopf & Tastatur → Berechtigungen). Zusätzlich in den Android-Einstellungen die **Akku-Optimierung** für WhisperLoom ausschalten (Apps → WhisperLoom → Akku → „Nicht eingeschränkt"/„Uneingeschränkt"), sonst beendet Android den Dienst im Hintergrund. Einige Hersteller (Xiaomi, Huawei, Oppo …) haben eigene Autostart-/Hintergrund-Sperren — WhisperLoom dort freigeben. Zeigt WhisperLoom „„Über anderen Apps anzeigen" wurde entzogen" → **Erlauben**.
 
 **Der Text landet nur in der Zwischenablage.**
-Die Bedienungshilfe „WhisperLoom" ist aus. Aktivieren (Einstellungen → Knopf & Tastatur → Berechtigungen → Bedienungshilfe → **Öffnen**), dann fügt WhisperLoom den Text direkt ein. In manchen Apps ist das Feld kein normales Textfeld (etwa in einigen Spielen oder Terminal-Apps) — dann bleibt die Zwischenablage der Weg.
+Die Bedienungshilfe „WhisperLoom" ist aus. Aktivieren (Einstellungen → Knopf & Tastatur → Berechtigungen → Bedienungshilfe → **Öffnen**, oder dort ein Tipp auf die Zeile **Textausgabe**), dann fügt WhisperLoom den Text direkt ein. In manchen Apps ist das Feld kein normales Textfeld (etwa in einigen Spielen oder Terminal-Apps) — dann bleibt die Zwischenablage der Weg.
 
 **„Eingeschränkte Einstellung" beim Aktivieren der Bedienungshilfe.**
 Bei manuell installierten Apps: App-Info → ⋮ → **Eingeschränkte Einstellungen zulassen**, dann die Bedienungshilfe erneut aktivieren (siehe [Schritt 5](#schritt-5--text-automatisch-einfügen-empfohlen)).
@@ -1166,7 +1171,7 @@ Ein Diktat per Knopf oder Tastatur wird am Stück an die Erkennung geschickt; di
 Die Online-Anbieter rechnen auf Grafikkarten-Servern; auf dem Telefon läuft das Modell auf der CPU. Dafür geht offline nichts nach außen. Small ist der Kompromiss; wer Geduld hat, bekommt mit Large v3 Turbo fast Online-Qualität.
 
 **Speichert WhisperLoom meine Diktate?**
-Aufnahmen nicht (nur ein Pro-Widget-Auftrag wartet bis zum Senden). Den Text deiner Diktate aus Knopf und Tastatur hebt der **Verlauf** auf — nur auf dem Gerät, nie im Backup, ab Werk mit höchstens 50 Einträgen, nichts aus Passwort- und Inkognito-Feldern. Abschalten unter Verlauf → ⋮ → Verlauf-Einstellungen; das löscht alle Einträge ([Kapitel 11](#11-verlauf)). Geteilte Sprachnachrichten werden nicht gespeichert. Siehe auch [Kapitel 12](#12-datenschutz).
+Aufnahmen nicht (nur ein Pro-Widget-Auftrag wartet bis zum Senden). Den Text deiner Diktate aus Knopf und Tastatur hebt der **Verlauf** auf — nur auf dem Gerät, nie im Backup, ab Werk mit höchstens 50 Einträgen. Die Tastatur lässt Passwort- und Inkognito-Felder aus, der Knopf nur Passwortfelder, die die Bedienungshilfe meldet. Abschalten unter Verlauf → ⋮ → Verlauf-Einstellungen; das löscht alle Einträge ([Kapitel 11](#11-verlauf)). Geteilte Sprachnachrichten werden nicht gespeichert. Siehe auch [Kapitel 12](#12-datenschutz).
 
 **Kann ich Namen und Fachbegriffe hinterlegen?**
 Ja: Einstellungen → Wörterbuch & Regeln → **Vokabular** — als Liste in der App oder als verknüpfte .md-/.txt-Datei, die bei jedem Diktat neu gelesen wird ([8.7](#87-wörterbuch-und-sprache)). Wirkt online und offline, kostet nichts extra — außer bei ElevenLabs (etwa 20 % Aufpreis).
