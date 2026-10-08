@@ -356,7 +356,7 @@ Die Spalte „Modelle" nennt die Einträge, wie sie in WhisperLoom im Dropdown s
 
 Mit der Pro-Funktion **Modelle vom Server** wählst du zusätzlich aus der aktuellen Liste des Anbieters ([7.6](#76-modelle-vom-server-pro-funktion)).
 
-Textverbesserung kostet zusätzlich. Mit den Modellen zum Glätten bleibt das deutlich unter den Kosten der Erkennung — bei GPT-6 Luna oder Claude Haiku 5.5 etwa $0,0002 pro Diktat-Minute, bei Groqs GPT-OSS 20B etwa $0,0001. Die stärkeren Modelle zum Umformulieren kosten ein Vielfaches: GPT-6 Sol oder Claude Sonnet 5.5 etwa $0,003–0,004 pro Diktat-Minute, Claude Opus 5.5 knapp $0,01 — so viel wie die Erkennung selbst oder mehr. Bei OpenAI ist Umformulieren mit GPT-6 Sol damit 13- bis 17-mal so teuer wie mit dem früheren Standard GPT-4o mini. Wer viel verschönert oder zusammenfasst und sparen will, stellt unter **Modell je Stufe** ([8.4](#84-modell-je-stufe)) ein günstigeres Modell ein.
+Textverbesserung kostet zusätzlich. Mit den Modellen zum Glätten bleibt das deutlich unter den Kosten der Erkennung — bei GPT-6 Luna oder Claude Haiku 5.5 etwa $0,0002 pro Diktat-Minute, bei Groqs GPT-OSS 20B etwa $0,0001. Die stärkeren Modelle zum Umformulieren kosten ein Vielfaches: GPT-6 Sol oder Claude Sonnet 5.5 etwa $0,003–0,004 pro Diktat-Minute, Claude Opus 5.5 knapp $0,01 — so viel wie die Erkennung selbst oder mehr. Bei OpenAI ist Umformulieren mit GPT-6 Sol damit 13- bis 17-mal so teuer wie mit dem früheren Standard GPT-4o mini, bei OpenRouter mit Claude Sonnet 5.5 ebenso. Wer viel verschönert oder zusammenfasst und sparen will, stellt unter **Modell je Stufe** ([8.4](#84-modell-je-stufe)) ein günstigeres Modell ein.
 
 ### 7.2 Empfehlungen
 
