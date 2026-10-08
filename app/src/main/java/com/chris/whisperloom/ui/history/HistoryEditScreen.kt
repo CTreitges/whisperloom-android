@@ -39,6 +39,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.chris.whisperloom.R
 import com.chris.whisperloom.history.History
@@ -141,9 +143,9 @@ private fun Editor(entry: HistoryEntry, processing: Processing, nav: NavState) {
                 .padding(start = 20.dp, end = 20.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
+            val of = if (processing == Processing.EDITED && processing !in entry.versions) stringResource(R.string.history_origin)
+            else processingLabel(processing)
             Row(verticalAlignment = Alignment.CenterVertically) {
-                val of = if (processing == Processing.EDITED && processing !in entry.versions) stringResource(R.string.history_origin)
-                else processingLabel(processing)
                 Text(
                     stringResource(R.string.history_edit_of, of),
                     style = MaterialTheme.typography.labelMedium,
@@ -157,9 +159,11 @@ private fun Editor(entry: HistoryEntry, processing: Processing, nav: NavState) {
                     LoomIcon(R.drawable.ic_redo, stringResource(R.string.history_cd_redo))
                 }
             }
+            // Der Hinweis "Fassung: …" darueber ist ein eigener Knoten — TalkBack nennt das Feld sonst namenlos.
+            val fieldName = stringResource(R.string.history_edit_field_cd, of)
             TextField(
                 state = state,
-                modifier = Modifier.fillMaxWidth().weight(1f),
+                modifier = Modifier.fillMaxWidth().weight(1f).semantics { contentDescription = fieldName },
                 textStyle = MaterialTheme.typography.bodyLarge,
                 lineLimits = TextFieldLineLimits.MultiLine(),
                 shape = RoundedCornerShape(16.dp),

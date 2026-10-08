@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -170,6 +171,15 @@ class HistoryEditScreenTest {
         val clip = ui.ctx.getSystemService(ClipboardManager::class.java).primaryClip?.getItemAt(0)?.text?.toString()
         assertEquals("Nicht verlieren.", clip)
         assertNull("nicht wiederbelebt", History.get(ui.ctx, entry.id))
+    }
+
+    /** TalkBack nennt das Feld mit der Fassung, auch wenn es leer ist (der Hinweis darueber ist ein eigener Knoten). */
+    @Test fun dasTextfeldTraegtDenNamenDerFassung() {
+        val entry = ui.record()
+        bearbeiten(entry.id, Processing.SUMMARIZE)
+        ui.waitFor("Fassung: Zusammenfassen")
+
+        compose.onNode(hasSetTextAction() and hasContentDescription("Text der Fassung Zusammenfassen")).assertExists()
     }
 
     @Test fun eintragWegWaehrendDesBearbeitensFuehrtZurueck() {
