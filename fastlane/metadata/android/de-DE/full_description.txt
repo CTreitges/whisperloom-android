@@ -1,27 +1,28 @@
 WhisperLoom tippt für dich: Antippen, sprechen, fertig – der erkannte Text landet direkt im aktiven Textfeld, egal in welcher App.
 
 Drei Wege zum Diktat:
-• Schwebender Mikro-Knopf über allen Apps (Gboard bleibt deine Tastatur). Antippen startet die Aufnahme, erneut antippen fügt den Text ein, aufs ✕ ziehen verwirft.
-• Diktier-Tastatur mit Halten-zum-Sprechen für Apps ohne Overlay. Beim Aufnehmen nach rechts wischen stellt die Aufnahme fest – sie läuft freihändig weiter, danach senden oder verwerfen; nach links wischen verwirft sofort. Der Zauberstab über dem Mikrofon klappt die vier Textstufen auf, ohne die App zu wechseln.
+• Schwebender Knopf über allen Apps (Gboard bleibt deine Tastatur). Antippen startet die Aufnahme, erneut antippen fügt den Text ein, aufs ✕ ziehen verwirft.
+• Diktat-Tastatur mit Halten-zum-Sprechen für Apps ohne Overlay. Nach rechts wischen stellt die Aufnahme fest – sie läuft freihändig weiter, mit Pause und Weiter; in der Pause ist das Mikrofon frei, auch wenn du zwischendurch eine andere App öffnest. Nach links wischen verwirft. Der Zauberstab klappt die Textstufen auf, ohne die App zu wechseln.
 • Pro Widgets für Entwickler: Sprach-Command-Widgets auf dem Startbildschirm schicken Sprachaufträge an deinen eigenen Server (siehe unten). Ab Werk aus.
 
 Erkennung nach Wahl:
 • Online über deinen eigenen Zugang bei OpenAI, Groq (kostenlos), Mistral, ElevenLabs (Scribe), Together, DeepInfra, OpenRouter oder einem eigenen OpenAI-kompatiblen Server (z. B. speaches, whisper.cpp-Server).
-• Für Bastler, unter „Erweitert“ einschaltbar: „Modelle vom Server“ lädt bei jedem Anbieter die aktuelle Modell-Liste – neue Modelle wählen, ohne auf ein Update zu warten.
 • Offline direkt auf dem Gerät mit whisper.cpp. Die Modelle (Tiny bis Large v3 Turbo) lädst du einmalig nach – nichts davon steckt in der App.
-• Vokabular für Namen und Fachbegriffe: als Liste in der App oder als verknüpfte .md-/.txt-Datei, die bei jedem Diktat neu gelesen wird – Änderungen an der Datei wirken sofort.
+• Vokabular für Namen und Fachbegriffe: als Liste in der App oder als verknüpfte .md-/.txt-Datei, die bei jedem Diktat neu gelesen wird.
+• Für Bastler, unter „Erweitert“: „Modelle vom Server“ lädt die aktuelle Modell-Liste jedes Anbieters.
 
 Text nach Bedarf:
-• Füllwörter entfernen (Liste selbst anpassbar), automatische Groß-Schreibung.
-• Optionale Textverbesserung per Sprachmodell in drei Stufen: Glätten (auf Wunsch „lesbarer“, mit deinen Wörtern und deinem Ton), Verschönern, Zusammenfassen – je Stufe mit eigenem Modell, ab Werk ein schnelles zum Glätten und ein stärkeres zum Umformulieren. Mit eigenem oder dem Erkennungs-Zugang, auch über Ollama: lokal auf deinem Homeserver ohne Key (der Text verlässt dein Netz nicht) oder über Ollama Cloud. Die Modell-Liste kommt direkt vom Server.
-• Auch offline mit KI: Gemma 4 verbessert offline erkannten Text direkt auf dem Gerät – ohne Netz, der Text verlässt das Handy nicht. Das Modell lädst du einmalig nach (E2B 2,6 GB ab 6 GB RAM, E4B 3,7 GB ab 8 GB).
-• Für KI-Nutzer, unter „Erweitert“ einschaltbar: die Stufe „Prompt“ formt ein Diktat zu einem gut gegliederten Prompt für ChatGPT, Claude & Co.
-• Schalter „Automatische Absätze“: Die KI gliedert längere Diktate in Absätze – oder, ausgeschaltet, alles als ein durchgehender Text.
+• Feste Regeln ohne KI: Füllwörter entfernen (Liste anpassbar), Großschreibung am Satzanfang.
+• Optionale Textverbesserung per Sprachmodell: Glätten, Verschönern, Zusammenfassen. Jede Stufe hat ihre eigene Seite: Glätten mit der Bereinigung „Nur Zeichensetzung“, „Ohne Füllwörter“ oder „Lesbar“ (repariert holprige Sätze, deine Wörter und dein Ton bleiben), Absätze an oder aus, Zusammenfassen automatisch gegliedert oder als Fließtext, dazu je Stufe ein eigenes Modell. Mit eigenem oder dem Erkennungs-Zugang, auch über Ollama: lokal auf deinem Homeserver ohne Key oder über Ollama Cloud.
+• Auch offline mit KI: Gemma 4 verbessert offline erkannten Text direkt auf dem Gerät – ohne Netz. Das Modell lädst du einmalig nach (E2B 2,6 GB ab 6 GB RAM, E4B 3,7 GB ab 8 GB).
+• Für KI-Nutzer, unter „Erweitert“: die Stufe „Prompt“ formt ein Diktat zu einem gegliederten Prompt für ChatGPT, Claude & Co.
 
-Sprachnachrichten abtippen: In WhatsApp, Telegram oder Signal eine Nachricht teilen → WhisperLoom. Der Text erscheint gut lesbar in Absätzen, wahlweise wortgetreu oder ohne Füllwörter, zum Kopieren und Weitergeben. Auf Wunsch mit eigener KI-Stufe: Glätten (auch „lesbarer“), Verschönern oder Zusammenfassen.
+Verlauf: Diktate aus Tastatur und Knopf findest du wieder – mit Rohtext und den Fassungen der Stufen, zum Kopieren, Bearbeiten oder um sie nachträglich mit einer anderen Stufe zu verbessern, ohne neu zu sprechen. Ab Werk an, 10 bis 500 Einträge, abschaltbar.
 
-Pro Widgets für deinen eigenen Agenten: Tippen, sprechen, tippen – ein Sprach-Command-Widget schreibt mit und schickt den Auftrag an einen Server, den du selbst betreibst; die Antwort kommt dort an, wo du deinem Agenten sonst schreibst. Die Übertragung läuft weiter, auch wenn der Bildschirm ausgeht. Jedes Widget hat seinen eigenen Namen (steht unter dem Widget, abschaltbar), seinen eigenen Server mit Token, ein Symbol oder Galerie-Bild und auf Wunsch Auto-Stopp nach einer Sprechpause; frei skalierbar von 1 × 1 bis 4 × 2. Freischalten unter Einstellungen → Erweitert. Braucht einen eigenen Server (den Quellcode der Gegenstelle gibt es auf GitHub) und bleibt sonst unsichtbar.
+Sprachnachrichten abtippen: In WhatsApp, Telegram oder Signal eine Nachricht teilen → WhisperLoom. Der Text erscheint in Absätzen, wortgetreu oder ohne Füllwörter, zum Kopieren und Weitergeben. Auf Wunsch mit eigener KI-Stufe: Glätten (mit eigener Bereinigung), Verschönern oder Zusammenfassen.
+
+Pro Widgets für deinen eigenen Agenten: Tippen, sprechen, tippen – ein Sprach-Command-Widget schreibt mit und schickt den Auftrag an einen Server, den du selbst betreibst. Die Übertragung läuft weiter, auch wenn der Bildschirm ausgeht. Jedes Widget hat seinen eigenen Namen, Server mit Token, ein Symbol oder Galerie-Bild und auf Wunsch Auto-Stopp nach einer Sprechpause; frei skalierbar von 1 × 1 bis 4 × 2. Freischalten unter Einstellungen → Erweitert. Braucht einen eigenen Server (den Quellcode der Gegenstelle gibt es auf GitHub).
 
 Was neu ist, zeigt das „?“ neben der Versionsnummer direkt in der App.
 
-Datenschutz: Dein API-Key bleibt auf dem Gerät. Online gehen Audio und Vokabular an den von dir gewählten Anbieter; offline verlässt die Aufnahme das Gerät nicht, und das lokale Textmodell verbessert den Text auf dem Gerät. Mit Online-Textverbesserung geht der erkannte Text an das gewählte Sprachmodell. Keine Konten, keine Werbung, kein Tracking.
+Datenschutz: Dein API-Key bleibt auf dem Gerät. Online gehen Audio und Vokabular an den von dir gewählten Anbieter, mit Online-Textverbesserung auch der erkannte Text an das gewählte Sprachmodell; offline verlässt die Aufnahme das Gerät nicht, und das lokale Textmodell verbessert den Text auf dem Gerät. Aufnahmen speichert WhisperLoom nicht. Der Verlauf liegt nur auf dem Gerät, kommt nie in ein Backup und lässt sich abschalten. Keine Konten, keine Werbung, kein Tracking.

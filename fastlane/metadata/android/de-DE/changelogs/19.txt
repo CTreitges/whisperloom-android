@@ -5,4 +5,4 @@ WhisperLoom 3.9.0
 • Neu: Einstellungen übersichtlicher geordnet
 • Neu: Füllwort-Liste räumt nach jeder KI-Stufe auf
 • Behoben: keine Großschreibung mehr nach Abkürzungen wie „ca.“
-• Behoben: Text bei verschwundenem Feld geht nicht mehr verloren
+• Behoben: Text bei verschwundenem Feld kommt in Verlauf oder Zwischenablage, nicht aus privaten Feldern
