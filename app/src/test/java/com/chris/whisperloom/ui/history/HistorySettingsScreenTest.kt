@@ -57,7 +57,8 @@ class HistorySettingsScreenTest {
         assertEquals(50, ui.prefs.historySize)
 
         compose.onNodeWithText("10 Einträge").performClick()
-        compose.onNodeWithText("Verkleinern").performClick()
+        // Die Rueckfrage kommt erst, wenn im Hintergrund gezaehlt ist.
+        ui.waitFor("Verkleinern").performClick()
         ui.waitUntil { History.count(ui.ctx) == 10 }
         assertEquals(10, ui.prefs.historySize)
         assertEquals("die neuesten bleiben", (2 until 12).map { "Diktat $it" }.reversed(), History.list(ui.ctx).map { it.raw })

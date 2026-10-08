@@ -92,7 +92,7 @@ class HistoryListScreenTest {
         ui.waitFor("weg damit").performTouchInput { swipeLeft() }
         ui.waitFor("Eintrag gelöscht")
         ui.waitUntil { History.count(ui.ctx) == 0 }
-        compose.onNodeWithText("Noch keine Diktate").assertIsDisplayed()
+        ui.waitFor("Noch keine Diktate")
 
         compose.onNodeWithText("Rückgängig").performClick()
         ui.waitFor("weg damit")
