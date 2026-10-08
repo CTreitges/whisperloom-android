@@ -35,7 +35,20 @@ class ChatPayloadJsonTest {
         val json = JSONObject(ChatPayload.build(llm("gpt-5.6-luna"), "S", "U"))
         assertFalse(json.has("temperature"))
         assertEquals("none", json.getString("reasoning_effort"))
-        assertEquals(4096, json.getInt("max_completion_tokens"))
+        assertEquals(16384, json.getInt("max_completion_tokens"))
+        assertFalse(json.has("thinking"))
+    }
+
+    @Test fun thinkingNurWennDasModellEsBraucht() {
+        val haiku = JSONObject(ChatPayload.build(llm("claude-haiku-5-5", "anthropic"), "S", "U"))
+        assertEquals("disabled", haiku.getJSONObject("thinking").getString("type"))
+        assertEquals(1, haiku.getJSONObject("thinking").length())
+        assertFalse(haiku.has("temperature"))
+        assertFalse(haiku.has("reasoning_effort"))
+        assertEquals(16384, haiku.getInt("max_completion_tokens"))
+        assertEquals("between_tools", JSONObject(ChatPayload.build(llm("claude-sonnet-5-5", "anthropic"), "S", "U")).getJSONObject("thinking").getString("type"))
+        assertFalse(JSONObject(ChatPayload.build(llm("claude-opus-5-5", "anthropic"), "S", "U")).has("thinking"))
+        assertFalse(JSONObject(ChatPayload.build(llm("gpt-4o-mini"), "S", "U")).has("thinking"))
     }
 
     @Test fun sonderzeichenWerdenEscaped() {

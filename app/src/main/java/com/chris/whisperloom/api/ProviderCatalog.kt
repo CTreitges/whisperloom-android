@@ -1,91 +1,15 @@
 package com.chris.whisperloom.api
 
 /**
- * Ein Modell fuer die Dropdowns. Rein (ohne Android), damit JVM-unit-testbar.
- *
- * @param languageField Name des Multipart-Felds fuer die Sprache: "language" (Whisper-Familie)
- *   oder "languages[]" (OpenAI gpt-transcribe erwartet ein Array).
- * @param temperatureSupported Reasoning-Modelle (OpenAI gpt-5.x) lehnen `temperature` mit 400 ab.
- * @param reasoningEffort Wert fuer `reasoning_effort`, wenn das Modell einen braucht/vertraegt
- *   ("none", "minimal", "low"); null = Feld weglassen.
- */
-data class ModelOption(
-    val id: String,
-    val label: String,
-    val note: String = "",
-    val temperatureSupported: Boolean = true,
-    val reasoningEffort: String? = null,
-    val languageField: String = "language",
-)
-
-/**
- * Welches Protokoll ein Anbieter spricht. [OLLAMA] = native Ollama-API (POST /api/chat,
- * GET /api/tags) — lokal und auf ollama.com gleich, deshalb dieselbe Code-Strecke.
- * [ELEVENLABS] = ElevenLabs Speech-to-Text (POST /speech-to-text, Header xi-api-key, Feld
- * model_id, siehe [ElevenLabsStt]) — nur Erkennung, keine Textverbesserung.
- */
-enum class ApiStyle { OPENAI, OLLAMA, ELEVENLABS }
-
-/**
- * Ein Anbieter mit OpenAI-kompatibler API (oder nativer Ollama-API, siehe [api]).
- * Inhalt siehe [ProviderCatalog].
- *
- * @param allowsHttp Unverschluesseltes http:// nur fuer den eigenen Server (LAN/VPN).
- * @param sttSendsPrompt / [sttSendsResponseFormat] Extra-Felder, die nicht jeder Anbieter
- *   kennt (Mistral validiert streng, OpenRouter dokumentiert `prompt` nicht). [sttSendsPrompt]
- *   heisst zugleich "Vokabular kommt an" — bei ElevenLabs als keyterms statt als `prompt`.
- * @param sttPathOverride Kompletter Transkriptions-Endpunkt, wenn er nicht unter
- *   `baseUrl + /audio/transcriptions` liegt (DeepInfra).
- * @param sttMaxBytes Dokumentiertes Upload-Limit (null = unbekannt).
- * @param api Protokoll; bei [ApiStyle.OLLAMA] ist [baseUrl] die Server-Wurzel ohne /api bzw. /v1.
- */
-data class Provider(
-    val id: String,
-    val name: String,
-    val baseUrl: String,
-    val needsKey: Boolean = true,
-    val keyUrl: String = "",
-    val allowsHttp: Boolean = false,
-    val defaultReadTimeoutSec: Int = 90,
-    val sttModels: List<ModelOption> = emptyList(),
-    val llmModels: List<ModelOption> = emptyList(),
-    val sttSendsPrompt: Boolean = true,
-    val sttSendsResponseFormat: Boolean = true,
-    val sttPathOverride: String? = null,
-    val sttMaxBytes: Int? = null,
-    val api: ApiStyle = ApiStyle.OPENAI,
-    val notes: String = "",
-) {
-    val isCustom: Boolean get() = id == ProviderCatalog.CUSTOM_ID
-
-    val isOllama: Boolean get() = api == ApiStyle.OLLAMA
-
-    /** Der Nutzer traegt die Server-Adresse selbst ein (eigener Server, Ollama im Heimnetz). */
-    val needsUrl: Boolean get() = baseUrl.isBlank()
-
-    /** Taugt fuer die Transkriptions-Auswahl (eigener Server: Modell-ID frei). Ollama kann kein Audio. */
-    val hasStt: Boolean get() = isCustom || sttModels.isNotEmpty()
-
-    /** Taugt fuer die Textverbesserungs-Auswahl. Ollama-Modelle kommen vom Server selbst (/api/tags). */
-    val hasLlm: Boolean get() = isCustom || isOllama || llmModels.isNotEmpty()
-
-    /** Erstes Modell der Liste = Empfehlung; "" beim eigenen Server. */
-    val defaultSttModel: String get() = sttModels.firstOrNull()?.id.orEmpty()
-    val defaultLlmModel: String get() = llmModels.firstOrNull()?.id.orEmpty()
-
-    fun sttModel(id: String): ModelOption? = sttModels.firstOrNull { it.id == id }
-    fun llmModel(id: String): ModelOption? = llmModels.firstOrNull { it.id == id }
-}
-
-/**
- * Anbieter- und Modell-Katalog (Stand 2026-09-30, Recherche gegen die offizielle Doku).
+ * Anbieter- und Modell-Katalog (Stand 2026-10-08, Recherche gegen die offizielle Doku).
  * Als Kotlin-Objekte statt JSON, damit nichts zur Laufzeit geparst werden muss.
  *
- * Reihenfolge = Reihenfolge im Dropdown; das erste Modell je Liste ist der Default.
+ * Reihenfolge = Reihenfolge im Dropdown; das erste Modell je Liste ist der Default (beim
+ * Textmodell die Empfehlung zum Glaetten, [Provider.rewriteLlmModel] die zum Umformulieren).
  */
 object ProviderCatalog {
 
-    const val CATALOG_DATE = "2026-09-30"
+    const val CATALOG_DATE = "2026-10-08"
     const val CUSTOM_ID = "custom"
     const val OPENAI_ID = "openai"
     const val OLLAMA_ID = "ollama"
@@ -121,7 +45,18 @@ object ProviderCatalog {
                     "\$0.006/min, prompt max 224 Token.",
                 ),
             ),
+            // gpt-6-luna/-sol: ungemessen (Stand 2026-10-08), Umformulieren kostet mit Sol 13-17x mehr als gpt-4o-mini.
             llmModels = listOf(
+                ModelOption(
+                    "gpt-6-luna", "GPT-6 Luna",
+                    "\$0.10/\$0.50 je 1M. Reasoning-Modell: kein temperature, reasoning_effort=none senden. Empfohlen zum Glätten.",
+                    temperatureSupported = false, reasoningEffort = "none",
+                ),
+                ModelOption(
+                    "gpt-6-sol", "GPT-6 Sol",
+                    "\$2/\$10 je 1M. Kein temperature; reasoning_effort=none. Empfohlen zum Umformulieren.",
+                    temperatureSupported = false, reasoningEffort = "none",
+                ),
                 ModelOption("gpt-4o-mini", "GPT-4o mini", "\$0.15/\$0.60 je 1M. Schnell, günstig, klassisch."),
                 ModelOption("gpt-4.1-mini", "GPT-4.1 mini", "\$0.40/\$1.60 je 1M."),
                 ModelOption(
@@ -130,8 +65,8 @@ object ProviderCatalog {
                     temperatureSupported = false, reasoningEffort = "none",
                 ),
                 ModelOption(
-                    "gpt-5.4-nano", "GPT-5.4 nano",
-                    "\$0.20/\$1.25 je 1M. Kein temperature; reasoning_effort=none.",
+                    "gpt-5.4-nano", "GPT-5.4 nano (Auslauf 04/2027)",
+                    "\$0.20/\$1.25 je 1M. Kein temperature; reasoning_effort=none. Shutdown 2027-04-01, Nachfolger GPT-6 Luna.",
                     temperatureSupported = false, reasoningEffort = "none",
                 ),
                 ModelOption(
@@ -146,6 +81,7 @@ object ProviderCatalog {
                 ),
             ),
             notes = "Bezahlpflichtig (Tier 1 ab \$5). 25-MB-Limit. Alle 4o-/whisper-STT-Modelle enden 2027-02-26.",
+            rewriteLlmModel = "gpt-6-sol",
         ),
         Provider(
             id = "groq",
@@ -173,11 +109,12 @@ object ProviderCatalog {
                 ),
                 ModelOption(
                     "qwen/qwen3.8-27b", "Qwen 3.8 27B (Preview)",
-                    "Preview. reasoning_effort=none senden, sonst <think>-Tags im Text.",
+                    "\$0.80/\$4.00 je 1M, Preview. reasoning_effort=none senden, sonst <think>-Tags im Text.",
                     reasoningEffort = "none",
                 ),
             ),
             notes = "Free-Plan ohne Zahlungsmittel. 25 MB (Free) / 100 MB (Dev). Llama-Modelle seit 2026-08-16 abgeschaltet.",
+            rewriteLlmModel = "openai/gpt-oss-120b",
         ),
         Provider(
             id = "mistral",
@@ -193,10 +130,12 @@ object ProviderCatalog {
                 ),
             ),
             llmModels = listOf(
-                ModelOption("mistral-small-latest", "Mistral Small 4", "ca. \$0.15/\$0.60 je 1M (Drittquelle)."),
+                ModelOption("mistral-small-latest", "Mistral Small 4", "\$0.15/\$0.60 je 1M. Denkt ab Werk nicht nach. Empfohlen zum Glätten."),
+                ModelOption("mistral-large-2512", "Mistral Large 3", "\$0.50/\$1.50 je 1M. Ohne Nachdenken, gutes Deutsch. Empfohlen zum Umformulieren."),
                 ModelOption("ministral-8b-latest", "Ministral 3 8B", "Sehr günstig, klein."),
             ),
             notes = "EU-Anbieter. Experiment-Plan gratis (Telefonverifizierung, 1 req/s). Kompatibilität der Extra-Felder live testen.",
+            rewriteLlmModel = "mistral-large-2512",
         ),
         Provider(
             id = ELEVENLABS_ID,
@@ -258,29 +197,71 @@ object ProviderCatalog {
                     "Sekundenpreis, günstig.",
                 ),
             ),
+            // Claude 5.x: temperature vorsorglich aus (OpenRouter listet es, Anthropic lehnt es ab). Das
+            // thinking-Feld hat hier eine andere Syntax -> keins; gegen leere Antworten hilft das Limit.
             llmModels = listOf(
+                ModelOption(
+                    "anthropic/claude-haiku-5.5", "Claude Haiku 5.5",
+                    "\$0.10/\$0.50 je 1M. Kein temperature. Empfohlen zum Glätten.",
+                    temperatureSupported = false,
+                ),
+                ModelOption(
+                    "anthropic/claude-sonnet-5.5", "Claude Sonnet 5.5",
+                    "\$2/\$10 je 1M. Kein temperature. Empfohlen zum Umformulieren.",
+                    temperatureSupported = false,
+                ),
+                ModelOption(
+                    "openai/gpt-6-luna", "GPT-6 Luna",
+                    "\$0.10/\$0.50 je 1M. Kein temperature; reasoning_effort=none.",
+                    temperatureSupported = false, reasoningEffort = "none",
+                ),
                 ModelOption("openai/gpt-4o-mini", "GPT-4o mini", "\$0.15/\$0.60 je 1M."),
                 // google/gemini-2.5-* laeuft bei OpenRouter am 2026-10-20 aus (live expiration_date).
                 ModelOption(
                     "google/gemini-3.8-flash", "Gemini 3.8 Flash",
-                    "Nachfolger von Gemini 2.5. Reasoning nicht abschaltbar -> langsamer. Kein temperature.",
-                    temperatureSupported = false,
+                    "\$0.75/\$3.75 je 1M. Reasoning nicht abschaltbar, reasoning_effort=low hält es schnell. Kein temperature.",
+                    temperatureSupported = false, reasoningEffort = "low",
                 ),
-                ModelOption("anthropic/claude-haiku-4.5", "Claude Haiku 4.5", "\$1/\$5 je 1M."),
-                ModelOption("mistralai/mistral-small-2603", "Mistral Small 4", "günstig, EU-Provider wählbar."),
+                ModelOption("mistralai/mistral-small-2603", "Mistral Small 4", "\$0.15/\$0.60 je 1M, EU-Provider wählbar."),
+                ModelOption("anthropic/claude-haiku-4.5", "Claude Haiku 4.5 (Legacy)", "\$1/\$5 je 1M, 10x teurer als Haiku 5.5."),
             ),
             notes = "Ein Key für viele Modelle. :free-Modelle 20 RPM / 50-1000 RPD. prompt bei STT nicht dokumentiert -> nicht senden.",
+            rewriteLlmModel = "anthropic/claude-sonnet-5.5",
         ),
         Provider(
             id = "anthropic",
             name = "Anthropic (Claude)",
             baseUrl = "https://api.anthropic.com/v1",
             keyUrl = "https://platform.claude.com/settings/keys",
+            // Ab Claude 4.7 liefert jedes gesetzte temperature HTTP 400; die Kompatibilitaetsschicht ignoriert
+            // reasoning_effort. Claude 5 denkt ab Werk, die Denk-Token zaehlen gegen das Limit -> thinking
+            // abschalten, wo das Modell es zulaesst (gemessen 2026-10-08).
             llmModels = listOf(
-                ModelOption("claude-haiku-4-5", "Claude Haiku 4.5", "\$1/\$5 je 1M. temperature 0-1."),
-                ModelOption("claude-sonnet-5", "Claude Sonnet 5", "\$2/\$10 je 1M. Höchste Textqualität."),
+                ModelOption(
+                    "claude-haiku-5-5", "Claude Haiku 5.5",
+                    "\$0.10/\$0.50 je 1M (bis 100k Token Eingabe). Schnell. Empfohlen zum Glätten.",
+                    temperatureSupported = false, thinkingType = "disabled",
+                ),
+                ModelOption(
+                    "claude-sonnet-5-5", "Claude Sonnet 5.5",
+                    "\$2/\$10 je 1M. Empfohlen zum Umformulieren.",
+                    temperatureSupported = false, thinkingType = "between_tools",
+                ),
+                // Opus lehnt "disabled" wie "between_tools" ab und denkt immer adaptiv.
+                ModelOption(
+                    "claude-opus-5-5", "Claude Opus 5.5",
+                    "\$4/\$20 je 1M. Höchste Textqualität, langsamer.",
+                    temperatureSupported = false,
+                ),
+                ModelOption(
+                    "claude-sonnet-5", "Claude Sonnet 5",
+                    "\$2/\$10 je 1M.",
+                    temperatureSupported = false, thinkingType = "disabled",
+                ),
+                ModelOption("claude-haiku-4-5", "Claude Haiku 4.5 (Legacy)", "\$1/\$5 je 1M. Abschaltung frühestens 2026-10-15."),
             ),
             notes = "Nur Textverbesserung. OpenAI-Kompatibilitätsschicht offiziell 'zum Testen', funktional stabil.",
+            rewriteLlmModel = "claude-sonnet-5-5",
         ),
         Provider(
             id = "gemini",
@@ -293,13 +274,14 @@ object ProviderCatalog {
             llmModels = listOf(
                 ModelOption(
                     "gemini-3.5-flash-lite", "Gemini 3.5 Flash-Lite",
-                    "Googles Empfehlung für neue Projekte. Reasoning nicht abschaltbar, kein temperature.",
+                    "\$0.30/\$2.50 je 1M. Googles Empfehlung für neue Projekte. Reasoning nicht abschaltbar, kein temperature.",
                     temperatureSupported = false,
                 ),
+                // Denkt ohne Angabe auf "medium" (langsam); "low" ist die kleinste Stufe.
                 ModelOption(
                     "gemini-3.8-flash", "Gemini 3.8 Flash",
-                    "\$0.75/\$3.75 je 1M. Reasoning nicht abschaltbar -> langsamer. Kein temperature.",
-                    temperatureSupported = false,
+                    "\$0.75/\$3.75 je 1M bis Ende 2026, ab 2027 \$1.50/\$7.50. reasoning_effort=low. Kein temperature. Empfohlen zum Umformulieren.",
+                    temperatureSupported = false, reasoningEffort = "low",
                 ),
                 ModelOption(
                     "gemini-2.5-flash-lite", "Gemini 2.5 Flash-Lite (nur Bestandskonten)",
@@ -313,24 +295,35 @@ object ProviderCatalog {
                 ),
             ),
             notes = "Nur Textverbesserung. Free-Tier: Inhalte werden zum Training genutzt -> Warnhinweis in der App.",
+            rewriteLlmModel = "gemini-3.8-flash",
         ),
         Provider(
             id = "deepseek",
             name = "DeepSeek",
             baseUrl = "https://api.deepseek.com",
             keyUrl = "https://platform.deepseek.com/api_keys",
+            // Denkt ab Werk auf "high" (langsam, temperature wird dann still ignoriert). Abschalten geht
+            // nur mit thinking.type=disabled (api-docs.deepseek.com/guides/thinking_mode, 2026-10-08).
             llmModels = listOf(
                 ModelOption(
                     "deepseek-flash", "DeepSeek Flash (V4.1)",
-                    "Aktueller Name laut /models. Peak/Off-Peak-Preise (unsicher). Alias deepseek-chat abgeschaltet.",
+                    "\$0.15/\$0.60 je 1M außerhalb der Spitzenzeit, sonst doppelt. Denken aus. Empfohlen zum Glätten.",
+                    thinkingType = "disabled",
+                ),
+                ModelOption(
+                    "deepseek-v4-pro", "DeepSeek V4 Pro",
+                    "\$0.66/\$1.98 je 1M außerhalb der Spitzenzeit, sonst doppelt. Denken aus. Empfohlen zum Umformulieren.",
+                    thinkingType = "disabled",
                 ),
                 // Alter Name: wird noch angenommen und landet bei V4.1-Flash — bleibt fuer gespeicherte Auswahlen.
                 ModelOption(
                     "deepseek-v4-flash", "DeepSeek V4 Flash (alter Name)",
                     "Wird noch angenommen, das Modell dahinter ist aber abgelöst (V4.1-Flash).",
+                    thinkingType = "disabled",
                 ),
             ),
             notes = "Nur Textverbesserung. Kein Free-Tier. Server in China -> Datenschutz-Hinweis.",
+            rewriteLlmModel = "deepseek-v4-pro",
         ),
         Provider(
             id = OLLAMA_ID,
@@ -342,7 +335,8 @@ object ProviderCatalog {
             defaultReadTimeoutSec = 600,
             api = ApiStyle.OLLAMA,
             notes = "Eigener Ollama-Server im Heimnetz/VPN, z. B. http://homeserver:11434. Modelle kommen per /api/tags vom Server. " +
-                "Auf dem Server OLLAMA_HOST=0.0.0.0 setzen, sonst lauscht Ollama nur auf localhost.",
+                "Auf dem Server OLLAMA_HOST=0.0.0.0 setzen, sonst lauscht Ollama nur auf localhost. " +
+                "Empfehlung: gemma4:12b zum Glätten (schwache Hardware: gemma4:e4b), gemma4:26b zum Umformulieren (24-GB-GPU: gemma4:31b).",
         ),
         Provider(
             id = OLLAMA_CLOUD_ID,
@@ -354,11 +348,13 @@ object ProviderCatalog {
             // glm-5.3-flash 1,4 s, gpt-oss:20b 3,7 s (Nachdenken nur auf "low" drosselbar).
             llmModels = listOf(
                 ModelOption("gemma4:31b", "Gemma 4 31B (empfohlen)", "Schnell, denkt nicht nach — gut für Diktate."),
+                ModelOption("mistral-large-3:675b", "Mistral Large 3", "Denkt nicht nach, gutes Deutsch. Empfohlen zum Umformulieren (Tempo ungemessen)."),
                 ModelOption("glm-5.3-flash", "GLM 5.3 Flash", "Schnell, denkt kurz nach."),
                 ModelOption("gpt-oss:20b", "GPT-OSS 20B", "Denkt nach (think=low), dadurch langsamer."),
                 ModelOption("gpt-oss:120b", "GPT-OSS 120B", "Groß, denkt nach (think=low)."),
             ),
             notes = "Cloud-Modelle auf ollama.com, Key unter ollama.com/settings/keys. Weitere Modelle per /api/tags.",
+            rewriteLlmModel = "mistral-large-3:675b",
         ),
         Provider(
             id = CUSTOM_ID,

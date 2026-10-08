@@ -86,7 +86,9 @@ class ProviderCatalogTest {
     @Test fun reasoningModelleOhneTemperatureHabenEinenEffort() {
         for (p in ProviderCatalog.providers) {
             // Ausnahme Gemini 3: temperature faellt auf Googles Rat weg, das Denken ist nicht abschaltbar.
-            for (m in p.llmModels.filter { !it.temperatureSupported && !it.id.contains("gemini-3") }) {
+            // Ausnahme Claude (direkt wie ueber OpenRouter): lehnt temperature ab, die Kompatibilitaets-
+            // schicht ignoriert reasoning_effort — das Denken steuert thinkingType.
+            for (m in p.llmModels.filter { !it.temperatureSupported && !it.id.contains("gemini-3") && !it.id.contains("claude-") }) {
                 assertNotNull("${p.id}/${m.id}", m.reasoningEffort)
             }
         }
@@ -166,7 +168,6 @@ class ProviderCatalogTest {
 
     /** Katalog-Pflege 2026-09-30: aktuelle Defaults, auslaufende Empfehlungen raus. */
     @Test fun katalogStand20260930() {
-        assertEquals("2026-09-30", ProviderCatalog.CATALOG_DATE)
         val deepseek = ProviderCatalog.byId("deepseek")
         assertEquals("deepseek-flash", deepseek.defaultLlmModel)
         // Der alte Name wird noch angenommen und bleibt fuer gespeicherte Auswahlen waehlbar.
@@ -187,6 +188,81 @@ class ProviderCatalogTest {
         val openrouter = ProviderCatalog.byId("openrouter").llmModels.map { it.id }
         assertTrue(openrouter.toString(), openrouter.none { it.startsWith("google/gemini-2.5-") })
         assertTrue(openrouter.contains("google/gemini-3.8-flash"))
+    }
+
+    // --- Katalog-Pflege 2026-10-08 (3.8.6): Empfehlung je Stufe --------------------------------
+
+    @Test fun katalogStand20261008() {
+        assertEquals("2026-10-08", ProviderCatalog.CATALOG_DATE)
+    }
+
+    @Test fun empfehlungenZumGlaettenUndUmformulieren() {
+        val expected = mapOf(
+            "openai" to ("gpt-6-luna" to "gpt-6-sol"),
+            "anthropic" to ("claude-haiku-5-5" to "claude-sonnet-5-5"),
+            "groq" to ("openai/gpt-oss-20b" to "openai/gpt-oss-120b"),
+            "mistral" to ("mistral-small-latest" to "mistral-large-2512"),
+            "gemini" to ("gemini-3.5-flash-lite" to "gemini-3.8-flash"),
+            "deepseek" to ("deepseek-flash" to "deepseek-v4-pro"),
+            "openrouter" to ("anthropic/claude-haiku-5.5" to "anthropic/claude-sonnet-5.5"),
+            "ollama-cloud" to ("gemma4:31b" to "mistral-large-3:675b"),
+        )
+        for ((id, models) in expected) {
+            val p = ProviderCatalog.byId(id)
+            assertEquals(id, models.first, p.defaultLlmModel)
+            assertEquals(id, models.second, p.rewriteLlmModel)
+        }
+        // Ohne Katalog (Ollama lokal, eigener Server) gibt es keine Empfehlung.
+        assertEquals("", ProviderCatalog.byId("ollama").rewriteLlmModel)
+        assertEquals("", ProviderCatalog.custom.rewriteLlmModel)
+    }
+
+    @Test fun umformulierenEmpfehlungStehtImKatalog() {
+        for (p in ProviderCatalog.providers.filter { it.rewriteLlmModel.isNotBlank() }) {
+            assertNotNull(p.id, p.llmModel(p.rewriteLlmModel))
+            assertTrue("${p.id}: sonst reicht der Standard", p.rewriteLlmModel != p.defaultLlmModel)
+        }
+    }
+
+    /** Claude ab 4.7 lehnt jedes gesetzte temperature ab (HTTP 400) — sonst geht jedes Diktat zweimal raus. */
+    @Test fun claude5OhneTemperature() {
+        val claude = (ProviderCatalog.byId("anthropic").llmModels + ProviderCatalog.byId("openrouter").llmModels)
+            .filter { it.id.contains("claude-") && !it.id.contains("-4") }
+        assertEquals(claude.toString(), 6, claude.size)
+        assertTrue(claude.toString(), claude.none { it.temperatureSupported })
+        assertTrue(claude.toString(), claude.none { it.reasoningEffort != null })
+        // Haiku 4.5 laeuft noch (Legacy) und kann temperature.
+        assertTrue(ProviderCatalog.byId("anthropic").llmModel("claude-haiku-4-5")!!.temperatureSupported)
+    }
+
+    /** Gemessen 2026-10-08: welches Claude-Modell welchen thinking-Wert annimmt. */
+    @Test fun claudeDenkenNurWoDasModellEsZulaesst() {
+        val anthropic = ProviderCatalog.byId("anthropic")
+        assertEquals("disabled", anthropic.llmModel("claude-haiku-5-5")!!.thinkingType)
+        assertEquals("disabled", anthropic.llmModel("claude-sonnet-5")!!.thinkingType)
+        // Bei "disabled" kommt HTTP 400.
+        assertEquals("between_tools", anthropic.llmModel("claude-sonnet-5-5")!!.thinkingType)
+        // Opus lehnt beide Werte ab und denkt immer adaptiv.
+        assertNull(anthropic.llmModel("claude-opus-5-5")!!.thinkingType)
+        // OpenRouter hat eine andere Parameter-Syntax: dort hilft nur das hoehere Limit.
+        assertTrue(ProviderCatalog.byId("openrouter").llmModels.none { it.thinkingType != null })
+    }
+
+    @Test fun deepSeekDenktNichtUndGeminiFlashNurKurz() {
+        assertTrue(ProviderCatalog.byId("deepseek").llmModels.all { it.thinkingType == "disabled" })
+        assertEquals("low", ProviderCatalog.byId("gemini").llmModel("gemini-3.8-flash")!!.reasoningEffort)
+        assertEquals("low", ProviderCatalog.byId("openrouter").llmModel("google/gemini-3.8-flash")!!.reasoningEffort)
+        // Nur dort, wo es gemessen bzw. dokumentiert ist.
+        val others = ProviderCatalog.providers.filter { it.id != "anthropic" && it.id != "deepseek" }
+        assertTrue(others.flatMap { it.llmModels }.none { it.thinkingType != null })
+    }
+
+    @Test fun alteStandardmodelleBleibenWaehlbar() {
+        val openai = ProviderCatalog.openai
+        assertNotNull(openai.llmModel("gpt-4o-mini"))
+        assertTrue(openai.llmModel("gpt-5.4-nano")!!.note.contains("2027-04-01"))
+        assertTrue(ProviderCatalog.byId("anthropic").llmModel("claude-haiku-4-5")!!.label.contains("Legacy"))
+        assertTrue(ProviderCatalog.byId("openrouter").llmModel("anthropic/claude-haiku-4.5")!!.label.contains("Legacy"))
     }
 
     @Test fun gespeicherteModellIdsBleibenUnveraendert() {

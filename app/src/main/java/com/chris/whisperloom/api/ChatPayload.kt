@@ -7,17 +7,23 @@ import org.json.JSONObject
  * Request-Body fuer POST /chat/completions. Die Sampling-Entscheidung ist rein
  * (JVM-unit-testbar): Reasoning-Modelle (OpenAI gpt-5.x) lehnen `temperature` ab und
  * wollen `reasoning_effort` + `max_completion_tokens`; Ollama/Qwen3 denken ohne
- * `reasoning_effort: "none"` erst minutenlang nach.
+ * `reasoning_effort: "none"` erst minutenlang nach. Claude 5 und DeepSeek schalten das
+ * Nachdenken nur ueber `thinking` ab ([ModelOption.thinkingType]).
  */
 object ChatPayload {
 
-    /** Reicht fuer jedes Diktat; verhindert Endlos-Ausgaben bei Reasoning-Modellen. */
-    const val MAX_COMPLETION_TOKENS = 4096
+    /**
+     * Deckel gegen Endlos-Ausgaben bei Reasoning-Modellen. Die Denk-Token zaehlen mit: 4096 reichten
+     * Claude Haiku 5.5 fuer 7.700 Zeichen nicht (0 Zeichen Text, gemessen 2026-10-08), deutscher
+     * Text braucht etwa 1 Token je 2,1 Zeichen. Abgerechnet wird nur, was verbraucht wird.
+     */
+    const val MAX_COMPLETION_TOKENS = 16384
 
     data class Sampling(
         val temperature: Int? = null,
         val reasoningEffort: String? = null,
         val maxCompletionTokens: Int? = null,
+        val thinkingType: String? = null,
     )
 
     fun sampling(access: ApiAccess): Sampling {
@@ -28,6 +34,7 @@ object ChatPayload {
             temperature = if (temperatureOk) 0 else null,
             reasoningEffort = if (access.provider.isCustom) "none" else option?.reasoningEffort,
             maxCompletionTokens = if (temperatureOk) null else MAX_COMPLETION_TOKENS,
+            thinkingType = option?.thinkingType,
         )
     }
 
@@ -38,6 +45,7 @@ object ChatPayload {
             s.temperature?.let { put("temperature", it) }
             s.reasoningEffort?.let { put("reasoning_effort", it) }
             s.maxCompletionTokens?.let { put("max_completion_tokens", it) }
+            s.thinkingType?.let { put("thinking", JSONObject().put("type", it)) }
             put(
                 "messages",
                 JSONArray()

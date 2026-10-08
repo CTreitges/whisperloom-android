@@ -71,8 +71,8 @@ class AccessResolverTest {
         assertEquals("sk-x", l.apiKey)
         assertEquals(45_000, l.readTimeoutMs)
         assertEquals("openai", l.provider.id)
-        assertEquals("gpt-4o-mini", l.model)
-        assertTrue(l.modelOption!!.temperatureSupported)
+        assertEquals("gpt-6-luna", l.model)
+        assertFalse(l.modelOption!!.temperatureSupported)
     }
 
     @Test fun leererProviderZaehltAlsSame() {

@@ -223,6 +223,7 @@ object ModelLists {
             temperatureSupported = temperature ?: true,
             reasoningEffort = effort,
             languageField = languageField ?: "language",
+            thinkingType = base?.thinkingType,
         )
     }
 

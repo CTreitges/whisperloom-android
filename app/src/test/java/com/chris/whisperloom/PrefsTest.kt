@@ -75,7 +75,7 @@ class PrefsTest {
         assertEquals("openai", stt.provider.id)
         assertEquals("gpt-4o-transcribe", stt.model) // nicht automatisch umgeschrieben
         assertEquals("sk-alt", stt.apiKey)
-        assertEquals("gpt-4o-mini", p.llmAccess().model)
+        assertEquals(Prefs.DEFAULT_LLM_MODEL, p.llmAccess().model)
         assertTrue(TranscriptionEngine.isConfigured(ctx))
         assertEquals(4, sp.getInt("prefs_version", 0))
     }

@@ -496,8 +496,8 @@ class Prefs(context: Context) {
          */
         const val DEFAULT_API_MODEL = "gpt-transcribe"
 
-        /** Guenstiges Modell fuer die optionale Textveredelung. */
-        const val DEFAULT_LLM_MODEL = "gpt-4o-mini"
+        /** Empfehlung zum Glaetten bei OpenAI (erstes Katalog-Modell, Stand 2026-10-08). */
+        const val DEFAULT_LLM_MODEL = "gpt-6-luna"
 
         const val DEFAULT_OFFLINE_MODEL = "small"
 

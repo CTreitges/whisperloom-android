@@ -233,10 +233,11 @@ class ModelPickerTest {
         // Anthropic listet claude-haiku-4-5-20251001 statt claude-haiku-4-5 — kein falsches "nicht mehr gelistet".
         prefs.serverModelsEnabled = true
         prefs.llmProviderId = "anthropic"
+        prefs.llmModel = "claude-haiku-4-5"
         cache(prefs.llmAccess(), ModelKind.LLM, "claude-haiku-4-5-20251001", "claude-opus-5-5")
         text()
         openPicker()
-        row("Claude Haiku 4.5").assertIsSelected().assert(!hasText("nicht mehr gelistet", substring = true))
+        row("Claude Haiku 4.5 (Legacy)").assertIsSelected().assert(!hasText("nicht mehr gelistet", substring = true))
         row("Claude Sonnet 5").assertTextContains("nicht mehr gelistet", substring = true)
     }
 
