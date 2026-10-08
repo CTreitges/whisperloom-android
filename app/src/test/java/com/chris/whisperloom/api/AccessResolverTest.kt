@@ -152,6 +152,57 @@ class AccessResolverTest {
         assertTrue(l.provider.isCustom)
     }
 
+    // --- Modell je Stufe (3.8.6) ------------------------------------------------------------
+
+    private fun anthropic(model: String = "", stageModel: String = "", stage: RefineMode?) =
+        AccessResolver.resolveLlm(stt, "anthropic", "", "sk-ant", model, stageModel = stageModel, stage = stage).model
+
+    @Test fun ohneModellGiltDieEmpfehlungJeStufe() {
+        for (mode in listOf(RefineMode.POLISH, RefineMode.READABLE, RefineMode.PARAGRAPHS)) {
+            assertEquals(mode.name, "claude-haiku-5-5", anthropic(stage = mode))
+        }
+        for (mode in listOf(RefineMode.BEAUTIFY, RefineMode.SUMMARIZE, RefineMode.PROMPT)) {
+            assertEquals(mode.name, "claude-sonnet-5-5", anthropic(stage = mode))
+        }
+        // Ohne Stufe (Bereitschaft, Tastatur, "Zugang pruefen") und bei "aus": das erste Katalogmodell.
+        assertEquals("claude-haiku-5-5", anthropic(stage = null))
+        assertEquals("claude-haiku-5-5", anthropic(stage = RefineMode.OFF))
+    }
+
+    @Test fun reihenfolgeStufenModellDannZugangsModellDannEmpfehlung() {
+        assertEquals("claude-opus-5-5", anthropic(model = "claude-sonnet-5", stageModel = " claude-opus-5-5 ", stage = RefineMode.SUMMARIZE))
+        // Das Modell des Zugangs, bewusst gesetzt, gilt fuer alle Stufen ohne eigenes — auch zum Umformulieren.
+        assertEquals("claude-sonnet-5", anthropic(model = "claude-sonnet-5", stage = RefineMode.BEAUTIFY))
+        assertEquals("claude-sonnet-5", anthropic(model = "claude-sonnet-5", stage = RefineMode.POLISH))
+        assertEquals("claude-sonnet-5-5", anthropic(stageModel = "  ", stage = RefineMode.BEAUTIFY))
+    }
+
+    @Test fun ohneUmformulierenEmpfehlungDasErsteKatalogmodell() {
+        val p = Provider(id = "x", name = "X", baseUrl = "https://x", llmModels = listOf(ModelOption("a", "A"), ModelOption("b", "B")))
+        assertEquals("a", p.recommendedLlmModel(RefineMode.BEAUTIFY))
+        assertEquals("b", p.copy(rewriteLlmModel = "b").recommendedLlmModel(RefineMode.PROMPT))
+        assertEquals("a", p.copy(rewriteLlmModel = "b").recommendedLlmModel(RefineMode.READABLE))
+        assertEquals("", ProviderCatalog.custom.recommendedLlmModel(RefineMode.BEAUTIFY))
+    }
+
+    @Test fun wieErkennungNutztDieEmpfehlungDesErkennungsAnbieters() {
+        val l = AccessResolver.resolveLlm(stt, "same", "", "", "", stage = RefineMode.BEAUTIFY)
+        assertEquals("gpt-6-sol", l.model)
+        assertEquals("sk-x", l.apiKey)
+        assertEquals("gpt-4.1-mini", AccessResolver.resolveLlm(stt, "same", "", "", "", stageModel = "gpt-4.1-mini", stage = RefineMode.BEAUTIFY).model)
+        // Offline ohne eigenen Zugang: auch ein Stufen-Modell schickt nichts an den alten Zugang.
+        val offline = AccessResolver.resolveLlm(stt, "same", "", "", "", sttOffline = true, stageModel = "gpt-6-sol", stage = RefineMode.BEAUTIFY)
+        assertEquals(RefineBlock.OFFLINE, offline.refineBlock)
+        assertEquals("", offline.model)
+    }
+
+    @Test fun ollamaLokalOhneKatalogNimmtDasModellDesZugangs() {
+        val url = "http://192.168.1.10:11434"
+        assertEquals("gemma4:12b", AccessResolver.resolveLlm(stt, "ollama", url, "", "gemma4:12b", stage = RefineMode.BEAUTIFY).model)
+        assertEquals("gemma4:26b", AccessResolver.resolveLlm(stt, "ollama", url, "", "gemma4:12b", stageModel = "gemma4:26b", stage = RefineMode.BEAUTIFY).model)
+        assertEquals("", AccessResolver.resolveLlm(stt, "ollama", url, "", "", stage = RefineMode.BEAUTIFY).model)
+    }
+
     // --- Server-Modelle (Flags aus dem Cache bzw. Heuristik) ----------------------------
 
     /** Merkt sich die Anfragen; liefert fuer jede ID ein Modell mit den gegebenen Flags. */

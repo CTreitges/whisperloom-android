@@ -117,10 +117,11 @@ internal class RefinePlan(
          * Sammelt die Eingaben der Entscheidungstabelle. Das Netz wird nur gefragt, wenn es zaehlt
          * (Online-Erkennung oder eigener Zugang), das lokale Modell nur bei Offline-Erkennung.
          *
-         * @param mode die wirksame Stufe des Auftrags ([Prefs.effective]), Diktat oder geteilte Audios.
+         * @param mode die wirksame Stufe des Auftrags ([Prefs.effective]), Diktat oder geteilte Audios —
+         *   sie bestimmt auch das Textmodell ([Prefs.llmModelFor]).
          */
         fun of(context: Context, prefs: Prefs, mode: RefineMode): RefinePlan {
-            val access = prefs.llmAccess()
+            val access = prefs.llmAccess(mode)
             val engine = prefs.engine
             val stageActive = mode != RefineMode.OFF
             // Bei Offline-Erkennung zaehlt "wie Erkennung" nie (RefineBlock.OFFLINE): bereit ist dann

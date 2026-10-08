@@ -73,6 +73,8 @@ fun SttAccessSection(snack: SnackController, showPrivacy: Boolean = true) {
                     prefs.sttProviderId = p.id
                     prefs.apiBaseUrl = ""
                     prefs.apiModel = ""
+                    // "Wie Erkennung": die Textmodelle gehoerten zum alten Anbieter.
+                    if (!prefs.llmUseOwn) prefs.clearLlmModels()
                 }
             },
             supportingText = if (!provider.isCustom) ({ Text(access.baseUrl) }) else null,

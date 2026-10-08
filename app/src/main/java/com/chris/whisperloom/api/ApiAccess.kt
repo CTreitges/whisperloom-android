@@ -1,5 +1,7 @@
 package com.chris.whisperloom.api
 
+import com.chris.whisperloom.RefineMode
+
 /**
  * Aufgeloester Zugang zu einem OpenAI-kompatiblen Endpunkt — alles, was ein Aufruf
  * braucht. [modelOption] kommt aus dem Katalog; fuer IDs ohne Katalog-Treffer (vom Server
@@ -85,6 +87,9 @@ object AccessResolver {
      * @param sttOffline Erkennung laeuft offline. Dann gibt es nichts zu uebernehmen: der noch
      *   gespeicherte Online-Zugang ist abgewaehlt, und der erkannte Text darf nicht still dorthin
      *   gehen ([RefineBlock.OFFLINE], ohne Adresse und Key).
+     * @param stageModel eigenes Modell der Stufe ("" = Standard). Reihenfolge: [stageModel] →
+     *   [model] (das Modell des Zugangs, wenn gesetzt) → Empfehlung des Anbieters fuer [stage]
+     *   ([Provider.recommendedLlmModel]) → erstes Katalog-Modell.
      */
     fun resolveLlm(
         stt: ApiAccess,
@@ -94,6 +99,8 @@ object AccessResolver {
         model: String,
         serverModels: ServerModelLookup = ServerModelLookup.NONE,
         sttOffline: Boolean = false,
+        stageModel: String = "",
+        stage: RefineMode? = null,
     ): ApiAccess {
         val same = providerId.isBlank() || providerId == LLM_SAME
         if (same && sttOffline) {
@@ -109,7 +116,7 @@ object AccessResolver {
         }
         val provider = if (same) stt.provider else ProviderCatalog.byId(providerId)
         val sameProvider = provider.id == stt.provider.id
-        val modelId = model.trim().ifBlank { provider.defaultLlmModel }
+        val modelId = stageModel.trim().ifBlank { model.trim() }.ifBlank { provider.recommendedLlmModel(stage) }
 
         val url = when {
             same -> stt.baseUrl

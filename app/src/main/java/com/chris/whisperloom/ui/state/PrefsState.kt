@@ -47,6 +47,11 @@ class PrefsState(val prefs: Prefs) {
     var promptLevelEnabled: Boolean by pref({ prefs.promptLevelEnabled }) { prefs.promptLevelEnabled = it }
     var shareRefineMode: RefineMode by pref({ prefs.shareRefineMode }) { prefs.shareRefineMode = it }
 
+    // Modell je Stufe (RefineMode.MODEL_STAGES; "" = Standard)
+    private val stageModels: Map<RefineMode, PrefField<String>> = RefineMode.MODEL_STAGES.associateWith { stage ->
+        PrefField({ prefs.llmModelFor(stage) }) { prefs.setLlmModelFor(stage, it) }.also { fields += it }
+    }
+
     // Regeln ohne KI
     var removeFillers: Boolean by pref({ prefs.removeFillers }) { prefs.removeFillers = it }
     var autoCapitalize: Boolean by pref({ prefs.autoCapitalize }) { prefs.autoCapitalize = it }
@@ -91,6 +96,20 @@ class PrefsState(val prefs: Prefs) {
     /** Der Nutzer hat einen eigenen LLM-Zugang gewaehlt (sonst gilt der Erkennungs-Zugang). */
     val llmUseOwn: Boolean get() = llmProviderId != AccessResolver.LLM_SAME
 
+    /** Wie [Prefs.llmModelFor], ueber die Spiegel: eigenes Modell der Stufe, "" = Standard. */
+    fun llmModelFor(mode: RefineMode?): String = mode?.modelStage?.let { stageModels.getValue(it).value }.orEmpty()
+
+    /** Schreibt sofort durch, wie jede Zuweisung hier; "" = zurueck auf Standard. */
+    fun setLlmModelFor(mode: RefineMode, model: String) {
+        stageModels.getValue(requireNotNull(mode.modelStage) { "Stufe aus hat kein Modell" }).value = model
+    }
+
+    /** Wie [Prefs.clearLlmModels] (Anbieterwechsel) — die Spiegel ziehen sofort nach. */
+    fun clearLlmModels() {
+        prefs.clearLlmModels()
+        fields.forEach { it.reload() }
+    }
+
     /** Aufgeloester Transkriptions-Zugang — liest die Spiegel-Felder, damit Compose Aenderungen sieht. */
     fun sttAccess(): ApiAccess = AccessResolver.resolveStt(
         providerId = sttProviderId,
@@ -101,7 +120,16 @@ class PrefsState(val prefs: Prefs) {
         serverModels = prefs.modelCache,
     )
 
-    fun llmAccess(): ApiAccess = AccessResolver.resolveLlm(
+    /** Wie [Prefs.llmAccess]: mit [mode] gilt das Modell dieser Stufe. */
+    fun llmAccess(mode: RefineMode? = null): ApiAccess = resolveLlm(llmModelFor(mode), mode)
+
+    /**
+     * Der Zugang, den die Stufe von [mode] ohne eigenes Modell haette: das Modell des Zugangs, sonst
+     * die Empfehlung des Anbieters fuer die Stufe — fuer Labels wie "Standard · <Modell>".
+     */
+    fun standardLlmAccess(mode: RefineMode): ApiAccess = resolveLlm(stageModel = "", mode)
+
+    private fun resolveLlm(stageModel: String, mode: RefineMode?): ApiAccess = AccessResolver.resolveLlm(
         stt = sttAccess(),
         providerId = llmProviderId,
         baseUrl = llmUrl,
@@ -109,6 +137,8 @@ class PrefsState(val prefs: Prefs) {
         model = llmModel,
         serverModels = prefs.modelCache,
         sttOffline = engine == Engine.OFFLINE,
+        stageModel = stageModel,
+        stage = mode,
     )
 
     /** Position des schwebenden Knopfs auf den Default (E3 "Position zuruecksetzen"). */
@@ -147,16 +177,22 @@ class PrefsState(val prefs: Prefs) {
     ) : ReadWriteProperty<Any?, T> {
         private val state = mutableStateOf(read())
 
+        var value: T
+            get() = state.value
+            set(v) {
+                write(v)
+                state.value = v
+            }
+
         /** Nur schreiben, wenn sich wirklich etwas geaendert hat — sonst zeichnet Compose umsonst. */
         fun reload() {
             val aktuell = read()
             if (state.value != aktuell) state.value = aktuell
         }
 
-        override fun getValue(thisRef: Any?, property: KProperty<*>): T = state.value
+        override fun getValue(thisRef: Any?, property: KProperty<*>): T = value
         override fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
-            write(value)
-            state.value = value
+            this.value = value
         }
     }
 }

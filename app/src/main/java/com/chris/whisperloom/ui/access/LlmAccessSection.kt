@@ -96,12 +96,13 @@ fun LlmAccessSection(snack: SnackController) {
 
     // Eigener Zugang: den Erkennungs-Anbieter uebernehmen, wenn er Textmodelle hat, sonst OpenAI.
     // Alte Felder leeren wie beim Anbieterwechsel: sonst ginge nach aus/an z. B. die Ollama-Adresse
-    // mit dem Groq-Key (oder der ollama.com-Key an Groq) raus — Review 3.5.0, HOCH.
+    // mit dem Groq-Key (oder der ollama.com-Key an Groq) raus — Review 3.5.0, HOCH. Die Modelle
+    // (Zugang und Stufen) gehoeren zum alten Anbieter.
     fun switchToOwn() {
         prefs.llmProviderId = if (stt.provider.hasLlm) stt.provider.id else ProviderCatalog.OPENAI_ID
         prefs.llmUrl = ""
         prefs.llmKey = ""
-        prefs.llmModel = ""
+        prefs.clearLlmModels()
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -114,7 +115,14 @@ fun LlmAccessSection(snack: SnackController) {
                 else -> stringResource(R.string.text_own_access_off, providerShortName(stt.provider))
             },
             checked = useOwn,
-            onCheckedChange = { on -> if (on) switchToOwn() else prefs.llmProviderId = AccessResolver.LLM_SAME },
+            onCheckedChange = { on ->
+                if (on) {
+                    switchToOwn()
+                } else {
+                    prefs.llmProviderId = AccessResolver.LLM_SAME
+                    prefs.clearLlmModels()
+                }
+            },
         )
 
         AnimatedVisibility(visible = useOwn) {
@@ -130,7 +138,7 @@ fun LlmAccessSection(snack: SnackController) {
                             prefs.llmProviderId = p.id
                             prefs.llmUrl = ""
                             prefs.llmKey = ""
-                            prefs.llmModel = ""
+                            prefs.clearLlmModels()
                         }
                     },
                     supportingText = if (!provider.needsUrl) ({ Text(llm.baseUrl) }) else null,

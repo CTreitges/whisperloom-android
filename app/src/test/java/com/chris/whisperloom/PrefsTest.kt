@@ -12,6 +12,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -222,6 +223,91 @@ class PrefsTest {
         assertTrue(Prefs(ctx).polishReadable)
         Prefs(ctx).polishReadable = false
         assertFalse(state.polishReadable)
+        state.dispose()
+    }
+
+    // --- Modell je Stufe (3.8.6) ------------------------------------------------------
+
+    @Test fun modellJeStufeHatEigeneSchluessel() {
+        val p = Prefs(ctx)
+        for (mode in RefineMode.entries) assertEquals(mode.name, "", p.llmModelFor(mode))
+        p.setLlmModelFor(RefineMode.POLISH, "a")
+        p.setLlmModelFor(RefineMode.BEAUTIFY, "b")
+        p.setLlmModelFor(RefineMode.SUMMARIZE, "c")
+        p.setLlmModelFor(RefineMode.PROMPT, "d")
+        assertEquals("a", sp.getString("llm_model_polish", null))
+        assertEquals("b", sp.getString("llm_model_beautify", null))
+        assertEquals("c", sp.getString("llm_model_summarize", null))
+        assertEquals("d", sp.getString("llm_model_prompt", null))
+        // "Lesbarer glaetten" und Absaetze rechnen mit dem Glaetten-Modell, "aus" mit keinem.
+        assertEquals("a", Prefs(ctx).llmModelFor(RefineMode.READABLE))
+        assertEquals("a", Prefs(ctx).llmModelFor(RefineMode.PARAGRAPHS))
+        assertEquals("", Prefs(ctx).llmModelFor(RefineMode.OFF))
+        assertEquals("", Prefs(ctx).llmModelFor(null))
+        assertEquals("", p.llmModel)
+    }
+
+    @Test fun stufeAusHatKeinModell() {
+        try {
+            Prefs(ctx).setLlmModelFor(RefineMode.OFF, "x")
+            fail("aus hat kein Modell")
+        } catch (e: IllegalArgumentException) {
+            assertTrue(sp.all.keys.none { it.startsWith("llm_model") })
+        }
+    }
+
+    @Test fun anbieterwechselLeertZugangsModellUndAlleStufen() {
+        val p = Prefs(ctx)
+        p.llmProviderId = "anthropic"
+        p.llmKey = "sk-ant"
+        p.llmModel = "claude-sonnet-5"
+        RefineMode.MODEL_STAGES.forEach { p.setLlmModelFor(it, "claude-opus-5-5") }
+        p.clearLlmModels()
+        val again = Prefs(ctx)
+        assertEquals("", again.llmModel)
+        RefineMode.MODEL_STAGES.forEach { assertEquals(it.name, "", again.llmModelFor(it)) }
+        assertTrue(sp.all.keys.none { it.startsWith("llm_model") })
+        // Anbieter und Key bleiben — die setzt der Aufrufer.
+        assertEquals("anthropic", again.llmProviderId)
+        assertEquals("sk-ant", again.llmKey)
+    }
+
+    @Test fun llmZugangNimmtDasModellDerStufe() {
+        val p = Prefs(ctx)
+        p.engine = Engine.ONLINE
+        p.llmProviderId = "anthropic"
+        p.llmKey = "sk-ant"
+        assertEquals("claude-haiku-5-5", p.llmAccess().model)
+        assertEquals("claude-haiku-5-5", p.llmAccess(RefineMode.READABLE).model)
+        assertEquals("claude-sonnet-5-5", p.llmAccess(RefineMode.BEAUTIFY).model)
+        p.setLlmModelFor(RefineMode.SUMMARIZE, "claude-opus-5-5")
+        assertEquals("claude-opus-5-5", p.llmAccess(RefineMode.SUMMARIZE).model)
+        // Ein bewusst gewaehltes Modell des Zugangs gilt fuer alle Stufen ohne eigenes.
+        p.llmModel = "claude-sonnet-5"
+        assertEquals("claude-sonnet-5", p.llmAccess(RefineMode.POLISH).model)
+        assertEquals("claude-sonnet-5", p.llmAccess(RefineMode.BEAUTIFY).model)
+        assertEquals("claude-opus-5-5", p.llmAccess(RefineMode.SUMMARIZE).model)
+    }
+
+    @Test fun modellJeStufeSpiegeltSichInCompose() {
+        val p = Prefs(ctx)
+        p.llmProviderId = "anthropic"
+        val state = PrefsState(p)
+        state.setLlmModelFor(RefineMode.BEAUTIFY, "claude-opus-5-5")
+        assertEquals("claude-opus-5-5", Prefs(ctx).llmModelFor(RefineMode.BEAUTIFY))
+        assertEquals("claude-opus-5-5", state.llmAccess(RefineMode.BEAUTIFY).model)
+        // Das Standard-Modell der Stufe (fuer "Standard · …") kennt das eigene nicht.
+        assertEquals("claude-sonnet-5-5", state.standardLlmAccess(RefineMode.BEAUTIFY).model)
+        assertEquals("claude-haiku-5-5", state.standardLlmAccess(RefineMode.READABLE).model)
+        // Von aussen geschrieben kommt es an.
+        Prefs(ctx).setLlmModelFor(RefineMode.PROMPT, "claude-sonnet-5")
+        assertEquals("claude-sonnet-5", state.llmModelFor(RefineMode.PROMPT))
+        state.llmModel = "claude-sonnet-5"
+        assertEquals("claude-sonnet-5", state.standardLlmAccess(RefineMode.BEAUTIFY).model)
+        state.clearLlmModels()
+        assertEquals("", state.llmModel)
+        RefineMode.MODEL_STAGES.forEach { assertEquals(it.name, "", state.llmModelFor(it)) }
+        assertEquals("claude-haiku-5-5", state.llmAccess(RefineMode.POLISH).model)
         state.dispose()
     }
 

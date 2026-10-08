@@ -1,5 +1,7 @@
 package com.chris.whisperloom.api
 
+import com.chris.whisperloom.RefineMode
+
 /**
  * Ein Modell fuer die Dropdowns. Rein (ohne Android), damit JVM-unit-testbar.
  *
@@ -79,6 +81,15 @@ data class Provider(
     /** Erstes Modell der Liste = Empfehlung (beim Textmodell: zum Glaetten); "" beim eigenen Server. */
     val defaultSttModel: String get() = sttModels.firstOrNull()?.id.orEmpty()
     val defaultLlmModel: String get() = llmModels.firstOrNull()?.id.orEmpty()
+
+    /**
+     * Empfehlung des Anbieters fuer eine Stufe: zum Umformulieren (Verschoenern, Zusammenfassen,
+     * Prompt) [rewriteLlmModel], sonst — Glaetten, "Lesbarer glaetten", ohne Stufe — [defaultLlmModel].
+     */
+    fun recommendedLlmModel(mode: RefineMode?): String = when (mode?.modelStage) {
+        RefineMode.BEAUTIFY, RefineMode.SUMMARIZE, RefineMode.PROMPT -> rewriteLlmModel.ifBlank { defaultLlmModel }
+        else -> defaultLlmModel
+    }
 
     fun sttModel(id: String): ModelOption? = sttModels.firstOrNull { it.id == id }
     fun llmModel(id: String): ModelOption? = llmModels.firstOrNull { it.id == id }

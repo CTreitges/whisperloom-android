@@ -41,9 +41,23 @@ enum class RefineMode(val key: String) {
     /** Formt das Diktat zu einem Prompt fuer einen KI-Assistenten (ChatGPT, Claude, Gemini). */
     PROMPT("prompt");
 
+    /**
+     * Unter welcher Stufe das Textmodell eingestellt ist ([Prefs.llmModelFor]): "Lesbarer glaetten"
+     * und Absaetze rechnen mit dem Glaetten-Modell. null = aus, kein Modell.
+     */
+    val modelStage: RefineMode?
+        get() = when (this) {
+            OFF -> null
+            POLISH, READABLE, PARAGRAPHS -> POLISH
+            BEAUTIFY, SUMMARIZE, PROMPT -> this
+        }
+
     companion object {
         /** Reihenfolge im Einstellungs-Dropdown. */
         val SETTINGS = listOf(OFF, POLISH, BEAUTIFY, SUMMARIZE)
+
+        /** Stufen mit eigenem Textmodell ([modelStage]); gelten fuer Diktat und Sprachnachrichten gemeinsam. */
+        val MODEL_STAGES = listOf(POLISH, BEAUTIFY, SUMMARIZE, PROMPT)
 
         /** Die waehlbaren Stufen — "Prompt" nur fuer die, die sie eingeschaltet haben. */
         fun settings(promptEnabled: Boolean): List<RefineMode> = if (promptEnabled) SETTINGS + PROMPT else SETTINGS
@@ -210,9 +224,34 @@ class Prefs(context: Context) {
         get() = sp.getString(KEY_LLM_KEY, "") ?: ""
         set(v) = sp.edit { putString(KEY_LLM_KEY, v) }
 
+    /** Modell des Online-Zugangs = Standard fuer alle Stufen ohne eigenes ([llmModelFor]); "" = Empfehlung je Stufe. */
     var llmModel: String
         get() = sp.getString(KEY_LLM_MODEL, "") ?: ""
         set(v) = sp.edit { putString(KEY_LLM_MODEL, v) }
+
+    /**
+     * Eigenes Modell der Stufe von [mode] (siehe [RefineMode.modelStage]), roh: "" = Standard.
+     * Schluessel `llm_model_polish`, `…_beautify`, `…_summarize`, `…_prompt`.
+     */
+    fun llmModelFor(mode: RefineMode?): String {
+        val stage = mode?.modelStage ?: return ""
+        return sp.getString(KEY_LLM_MODEL_PREFIX + stage.key, "") ?: ""
+    }
+
+    /** @throws IllegalArgumentException fuer [RefineMode.OFF] — ohne Stufe gibt es kein Modell. */
+    fun setLlmModelFor(mode: RefineMode, model: String) {
+        val stage = requireNotNull(mode.modelStage) { "Stufe aus hat kein Modell" }
+        sp.edit { putString(KEY_LLM_MODEL_PREFIX + stage.key, model) }
+    }
+
+    /**
+     * Anbieterwechsel: das Modell des Zugangs und alle Stufen-Modelle zurueck auf Standard — sie
+     * gehoeren zum alten Anbieter (sonst ginge z. B. claude-sonnet-5 an OpenAI: 404).
+     */
+    fun clearLlmModels() = sp.edit {
+        remove(KEY_LLM_MODEL)
+        RefineMode.MODEL_STAGES.forEach { remove(KEY_LLM_MODEL_PREFIX + it.key) }
+    }
 
     /**
      * Gespeicherte Stufe. "Prompt" gilt nur, solange sie eingeschaltet ist — sonst waere sie
@@ -414,7 +453,11 @@ class Prefs(context: Context) {
         serverModels = modelCache,
     )
 
-    fun llmAccess(): ApiAccess = AccessResolver.resolveLlm(
+    /**
+     * Zugang fuer die Textverbesserung. Mit [mode] (der wirksamen Stufe des Auftrags) gilt das Modell
+     * dieser Stufe; ohne — Bereitschaft, Tastatur, "Zugang pruefen" — das des Zugangs.
+     */
+    fun llmAccess(mode: RefineMode? = null): ApiAccess = AccessResolver.resolveLlm(
         stt = sttAccess(),
         providerId = llmProviderId,
         baseUrl = llmUrl,
@@ -422,6 +465,8 @@ class Prefs(context: Context) {
         model = llmModel,
         serverModels = modelCache,
         sttOffline = engine == Engine.OFFLINE,
+        stageModel = llmModelFor(mode),
+        stage = mode,
     )
 
     companion object {
@@ -445,6 +490,9 @@ class Prefs(context: Context) {
         private const val KEY_LLM_URL = "llm_url"
         private const val KEY_LLM_KEY = "llm_key"
         private const val KEY_LLM_MODEL = "llm_model"
+
+        /** + [RefineMode.key] der Stufe: llm_model_polish, llm_model_beautify, llm_model_summarize, llm_model_prompt. */
+        private const val KEY_LLM_MODEL_PREFIX = "llm_model_"
         private const val KEY_REFINE_MODE = "refine_mode"
         private const val KEY_LLM_POLISH_LEGACY = "llm_polish"
         private const val KEY_SMART_FILLERS = "smart_fillers"
