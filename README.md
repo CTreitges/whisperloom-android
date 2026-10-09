@@ -134,7 +134,7 @@ zum `versionCode` die Highlight-Datei existieren.
 4. Signiertes `assembleRelease` mit dem Keystore aus den Secrets.
 5. Prüfung des Release-APKs: `lib/arm64-v8a/libwhisperloom.so` vorhanden, **kein** `assets/*.bin` (Modelle kommen nur per Download), keine anderen ABIs, `zipalign -P 16` und `llvm-readelf` bestätigen 16-KB-Alignment aller `LOAD`-Segmente, `tools/check_package_id.sh` bestätigt die Paket-ID `com.chris.whisperloom`.
 6. Signiertes `bundleRelease -Pwhisperloom.applicationId=com.whisperloom` (Android App Bundle für den Play Store, gleicher Schlüssel als Upload-Key). Nur die Play-Version heißt `com.whisperloom`; GitHub- und F-Droid-APKs bleiben `com.chris.whisperloom`, damit installierte Apps weiter Updates bekommen. Geprüft werden Native-Lib, Modelle und ABIs, die Paket-ID (bundletool 1.18.3, Prüfsumme fest) sowie R8-Mapping und Native-Symbole in `BUNDLE-METADATA/`. Beides liest Play direkt aus dem Bundle.
-7. Artefakte: `whisperloom-debug-apk`, `whisperloom-release-apk`, `whisperloom-release-mapping` (R8-`mapping.txt` zum Entschlüsseln von Stacktraces), `whisperloom-play-aab` (`com.whisperloom`), `unit-and-lint-reports`.
+7. Artefakte: `whisperloom-debug-apk`, `whisperloom-release-apk`, `whisperloom-release-mapping` (R8-`mapping.txt` zum Entschlüsseln von Stacktraces des Release-APKs; für Play liegt das passende Mapping im AAB), `whisperloom-play-aab` (`com.whisperloom`), `unit-and-lint-reports`.
 
 ### Release-Signierung
 

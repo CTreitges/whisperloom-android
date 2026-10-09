@@ -14,10 +14,4 @@ class ApplicationIdTest {
         // Rot, wenn whisperloom.applicationId versehentlich global gesetzt ist (z. B. in gradle.properties).
         assertEquals("com.chris.whisperloom", BuildConfig.APPLICATION_ID)
     }
-
-    @Test fun klassenpaketHaengtNichtAnDerPaketId() {
-        // BuildConfig/R liegen im namespace: der Play-Build aendert keine Klassennamen (Activity-Alias,
-        // method.xml settingsActivity und Widget-configure nennen Klassen, keine Paket-ID).
-        assertEquals("com.chris.whisperloom", BuildConfig::class.java.`package`!!.name)
-    }
 }

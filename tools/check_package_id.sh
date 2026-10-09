@@ -13,7 +13,9 @@ case "$file" in
   *.aab)
     bt() { java -jar "${BUNDLETOOL:?BUNDLETOOL nicht gesetzt}" dump manifest --bundle "$file" --xpath "$1"; }
     actual=$(bt /manifest/@package)
-    info="versionCode $(bt /manifest/@android:versionCode), versionName $(bt /manifest/@android:versionName)"
+    version_code=$(bt /manifest/@android:versionCode)
+    version_name=$(bt /manifest/@android:versionName)
+    info="versionCode $version_code, versionName $version_name"
     ;;
   *.apk)
     actual=$("${AAPT2:?AAPT2 nicht gesetzt}" dump packagename "$file")
