@@ -113,6 +113,9 @@ jobs:
             "$READELF" -lW "$so" | awk '$1=="LOAD" && $NF!="0x4000"{bad=1} END{exit bad}' \
               || { echo "::error::$so ist nicht 16-KB-aligned"; exit 1; }
           done
+          # GitHub/F-Droid behalten ihre Paket-ID, sonst gehen Updates nicht ueber die installierte App
+          AAPT2="$ANDROID_HOME/build-tools/${BUILD_TOOLS_VERSION}/aapt2" \
+            tools/check_package_id.sh "$APK" com.chris.whisperloom
 
       - name: Release-APK als Artefakt hochladen
         uses: actions/upload-artifact@v7
@@ -133,17 +136,27 @@ jobs:
       # Play verlangt fuer neue Apps ein AAB (kein APK). Signiert mit demselben Key wie das APK
       # (dient als Play-Upload-Key). Der finale, an Nutzer ausgelieferte Build wird von Play App
       # Signing separat signiert (Google-verwalteter App-Signing-Key).
+      # Paket-ID nur hier com.whisperloom (Play); APKs fuer GitHub/F-Droid bleiben com.chris.whisperloom.
       - name: Signiertes Release-AAB (Play Store) bauen
         env:
           WHISPERLOOM_KEYSTORE: ${{ runner.temp }}/whisperloom-release.p12
           WHISPERLOOM_KEYSTORE_PASSWORD: ${{ secrets.WHISPERLOOM_KEYSTORE_PASSWORD }}
           WHISPERLOOM_KEY_ALIAS: whisperloom
-        run: ./gradlew --no-daemon bundleRelease
+        run: ./gradlew --no-daemon bundleRelease -Pwhisperloom.applicationId=com.whisperloom
 
-      - name: Release-AAB pruefen (Native-Lib da, kein Modell, nur arm64)
+      - name: Release-AAB pruefen (Paket-ID, Native-Lib, kein Modell, nur arm64, Mapping + Symbole)
+        env:
+          BUNDLETOOL_VERSION: 1.18.3
+          BUNDLETOOL_SHA256: a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29
         run: |
           set -euo pipefail
           AAB=app/build/outputs/bundle/release/app-release.aab
+          # Die erste hochgeladene Paket-ID gehoert der Play-App fuer immer — vor dem Artefakt pruefen.
+          export BUNDLETOOL="$RUNNER_TEMP/bundletool-all-${BUNDLETOOL_VERSION}.jar"
+          curl -fsSL -o "$BUNDLETOOL" \
+            "https://github.com/google/bundletool/releases/download/${BUNDLETOOL_VERSION}/bundletool-all-${BUNDLETOOL_VERSION}.jar"
+          echo "${BUNDLETOOL_SHA256}  $BUNDLETOOL" | sha256sum -c -
+          tools/check_package_id.sh "$AAB" com.whisperloom
           unzip -l "$AAB" | tee /tmp/aab-list.txt | grep -E ' base/(lib|assets)/' || true
           grep -qE ' base/lib/arm64-v8a/libwhisperloom\.so$' /tmp/aab-list.txt \
             || { echo "::error::base/lib/arm64-v8a/libwhisperloom.so fehlt im AAB"; exit 1; }
@@ -153,11 +166,16 @@ jobs:
           if grep -qE ' base/lib/(armeabi-v7a|x86|x86_64)/' /tmp/aab-list.txt; then
             echo "::error::unerwartete ABI im AAB (nur arm64-v8a vorgesehen)"; exit 1
           fi
+          # Play liest R8-Mapping und Native-Symbole aus dem Bundle — keine Warnung "Deobfuscation file"/"Debug symbols"
+          grep -qE ' BUNDLE-METADATA/com\.android\.tools\.build\.obfuscation/proguard\.map$' /tmp/aab-list.txt \
+            || { echo "::error::R8-Mapping fehlt im AAB"; exit 1; }
+          grep -qE ' BUNDLE-METADATA/com\.android\.tools\.build\.debugsymbols/arm64-v8a/libwhisperloom\.so\.(sym|dbg)$' /tmp/aab-list.txt \
+            || { echo "::error::Native-Debug-Symbole fuer libwhisperloom.so fehlen im AAB"; exit 1; }
 
       - name: Release-AAB als Artefakt hochladen
         uses: actions/upload-artifact@v7
         with:
-          name: whisperloom-release-aab
+          name: whisperloom-play-aab
           path: app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
 

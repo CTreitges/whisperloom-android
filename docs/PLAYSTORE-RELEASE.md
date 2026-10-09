@@ -1,9 +1,15 @@
 # WhisperLoom im Google Play Store veröffentlichen
 
 Recherchestand: **8. September 2026**. Quellen unten. Diese Anleitung listet, was du für die
-Erstveröffentlichung von `com.chris.whisperloom` im Play Store tun musst, und was am Projekt bereits
+Erstveröffentlichung von WhisperLoom im Play Store tun musst, und was am Projekt bereits
 dafür vorbereitet wurde. Projektstand (Abschnitte 3, 4, 6) nachgezogen am 5. Oktober 2026 für
 Version 3.8.2; Fristen, Gebühren und Regeln sind weiterhin der Recherchestand.
+
+> **Nachtrag 9. Oktober 2026:** Die Play-Version heißt **`com.whisperloom`**. Nur das Play-AAB
+> bekommt diese Paket-ID, GitHub und F-Droid bleiben bei `com.chris.whisperloom`. Die Klick-Anleitung
+> für den ersten internen Test mit allen Formulartexten, Versionshinweisen und Video-Drehbüchern steht
+> in **[PLAY-INTERNER-TEST.md](PLAY-INTERNER-TEST.md)**. Wo sich die beiden Dokumente widersprechen,
+> gilt PLAY-INTERNER-TEST.md (neuerer Recherchestand).
 
 ---
 
@@ -88,7 +94,9 @@ eigene F-Droid-Repo läuft davon unberührt weiter.
 
 - [x] **targetSdk 36** in `app/build.gradle.kts`.
 - [x] **AAB-Build** in CI (`.github/workflows/build.yml`): signiertes `app-release.aab` als Artefakt
-      `whisperloom-release-aab`, mit Native-Lib-Check (arm64-v8a, kein Modell im Bundle).
+      `whisperloom-play-aab` (Paket-ID `com.whisperloom`), mit Native-Lib-Check (arm64-v8a, kein Modell
+      im Bundle) und Prüfung der Paket-ID per bundletool.
+- [x] **Link zur Datenschutzerklärung in der App** (Einstellungen → Über WhisperLoom), Pflicht laut Google.
 - [x] **Datenschutzerklärung** (DE/EN) unter `docs/privacy.html`, öffentlich erreichbar:
       **https://ctreitges.de/fdroid/privacy.html**
 - [x] **Store-Texte** DE/EN in `fastlane/metadata/android/` (Titel, Kurz-/Volltext, Changelog).
@@ -141,8 +149,9 @@ Drei Wege:
 ## 6. Play-Console-Formulare (App content)
 
 - [ ] **Datenschutz-URL** eintragen: `https://ctreitges.de/fdroid/privacy.html`.
-- [ ] **Data-Safety-Formular**: „Audio recordings" als **erhoben** deklarieren (weil optional an
-      Online-Anbieter gesendet), als **optional** markieren. „Sharing": bei kostenlosen Anbieter-Tarifen,
+- [ ] **Data-Safety-Formular** (für den internen Test nicht nötig; Antworten mit Stand 9.10.2026 im
+      Anhang von PLAY-INTERNER-TEST.md — dort ist Audio **erforderlich**, nicht optional, weil Geräte
+      ohne Offline-Erkennung nur online erkennen): „Audio recordings" als **erhoben** deklarieren. „Sharing": bei kostenlosen Anbieter-Tarifen,
       die Daten fürs Training nutzen könnten, sicherheitshalber als „geteilt" angeben. Muss
       **deckungsgleich** mit der Datenschutzerklärung sein (Abweichung = Ablehnung). Inzwischen
       zusätzlich bedenken: ElevenLabs als Erkennungs-Anbieter und Pro Widgets (erkannter Text geht an
@@ -164,7 +173,8 @@ Drei Wege:
       Google empfiehlt für reine Downloads einen „user-initiated data transfer job" statt `dataSync` —
       für den Erst-Release ist die `dataSync`-Deklaration mit Video akzeptabel.
 - [ ] **Content-Rating** (IARC-Fragebogen) ausfüllen — für eine Diktier-App unkritisch.
-- [ ] **Permissions Declaration Form** im Release-Flow: Mikrofon-Nutzung mit klarem Zweck begründen.
+- ~~Permissions Declaration Form für das Mikrofon~~: gibt es nicht. `RECORD_AUDIO` braucht kein eigenes
+  Formular, nur Datenschutz-URL und Datensicherheit (Recherche 9.10.2026).
 - [ ] **Accessibility-Deklaration** (nur bei Weg A, Abschnitt 5).
 
 ## 7. Build & Upload (AAB, Play App Signing)
@@ -180,7 +190,7 @@ Drei Wege:
   andere Signatur als die F-Droid-/GitHub-Version**. Nutzer können nicht ohne Deinstallation zwischen
   den Kanälen wechseln. Willst du identische Signaturen, müsstest du deinen bestehenden Key als
   App-Signing-Key hochladen (weniger sicher, nicht zurücksetzbar).
-- **AAB beziehen:** CI-Lauf → Artefakt `whisperloom-release-aab` → `app-release.aab` herunterladen und
+- **AAB beziehen:** CI-Lauf → Artefakt `whisperloom-play-aab` → `app-release.aab` herunterladen und
   in der Play Console in den Testkanal hochladen. (Lokal auf dem aarch64-VPS ist **kein** vollständiges
   AAB baubar, weil das NDK für whisper.cpp fehlt — der Native-Build läuft nur in GitHub Actions.)
 - Optional später: automatischer Upload via `fastlane supply` + Play-Service-Account-JSON.

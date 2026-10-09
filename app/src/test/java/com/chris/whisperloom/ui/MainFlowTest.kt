@@ -1150,6 +1150,18 @@ class MainFlowTest {
         compose.onNodeWithText("Quellcode auf GitHub").assertDoesNotExist()
     }
 
+    /** Google Play verlangt einen Link zur Datenschutzerklaerung in der App selbst (User-Data-Policy). */
+    @Test fun ueberSheetOeffnetDieDatenschutzerklaerung() {
+        screen(env()) { SettingsHubScreen(it) }
+        compose.onNodeWithText("Über WhisperLoom").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Datenschutzerklärung").performClick()
+        compose.waitForIdle()
+        val intent = shadowOf(ctx as Application).nextStartedActivity
+        assertEquals(android.content.Intent.ACTION_VIEW, intent?.action)
+        assertEquals("https://ctreitges.de/fdroid/privacy.html", intent?.dataString)
+    }
+
     @Test fun ausDenPatchnotesFuehrtZurueckInDenHubOhneSheet() {
         val back = appMitZurueck(RouteRequest(AppNav.ROUTE_SETTINGS))
         compose.onNodeWithText("Über WhisperLoom").performClick()
