@@ -263,6 +263,7 @@
     <!-- Pflichthinweise der in liblitertlm_jni.so gelinkten Bibliotheken (BSD, MPL u. a.): Datei aus dem LiteRT-LM-AAR -->
     <string name="about_license_litertlm">LiteRT-LM enthält weitere Bibliotheken (u. a. Abseil, XNNPACK, Protobuf, Eigen, ICU) mit eigenen Lizenzen; ihre Hinweise liegen im APK unter assets/licenses/.</string>
     <string name="about_license">whisper.cpp (MIT) · Jetpack Compose / AndroidX (Apache 2.0) · Kotlin und kotlinx.coroutines (Apache 2.0) · LiteRT-LM und Gson (Apache 2.0) · Material Symbols (Apache 2.0) · Gemma 4 (Apache 2.0)</string>
+    <string name="about_privacy">Datenschutzerklärung</string>
     <string name="about_source">Quellcode auf GitHub</string>
 
     <!-- §6.5 Erkennung (E1) und Zugangs-Felder (auch Schritt 2a) -->
