@@ -48,8 +48,9 @@ Stunden bis 7 Tage**. Grund: Die Bedienungshilfe braucht eine Freigabe, auch im 
 
 - **Quelle:** GitHub Actions, Workflow „Build & Test“ auf Branch `feat/play-internal-test`, Artefakt
   **`whisperloom-play-aab`**. Die ZIP enthält `app-release.aab`.
-- **Geprüft:** Die CI prüft bei jedem Lauf `package=com.whisperloom` per bundletool, Native-Lib arm64,
-  16-KB-Alignment, kein Modell im Bundle sowie R8-Mapping und Native-Symbole in `BUNDLE-METADATA/`.
+- **Geprüft:** Die CI prüft am AAB bei jedem Lauf `package=com.whisperloom` per bundletool, Native-Lib
+  nur arm64, kein Modell im Bundle sowie R8-Mapping und Native-Symbole in `BUNDLE-METADATA/`. Das
+  16-KB-Alignment der Native-Libs prüft sie am Release-APK, das dieselben Libs enthält.
   Play liest Mapping und Symbole selbst aus dem Bundle, ein separater Upload ist nicht nötig.
 - **Selbst nachprüfen** (optional, bundletool 1.18.3):
   ```bash
@@ -170,7 +171,7 @@ targetSdk 33+, sie dauert eine Minute **[Forum]**.
 **„Alle oder einige Funktionen sind eingeschränkt“.** Grund: Die Online-Funktionen brauchen den API-Key
 eines Fremdanbieters. Anleitung (unter „Weitere Informationen“ einfügen; Google verlangt Englisch):
 
-> No account or login. The app UI is German only. Core functionality works without any key or network after a one-time model download (needs an arm64 CPU with FP16/dot-product support, i.e. Armv8.2 or newer, and at least 3 GB RAM — e.g. any recent Pixel): On first start, setup step "Wie soll WhisperLoom Sprache erkennen?" (how to recognise speech) → choose "Offline auf dem Gerät" (offline on device) → load model "Small" (190 MB) or "Tiny" (32 MB) → for text refinement choose "Überspringen" (skip). Then allow the microphone. Dictation keyboard: setup step "Diktat-Tastatur", enable and select it, then hold the mic key to speak. Floating button: home screen "Mikro-Knopf starten" (needs "display over other apps"; the accessibility service is optional — without it the text goes to the clipboard). Voice messages: share an audio file to WhisperLoom. Online recognition and text refinement use the user's own API key from a third-party provider (e.g. a free key from console.groq.com/keys), entered in setup step "Zugang zum Dienst". "Pro Widgets" (Settings → "Erweitert", off by default) send text to a server the user runs himself; they are not needed for any other feature.
+> No account or login. The app UI is German only. Core functionality works without any key or network after a one-time model download (needs an arm64 CPU with FP16/dot-product support, i.e. Armv8.2 or newer, and at least 3 GB RAM — e.g. any recent Pixel): On first start, tap "Los geht's" (let's go), then setup step "Wie soll WhisperLoom Sprache erkennen?" (how to recognise speech) → choose "Offline auf dem Gerät" (offline on device) → load model "Small" (190 MB) or "Tiny" (32 MB) → for text refinement choose "Überspringen" (skip). Then allow the microphone. Dictation keyboard: setup step "Diktat-Tastatur", enable and select it, then hold the mic key to speak. Floating button: home screen "Mikro-Knopf starten" (needs "display over other apps"; the accessibility service is optional — without it the text goes to the clipboard). Voice messages: share an audio file to WhisperLoom. Online recognition and text refinement use the user's own API key from a third-party provider (e.g. a free key from console.groq.com/keys), entered in setup step "Zugang zum Dienst". "Pro Widgets" (Settings → "Erweitert", off by default) send text to a server the user runs himself; they are not needed for any other feature.
 
 **Empfehlung:** Leg einen eigenen, kostenlosen Groq-Key nur für die Prüfer an und trag ihn zusätzlich ein
 („A free test key for Groq: …“). Laut Google müssen Prüfer alle Funktionen erreichen können, und auf
@@ -199,7 +200,7 @@ Zwei Typen. Je Typ gibt es Anwendungsfall, Beschreibung, Auswirkung und einen Vi
 **Typ `microphone`.** Anwendungsfall: **Background Audio Access** (Audio aufnehmen). Video: V2.
 
 Description:
-> WhisperLoom is a speech-to-text dictation app. Two user-started features use a microphone foreground service. (1) Floating dictation button: the user turns it on inside the app ("Mikro-Knopf starten" on the home screen, or at the end of setup). A small button is shown over other apps; the user taps it to start recording and taps again to stop, and the transcribed text is inserted into the field the user is typing in. The service is started while WhisperLoom is in the foreground, because Android does not allow a microphone foreground service to be started from the background, but the button is used while the user is in other apps. The microphone is only open between the user's start and stop taps and is never opened without a tap. The ongoing notification has a "Beenden" (stop) action, and the button can be turned off in the app at any time. (2) Home-screen widget "Sprach-Command" (voice command, off by default): a tap on the widget starts one recording; the service runs only during that recording (it ends on "Senden"/send, on optional automatic pause detection or after 5 minutes at most) and then stops.
+> WhisperLoom is a speech-to-text dictation app. Two user-started features use a microphone foreground service. (1) Floating dictation button: the user turns it on inside the app ("Mikro-Knopf starten" on the home screen, or at the end of setup). A small button is shown over other apps; the user taps it to start recording and taps again to stop, and the transcribed text is inserted into the field the user is typing in. The service is started by the user while WhisperLoom is in the foreground, because Android does not allow a microphone foreground service to be started from the background, but the button is used while the user is in other apps (on Android versions before 14, Android may re-create the button after it ended the app process; recording still only starts with a tap). The microphone is only open between the user's start and stop taps and is never opened without a tap. The ongoing notification has a "Beenden" (stop) action, and the button can be turned off in the app at any time. (2) Home-screen widget "Sprach-Command" (voice command, off by default): a tap on the widget starts one recording; the service runs only during that recording (it ends on "Senden"/send, on optional automatic pause detection or after 5 minutes at most) and then stops.
 
 User impact if deferred or interrupted:
 > Deferred: dictation is real time. If recording does not start the moment the user taps the button or widget, the beginning of what the user says is lost. Interrupted: recording stops mid-sentence, the spoken text is lost and the user has to dictate again; the floating button would also disappear from the screen while the user is typing in another app.
@@ -248,7 +249,10 @@ mit auflistet.
 **Vorbereitung:** Die Videos nimmst du mit deiner installierten GitHub-/F-Droid-Version auf. Die
 Oberfläche ist identisch, der Paketname ist im Video nicht zu sehen. Für V1 *App-Daten löschen*, nicht
 neu installieren: Eine per Browser oder Dateimanager installierte APK lässt unter Android 13+ die
-Bedienungshilfe nur als „eingeschränkte Einstellung“ zu. Aufnahme mit der System-Bildschirmaufnahme
+Bedienungshilfe nur als „eingeschränkte Einstellung“ zu. Vor V1 die Bedienungshilfe „WhisperLoom
+Text-Einfügen“ in den Systemeinstellungen ausschalten. Ist sie an, zeigt der Assistent nur „Weiter“ und
+keinen Hinweis-Dialog. Gesprochen wird ein **deutscher** Testsatz, weil die Erkennungssprache ab Werk
+Deutsch ist; der Untertitel übersetzt ihn. Aufnahme mit der System-Bildschirmaufnahme
 (Schnelleinstellungen), vorher *Entwickleroptionen → Berührungen anzeigen*. **Keine API-Keys filmen**
 und nur Testtext diktieren. Englische Untertitel z. B. als YouTube-Untertitelspur.
 **Upload:** YouTube **„Nicht gelistet“** (nicht „Privat“, sonst sieht der Prüfer nichts).
@@ -262,7 +266,7 @@ und nur Testtext diktieren. Englische Untertitel z. B. als YouTube-Untertitelspu
    Text-Einfügen“ einschalten → „Zulassen“.
 5. Zurück in die App, Assistent beenden, dann **das Tutorial durchblättern oder „Überspringen“**. Danach
    startet der Mikro-Knopf.
-6. Notizen- oder Nachrichten-App → Textfeld antippen → Knopf antippen → „This is a test“ sprechen →
+6. Notizen- oder Nachrichten-App → Textfeld antippen → Knopf antippen → „Das ist ein Test“ sprechen →
    Knopf antippen → der Text erscheint im Feld. Untertitel: „The accessibility service inserts the
    dictated text into the focused field – only after the user's taps“.
 
