@@ -9,6 +9,11 @@ plugins {
 // ~/.gradle/gradle.properties: Kotlin, Tests und ein APK ohne .so bauen trotzdem. CI (x86_64) baut komplett.
 val skipNative = providers.gradleProperty("whisperloom.skipNative").isPresent
 
+// Paket-ID: GitHub-/F-Droid-Builds bleiben com.chris.whisperloom (installierte Apps updaten weiter).
+// Nur das Play-AAB heisst com.whisperloom — die CI setzt dafuer -Pwhisperloom.applicationId=com.whisperloom
+// beim bundleRelease. namespace (R-/BuildConfig-Paket, Kotlin-Pakete) bleibt unveraendert.
+val appId = providers.gradleProperty("whisperloom.applicationId").orNull ?: "com.chris.whisperloom"
+
 android {
     namespace = "com.chris.whisperloom"
     // Compose 1.12 (BOM 2026.08.00) verlangt compileSdk 37 + AGP >= 9.2.0:
@@ -20,7 +25,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.chris.whisperloom"
+        applicationId = appId
         minSdk = 26
         // targetSdk 36 (Android 16): Pflicht fuer NEUE Play-Store-Apps/-Updates seit 31.08.2026
         // (developer.android.com/google/play/requirements/target-sdk). API 35 wird fuer Neu-Uploads
