@@ -132,9 +132,9 @@ zum `versionCode` die Highlight-Datei existieren.
 2. CMake-Zwischenstand (`app/.cxx`) wird gecacht (Key: Submodul-Commit + `cpp/**` + `build.gradle.kts`).
 3. `tools/check_jni_symbols.py`, dann `testDebugUnitTest lintDebug`, `assembleDebug`.
 4. Signiertes `assembleRelease` mit dem Keystore aus den Secrets.
-5. Prüfung des Release-APKs: `lib/arm64-v8a/libwhisperloom.so` vorhanden, **kein** `assets/*.bin` (Modelle kommen nur per Download), keine anderen ABIs, `zipalign -P 16` und `llvm-readelf` bestätigen 16-KB-Alignment aller `LOAD`-Segmente.
-6. Signiertes `bundleRelease` (Android App Bundle für den Play Store, gleicher Schlüssel als Upload-Key) mit derselben Prüfung auf Native-Lib, Modelle und ABIs.
-7. Artefakte: `whisperloom-debug-apk`, `whisperloom-release-apk`, `whisperloom-release-mapping` (R8-`mapping.txt` zum Entschlüsseln von Stacktraces), `whisperloom-release-aab`, `unit-and-lint-reports`.
+5. Prüfung des Release-APKs: `lib/arm64-v8a/libwhisperloom.so` vorhanden, **kein** `assets/*.bin` (Modelle kommen nur per Download), keine anderen ABIs, `zipalign -P 16` und `llvm-readelf` bestätigen 16-KB-Alignment aller `LOAD`-Segmente, `tools/check_package_id.sh` bestätigt die Paket-ID `com.chris.whisperloom`.
+6. Signiertes `bundleRelease -Pwhisperloom.applicationId=com.whisperloom` (Android App Bundle für den Play Store, gleicher Schlüssel als Upload-Key). Nur die Play-Version heißt `com.whisperloom`; GitHub- und F-Droid-APKs bleiben `com.chris.whisperloom`, damit installierte Apps weiter Updates bekommen. Geprüft werden Native-Lib, Modelle und ABIs, die Paket-ID (bundletool 1.18.3, Prüfsumme fest) sowie R8-Mapping und Native-Symbole in `BUNDLE-METADATA/`. Beides liest Play direkt aus dem Bundle.
+7. Artefakte: `whisperloom-debug-apk`, `whisperloom-release-apk`, `whisperloom-release-mapping` (R8-`mapping.txt` zum Entschlüsseln von Stacktraces), `whisperloom-play-aab` (`com.whisperloom`), `unit-and-lint-reports`.
 
 ### Release-Signierung
 
