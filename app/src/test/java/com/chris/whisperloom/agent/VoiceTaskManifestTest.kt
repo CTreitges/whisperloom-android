@@ -41,6 +41,14 @@ class VoiceTaskManifestTest {
         assertTrue("exported=\"false\" fehlt", receiver.contains("""android:exported="false""""))
     }
 
+    @Test fun derEintragInDerWidgetAuswahlHeisstProWidget() {
+        // Sprach-Command und Claude Code teilen sich den einen Provider — "Sprach-Command" als
+        // Name in der Auswahl des Launchers fuehrte beim Claude-Code-Widget in die Irre.
+        assertTrue(block("receiver", "agent.VoiceTaskWidget").contains("""android:label="@string/widget_picker_label""""))
+        val strings = datei("src/main/res/values/strings.xml", "app/src/main/res/values/strings.xml").readText()
+        assertTrue(strings.contains("""<string name="widget_picker_label">Pro Widget</string>"""))
+    }
+
     @Test fun dasWidgetHoertAufDasEigeneUpdate() {
         // Ohne diesen Filter blieben Widgets von vor den Profilen ungebunden, und ihr erstes
         // "Neu konfigurieren" schloesse sich unsichtbar.

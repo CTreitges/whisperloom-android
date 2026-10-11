@@ -50,6 +50,29 @@ class AgentBridgeTest {
         assertEquals("widget", json.getString("source"))
     }
 
+    // --- Optionen (claude-bridge) ------------------------------------------------
+
+    private fun optionen() = JSONObject().put("model", "sonnet").put("effort", "high").put("ultracode", true)
+
+    @Test fun ohneOptionenBleibtDerKoerperGenauDerDerHermesBridge() {
+        // Sprach-Command: kein "options"-Feld, auch kein leeres oder null.
+        bridge().send("abc-123", "Kauf Milch", "2026-09-21T20:00:00Z", 4200)
+        val json = JSONObject(aufrufe.single().third)
+        assertEquals(setOf("transcript", "request_id", "recorded_at", "duration_ms", "source"), json.keys().asSequence().toSet())
+    }
+
+    @Test fun mitOptionenTraegtDerKoerperSieAlsEigenesFeld() {
+        AgentBridge("https://claude.example.de", "geheim", optionen(), poster).send("abc-123", "Bau das Widget", "2026-10-11T08:00:00Z", 4200)
+        val json = JSONObject(aufrufe.single().third)
+        val options = json.getJSONObject("options")
+        assertEquals("sonnet", options.getString("model"))
+        assertEquals("high", options.getString("effort"))
+        assertTrue(options.getBoolean("ultracode"))
+        assertEquals("Der Rest bleibt wie bei der hermes-bridge", "Bau das Widget", json.getString("transcript"))
+        assertEquals("abc-123", json.getString("request_id"))
+        assertEquals("widget", json.getString("source"))
+    }
+
     @Test fun dieAppWartetLaengerAlsDieBridgeSynchronArbeitet() {
         // #10, H2: die Bridge arbeitet bis zu 2 x HERMES_TIMEOUT_S (30 s, hermes-bridge config.py),
         // bevor sie 202 sagt. Wartete die App kuerzer, saehe sie einen Timeout und wiederholte,
@@ -95,6 +118,14 @@ class AgentBridgeTest {
         bridge().check()
         // Leeres Transkript = die Bridge legt weder einen Auftrag an noch verbraucht sie Rate-Limit.
         assertEquals("", JSONObject(aufrufe.single().third).getString("transcript"))
+    }
+
+    @Test fun diePruefungSchicktDieOptionenMit() {
+        // So lehnt die claude-bridge ein unbekanntes Modell schon beim Pruefen ab, nicht erst beim Auftrag.
+        AgentBridge("https://claude.example.de", "geheim", optionen(), poster).check()
+        val json = JSONObject(aufrufe.single().third)
+        assertEquals("", json.getString("transcript"))
+        assertEquals("sonnet", json.getJSONObject("options").getString("model"))
     }
 
     @Test fun diePruefungBrauchtAdresseUndToken() {

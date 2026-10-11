@@ -210,6 +210,7 @@ class WidgetConfigActivityTest {
 
         compose.onNodeWithText("Welches Widget-Profil?").assertExists()
         compose.onNodeWithText("Neues Sprach-Command-Widget").assertExists()
+        compose.onNodeWithText("Neues Claude-Code-Widget").assertExists()
         assertFalse(activity.isFinishing)
         assertEquals(Activity.RESULT_CANCELED to id, ergebnis(activity))
     }
@@ -254,5 +255,40 @@ class WidgetConfigActivityTest {
         assertEquals(Activity.RESULT_OK to id, ergebnis(activity))
         assertEquals(neu.id, store.forWidget(id).id)
         assertNotNull(shadowOf(manager).getViewFor(id))
+    }
+
+    // --- Claude Code: derselbe Provider, der Typ haengt am Profil ----------------------------
+
+    @Test fun einClaudeProfilStehtZurWahlUndLaesstSichBinden() {
+        store.save(WidgetProfile("c", name = "Claude", kind = WidgetKind.CLAUDE_CODE))
+        val id = unseres()
+        val activity = oeffnen(id)
+
+        compose.onNode(hasText("Claude") and isSelectable()).performClick()
+        compose.waitForIdle()
+
+        assertEquals(Activity.RESULT_OK to id, ergebnis(activity))
+        assertEquals("c", store.forWidget(id).id)
+        assertTrue(shadowOf(manager).getViewFor(id).contentDescription.startsWith("Claude"))
+    }
+
+    @Test fun einNeuesClaudeCodeWidgetIstNachDemEditorVorgewaehlt() {
+        val id = unseres()
+        store.bind(id, WidgetProfile.DEFAULT_ID)
+        oeffnen(id)
+
+        click("Neues Claude-Code-Widget")
+        compose.onNodeWithText("Widget bearbeiten").assertExists()
+        val neu = store.all().single { !it.isDefault }
+        assertEquals("Claude Code 1", neu.name)
+        assertEquals(WidgetKind.CLAUDE_CODE, neu.kind)
+        compose.onNodeWithText("Ultracode").assertExists()
+
+        click("Fertig")
+
+        compose.onNode(hasText("Claude Code 1") and isSelectable()).assertIsSelected()
+        compose.onNode(hasText("Claude Code 1") and isSelectable()).performClick()
+        compose.waitForIdle()
+        assertEquals(neu.id, store.forWidget(id).id)
     }
 }

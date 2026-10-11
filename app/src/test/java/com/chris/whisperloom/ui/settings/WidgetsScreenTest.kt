@@ -33,6 +33,7 @@ import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelectable
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -44,6 +45,8 @@ import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
+import com.chris.whisperloom.agent.ClaudeEffort
+import com.chris.whisperloom.agent.ClaudeModel
 import com.chris.whisperloom.agent.ProfileIcon
 import com.chris.whisperloom.agent.SpeechPause
 import com.chris.whisperloom.agent.TEST_SERVER_TOKEN
@@ -265,6 +268,69 @@ class WidgetsScreenTest {
         assertTrue(store.all().all { it.kind == WidgetKind.VOICE_COMMAND })
         compose.onNodeWithText("Widget bearbeiten").assertExists()
         compose.onNode(namensFeld and hasText("Sprach-Command 2")).assertExists()
+    }
+
+    @Test fun neuesClaudeCodeWidgetOeffnetDenEditorMitServerUndClaudeBlock() {
+        show()
+        compose.onNodeWithText("Sprechen und eine neue Claude-Code-Session starten").assertExists()
+        click("Claude-Code-Widget")
+
+        val neu = store.all().single { !it.isDefault }
+        assertEquals("Claude Code 1", neu.name)
+        assertEquals(WidgetKind.CLAUDE_CODE, neu.kind)
+        compose.onNode(namensFeld and hasText("Claude Code 1")).assertExists()
+        // Server wie beim Sprach-Command — die claude-bridge braucht Adresse und Token genauso.
+        compose.onNode(adressFeld).assertExists()
+        compose.onNode(tokenFeld).assertExists()
+        compose.onNodeWithText("Verbindung prüfen").assertExists()
+        // Ab Werk: Opus, Extra hoch, Ultracode aus.
+        compose.onNodeWithText("Claude").assertExists()
+        compose.onNodeWithText("Modell").assertExists()
+        compose.onNode(hasText("Opus") and isSelectable()).assertIsSelected()
+        compose.onNodeWithText("Effort").assertExists()
+        compose.onNode(hasText("Extra hoch") and isSelectable()).assertIsSelected()
+        compose.onNode(hasText("Ultracode") and isToggleable()).assertIsOff()
+    }
+
+    @Test fun claudeEinstellungenWerdenSofortGespeichert() {
+        val p = WidgetProfile("c", name = "Claude", kind = WidgetKind.CLAUDE_CODE)
+        store.save(p)
+        show()
+        bearbeiten("Claude")
+
+        click("Sonnet")
+        assertEquals(ClaudeModel.SONNET, store.get(p.id)!!.claudeModel)
+        compose.onNode(hasText("Sonnet") and isSelectable()).assertIsSelected()
+        compose.onNode(hasText("Opus") and isSelectable()).assertIsNotSelected()
+
+        click("Hoch")
+        assertEquals(ClaudeEffort.HIGH, store.get(p.id)!!.claudeEffort)
+        compose.onNode(hasText("Hoch") and isSelectable()).assertIsSelected()
+        compose.onNode(hasText("Extra hoch") and isSelectable()).assertIsNotSelected()
+
+        click("Ultracode")
+        assertTrue(store.get(p.id)!!.ultracode)
+        compose.onNode(hasText("Ultracode") and isToggleable()).assertIsOn()
+        assertEquals("Nichts anderes geaendert", p.copy(claudeModel = ClaudeModel.SONNET, claudeEffort = ClaudeEffort.HIGH, ultracode = true), store.get(p.id))
+    }
+
+    @Test fun derEffortIstFuerTalkBackEineEinfachauswahl() {
+        // Chips waeren sonst Kontrollkaestchen — es gilt aber genau ein Effort.
+        store.save(WidgetProfile("c", name = "Claude", kind = WidgetKind.CLAUDE_CODE))
+        show()
+        bearbeiten("Claude")
+        listOf("Niedrig", "Mittel", "Hoch", "Extra hoch", "Max").forEach {
+            compose.onNode(hasText(it) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)).assertExists()
+        }
+    }
+
+    @Test fun einSprachCommandEditorZeigtKeinenClaudeBlock() {
+        show()
+        bearbeiten("Sprach-Command")
+        compose.onNode(adressFeld).assertExists()
+        compose.onNodeWithText("Effort").assertDoesNotExist()
+        compose.onNodeWithText("Ultracode").assertDoesNotExist()
+        compose.onNodeWithText("Opus").assertDoesNotExist()
     }
 
     @Test fun einWidgetMitServerZeigtDenHostEinsOhneWarnt() {

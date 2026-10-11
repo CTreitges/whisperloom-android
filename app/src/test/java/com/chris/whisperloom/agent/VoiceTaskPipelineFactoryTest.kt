@@ -11,6 +11,7 @@ import com.chris.whisperloom.llm.OfflineRefineFixture
 import com.sun.net.httpserver.HttpServer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -43,6 +44,9 @@ class VoiceTaskPipelineFactoryTest {
 
     /** Welcher Endpunkt den Auftrag bekam — je Widget ein eigener Pfad vor /v1/task. */
     private val pfade = mutableListOf<String>()
+
+    /** Der ganze Koerper jedes Auftrags, wie er an der Bridge ankam. */
+    private val koerper = mutableListOf<org.json.JSONObject>()
     private val basis get() = "http://127.0.0.1:${server.address.port}"
 
     @Before fun aufbauen() {
@@ -66,6 +70,7 @@ class VoiceTaskPipelineFactoryTest {
         listOf("/v1/task", "/a/v1/task", "/b/v1/task").forEach { pfad ->
             server.createContext(pfad) { ex ->
                 val json = org.json.JSONObject(String(ex.requestBody.readBytes()))
+                koerper += json
                 gesendet += json.getString("transcript")
                 kennungen += json.getString("request_id") to json.getString("recorded_at")
                 pfade += ex.requestURI.path
@@ -222,6 +227,46 @@ class VoiceTaskPipelineFactoryTest {
 
         assertEquals(ctx.getString(R.string.widget_task_no_server, "Einkauf"), (outcome as TaskOutcome.Failed).reason)
         assertTrue("Statt des Standardprofils: gar nichts", pfade.isEmpty())
+    }
+
+    // --- Claude Code: Optionen an die claude-bridge -----------------------------------
+
+    /** Ein Claude-Code-Widget mit eigenem Server unter [pfad]. */
+    private fun claudeWidget(pfad: String, model: ClaudeModel, effort: ClaudeEffort, ultracode: Boolean): WidgetProfile {
+        val p = widget("Claude", pfad).copy(kind = WidgetKind.CLAUDE_CODE, claudeModel = model, claudeEffort = effort, ultracode = ultracode)
+        WidgetProfileStore(ctx).save(p)
+        return p
+    }
+
+    @Test fun einClaudeWidgetSchicktSeineOptionenEinSprachCommandKeine() {
+        val claude = claudeWidget("/a", ClaudeModel.SONNET, ClaudeEffort.HIGH, ultracode = true)
+        val sprach = widget("Einkauf", "/b")
+
+        auftrag(profileId = claude.id)
+        assertTrue(VoiceTaskWorker.pipelineFactory(ctx, store) { true }.run(null) is TaskOutcome.Sent)
+        auftrag("2026-09-22T00:05:00Z", sprach.id)
+        assertTrue(VoiceTaskWorker.pipelineFactory(ctx, store) { true }.run(null) is TaskOutcome.Sent)
+
+        assertEquals(listOf("/a/v1/task", "/b/v1/task"), pfade)
+        val options = koerper[0].getJSONObject("options")
+        assertEquals("sonnet", options.getString("model"))
+        assertEquals("high", options.getString("effort"))
+        assertTrue(options.getBoolean("ultracode"))
+        assertEquals("Kauf bitte Milch.", koerper[0].getString("transcript"))
+        assertFalse("Der Sprach-Command-Auftrag an die hermes-bridge bleibt ohne Optionen", koerper[1].has("options"))
+    }
+
+    @Test fun eineAenderungDerOptionenWirktBeimNaechstenVersuch() {
+        // Wie der Server: je Versuch frisch aus dem Profil, nicht beim Aufnehmen eingefroren.
+        val claude = claudeWidget("/a", ClaudeModel.OPUS, ClaudeEffort.XHIGH, ultracode = false)
+        auftrag(profileId = claude.id)
+        val pipeline = VoiceTaskWorker.pipelineFactory(ctx, store) { true }
+        WidgetProfileStore(ctx).save(claude.copy(claudeModel = ClaudeModel.HAIKU, claudeEffort = ClaudeEffort.LOW))
+
+        assertTrue(pipeline.run(null) is TaskOutcome.Sent)
+        val options = koerper.single().getJSONObject("options")
+        assertEquals("haiku", options.getString("model"))
+        assertEquals("low", options.getString("effort"))
     }
 
     @Test fun eineKorrekturDesServersWirktBeimNaechstenVersuch() {
