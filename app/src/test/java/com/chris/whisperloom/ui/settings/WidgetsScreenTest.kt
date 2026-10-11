@@ -824,6 +824,22 @@ class WidgetsScreenTest {
         compose.onNodeWithText("Widget bearbeiten").assertDoesNotExist()
     }
 
+    @Test fun dieRueckfrageNenntDasProfilDasDieWidgetsDanachZeigen() {
+        // Ein Claude-Code-Widget wandert zum naechsten Claude-Profil, nicht zum Sprach-Command.
+        store.save(WidgetProfile("c1", name = "Bau", kind = WidgetKind.CLAUDE_CODE))
+        store.save(WidgetProfile("c2", name = "Review", kind = WidgetKind.CLAUDE_CODE))
+        val id = widget()
+        store.bind(id, "c1")
+        show()
+        bearbeiten("Bau")
+        click("Widget löschen")
+        compose.onNodeWithText("1 Widget auf dem Startbildschirm zeigt danach „Review“.").assertExists()
+
+        click("Löschen")
+
+        assertEquals("c2", store.forWidget(id).id)
+    }
+
     @Test fun abbrechenLaesstDasProfilStehen() {
         val p = store.create("Einkauf")
         show()

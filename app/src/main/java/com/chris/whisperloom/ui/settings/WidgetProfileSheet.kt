@@ -275,7 +275,7 @@ fun WidgetProfileSheet(widgets: WidgetProfilesState, profileId: String, onDismis
                     Text(
                         if (bound == 0) stringResource(R.string.widget_profile_delete_unused)
                         else pluralStringResource(
-                            R.plurals.widget_profile_delete_confirm, bound, bound, widgets.profiles.first().displayName(ctx),
+                            R.plurals.widget_profile_delete_confirm, bound, bound, widgets.successor(profileId).displayName(ctx),
                         ),
                     )
                 },

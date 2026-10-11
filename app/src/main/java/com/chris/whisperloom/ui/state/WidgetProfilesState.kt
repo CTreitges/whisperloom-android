@@ -50,6 +50,9 @@ class WidgetProfilesState(context: Context) {
     /** Wie viele Widgets dieses Profil ausdruecklich zeigen (fuer die Rueckfrage beim Loeschen). */
     fun boundCount(profileId: String): Int = store.boundCount(profileId)
 
+    /** Was diese Widgets nach dem Loeschen zeigen (fuer die Rueckfrage, [WidgetProfileStore.successor]). */
+    fun successor(profileId: String): WidgetProfile = store.successor(profileId)
+
     fun create(name: String): WidgetProfile = store.create(name).also { changed(redraw = false) }
 
     /**
@@ -96,7 +99,7 @@ class WidgetProfilesState(context: Context) {
      * Loeschen. Wartet noch ein Auftrag dieses Profils, geht er mit: sein Server ist weg, und an den
      * eines anderen Widgets darf er nicht gehen.
      *
-     * @return Anzahl der Widgets, die jetzt das Standardprofil zeigen
+     * @return Anzahl der Widgets, die jetzt ein anderes Profil zeigen ([successor])
      */
     fun delete(id: String): Int {
         val task = VoiceTaskStore(app)

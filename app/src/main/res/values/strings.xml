@@ -875,7 +875,7 @@
     <string name="widget_profile_delete">Widget löschen</string>
     <!-- %1$s = Profilname -->
     <string name="widget_profile_delete_title">„%1$s“ löschen?</string>
-    <!-- %1$d = Anzahl Widgets, %2$s = Name des Standardprofils -->
+    <!-- %1$d = Anzahl Widgets, %2$s = Name des Profils, das sie danach zeigen (gleicher Typ, sonst Standardprofil) -->
     <plurals name="widget_profile_delete_confirm">
         <item quantity="one">%1$d Widget auf dem Startbildschirm zeigt danach „%2$s“.</item>
         <item quantity="other">%1$d Widgets auf dem Startbildschirm zeigen danach „%2$s“.</item>

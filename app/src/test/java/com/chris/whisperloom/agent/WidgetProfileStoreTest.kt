@@ -110,6 +110,25 @@ class WidgetProfileStoreTest {
         assertEquals(0, store.delete(a.id))
     }
 
+    @Test fun loeschenBindetAnEinProfilDesselbenTypsUm() {
+        // Sonst sendete ein Claude-Code-Widget nach dem Loeschen seines Profils still an die
+        // hermes-bridge des Standardprofils, obwohl es noch eine claude-bridge gibt.
+        val sprach = store.create("Einkauf")
+        store.save(WidgetProfile("c1", name = "Bau", kind = WidgetKind.CLAUDE_CODE))
+        store.save(WidgetProfile("c2", name = "Review", kind = WidgetKind.CLAUDE_CODE))
+        store.bind(1, "c1")
+        store.bind(2, sprach.id)
+
+        assertEquals(1, store.delete("c1"))
+        assertEquals("c2", store.forWidget(1).id)
+
+        store.delete(sprach.id)
+        assertEquals("Sprach-Command: das Standardprofil ist das erste seines Typs", WidgetProfile.DEFAULT_ID, store.forWidget(2).id)
+
+        store.delete("c2")
+        assertEquals("Kein Claude-Profil mehr: erst dann das Standardprofil", WidgetProfile.DEFAULT_ID, store.forWidget(1).id)
+    }
+
     @Test fun loeschenEntferntDasFoto() {
         val datei = foto("a-1.png")
         val a = store.create("A")
