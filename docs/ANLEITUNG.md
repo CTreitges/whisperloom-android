@@ -1076,7 +1076,7 @@ Die bebilderte Anleitung dazu liegt unter Erweitert → **Anleitung Pro Widgets*
 
 Ab Werk startet ein Tipp die Aufnahme und ein zweiter Tipp sendet. Schaltest du im Editor **Automatisch senden nach Sprechpause** ein, endet die Aufnahme von selbst, sobald du nach dem Sprechen eine Pause machst, und wird gesendet. Wie lange die Pause sein muss, stellst du darunter ein: **Kurz** (1,2 Sekunden), **Normal** (2 Sekunden) oder **Lang** (3,5 Sekunden, für Denkpausen). Ein Tipp beendet trotzdem jederzeit. Hört das Widget nach dem Start 8 Sekunden lang keine Sprache, verwirft es die Aufnahme und sendet nichts. In sehr lauter Umgebung kann Auto-Stopp zu früh oder zu spät auslösen — dann einfach per Tipp beenden oder das Widget auf „Lang“ stellen.
 
-Alle Widgets zeigen dieselbe Aufnahme: startest du mit einem, zeigen alle „nimmt auf“. Ob Auto-Stopp greift und an welchen Server der Auftrag geht, richtet sich nach dem Widget, mit dem du gestartet hast.
+Die Aufnahme zeigt nur das Widget, mit dem du gestartet hast; die anderen bleiben bereit. Ob Auto-Stopp greift und an welchen Server der Auftrag geht, richtet sich ebenfalls nach diesem Widget.
 
 ### 14.7 Benutzen — was das Widget zeigt
 
@@ -1091,7 +1091,9 @@ Alle Widgets zeigen dieselbe Aufnahme: startest du mit einem, zeigen alle „nim
 | grau mit durchgestrichenem Mikrofon, „Pro Widgets aus — tippen“ | der Schalter „Pro Widgets“ ist aus | öffnet **Erweitert** |
 | rot, „Mikrofon nicht erlaubt — tippen“ | WhisperLoom darf das Mikrofon nicht nutzen | öffnet den Tab „Pro Widgets“ mit der Karte **Mikrofon** |
 
-„Bereit“ und „Server fehlt“ gelten je Widget: Ein Widget mit Server ist bereit, eines ohne zeigt „Server fehlt“. Aufnahme, Senden, „Gesendet“ und Fehler zeigen alle Widgets zugleich — es gibt immer nur einen Auftrag.
+„Bereit“ und „Server fehlt“ gelten je Widget: Ein Widget mit Server ist bereit, eines ohne zeigt „Server fehlt“. Aufnahme, Senden, „Gesendet“ und Fehler zeigt nur das Widget, mit dem du aufgenommen hast. Es gibt aber immer nur einen Auftrag: Tippst du ein anderes Widget an, während eines aufnimmt oder sendet, nimmt es nicht auf und meldet kurz „Ein anderes Widget nimmt gerade auf“ bzw. „Ein anderes Widget sendet gerade noch“; im zweiten Fall stößt der Tipp den Auftrag an wie ein Tipp auf „Wird gesendet …“. Nach einem Fehler darfst du mit einem anderen Widget neu aufnehmen; sobald die neue Aufnahme läuft, ist der gescheiterte Auftrag verworfen. Wird das Widget, mit dem du aufgenommen hast, entfernt, zeigen alle anderen den Auftrag.
+
+Geht etwas schief, nennt WhisperLoom den Grund zusätzlich als kurze Meldung am unteren Bildschirmrand („Kein Ton aufgenommen“, „Zu kurz — länger sprechen“, „Nichts gehört“ oder der Fehler des Servers). Das ganz kleine Widget hat keinen Platz für die Statuszeile und wird dann nur rot. Wurde die App mitten in der Aufnahme vom System beendet, meldet der nächste Tipp „Aufnahme abgebrochen — bitte noch einmal aufnehmen“, und das Widget ist wieder bereit.
 
 Ist ein Versuch gescheitert und folgt noch ein weiterer, bleibt das Widget blau und nennt den Grund: „Zeitüberschreitung … — neuer Versuch folgt, tippen = jetzt“. Ein Tipp sendet dann sofort, statt auf den nächsten Versuch zu warten.
 
@@ -1111,7 +1113,7 @@ Der Schalter unter Erweitert ist aus. Der Tipp führt direkt dorthin.
 Diesem Widget fehlen Server-Adresse oder Token, oder die Adresse ist ungültig. Der Tipp öffnet **Widget bearbeiten** für genau dieses Widget; sobald Adresse und Token stimmen, ist es bereit.
 
 **„Server fehlt im Widget „…“ — tippen für erneuten Versuch“**
-Ein Auftrag wartet, aber sein Widget hat inzwischen keinen gültigen Server mehr. Der Auftrag bleibt gespeichert. Der Tipp — auf dieses oder ein anderes Widget — öffnet **Widget bearbeiten** für das Widget des Auftrags: Server eintragen, dann aufs Widget tippen — er geht los, ohne neu aufzunehmen.
+Ein Auftrag wartet, aber sein Widget hat inzwischen keinen gültigen Server mehr. Der Auftrag bleibt gespeichert. Der Tipp auf das Widget, mit dem du aufgenommen hast, öffnet **Widget bearbeiten** für dessen Profil: Server eintragen, dann aufs Widget tippen — er geht los, ohne neu aufzunehmen.
 
 **„Pro Widgets sind aus — tippen für erneuten Versuch“**
 Du hast Pro Widgets ausgeschaltet, während ein Auftrag wartete. Er bleibt gespeichert. Der Tipp führt nach **Erweitert**: wieder einschalten, dann aufs Widget tippen — oder den Auftrag dort unter **Offener Auftrag** verwerfen.
@@ -1157,7 +1159,7 @@ Im Editor stehen unter **Claude** zusätzlich:
 
 Ab Werk: Opus, Extra hoch, Ultracode aus. Die Werte gelten für jede Session, die dieses Widget startet; für andere Einstellungen legst du einfach ein zweites Claude-Code-Widget an.
 
-Was du sagst, formt das Claude-Code-Widget **immer mit der Textverbesserung „Prompt“** zu einem klaren Auftrag, bevor es an die Bridge geht — egal, welche Stufe du fürs Diktat eingestellt hast, und auch ohne dass „Prompt“ unter Pro-Funktionen eingeschaltet ist. Es rechnet mit dem Modell der Stufe Prompt (**Modell je Stufe**). Klappt die Textverbesserung nicht (kein Netz, kein Textmodell, Fehler beim Anbieter), geht wie beim Diktat der erkannte Text mit Hinweis raus. **Verbindung prüfen** erkennt auch, ob unter der Adresse wirklich die claude-bridge läuft — sonst meldet der Chip „Server ist keine claude-bridge — Adresse prüfen“.
+Was du sagst, formt das Claude-Code-Widget **immer mit der Textverbesserung „Prompt“** zu einem klaren Auftrag, bevor es an die Bridge geht — egal, welche Stufe du fürs Diktat eingestellt hast, und auch ohne dass „Prompt“ unter Pro-Funktionen eingeschaltet ist. Es rechnet mit dem Modell der Stufe Prompt: ab Werk dem Standardmodell; ein eigenes stellst du unter **Modell je Stufe** ein, sobald die Pro-Funktion „Prompt“ eingeschaltet ist. Klappt die Textverbesserung nicht (kein Netz, kein Textmodell, Fehler beim Anbieter), geht wie beim Diktat der erkannte Text mit Hinweis raus. **Verbindung prüfen** erkennt auch, ob unter der Adresse wirklich die claude-bridge läuft — sonst meldet der Chip „Server ist keine claude-bridge — Adresse prüfen“.
 
 ---
 

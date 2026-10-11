@@ -270,8 +270,56 @@ class VoiceTaskWidgetViewTest {
         assertEquals(ctx.getString(R.string.widget_no_server), zeile(leer))
     }
 
-    @Test fun einLaufenderAuftragStehtAufAllenWidgets() {
-        // "Alle Widgets zeigen dieselbe Aufnahme" — auch eines ohne eigenen Server.
+    @Test fun einAuftragStehtNurAufDemWidgetDasIhnGestartetHat() {
+        // Frueher zeigten alle Widgets die Aufnahme: mit zwei Widgets wurden beide rot, und ein
+        // Tipp auf das andere beendete die Aufnahme des ersten (es trug denselben STOP-Tipp).
+        val (mit, leer) = zweiWidgets()
+        VoiceTaskStore(ctx).widgetId = mit
+
+        VoiceTaskWidgetView.push(ctx, VoiceTaskState.RECORDING, 7_000)
+        assertEquals("0:07", zeile(mit))
+        assertEquals("Das andere Widget zeigt seinen Ruhezustand", ctx.getString(R.string.widget_no_server), zeile(leer))
+
+        VoiceTaskWidgetView.push(ctx, VoiceTaskState.ERROR, message = "Kein Ton aufgenommen")
+        assertTrue(zeile(mit).startsWith("Kein Ton aufgenommen"))
+        assertEquals(ctx.getString(R.string.widget_no_server), zeile(leer))
+
+        // Startet das andere, wandert der Auftrag mit — das erste ist wieder bereit.
+        VoiceTaskStore(ctx).widgetId = leer
+        VoiceTaskWidgetView.push(ctx, VoiceTaskState.SENT)
+        assertEquals(ctx.getString(R.string.widget_ready), zeile(mit))
+        assertEquals(ctx.getString(R.string.widget_sent), zeile(leer))
+    }
+
+    @Test fun ausUndOhneMikrofonGeltenWeiterFuerAlle() {
+        val (mit, leer) = zweiWidgets()
+        VoiceTaskStore(ctx).widgetId = mit
+
+        VoiceTaskWidgetView.push(ctx, VoiceTaskState.NO_MIC)
+        assertEquals(ctx.getString(R.string.widget_no_mic), zeile(mit))
+        assertEquals(ctx.getString(R.string.widget_no_mic), zeile(leer))
+
+        assertEquals(VoiceTaskState.OFF, VoiceTaskWidget.forOthers(VoiceTaskState.OFF))
+        assertEquals(VoiceTaskState.NO_SERVER, VoiceTaskWidget.forOthers(VoiceTaskState.NO_SERVER))
+        listOf(VoiceTaskState.RECORDING, VoiceTaskState.WORKING, VoiceTaskState.SENT, VoiceTaskState.ERROR).forEach {
+            assertEquals("$it gehoert dem startenden Widget", VoiceTaskState.READY, VoiceTaskWidget.forOthers(it))
+        }
+    }
+
+    @Test fun istDasStartendeWidgetWegZeigenAlleDenAuftrag() {
+        // Geloescht oder nach einer Wiederherstellung mit neuer Id: sonst saehe man den Auftrag
+        // nirgends, und kein Tipp kaeme mehr an ihn heran.
+        val (mit, leer) = zweiWidgets()
+        VoiceTaskStore(ctx).widgetId = 999
+
+        VoiceTaskWidgetView.push(ctx, VoiceTaskState.RECORDING, 7_000)
+
+        assertEquals("0:07", zeile(mit))
+        assertEquals("0:07", zeile(leer))
+    }
+
+    @Test fun einAuftragOhneBekanntesWidgetStehtWieFrueherAufAllen() {
+        // Ein Auftrag von vor dem Update kennt sein Widget nicht — dann lieber auf allen als auf keinem.
         val (mit, leer) = zweiWidgets()
 
         VoiceTaskWidgetView.push(ctx, VoiceTaskState.RECORDING, 7_000)

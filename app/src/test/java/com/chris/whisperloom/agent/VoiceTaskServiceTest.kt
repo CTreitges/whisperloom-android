@@ -26,6 +26,7 @@ import org.robolectric.android.controller.ServiceController
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowAudioRecord
 import org.robolectric.shadows.ShadowSystemClock
+import org.robolectric.shadows.ShadowToast
 import java.time.Duration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -221,6 +222,176 @@ class VoiceTaskServiceTest {
         assertEquals("Automatischer Weg: mit Netz-Bedingung, nicht wie ein Tipp", listOf(false), manuell)
         // Ein neuer Auftrag loest den alten Job ab — mit KEEP ginge er lautlos verloren.
         assertEquals(listOf(ExistingWorkPolicy.REPLACE), policies)
+    }
+
+    // --- Zwei Widgets ---------------------------------------------------------
+
+    private val widgets: AppWidgetManager get() = AppWidgetManager.getInstance(app)
+
+    private fun zeile(id: Int): String =
+        shadowOf(widgets).getViewFor(id).findViewById<android.widget.TextView>(R.id.widget_status).text.toString()
+
+    /** Sprach-Command (Standardprofil) und Claude-Code-Widget, beide mit Server. */
+    private fun zweiWidgets(): Pair<Int, Int> {
+        val profile = WidgetProfileStore(app)
+        val claude = profile.create("Claude").copy(kind = WidgetKind.CLAUDE_CODE)
+        profile.save(claude)
+        serverEinrichten(app, claude.id)
+        val sprach = shadowOf(widgets).createWidget(VoiceTaskWidget::class.java, R.layout.widget_task)
+        val code = shadowOf(widgets).createWidget(VoiceTaskWidget::class.java, R.layout.widget_task)
+        profile.bind(sprach, WidgetProfile.DEFAULT_ID)
+        profile.bind(code, claude.id)
+        return sprach to code
+    }
+
+    @Test fun nurDasStartendeWidgetZeigtAufnahmeUndSenden() {
+        val (sprach, code) = zweiWidgets()
+        tonQuelle()
+        val s = dienst()
+        senden(s, VoiceTaskService.ACTION_START, code)
+        assertTrue(gelesen.await(5, TimeUnit.SECONDS))
+        ShadowSystemClock.advanceBy(Duration.ofSeconds(2))
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertEquals("0:02", zeile(code))
+        assertEquals("Das andere Widget bleibt bereit", app.getString(R.string.widget_ready), zeile(sprach))
+
+        ShadowSystemClock.advanceBy(Duration.ofSeconds(2))
+        senden(s, VoiceTaskService.ACTION_STOP)
+        assertEquals(VoiceTaskState.WORKING, store.state)
+        assertEquals(1, eingereiht)
+        assertEquals(app.getString(R.string.widget_working), zeile(code))
+        assertEquals(app.getString(R.string.widget_ready), zeile(sprach))
+    }
+
+    @Test fun einTippAufDasAndereWidgetBeendetDieAufnahmeNicht() {
+        val (sprach, code) = zweiWidgets()
+        tonQuelle()
+        val s = dienst()
+        senden(s, VoiceTaskService.ACTION_START, code)
+        assertTrue(gelesen.await(5, TimeUnit.SECONDS))
+
+        senden(s, VoiceTaskService.ACTION_START, sprach)
+
+        assertEquals(VoiceTaskState.RECORDING, store.state)
+        assertEquals(code, store.widgetId)
+        assertEquals(app.getString(R.string.widget_busy_recording), ShadowToast.getTextOfLatestToast())
+        ShadowSystemClock.advanceBy(Duration.ofSeconds(4))
+        senden(s, VoiceTaskService.ACTION_STOP)
+        val claude = WidgetProfileStore(app).all().single { it.kind == WidgetKind.CLAUDE_CODE }
+        assertEquals("Der Auftrag bleibt beim startenden Widget", claude.id, store.profileId)
+    }
+
+    @Test fun einFehlerNenntSeinenGrundAuchOhneStatuszeile() {
+        // Das 1x1-Widget blendet die Statuszeile aus — dort sah man nur Rot, nie den Grund.
+        stilleQuelle()
+        val s = dienst()
+        aufnehmen(s)
+        ShadowSystemClock.advanceBy(Duration.ofSeconds(4))
+        senden(s, VoiceTaskService.ACTION_STOP)
+
+        assertEquals(VoiceTaskState.ERROR, store.state)
+        assertEquals(app.getString(R.string.widget_silent), ShadowToast.getTextOfLatestToast())
+        assertEquals("Genau eine Meldung", 1, ShadowToast.shownToastCount())
+    }
+
+    @Test fun einNormalerDoppelStoppMeldetKeinenAbbruch() {
+        tonQuelle()
+        val s = dienst()
+        aufnehmen(s)
+        ShadowSystemClock.advanceBy(Duration.ofSeconds(4))
+        senden(s, VoiceTaskService.ACTION_STOP)
+        senden(s, VoiceTaskService.ACTION_STOP)
+
+        assertEquals(VoiceTaskState.WORKING, store.state)
+        assertEquals(0, ShadowToast.shownToastCount())
+    }
+
+    /** Ein endgueltig gescheiterter Auftrag des Sprach-Command-Widgets [sprach] liegt noch da. */
+    private fun gescheiterterAuftragVon(sprach: Int) {
+        store.begin(FloatArray(16_000) { 0.3f }, 4000, "2026-10-11T12:00:00Z", WidgetProfile.DEFAULT_ID)
+        store.state = VoiceTaskState.ERROR
+        store.message = "API-Fehler 503"
+        store.widgetId = sprach
+    }
+
+    @Test fun eineNeueAufnahmeVerwirftDenGescheitertenAuftragEinesAnderenWidgets() {
+        // Review: sonst schickte "erneut senden" nach einer misslungenen neuen Aufnahme auf dem
+        // Claude-Widget den alten Text des Sprach-Commands los.
+        val (sprach, code) = zweiWidgets()
+        gescheiterterAuftragVon(sprach)
+        var abgebrochen = 0
+        val echtesCancel = VoiceTaskWork.cancelImpl
+        VoiceTaskWork.cancelImpl = { abgebrochen++ }
+        try {
+            tonQuelle()
+            val s = dienst()
+            senden(s, VoiceTaskService.ACTION_START, code)
+            assertTrue(gelesen.await(5, TimeUnit.SECONDS))
+
+            assertFalse("Der alte Auftrag ist verworfen", store.hasWork)
+            assertEquals(1, abgebrochen)
+
+            senden(s, VoiceTaskService.ACTION_STOP) // zu kurz
+            assertEquals(VoiceTaskState.ERROR, store.state)
+            assertFalse("Ein Tipp nimmt jetzt neu auf, statt den alten Auftrag zu senden", store.hasWork)
+        } finally {
+            VoiceTaskWork.cancelImpl = echtesCancel
+        }
+    }
+
+    @Test fun ohneMikrofonBleibtDerGescheiterteAuftragLiegen() {
+        val (sprach, code) = zweiWidgets()
+        gescheiterterAuftragVon(sprach)
+        shadowOf(app).denyPermissions(Manifest.permission.RECORD_AUDIO)
+
+        senden(dienst(), VoiceTaskService.ACTION_START, code)
+
+        assertTrue(store.hasWork)
+    }
+
+    @Test fun waehrendEinAuftragGesendetWirdNimmtDerDienstNichtAuf() {
+        // STOP von A und START von B fast gleichzeitig: das Trampolin sah noch kein "sendet".
+        val (sprach, code) = zweiWidgets()
+        store.begin(FloatArray(16_000) { 0.3f }, 4000, "2026-10-11T12:00:00Z", WidgetProfile.DEFAULT_ID)
+        store.state = VoiceTaskState.WORKING
+        store.widgetId = sprach
+        tonQuelle()
+
+        senden(dienst(), VoiceTaskService.ACTION_START, code)
+
+        assertEquals(VoiceTaskState.WORKING, store.state)
+        assertTrue(store.hasWork)
+        assertEquals(sprach, store.widgetId)
+        assertEquals(app.getString(R.string.widget_busy_sending), ShadowToast.getTextOfLatestToast())
+        assertFalse("Das Mikrofon bleibt zu", gelesen.await(300, TimeUnit.MILLISECONDS))
+    }
+
+    @Test fun dasClaudeWidgetWaermtFuerPromptVorAuchWennDasDiktatAusIst() {
+        val lokal = OfflineRefineFixture(app)
+        lokal.setUp() // Offline-Erkennung, Regel "lokal", Textmodell als Fake
+        try {
+            com.chris.whisperloom.Prefs(app).refineMode = com.chris.whisperloom.RefineMode.OFF
+            val (_, code) = zweiWidgets()
+            tonQuelle()
+            senden(dienst(), VoiceTaskService.ACTION_START, code)
+            assertTrue(gelesen.await(5, TimeUnit.SECONDS))
+            lokal.waitFor("Textmodell nicht vorgewaermt") { LocalTextEngine.isLoaded }
+        } finally {
+            lokal.tearDown()
+        }
+    }
+
+    @Test fun einStoppNachProzesstodStelltDenZustandRichtig() {
+        // Der Prozess starb mitten in der Aufnahme: der Store sagt noch "nimmt auf", der neue
+        // Dienst nimmt nichts auf. Frueher blieb das so stehen, und nichts erklaerte es.
+        store.state = VoiceTaskState.RECORDING
+
+        senden(dienst(), VoiceTaskService.ACTION_STOP)
+
+        assertEquals(VoiceTaskState.READY, store.state)
+        assertEquals(app.getString(R.string.widget_recording_lost), ShadowToast.getTextOfLatestToast())
+        assertEquals(0, eingereiht)
     }
 
     @Test fun derAuftragMerktSichDasProfilDesStartendenWidgets() {

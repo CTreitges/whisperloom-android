@@ -759,6 +759,9 @@
     <string name="widget_fgs_failed">Aufnahme ließ sich nicht starten — App öffnen und erneut versuchen</string>
     <!-- Nur der Grund: angezeigt über widget_error_retry, das den Tipp-Hinweis selbst anhängt. -->
     <string name="widget_silent">Kein Ton aufgenommen</string>
+    <string name="widget_busy_recording">Ein anderes Widget nimmt gerade auf</string>
+    <string name="widget_busy_sending">Ein anderes Widget sendet gerade noch</string>
+    <string name="widget_recording_lost">Aufnahme abgebrochen — bitte noch einmal aufnehmen</string>
     <string name="widget_too_short">Zu kurz — länger sprechen</string>
     <!-- Auto-Stopp: 8 s keine Sprache erkannt, Aufnahme verworfen. Angezeigt über widget_error_retry. -->
     <string name="widget_no_speech">Nichts gehört</string>
@@ -832,7 +835,7 @@
     <string name="widgets_placed_sub">Tippen, um das Profil zu wechseln</string>
     <string name="widgets_card_help">Hilfe</string>
     <string name="widgets_help_size">Größe ändern: Widget lange drücken und an den Rändern ziehen. Ganz klein zeigt es das Symbol, breit Symbol und Text, ab 2 × 2 beides untereinander. Ist der Name eingeschaltet, steht er darunter.</string>
-    <string name="widgets_help_shared">Alle Widgets zeigen dieselbe Aufnahme. Auto-Stopp richtet sich nach dem Widget, mit dem du gestartet hast.</string>
+    <string name="widgets_help_shared">Die Aufnahme zeigt nur das Widget, mit dem du gestartet hast. Auch Auto-Stopp und Server richten sich nach ihm.</string>
     <string name="widget_config_title">Welches Widget-Profil?</string>
     <string name="widget_config_pro_off">Pro Widgets sind aus. In der App unter Einstellungen → Erweitert einschalten.</string>
     <string name="widget_mode_toggle">Tippen startet und stoppt</string>

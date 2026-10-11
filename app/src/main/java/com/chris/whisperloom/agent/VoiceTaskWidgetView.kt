@@ -7,18 +7,21 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.SizeF
 import android.view.View
 import android.widget.RemoteViews
+import android.widget.Toast
 import androidx.annotation.VisibleForTesting
 import com.chris.whisperloom.R
 
 /**
  * Zeichnet das Widget. Das Widget haelt keinen Zustand — hier wird aus [VoiceTaskState] und
- * ein paar Zahlen eine komplette [RemoteViews] gebaut und ueber den AppWidgetManager an ALLE
- * Instanzen geschickt.
+ * ein paar Zahlen eine komplette [RemoteViews] gebaut und ueber den AppWidgetManager an alle
+ * Instanzen geschickt, jede mit ihrem Profil.
  *
- * Ein laufender Auftrag ist global (ein Auftrag zur Zeit, alle Widgets zeigen ihn), der
+ * Es gibt einen Auftrag zur Zeit; ihn zeigt das Widget, das ihn gestartet hat ([pushTo]). Der
  * Ruhezustand und das Aussehen gelten je Instanz: jedes Widget ist nur mit dem Server seines
  * Profils bereit ([VoiceTaskWidget.idle]) und zeigt Namen und Symbol seines Profils
  * ([WidgetProfileStore.forWidget]) in der Variante, die zu seiner Groesse passt ([WidgetLayouts]).
@@ -88,9 +91,10 @@ object VoiceTaskWidgetView {
     }
 
     /**
-     * Bestimmte Instanzen zeichnen, jede mit ihrem Profil. Wer "bereit" zeichnet, bekommt je
-     * Instanz den Ruhezustand ihres Profils ([VoiceTaskWidget.idle]) — ein Widget ohne Server
-     * zeigt dann "Server fehlt". Ein Foto wird nur geladen, wenn es gerade zu sehen ist, und je
+     * Bestimmte Instanzen zeichnen, jede mit ihrem Profil. Den Auftrag zeigt nur das Widget, das
+     * ihn gestartet hat ([VoiceTaskStore.widgetId]); die anderen zeigen [VoiceTaskWidget.forOthers].
+     * Wer "bereit" zeichnet, bekommt je Instanz den Ruhezustand ihres Profils
+     * ([VoiceTaskWidget.idle]) — ein Widget ohne Server zeigt dann "Server fehlt". Ein Foto wird nur geladen, wenn es gerade zu sehen ist, und je
      * Aufruf nur einmal — auch wenn mehrere Widgets es teilen.
      */
     fun pushTo(
@@ -102,10 +106,15 @@ object VoiceTaskWidgetView {
         message: String = "",
     ) {
         val store = WidgetProfileStore(ctx)
+        // Liegt das startende Widget nicht mehr (geloescht, neue Id), zeigen den Auftrag wie frueher
+        // alle — sonst saehe man ihn nirgends, und kein Tipp kaeme mehr an ihn heran.
+        val owner = VoiceTaskStore(ctx).widgetId.takeIf { it in VoiceTaskWidget.placedIds(ctx) }
+            ?: AppWidgetManager.INVALID_APPWIDGET_ID
         val photos = HashMap<String, Bitmap?>()
         for (id in ids) {
             val profile = store.forWidget(id)
-            val shown = VoiceTaskWidget.idle(state, profile)
+            val own = owner == AppWidgetManager.INVALID_APPWIDGET_ID || owner == id
+            val shown = VoiceTaskWidget.idle(if (own) state else VoiceTaskWidget.forOthers(state), profile)
             val photoName = (profile.icon as? ProfileIcon.Photo)?.fileName
                 ?.takeIf { WidgetLayouts.showsProfileIcon(shown) }
             val photo = photoName?.let { name ->
@@ -114,6 +123,15 @@ object VoiceTaskWidgetView {
             }
             manager.updateAppWidget(id, views(ctx, manager, id, profile, photo, shown, elapsedMs, message))
         }
+    }
+
+    /**
+     * Grund oder Hinweis als kurze Meldung, von jedem Thread aus. Das 1x1-Widget hat keine
+     * Statuszeile: ohne die Meldung sah man dort nur Rot und nicht, warum nichts gesendet wurde.
+     */
+    fun toast(ctx: Context, text: String) {
+        val app = ctx.applicationContext
+        Handler(Looper.getMainLooper()).post { Toast.makeText(app, text, Toast.LENGTH_LONG).show() }
     }
 
     /**
@@ -241,7 +259,8 @@ object VoiceTaskWidgetView {
      * Start des Mikrofon-Dienstes real im Vordergrund, und die Hintergrund-Beschraenkungen
      * ab Android 14 koennen gar nicht erst greifen (die scheitern sonst STILL — ohne
      * Exception, nur ohne Ton). Das Beenden darf direkt an den Dienst gehen: der laeuft
-     * zu dem Zeitpunkt bereits im Vordergrund — und jedes Widget beendet dieselbe Aufnahme.
+     * zu dem Zeitpunkt bereits im Vordergrund — und es gibt nur eine Aufnahme (gezeigt wird STOP nur
+     * auf dem startenden Widget, ohne bekanntes auf allen).
      *
      * Mit gueltiger [widgetId] traegt die Trampolin-Intent die Instanz in `data`: sonst hielte
      * das System die Tipps zweier Widgets fuer denselben PendingIntent (Extras zaehlen beim

@@ -26,6 +26,7 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowAudioRecord
 import org.robolectric.shadows.ShadowSystemClock
+import org.robolectric.shadows.ShadowToast
 import java.time.Duration
 
 /** Die unsichtbare Zwischenstation: wer den Mikrofon-Dienst startet und wann stattdessen die App aufgeht. */
@@ -97,6 +98,21 @@ class VoiceTaskTrampolineTest {
     @Test fun tippenAufBereitStartetDenAufnahmeDienst() {
         tippen(TapIntent.START)
         assertEquals(VoiceTaskService.ACTION_START, gestarteterDienst()?.action)
+    }
+
+    @Test fun waehrendEinAuftragGesendetWirdNimmtKeinWidgetNeuAuf() {
+        // Es gibt nur einen Auftrag: eine neue Aufnahme verdraengte den, der gerade rausgeht. Seit
+        // nur das startende Widget "Wird gesendet …" zeigt, sieht das andere bereit aus — also sagen.
+        auftrag()
+        store.state = VoiceTaskState.WORKING
+
+        tippen(TapIntent.START)
+        shadowOf(android.os.Looper.getMainLooper()).idle()
+
+        assertNull(gestarteterDienst())
+        assertEquals(app.getString(R.string.widget_busy_sending), ShadowToast.getTextOfLatestToast())
+        assertTrue(store.hasWork)
+        assertEquals("Wie der Tipp auf \"Wird gesendet …\": der wartende Auftrag geht jetzt raus", listOf(true), aufrufe)
     }
 
     @Test fun dasTrampolinBleibtNichtStehen() {

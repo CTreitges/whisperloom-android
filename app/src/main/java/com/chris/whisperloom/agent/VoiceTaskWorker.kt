@@ -246,6 +246,7 @@ class VoiceTaskWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, para
         store.state = state
         store.message = message
         VoiceTaskWidgetView.push(ctx, state, message = message)
+        if (state == VoiceTaskState.ERROR) VoiceTaskWidgetView.toast(ctx, message)
     }
 
     companion object {

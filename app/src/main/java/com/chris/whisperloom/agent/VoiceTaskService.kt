@@ -130,7 +130,20 @@ class VoiceTaskService : Service() {
      */
     private fun start(widgetId: Int) {
         // Absicht, kein Umschalter: ein zweites START waehrend der Aufnahme ist ein Doppelklick.
-        if (recording) return
+        // Von einem anderen Widget: es gibt nur ein Mikrofon, die laufende Aufnahme bleibt.
+        if (recording) {
+            if (widgetId != store.widgetId) VoiceTaskWidgetView.toast(this, getString(R.string.widget_busy_recording))
+            return
+        }
+        // Ein Auftrag wird noch gesendet: ein neuer verdraengte ihn (es gibt nur einen). Das Trampolin
+        // prueft das schon — hier auch, falls STOP und START zweier Widgets fast gleichzeitig kommen.
+        if (store.state == VoiceTaskState.WORKING && store.hasWork) {
+            VoiceTaskWidgetView.toast(this, getString(R.string.widget_busy_sending))
+            stopSelf()
+            return
+        }
+        // Ab hier gehoert der Auftrag diesem Widget — nur es zeigt Aufnahme, Senden und Ergebnis.
+        store.widgetId = widgetId
         if (!VoiceTaskWidget.hasMicPermission(this)) {
             fail(getString(R.string.widget_no_mic))
             stopSelf()
@@ -147,6 +160,14 @@ class VoiceTaskService : Service() {
             return
         }
         recording = true
+        // Ein liegengebliebener, gescheiterter Auftrag (von einem anderen Widget) ist ab jetzt
+        // verworfen. Sonst schickte "erneut senden" nach einer misslungenen neuen Aufnahme ("Zu
+        // kurz", "Kein Ton") den alten Text los. Erst nach dem gelungenen Start: ein Tipp ohne
+        // Mikrofon verwirft nichts.
+        if (store.hasWork) {
+            VoiceTaskWork.cancel(this)
+            store.clear()
+        }
         // Wird das Diktat gleich lokal verbessert, laedt das Textmodell schon parallel zur Aufnahme.
         TranscriptionEngine.warmUp(this, profile.fixedRefinement()?.mode)
         startedAt = SystemClock.elapsedRealtime()
@@ -161,6 +182,13 @@ class VoiceTaskService : Service() {
         // STOP ohne laufende Aufnahme: verwerfen, nicht als Fehler zeigen. Kommt der Tipp von
         // einer nach einem Neustart stehengebliebenen Flaeche, wird sie hier gleich richtiggestellt.
         if (!recording) {
+            // Steht im Store noch "nimmt auf", ist der Prozess mitten in der Aufnahme beendet
+            // worden (Speicher, Absturz) — das Audio ist weg. Richtigstellen und sagen, statt dass
+            // das Widget wortlos die Farbe wechselt.
+            if (store.state == VoiceTaskState.RECORDING) {
+                store.state = VoiceTaskUi.afterRestart(VoiceTaskState.RECORDING, store.hasWork)
+                VoiceTaskWidgetView.toast(this, getString(R.string.widget_recording_lost))
+            }
             VoiceTaskWidget.refresh(this)
             stopSelf()
             return
@@ -260,6 +288,7 @@ class VoiceTaskService : Service() {
         store.state = VoiceTaskState.ERROR
         store.message = message
         VoiceTaskWidgetView.push(this, VoiceTaskState.ERROR, message = message)
+        VoiceTaskWidgetView.toast(this, message)
     }
 
     private fun elapsedMs(): Long = SystemClock.elapsedRealtime() - startedAt
