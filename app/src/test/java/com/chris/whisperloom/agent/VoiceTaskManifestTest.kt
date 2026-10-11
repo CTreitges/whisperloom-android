@@ -47,6 +47,10 @@ class VoiceTaskManifestTest {
         assertTrue(block("receiver", "agent.VoiceTaskWidget").contains("""android:label="@string/widget_picker_label""""))
         val strings = datei("src/main/res/values/strings.xml", "app/src/main/res/values/strings.xml").readText()
         assertTrue(strings.contains("""<string name="widget_picker_label">Pro Widget</string>"""))
+        // Die Vorschau in der Auswahl traegt denselben Namen, nicht "Sprach-Command".
+        val vorschau = datei("src/main/res/layout/widget_task_preview.xml", "app/src/main/res/layout/widget_task_preview.xml").readText()
+        assertTrue(vorschau.contains("""android:text="@string/widget_picker_label""""))
+        assertFalse(vorschau.contains("@string/widget_label"))
     }
 
     @Test fun dasWidgetHoertAufDasEigeneUpdate() {

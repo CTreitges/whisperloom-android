@@ -223,7 +223,7 @@ class WidgetsScreenTest {
         compose.onNode(tab("Pro Widgets")).assertIsSelected()
         compose.onNode(tab("Widgets")).assertIsNotSelected()
         compose.onNodeWithText(
-            "Sprach-Command-Widgets nehmen auf und schicken den Text an deinen eigenen Server. Jedes Widget hat seinen eigenen Namen und Server.",
+            "Pro Widgets nehmen auf und schicken den Auftrag an deinen eigenen Server — als Sprach-Command oder als neue Claude-Code-Session. Jedes Widget hat seinen eigenen Namen und Server.",
         ).assertIsDisplayed()
         compose.onNode(hasIllustration(R.drawable.ill_pro_widgets, ctx.getString(R.string.img_pro_widgets))).assertExists()
         compose.onNodeWithText("Neues Pro Widget").assertExists()
@@ -291,7 +291,7 @@ class WidgetsScreenTest {
         compose.onNodeWithText("Claude").assertExists()
         compose.onNodeWithText("Modell").assertExists()
         compose.onNode(hasText("Opus") and isSelectable()).assertIsSelected()
-        compose.onNodeWithText("Effort").assertExists()
+        compose.onNodeWithText("Denkaufwand (Effort)").assertExists()
         compose.onNode(hasText("Extra hoch") and isSelectable()).assertIsSelected()
         compose.onNode(hasText("Ultracode") and isToggleable()).assertIsOff()
     }
@@ -323,7 +323,7 @@ class WidgetsScreenTest {
         store.save(WidgetProfile("c", name = "Claude", kind = WidgetKind.CLAUDE_CODE))
         show()
         bearbeiten("Claude")
-        listOf("Niedrig", "Mittel", "Hoch", "Extra hoch", "Max").forEach {
+        listOf("Niedrig", "Mittel", "Hoch", "Extra hoch", "Maximal").forEach {
             compose.onNode(hasText(it) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)).assertExists()
         }
     }
@@ -347,7 +347,7 @@ class WidgetsScreenTest {
         show()
         bearbeiten("Sprach-Command")
         compose.onNode(adressFeld).assertExists()
-        compose.onNodeWithText("Effort").assertDoesNotExist()
+        compose.onNodeWithText("Denkaufwand (Effort)").assertDoesNotExist()
         compose.onNodeWithText("Ultracode").assertDoesNotExist()
         compose.onNodeWithText("Opus").assertDoesNotExist()
     }

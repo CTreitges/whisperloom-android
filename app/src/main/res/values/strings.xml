@@ -588,9 +588,9 @@
     <string name="help_s5_title">Offline-Modus</string>
     <string name="help_s5_body">Ein Offline-Modell erkennt Sprache auf dem Gerät (Small: etwa 5–12 s). Einmal laden (32–574 MB), löschen unter Offline-Modelle. Für Deutsch empfohlen: Small.</string>
     <string name="help_widgets_title">Widgets &amp; Pro Widgets</string>
-    <string name="help_widgets_intro">Normale Widgets für den Startbildschirm folgen mit einem Update. Pro Widgets gibt es schon: Sprach-Command-Widgets für Entwickler mit eigenem Server.</string>
+    <string name="help_widgets_intro">Normale Widgets für den Startbildschirm folgen mit einem Update. Pro Widgets gibt es schon: Sprach-Command und Claude Code, für Entwickler mit eigenem Server.</string>
     <string name="help_widgets_unlock">Freischalten: Einstellungen → Erweitert → Pro Widgets.</string>
-    <string name="help_widgets_create">Anlegen: Widgets → Pro Widgets → Sprach-Command-Widget. Jedes Widget braucht einen Namen; er steht unter dem Widget und lässt sich ausblenden.</string>
+    <string name="help_widgets_create">Anlegen: Widgets → Pro Widgets → Sprach-Command- oder Claude-Code-Widget. Jedes Widget braucht einen Namen; er steht unter dem Widget und lässt sich ausblenden.</string>
     <string name="help_widgets_server">Server je Widget: Adresse und Token trägst du im Widget ein, „Verbindung prüfen“ testet beides.</string>
     <string name="help_widgets_place">Platzieren: Startbildschirm lange drücken → Widgets → WhisperLoom → „Pro Widget“, dann das Widget-Profil wählen.</string>
     <string name="help_widgets_claude">Das Claude-Code-Widget startet per Sprache eine neue Claude-Code-Session und braucht dafür die claude-bridge auf dem eigenen Server: https://github.com/CTreitges/claude-bridge</string>
@@ -775,7 +775,8 @@
     <!-- Widget mit eigenem Profilnamen: %1$s = Name, %2$s = Zustandstext wie oben -->
     <string name="cd_widget_named">%1$s: %2$s</string>
     <string name="agent_channel">Pro Widgets</string>
-    <string name="agent_notif_title">Sprach-Command</string>
+    <!-- Gilt für beide Pro-Typen (Sprach-Command, Claude Code) -->
+    <string name="agent_notif_title">Pro Widget</string>
     <string name="agent_notif_recording">Nimmt auf …</string>
     <string name="agent_notif_stop">Senden</string>
 
@@ -819,7 +820,7 @@
     <string name="widgets_tab_pro">Pro Widgets</string>
     <string name="widgets_normal_soon">Normale Widgets für den Startbildschirm kommen mit einem späteren Update.</string>
     <string name="widgets_pro_unlock">Für Entwickler: Pro Widgets lassen sich unter „Erweitert“ freischalten.</string>
-    <string name="widgets_pro_intro">Sprach-Command-Widgets nehmen auf und schicken den Text an deinen eigenen Server. Jedes Widget hat seinen eigenen Namen und Server.</string>
+    <string name="widgets_pro_intro">Pro Widgets nehmen auf und schicken den Auftrag an deinen eigenen Server — als Sprach-Command oder als neue Claude-Code-Session. Jedes Widget hat seinen eigenen Namen und Server.</string>
     <string name="widgets_card_new_pro">Neues Pro Widget</string>
     <string name="widgets_card_pro">Deine Pro Widgets</string>
     <string name="widgets_server_missing">Server fehlt</string>
@@ -866,14 +867,14 @@
     <string name="claude_model_fable">Fable</string>
     <string name="claude_model_sonnet">Sonnet</string>
     <string name="claude_model_haiku">Haiku</string>
-    <string name="widget_profile_claude_effort">Effort</string>
+    <string name="widget_profile_claude_effort">Denkaufwand (Effort)</string>
     <string name="claude_effort_low">Niedrig</string>
     <string name="claude_effort_medium">Mittel</string>
     <string name="claude_effort_high">Hoch</string>
     <string name="claude_effort_xhigh">Extra hoch</string>
-    <string name="claude_effort_max">Max</string>
+    <string name="claude_effort_max">Maximal</string>
     <string name="widget_profile_ultracode">Ultracode</string>
-    <string name="widget_profile_ultracode_sub">Claude zerlegt größere Aufgaben in einen Workflow mit mehreren Agenten — gründlicher, verbraucht deutlich mehr Nutzung.</string>
+    <string name="widget_profile_ultracode_sub">Claude zerlegt größere Aufgaben in einen Workflow mit mehreren Agenten — gründlicher, verbraucht aber deutlich mehr von deinem Nutzungslimit.</string>
     <string name="widget_profile_delete">Widget löschen</string>
     <!-- %1$s = Profilname -->
     <string name="widget_profile_delete_title">„%1$s“ löschen?</string>
@@ -912,7 +913,7 @@
     <string name="tutorial_pro_p1_title">Pro Widgets freischalten</string>
     <string name="tutorial_pro_p1_body">Unter Einstellungen → Erweitert schaltest du „Pro Widgets“ ein. Danach hat das Widget-Menü einen eigenen Tab dafür.</string>
     <string name="tutorial_pro_p2_title">Widget anlegen</string>
-    <string name="tutorial_pro_p2_body">Einstellungen → Widgets → Pro Widgets → „Sprach-Command-Widget“. Gib ihm einen Namen und wähle, ob er unter dem Widget steht.</string>
+    <string name="tutorial_pro_p2_body">Einstellungen → Widgets → Pro Widgets → „Sprach-Command-Widget“ oder „Claude-Code-Widget“. Gib ihm einen Namen und wähle, ob er unter dem Widget steht.</string>
     <string name="tutorial_pro_p3_title">Server eintragen</string>
     <string name="tutorial_pro_p3_body">Jedes Widget hat seine eigene Server-Adresse und sein eigenes Token. „Verbindung prüfen“ sagt dir sofort, ob beides stimmt — ohne einen Auftrag auszulösen.</string>
     <string name="tutorial_pro_p4_title">Auf den Startbildschirm</string>
@@ -920,11 +921,11 @@
     <string name="tutorial_pro_p5_title">Tippen, sprechen, tippen</string>
     <string name="tutorial_pro_p5_body">Ein Tipp startet die Aufnahme, der zweite schickt den Auftrag los. Mit Auto-Stopp endet sie nach einer Sprechpause. Das läuft weiter, auch wenn der Bildschirm ausgeht.</string>
     <string name="tutorial_pro_p6_title">Die Antwort kommt im Chat</string>
-    <string name="tutorial_pro_p6_body">Dein Agent bekommt das Transkript als Dokument und antwortet dort, wo du ihm sonst schreibst. Wird das Widget rot, schickt ein Tipp denselben Auftrag noch einmal.</string>
+    <string name="tutorial_pro_p6_body">Dein Agent antwortet dort, wo du ihm sonst schreibst; das Claude-Code-Widget startet eine neue Session. Wird das Widget rot, schickt ein Tipp denselben Auftrag noch einmal.</string>
 
     <!-- ==== Pro Widgets (3.7.1) ==================================================== -->
     <string name="pro_widgets">Pro Widgets</string>
-    <string name="pro_widgets_sub">Blendet im Widget-Menü den Tab „Pro Widgets“ ein: Sprach-Command-Widgets mit eigenem Server.</string>
+    <string name="pro_widgets_sub">Blendet im Widget-Menü den Tab „Pro Widgets“ ein: Sprach-Command- und Claude-Code-Widgets mit eigenem Server.</string>
     <string name="pro_widgets_hub">Pro Widgets</string>
     <string name="pro_server_models">Modelle vom Server</string>
     <string name="pro_server_models_sub">Lädt bei jedem Anbieter die aktuelle Modell-Liste – für Erkennung und Textverbesserung.</string>
@@ -936,7 +937,7 @@
     <string name="img_pro_widgets">Widget-Menü mit zwei Tabs, der rechte aktiv. Darunter eine Plus-Zeile zum Anlegen und eine Liste mit zwei Widgets.</string>
     <string name="img_widgets_normal">Startbildschirm mit App-Symbolen und einer gestrichelten, leeren Widget-Fläche mit Uhr-Symbol.</string>
     <string name="img_agent_server">Widget-Editor mit Feldern für Name, Server-Adresse und Token, grünem Haken und dem verbundenen Server daneben</string>
-    <string name="img_agent_widget">Startbildschirm mit dem Sprach-Command-Widget zwischen App-Symbolen, sein Name steht unter der Kachel</string>
+    <string name="img_agent_widget">Startbildschirm mit einem Pro Widget zwischen App-Symbolen, sein Name steht unter der Kachel</string>
     <string name="img_agent_record">Widget im Aufnahme-Zustand mit Schallwellen und laufender Zeit, der Name steht unter der Kachel</string>
     <string name="img_agent_answer">Chat-Fenster mit einem Dokument und der Antwort des Agenten</string>
     <string name="img_help_setup">Handy mit einer Checkliste: zwei Schritte mit grünem Haken erledigt, der dritte ist offen und hervorgehoben.</string>

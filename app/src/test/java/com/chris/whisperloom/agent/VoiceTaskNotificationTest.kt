@@ -27,10 +27,11 @@ class VoiceTaskNotificationTest {
     }
 
     @Test fun kanalUndTitelTragenDenNeuenNamen() {
-        // Frueher beide "Sprachauftrag" — den Namen gibt es in App und Anleitung nicht mehr.
+        // Frueher beide "Sprachauftrag" — den Namen gibt es in App und Anleitung nicht mehr. Der
+        // Titel nennt keinen Typ: dieselbe Aufnahme laeuft fuer Sprach-Command und Claude Code.
         VoiceTaskNotification.ensureChannel(ctx)
         val kanal = ctx.getSystemService(NotificationManager::class.java).getNotificationChannel(VoiceTaskNotification.CHANNEL_ID)
         assertEquals("Pro Widgets", kanal.name.toString())
-        assertEquals("Sprach-Command", VoiceTaskNotification.build(ctx).extras.getCharSequence(Notification.EXTRA_TITLE).toString())
+        assertEquals("Pro Widget", VoiceTaskNotification.build(ctx).extras.getCharSequence(Notification.EXTRA_TITLE).toString())
     }
 }
