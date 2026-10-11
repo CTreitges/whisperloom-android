@@ -75,8 +75,9 @@ import java.net.URI
 
 /**
  * Widget-Menue mit den Tabs "Widgets" (normale Widgets — folgen, bis dahin ein Platzhalter) und
- * "Pro Widgets" (Sprach-Command-Widgets anlegen und bearbeiten ([WidgetProfileSheet]), jedem
- * Widget auf dem Startbildschirm ein Profil zuordnen, Mikrofon, offener Auftrag, Hilfe).
+ * "Pro Widgets" (Sprach-Command- und Claude-Code-Widgets anlegen und bearbeiten
+ * ([WidgetProfileSheet]), jedem Widget auf dem Startbildschirm ein Profil zuordnen, Mikrofon,
+ * offener Auftrag, Hilfe).
  * Immer im Hub erreichbar; sind Pro Widgets aus, gibt es keine Tabs, nur den Normal-Inhalt mit
  * dem Weg nach "Erweitert".
  *
@@ -229,10 +230,12 @@ private fun ProTab(
     SectionCard(title = stringResource(R.string.widgets_card_pro), gap = 4.dp) {
         widgets.profiles(Tier.PRO).forEach { p ->
             // Ohne Server kann das Widget nichts senden: Warnung mit Symbol, nicht nur Farbe.
+            // Der Typ steht vorn, wie im ProfilePicker.
             val missing = !p.serverReady
+            val detail = if (missing) stringResource(R.string.widgets_server_missing) else serverHost(p.serverUrl) + " · " + modeText(p)
             LoomRow(
                 headline = p.displayName(ctx),
-                supporting = if (missing) stringResource(R.string.widgets_server_missing) else serverHost(p.serverUrl) + " · " + modeText(p),
+                supporting = stringResource(p.kind.title) + " · " + detail,
                 supportingColor = if (missing) MaterialTheme.loom.warning else dim,
                 leading = { ProfileIconView(p) },
                 trailing = if (missing) ({ StatusIcon(Tone.WARNING) }) else null,
@@ -298,7 +301,10 @@ fun modeText(p: WidgetProfile): String =
 
 /**
  * Profilliste mit Auswahlknopf; ein Tipp waehlt. Auch fuer die Profilwahl beim Platzieren
- * eines Widgets gedacht.
+ * eines Widgets gedacht. Die Unterzeile nennt zuerst den Typ ("Claude-Code-Widget · …"): die
+ * Namen sind frei waehlbar, und ohne ihn waeren Sprach-Command und Claude Code auch fuer
+ * TalkBack nicht zu unterscheiden — der eine sendet an die hermes-bridge, der andere an die
+ * claude-bridge.
  */
 @Composable
 fun ProfilePicker(profiles: List<WidgetProfile>, selected: String, onPick: (String) -> Unit) {
@@ -308,7 +314,7 @@ fun ProfilePicker(profiles: List<WidgetProfile>, selected: String, onPick: (Stri
             if (i > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             LoomRow(
                 headline = p.displayName(ctx),
-                supporting = modeText(p),
+                supporting = stringResource(p.kind.title) + " · " + modeText(p),
                 leading = { ProfileIconView(p) },
                 trailing = { RadioButton(selected = p.id == selected, onClick = null) },
                 modifier = Modifier.selectable(selected = p.id == selected, role = Role.RadioButton) { onPick(p.id) },

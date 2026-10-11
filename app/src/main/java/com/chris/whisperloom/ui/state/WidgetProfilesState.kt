@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.chris.whisperloom.R
+import com.chris.whisperloom.agent.ProfileIcon
 import com.chris.whisperloom.agent.Tier
 import com.chris.whisperloom.agent.VoiceTaskStore
 import com.chris.whisperloom.agent.VoiceTaskWidget
@@ -60,7 +61,8 @@ class WidgetProfilesState(context: Context) {
      * Der Server kommt vom ersten Profil DESSELBEN Typs, das einen brauchbaren hat: meist nutzen
      * diese Widgets dieselbe Bridge, und ohne Server ginge das neue Widget erst einmal auf "fehlt".
      * Nie quer ueber die Typen — das erste Claude-Code-Widget erbte sonst die hermes-bridge, und
-     * seine Auftraege landeten dort statt bei der claude-bridge.
+     * seine Auftraege landeten dort statt bei der claude-bridge. Das Symbol kommt vom Typ
+     * ([WidgetKind.iconKey]).
      */
     fun createNew(kind: WidgetKind = WidgetKind.VOICE_COMMAND): WidgetProfile {
         val (nameRes, first) = when (kind) {
@@ -73,6 +75,7 @@ class WidgetProfilesState(context: Context) {
         val server = profiles.firstOrNull { it.kind == kind && it.serverReady }
         val p = store.create(name).copy(
             kind = kind,
+            icon = ProfileIcon.BuiltIn(kind.iconKey),
             serverUrl = server?.serverUrl.orEmpty(),
             serverToken = server?.serverToken.orEmpty(),
         )

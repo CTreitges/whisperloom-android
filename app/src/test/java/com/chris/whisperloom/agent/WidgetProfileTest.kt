@@ -249,6 +249,9 @@ class WidgetProfileTest {
         assertTrue("Normale Widgets folgen spaeter", WidgetKind.of(Tier.NORMAL).isEmpty())
         // Gespeicherte Schluessel sind festgeschrieben — ein Umbenennen setzte jedes Profil zurueck.
         assertEquals(listOf("voice_command", "claude_code"), WidgetKind.entries.map { it.key })
+        // Das Symbol neuer Widgets ist ein eingebautes — ein unbekannter Schluessel wuerde still zum Mikrofon.
+        assertEquals(listOf("mic", "auto_fix_high"), WidgetKind.entries.map { it.iconKey })
+        assertTrue(WidgetKind.entries.all { WidgetIcons.isKnown(it.iconKey) })
         assertEquals(WidgetKind.VOICE_COMMAND, WidgetKind.fromKey(null))
         assertEquals(WidgetKind.CLAUDE_CODE, lies("""{"id":"x","kind":"claude_code"}""")!!.kind)
     }

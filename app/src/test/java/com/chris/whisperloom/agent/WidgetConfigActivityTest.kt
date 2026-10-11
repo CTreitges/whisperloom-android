@@ -7,6 +7,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.widget.TextView
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasText
@@ -276,6 +277,10 @@ class WidgetConfigActivityTest {
         store.save(WidgetProfile("c", name = "Claude", kind = WidgetKind.CLAUDE_CODE))
         val id = unseres()
         val activity = oeffnen(id)
+
+        // Der Typ steht in der Unterzeile — auch fuer TalkBack, die Namen sind frei waehlbar.
+        compose.onNode(hasText("Claude") and isSelectable()).assert(hasText("Claude-Code-Widget · Tippen startet und stoppt"))
+        compose.onNode(hasText("Sprach-Command") and isSelectable()).assert(hasText("Sprach-Command-Widget · Tippen startet und stoppt"))
 
         compose.onNode(hasText("Claude") and isSelectable()).performClick()
         compose.waitForIdle()

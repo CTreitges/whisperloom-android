@@ -11,6 +11,7 @@ import com.chris.whisperloom.agent.Tier
 import com.chris.whisperloom.agent.VoiceTaskStore
 import com.chris.whisperloom.agent.VoiceTaskWidget
 import com.chris.whisperloom.agent.VoiceTaskWork
+import com.chris.whisperloom.agent.WidgetIcons
 import com.chris.whisperloom.agent.WidgetKind
 import com.chris.whisperloom.agent.WidgetPhoto
 import com.chris.whisperloom.agent.WidgetProfile
@@ -146,9 +147,23 @@ class WidgetProfilesStateTest {
 
         assertEquals(listOf("Claude Code 1", "Claude Code 2"), listOf(eins.name, zwei.name))
         assertEquals(WidgetKind.CLAUDE_CODE, eins.kind)
-        assertEquals("Ab Werk Opus, Extra hoch, ohne Ultracode", WidgetProfile(eins.id, name = eins.name, kind = WidgetKind.CLAUDE_CODE), eins)
+        assertEquals(
+            "Ab Werk Opus, Extra hoch, ohne Ultracode, mit eigenem Symbol",
+            WidgetProfile(eins.id, name = eins.name, icon = ProfileIcon.BuiltIn("auto_fix_high"), kind = WidgetKind.CLAUDE_CODE),
+            eins,
+        )
         assertEquals("Sofort gespeichert", eins, WidgetProfileStore(ctx).get(eins.id))
         assertEquals("Die Sprach-Command-Nummern laufen davon unberuehrt", "Sprach-Command 2", s.createNew().name)
+    }
+
+    @Test fun claudeUndSprachCommandHabenVerschiedeneSymbole() {
+        // Auf dem Startbildschirm und in der Profilwahl sonst nicht zu unterscheiden.
+        val s = WidgetProfilesState(ctx)
+        val sprach = s.createNew()
+        val claude = s.createNew(WidgetKind.CLAUDE_CODE)
+        assertEquals(ProfileIcon.DEFAULT, sprach.icon)
+        assertEquals(ProfileIcon.BuiltIn("auto_fix_high"), claude.icon)
+        assertTrue("Ein eingebautes Symbol, kein unbekannter Schluessel", WidgetIcons.isKnown("auto_fix_high"))
     }
 
     @Test fun einClaudeWidgetUebernimmtNieDenServerDesSprachCommands() {

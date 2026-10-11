@@ -1,6 +1,5 @@
 package com.chris.whisperloom.agent
 
-import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import com.chris.whisperloom.R
 
@@ -19,12 +18,17 @@ enum class WidgetKind(
     val tier: Tier,
     @StringRes val title: Int,
     @StringRes val description: Int,
-    @DrawableRes val icon: Int,
+    /**
+     * Symbol neuer Widgets dieses Typs, als Schluessel aus [WidgetIcons] (gespeichert wird nie
+     * die R.drawable-Zahl): so unterscheiden sich die Typen auf dem Startbildschirm und in der
+     * Profilwahl auch ohne passenden Namen.
+     */
+    val iconKey: String,
 ) {
-    VOICE_COMMAND("voice_command", Tier.PRO, R.string.kind_voice_command, R.string.kind_voice_command_sub, R.drawable.ic_mic),
+    VOICE_COMMAND("voice_command", Tier.PRO, R.string.kind_voice_command, R.string.kind_voice_command_sub, WidgetIcons.DEFAULT_KEY),
 
     /** Startet ueber die claude-bridge eine neue Claude-Code-Session; Modell und Effort stehen im Profil. */
-    CLAUDE_CODE("claude_code", Tier.PRO, R.string.kind_claude_code, R.string.kind_claude_code_sub, R.drawable.ic_auto_fix_high);
+    CLAUDE_CODE("claude_code", Tier.PRO, R.string.kind_claude_code, R.string.kind_claude_code_sub, "auto_fix_high");
 
     companion object {
         /** Unbekannt oder fehlend = [VOICE_COMMAND]: alle Profile bis 3.7.0 sind Sprach-Command-Widgets. */

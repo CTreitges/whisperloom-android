@@ -338,10 +338,10 @@ class WidgetsScreenTest {
         store.create("Einkauf")
         show()
         compose.onNodeWithText("Sprach-Command").assertExists()
-        compose.onNodeWithText("bridge.example.de · Tippen startet und stoppt").assertExists()
+        compose.onNodeWithText("Sprach-Command-Widget · bridge.example.de · Tippen startet und stoppt").assertExists()
         // Die Zeile ist fuer TalkBack ein Element: Name und Warnung stehen im selben Knoten.
-        compose.onAllNodes(hasText("Server fehlt")).assertCountEquals(1)
-        compose.onNode(hasText("Einkauf") and hasText("Server fehlt")).assertExists()
+        compose.onAllNodes(hasText("Sprach-Command-Widget · Server fehlt")).assertCountEquals(1)
+        compose.onNode(hasText("Einkauf") and hasText("Sprach-Command-Widget · Server fehlt")).assertExists()
     }
 
     @Test fun derModusStehtInDerZeile() {
@@ -352,13 +352,23 @@ class WidgetsScreenTest {
             ),
         )
         show()
-        compose.onNodeWithText("bridge.example.de · Stoppt nach Sprechpause · Kurz").assertExists()
+        compose.onNodeWithText("Sprach-Command-Widget · bridge.example.de · Stoppt nach Sprechpause · Kurz").assertExists()
+    }
+
+    @Test fun dieZeileNenntDenTyp() {
+        // Claude Code und Sprach-Command sind sonst nur am frei waehlbaren Namen zu unterscheiden.
+        store.save(WidgetProfile("c", name = "Bau", kind = WidgetKind.CLAUDE_CODE, serverUrl = "https://claude.example.de", serverToken = "c"))
+        store.save(WidgetProfile("d", name = "Notiz", kind = WidgetKind.CLAUDE_CODE))
+        show()
+        compose.onNode(hasText("Bau") and hasText("Claude-Code-Widget · claude.example.de · Tippen startet und stoppt")).assertExists()
+        compose.onNode(hasText("Notiz") and hasText("Claude-Code-Widget · Server fehlt")).assertExists()
+        compose.onNode(hasText("Sprach-Command") and hasText("Sprach-Command-Widget · Server fehlt")).assertExists()
     }
 
     @Test fun dasStandardprofilStehtOhneServerMitWarnungDa() {
         show()
         compose.onNodeWithText("Sprach-Command").assertExists()
-        compose.onNodeWithText("Server fehlt").assertExists()
+        compose.onNodeWithText("Sprach-Command-Widget · Server fehlt").assertExists()
         compose.onNodeWithText("Auf dem Startbildschirm").assertDoesNotExist()
     }
 
