@@ -6,14 +6,18 @@ Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](ht
 
 ### Hinzugefügt
 
-- **Pro-Widget „Claude Code“.** Unter Widgets › Pro Widgets gibt es neben dem Sprach-Command das **Claude-Code-Widget**: Tippen, sprechen, tippen, und die claude-bridge auf deinem Server startet sofort eine neue Claude-Code-Session, die direkt mit dem Auftrag beginnt. Die Bridge installierst du selbst auf dem Server (https://github.com/CTreitges/claude-bridge), Adresse und Token trägst du wie gewohnt im Widget ein, „Verbindung prüfen“ testet beides.
-  - Im Editor des Widgets wählst du **Modell** (Opus, Fable, Sonnet, Haiku), **Effort** (Niedrig, Mittel, Hoch, Extra hoch, Max) und **Ultracode** (Claude zerlegt größere Aufgaben in einen Workflow mit mehreren Agenten, verbraucht deutlich mehr Nutzung). Ab Werk: Opus, Extra hoch, Ultracode aus. Mehrere Profile = mehrere Widgets mit eigenen Einstellungen.
-  - Ein neues Widget übernimmt Adresse und Token nur von einem Widget desselben Typs, ein Claude-Code-Widget also nie die Bridge des Sprach-Commands.
-  - In der Widget-Auswahl des Startbildschirms heißt der WhisperLoom-Eintrag jetzt **„Pro Widget“**. Beim Platzieren wählst du das Profil, Sprach-Command oder Claude Code; „Neues Sprach-Command-Widget“ und „Neues Claude-Code-Widget“ legen direkt dort eines an.
+- **Pro Widget „Claude Code“.** Unter Widgets › Pro Widgets gibt es neben dem Sprach-Command das **Claude-Code-Widget**: Tippen, sprechen, tippen, und die [claude-bridge](https://github.com/CTreitges/claude-bridge) auf deinem Server startet sofort eine neue Claude-Code-Session, die direkt mit dem Auftrag beginnt. Die Bridge installierst du selbst auf dem Server, Adresse und Token trägst du wie gewohnt im Widget ein. „Verbindung prüfen“ testet beides und erkennt auch, ob unter der Adresse wirklich die claude-bridge läuft („Server ist keine claude-bridge — Adresse prüfen“).
+  - Im Editor des Widgets wählst du **Modell** (Opus, Fable, Sonnet, Haiku), **Denkaufwand (Effort)** (Niedrig, Mittel, Hoch, Extra hoch, Maximal) und **Ultracode** (Claude zerlegt größere Aufgaben in einen Workflow mit mehreren Agenten, verbraucht aber deutlich mehr von deinem Nutzungslimit). Ab Werk: Opus, Extra hoch, Ultracode aus. Mehrere Profile = mehrere Widgets mit eigenen Einstellungen.
+  - Ein neues Widget übernimmt Adresse und Token nur von einem Widget desselben Typs, ein Claude-Code-Widget also nie die Bridge des Sprach-Commands. Claude-Code-Widgets bekommen ein eigenes Symbol, und unter dem Namen steht in den Listen der Typ.
+
+### Geändert
+
+- **Widget-Auswahl des Startbildschirms:** Der WhisperLoom-Eintrag heißt jetzt **„Pro Widget“**, denn Sprach-Command und Claude Code teilen ihn sich. Beim Platzieren fragt WhisperLoom deshalb immer nach dem Widget-Profil, auch wenn es nur das Standard-Widget gibt; „Neues Sprach-Command-Widget“ und „Neues Claude-Code-Widget“ legen direkt dort eines an. Auch die Benachrichtigung während der Aufnahme heißt „Pro Widget“.
+- **Widget löschen:** Platzierte Widgets zeigen danach das erste andere Widget desselben Typs und erst, wenn es keins gibt, das Standard-Widget. Die Rückfrage nennt, welches.
 
 ### Technik
 
-- `WidgetKind.CLAUDE_CODE` (`claude_code`) hängt wie der Sprach-Command am einen Provider `VoiceTaskWidget`, der Typ steht im Profil. Neue Profilfelder `claudeModel` (`opus`, `fable`, `sonnet`, `haiku`), `claudeEffort` (`low` bis `max`) und `ultracode`, tolerant gelesen, ohne Migration. `AgentBridge` schickt für Claude-Code-Widgets das Feld `options` (`model`, `effort`, `ultracode`) mit, auch bei „Verbindung prüfen“; der Auftrag des Sprach-Commands an die hermes-bridge bleibt byte-gleich. Die Optionen werden wie Server und Token je Versuch frisch aus dem Profil gelesen.
+- `WidgetKind.CLAUDE_CODE` (`claude_code`) hängt wie der Sprach-Command am einen Provider `VoiceTaskWidget`, der Typ steht im Profil. Neue Profilfelder `claudeModel` (`opus`, `fable`, `sonnet`, `haiku`), `claudeEffort` (`low` bis `max`) und `ultracode`, tolerant gelesen, ohne Migration. `AgentBridge` schickt für Claude-Code-Widgets das Feld `options` (`model`, `effort`, `ultracode`) mit, auch bei „Verbindung prüfen“; der Auftrag des Sprach-Commands an die hermes-bridge bleibt byte-gleich. Die Optionen werden wie Server und Token je Versuch frisch aus dem Profil gelesen. Mit Optionen verlangt `AgentBridge.check()` in der 400-Antwort `"bridge":"claude-bridge"` (dafür trägt `ApiHttpException` jetzt den rohen Antwort-Körper), sonst `NotClaudeBridgeException`. `WidgetKind.iconKey` gibt neuen Widgets das Symbol ihres Typs; `WidgetProfileStore.successor()` bestimmt, was die Widgets eines gelöschten Profils danach zeigen.
 
 ## [3.9.0] — 2026-10-08
 
