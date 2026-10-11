@@ -749,6 +749,47 @@ class WidgetsScreenTest {
         }
     }
 
+    @Test fun pruefenSchicktDieOptionenDesClaudeWidgetsMit() {
+        pruefAntwort = """{"status":"error","detail":"Das Transkript ist leer","bridge":"claude-bridge"}"""
+        val server = pruefServer()
+        try {
+            store.save(
+                WidgetProfile(
+                    "c", name = "Bau", kind = WidgetKind.CLAUDE_CODE,
+                    claudeModel = ClaudeModel.SONNET, claudeEffort = ClaudeEffort.HIGH, ultracode = true,
+                    serverUrl = "http://127.0.0.1:${server.address.port}", serverToken = "geheim",
+                ),
+            )
+            show()
+            bearbeiten("Bau")
+            pruefen()
+        } finally {
+            server.stop(0)
+        }
+        compose.onNode(hasText("Verbunden", substring = true)).assertExists()
+        val koerper = pruefKoerper.single()
+        assertEquals("", koerper.getString("transcript"))
+        val options = koerper.getJSONObject("options")
+        assertEquals("sonnet", options.getString("model"))
+        assertEquals("high", options.getString("effort"))
+        assertEquals(true, options.get("ultracode"))
+    }
+
+    @Test fun pruefenOhneOptionenBeimSprachCommand() {
+        pruefAntwort = """{"status":"error","detail":"Das Transkript ist leer"}"""
+        val server = pruefServer()
+        try {
+            serverEinrichten(ctx, url = "http://127.0.0.1:${server.address.port}")
+            show()
+            bearbeiten("Sprach-Command")
+            pruefen()
+        } finally {
+            server.stop(0)
+        }
+        compose.onNode(hasText("Verbunden", substring = true)).assertExists()
+        assertFalse("Der Koerper der hermes-bridge bleibt wie er war", pruefKoerper.single().has("options"))
+    }
+
     @Test fun einClaudeWidgetAnDerHermesBridgeMeldetDenFalschenServer() {
         pruefAntwort = """{"status":"error","detail":"Das Transkript ist leer"}"""
         val server = pruefServer()

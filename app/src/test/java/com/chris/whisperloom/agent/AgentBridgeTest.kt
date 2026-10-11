@@ -73,6 +73,18 @@ class AgentBridgeTest {
         assertEquals("widget", json.getString("source"))
     }
 
+    @Test fun derKoerperDesClaudeWidgetsIstGenauDieser() {
+        // Ultracode als JSON-Wahrheitswert, nicht als Text: getBoolean naehme auch "true" an,
+        // ein Test darueber saehe den Unterschied nie. Feldreihenfolge = Einfuegereihenfolge.
+        val options = WidgetProfile("c", kind = WidgetKind.CLAUDE_CODE, ultracode = true).bridgeOptions()
+        AgentBridge("https://claude.example.de", "geheim", options, poster).send("abc-123", "Bau das Widget", "2026-10-11T08:00:00Z", 4200)
+        assertEquals(
+            """{"transcript":"Bau das Widget","request_id":"abc-123","recorded_at":"2026-10-11T08:00:00Z",""" +
+                """"duration_ms":4200,"source":"widget","options":{"model":"opus","effort":"xhigh","ultracode":true}}""",
+            aufrufe.single().third,
+        )
+    }
+
     @Test fun dieAppWartetLaengerAlsDieBridgeSynchronArbeitet() {
         // #10, H2: die Bridge arbeitet bis zu 2 x HERMES_TIMEOUT_S (30 s, hermes-bridge config.py),
         // bevor sie 202 sagt. Wartete die App kuerzer, saehe sie einen Timeout und wiederholte,

@@ -6,6 +6,7 @@ import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -304,6 +305,9 @@ class WidgetProfileTest {
         assertEquals("opus", standard.getString("model"))
         assertEquals("xhigh", standard.getString("effort"))
         assertFalse(standard.getBoolean("ultracode"))
+        // getBoolean liest auch den Text "false" — der Wert selbst muss ein Wahrheitswert sein.
+        assertSame(java.lang.Boolean.FALSE, standard.get("ultracode"))
+        assertTrue(standard.get("model") is String)
         assertEquals(3, standard.length())
 
         val gewaehlt = WidgetProfile(
@@ -312,5 +316,6 @@ class WidgetProfileTest {
         assertEquals("fable", gewaehlt.getString("model"))
         assertEquals("max", gewaehlt.getString("effort"))
         assertTrue(gewaehlt.getBoolean("ultracode"))
+        assertSame(java.lang.Boolean.TRUE, gewaehlt.get("ultracode"))
     }
 }
