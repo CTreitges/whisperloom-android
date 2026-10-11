@@ -2,6 +2,19 @@
 
 Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [Unreleased]
+
+### Hinzugefügt
+
+- **Pro-Widget „Claude Code“.** Unter Widgets › Pro Widgets gibt es neben dem Sprach-Command das **Claude-Code-Widget**: Tippen, sprechen, tippen, und die claude-bridge auf deinem Server startet sofort eine neue Claude-Code-Session, die direkt mit dem Auftrag beginnt. Die Bridge installierst du selbst auf dem Server (https://github.com/CTreitges/claude-bridge), Adresse und Token trägst du wie gewohnt im Widget ein, „Verbindung prüfen“ testet beides.
+  - Im Editor des Widgets wählst du **Modell** (Opus, Fable, Sonnet, Haiku), **Effort** (Niedrig, Mittel, Hoch, Extra hoch, Max) und **Ultracode** (Claude zerlegt größere Aufgaben in einen Workflow mit mehreren Agenten, verbraucht deutlich mehr Nutzung). Ab Werk: Opus, Extra hoch, Ultracode aus. Mehrere Profile = mehrere Widgets mit eigenen Einstellungen.
+  - Ein neues Widget übernimmt Adresse und Token nur von einem Widget desselben Typs, ein Claude-Code-Widget also nie die Bridge des Sprach-Commands.
+  - In der Widget-Auswahl des Startbildschirms heißt der WhisperLoom-Eintrag jetzt **„Pro Widget“**. Beim Platzieren wählst du das Profil, Sprach-Command oder Claude Code; „Neues Sprach-Command-Widget“ und „Neues Claude-Code-Widget“ legen direkt dort eines an.
+
+### Technik
+
+- `WidgetKind.CLAUDE_CODE` (`claude_code`) hängt wie der Sprach-Command am einen Provider `VoiceTaskWidget`, der Typ steht im Profil. Neue Profilfelder `claudeModel` (`opus`, `fable`, `sonnet`, `haiku`), `claudeEffort` (`low` bis `max`) und `ultracode`, tolerant gelesen, ohne Migration. `AgentBridge` schickt für Claude-Code-Widgets das Feld `options` (`model`, `effort`, `ultracode`) mit, auch bei „Verbindung prüfen“; der Auftrag des Sprach-Commands an die hermes-bridge bleibt byte-gleich. Die Optionen werden wie Server und Token je Versuch frisch aus dem Profil gelesen.
+
 ## [3.9.0] — 2026-10-08
 
 ### Hinzugefügt
