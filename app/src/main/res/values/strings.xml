@@ -884,6 +884,7 @@
         <item quantity="other">%1$d Widgets auf dem Startbildschirm zeigen danach „%2$s“.</item>
     </plurals>
     <string name="widget_profile_delete_unused">Es liegt gerade nicht auf dem Startbildschirm.</string>
+    <string name="widget_profile_delete_kind_change">Es arbeitet dann als %1$s und sendet an dessen Server.</string>
 
     <!-- ==== „Erweitert“ (Pro-Funktionen) und Tutorial Pro Widgets ================== -->
     <string name="settings_group_advanced">Erweitert</string>
@@ -920,7 +921,7 @@
     <string name="tutorial_pro_p4_body">Startbildschirm lange drücken → Widgets → WhisperLoom → „Pro Widget“ hinziehen und das Widget-Profil wählen. Sein Name steht unter dem Widget.</string>
     <string name="tutorial_pro_p5_title">Tippen, sprechen, tippen</string>
     <string name="tutorial_pro_p5_body">Ein Tipp startet die Aufnahme, der zweite schickt den Auftrag los. Mit Auto-Stopp endet sie nach einer Sprechpause. Das läuft weiter, auch wenn der Bildschirm ausgeht.</string>
-    <string name="tutorial_pro_p6_title">Die Antwort kommt im Chat</string>
+    <string name="tutorial_pro_p6_title">So kommt die Antwort</string>
     <string name="tutorial_pro_p6_body">Dein Agent antwortet dort, wo du ihm sonst schreibst; das Claude-Code-Widget startet eine neue Session. Wird das Widget rot, schickt ein Tipp denselben Auftrag noch einmal.</string>
 
     <!-- ==== Pro Widgets (3.7.1) ==================================================== -->

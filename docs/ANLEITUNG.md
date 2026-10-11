@@ -1045,7 +1045,7 @@ Unter **Deine Pro Widgets** stehen alle Widgets mit Namen, darunter Typ, Server 
 - **Name** — Pflicht, höchstens 24 Zeichen; er steht unter dem Widget auf dem Startbildschirm. Ist das Feld leer, meldet es „Jedes Widget braucht einen Namen.“ — gespeichert bleibt dann der letzte Name.
 - **Name unter dem Widget anzeigen** — ab Werk an. Ausgeschaltet zeigt das Widget nur seine Kachel.
 - **Server** — Server-Adresse, Token und Verbindung prüfen, siehe [14.4](#144-server-je-widget).
-- **Symbol** — eins von 22 eingebauten (Einkauf, Zuhause, Arbeit, Idee, Termin, Notiz …) oder **Aus Galerie**: ein eigenes Foto, rund zugeschnitten. **Bild entfernen** nimmt wieder das Mikrofon. Das Symbol siehst du, solange das Widget bereit ist oder einen Fehler zeigt; beim Aufnehmen und Senden zeigt es wie gewohnt den Zustand.
+- **Symbol** — eins von 22 eingebauten (Einkauf, Zuhause, Arbeit, Idee, Termin, Notiz …) oder **Aus Galerie**: ein eigenes Foto, rund zugeschnitten. **Bild entfernen** nimmt wieder das Standardsymbol des Typs (Mikrofon beim Sprach-Command, Zauberstab beim Claude-Code-Widget). Das Symbol siehst du, solange das Widget bereit ist oder einen Fehler zeigt; beim Aufnehmen und Senden zeigt es wie gewohnt den Zustand.
 - **Automatisch senden nach Sprechpause** — siehe [14.6](#146-auto-stopp).
 - **Widget löschen** — vorher fragt die App nach. Liegt es auf dem Startbildschirm, zeigt es danach das erste andere Widget desselben Typs, gibt es keins, das Standard-Widget; die Rückfrage nennt es. Wartet noch ein Auftrag dieses Widgets, wird er mit verworfen — er geht nie an den Server eines anderen Widgets.
 - **Fertig** schließt den Editor.

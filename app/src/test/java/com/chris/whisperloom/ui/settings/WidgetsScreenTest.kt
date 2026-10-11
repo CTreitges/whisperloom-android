@@ -944,6 +944,18 @@ class WidgetsScreenTest {
         assertEquals("c2", store.forWidget(id).id)
     }
 
+    @Test fun dasLetzteClaudeProfilWarntVorDemTypwechsel() {
+        // Ohne weiteres Claude-Profil faellt das Widget aufs Standardprofil — das sendet woandershin.
+        store.save(WidgetProfile("c1", name = "Bau", kind = WidgetKind.CLAUDE_CODE))
+        val id = widget()
+        store.bind(id, "c1")
+        show()
+        bearbeiten("Bau")
+        click("Widget löschen")
+        compose.onNodeWithText("Es arbeitet dann als Sprach-Command-Widget und sendet an dessen Server.", substring = true)
+            .assertExists()
+    }
+
     @Test fun abbrechenLaesstDasProfilStehen() {
         val p = store.create("Einkauf")
         show()

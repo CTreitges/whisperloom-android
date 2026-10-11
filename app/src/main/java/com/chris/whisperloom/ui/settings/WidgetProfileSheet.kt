@@ -223,7 +223,7 @@ fun WidgetProfileSheet(widgets: WidgetProfilesState, profileId: String, onDismis
             )
         }
         if (profile.icon is ProfileIcon.Photo) {
-            TextButton(onClick = { widgets.save(profile.copy(icon = ProfileIcon.DEFAULT)) }) {
+            TextButton(onClick = { widgets.save(profile.copy(icon = ProfileIcon.BuiltIn(profile.kind.iconKey))) }) {
                 Text(stringResource(R.string.widget_profile_remove_photo))
             }
         }
@@ -272,11 +272,15 @@ fun WidgetProfileSheet(widgets: WidgetProfilesState, profileId: String, onDismis
                 containerColor = MaterialTheme.colorScheme.surfaceContainer,
                 title = { Text(stringResource(R.string.widget_profile_delete_title, profile.displayName(ctx))) },
                 text = {
+                    val ziel = widgets.successor(profileId)
                     Text(
                         if (bound == 0) stringResource(R.string.widget_profile_delete_unused)
                         else pluralStringResource(
-                            R.plurals.widget_profile_delete_confirm, bound, bound, widgets.successor(profileId).displayName(ctx),
-                        ),
+                            R.plurals.widget_profile_delete_confirm, bound, bound, ziel.displayName(ctx),
+                        ) + if (ziel.kind != profile.kind) {
+                            // Typwechsel (etwa das letzte Claude-Profil): die Widgets senden danach woandershin.
+                            " " + stringResource(R.string.widget_profile_delete_kind_change, stringResource(ziel.kind.title))
+                        } else "",
                     )
                 },
                 confirmButton = {
