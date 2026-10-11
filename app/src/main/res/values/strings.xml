@@ -36,6 +36,8 @@
     <string name="err_429">Limit erreicht (429) — später erneut</string>
     <string name="err_server">Server-Fehler %1$d</string>
     <string name="err_unknown">Unbekannter Fehler: %1$s</string>
+    <!-- "Verbindung prüfen" eines Claude-Code-Widgets: erreichbar, Token stimmt, aber dahinter läuft keine claude-bridge -->
+    <string name="err_not_claude_bridge">Server ist keine claude-bridge — Adresse prüfen</string>
     <string name="err_no_browser">Kein Browser gefunden</string>
     <string name="err_url_invalid">Ungültige URL</string>
     <string name="err_url_scheme">URL muss mit http:// oder https:// beginnen</string>

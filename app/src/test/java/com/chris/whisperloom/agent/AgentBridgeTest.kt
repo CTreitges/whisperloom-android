@@ -128,6 +128,46 @@ class AgentBridgeTest {
         assertEquals("sonnet", json.getJSONObject("options").getString("model"))
     }
 
+    // --- Die claude-bridge weist sich beim Pruefen aus ----------------------------------
+
+    /** Live gemessen: so antwortet die claude-bridge auf den Pruef-Koerper bei richtigem Token. */
+    private val claudeBridge400 = """{"status":"error","detail":"Das Transkript ist leer","bridge":"claude-bridge"}"""
+
+    /** Die hermes-bridge: gleicher Status, gleicher Text — nur ohne Kennung. */
+    private val hermesBridge400 = """{"status":"error","detail":"Das Transkript ist leer"}"""
+
+    private fun pruefer(antwort: String, options: JSONObject? = optionen()) =
+        AgentBridge("https://claude.example.de", "geheim", options) { _, _, _ ->
+            throw ApiHttpException(400, "Das Transkript ist leer", body = antwort)
+        }
+
+    @Test fun einClaudeWidgetErkenntDieClaudeBridge() {
+        pruefer(claudeBridge400).check()
+    }
+
+    @Test fun einClaudeWidgetAnEinerAnderenBridgeScheitertBeimPruefen() {
+        // Ohne diese Pruefung meldete "Verbindung pruefen" ok, und jeder Auftrag ginge an den
+        // falschen Agenten — die hermes-bridge ignoriert das Feld "options" einfach.
+        assertThrows(NotClaudeBridgeException::class.java) { pruefer(hermesBridge400).check() }
+        assertThrows(NotClaudeBridgeException::class.java) { pruefer("""{"bridge":"hermes-bridge"}""").check() }
+        assertThrows(NotClaudeBridgeException::class.java) { pruefer("<html>Bad Request</html>").check() }
+        assertThrows(NotClaudeBridgeException::class.java) { pruefer("").check() }
+    }
+
+    @Test fun derSprachCommandPrueftWieBisher() {
+        // Ohne Optionen zaehlt jede 400 als "erreichbar und Token stimmt" — mit oder ohne Kennung.
+        pruefer(hermesBridge400, options = null).check()
+        pruefer(claudeBridge400, options = null).check()
+        pruefer("<html>Bad Request</html>", options = null).check()
+    }
+
+    @Test fun einundvierzigBleibtAuchMitOptionenEinTokenFehler() {
+        val b = AgentBridge("https://claude.example.de", "falsch", optionen()) { _, _, _ ->
+            throw ApiHttpException(401, "Token fehlt oder stimmt nicht", body = """{"status":"error","detail":"Token fehlt oder stimmt nicht"}""")
+        }
+        assertEquals(401, assertThrows(ApiHttpException::class.java) { b.check() }.code)
+    }
+
     @Test fun diePruefungBrauchtAdresseUndToken() {
         assertThrows(ApiNotConfiguredException::class.java) { AgentBridge("https://x", "", poster = poster).check() }
     }

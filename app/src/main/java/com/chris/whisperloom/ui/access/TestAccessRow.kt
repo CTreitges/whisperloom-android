@@ -94,5 +94,6 @@ fun failureText(f: AccessTest.Outcome.Failed): String = when (f.kind) {
     AccessTest.Kind.SERVER -> stringResource(R.string.err_server, f.code)
     AccessTest.Kind.TIMEOUT -> stringResource(R.string.err_timeout)
     AccessTest.Kind.NETWORK -> stringResource(R.string.err_net)
+    AccessTest.Kind.NOT_CLAUDE_BRIDGE -> stringResource(R.string.err_not_claude_bridge)
     AccessTest.Kind.UNKNOWN -> stringResource(R.string.err_unknown, f.message)
 }

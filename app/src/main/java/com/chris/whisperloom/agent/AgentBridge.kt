@@ -60,6 +60,12 @@ class AgentBridge(
      * beantwortet die Bridge mit 400 — und zwar ERST, nachdem sie das Token geprueft hat.
      * Also heisst 400 "erreichbar und Token stimmt", 401 "Token falsch", alles andere ist
      * ein echtes Problem. Weder Idempotenz-Speicher noch Rate-Limit werden dabei beruehrt.
+     *
+     * Mit [options] (Claude Code) muss die 400 zusaetzlich `"bridge":"claude-bridge"` tragen:
+     * die hermes-bridge antwortet sonst genauso, ignoriert `options` und gaebe jeden Auftrag an
+     * den falschen Agenten. Ohne Optionen (Sprach-Command) gilt jede 400 wie bisher.
+     *
+     * @throws NotClaudeBridgeException mit Optionen, wenn die Kennung fehlt.
      */
     fun check() {
         if (!configured) throw ApiNotConfiguredException()
@@ -67,8 +73,17 @@ class AgentBridge(
             poster.post(endpoint(), token, body("check", "", "", 0))
         } catch (e: ApiHttpException) {
             if (e.code != 400) throw e
+            if (options != null && bridgeId(e.body) != CLAUDE_BRIDGE_ID) throw NotClaudeBridgeException()
         }
     }
+
+    /** Feld `bridge` der Antwort; leer, wenn sie kein JSON ist oder keins hat. */
+    private fun bridgeId(body: String): String =
+        try {
+            JSONObject(body).optString("bridge")
+        } catch (e: org.json.JSONException) {
+            ""
+        }
 
     private fun endpoint(): String = Http.endpoint(base, PATH)
 
@@ -86,6 +101,9 @@ class AgentBridge(
         const val PATH = "/v1/task"
         const val SOURCE = "widget"
         const val CONTENT_TYPE = "application/json; charset=utf-8"
+
+        /** So weist sich die claude-bridge in der 400-Antwort auf "Verbindung pruefen" aus (Feld `bridge`). */
+        const val CLAUDE_BRIDGE_ID = "claude-bridge"
 
         /**
          * So lange arbeitet die Bridge hoechstens SYNCHRON, bevor sie mit 202 antwortet. Belegt
@@ -117,6 +135,13 @@ class AgentBridge(
         }
     }
 }
+
+/**
+ * "Verbindung pruefen" eines Claude-Code-Widgets: erreichbar, Token stimmt — aber die Antwort
+ * traegt nicht die Kennung der claude-bridge. Meist zeigt die Adresse auf die hermes-bridge, die
+ * das Feld `options` still ignoriert und den Auftrag an den falschen Agenten gaebe.
+ */
+class NotClaudeBridgeException : RuntimeException("Server ist keine claude-bridge")
 
 /**
  * Pruefung der Bridge-Adresse. Dieselben Regeln wie fuer den Erkennungs-Server

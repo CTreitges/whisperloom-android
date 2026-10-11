@@ -34,12 +34,15 @@ class ModelListException(cause: Throwable? = null) :
  *
  * @param style Protokoll des Anbieters: ElevenLabs bekommt eigene Hinweise (Berechtigung statt /v1).
  * @param hint Hinweis hinter der Meldung; der Aufrufer kann einen passenderen setzen (Modell-Liste).
+ * @param body der rohe Antwort-Koerper — fuer Felder neben der Meldung, etwa die Kennung, mit der
+ *   sich die claude-bridge beim Pruefen ausweist ([com.chris.whisperloom.agent.AgentBridge.check]).
  */
 class ApiHttpException(
     val code: Int,
     val detail: String,
     style: ApiStyle = ApiStyle.OPENAI,
     hint: String? = ApiHttpException.hint(code, detail, style),
+    val body: String = "",
 ) : RuntimeException(message(code, detail, hint)) {
 
     companion object {

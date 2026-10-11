@@ -71,6 +71,8 @@ import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.PrefsState
 import com.chris.whisperloom.ui.theme.WhisperLoomTheme
 import com.chris.whisperloom.ui.tutorial.TutorialKind
+import com.sun.net.httpserver.HttpServer
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -82,6 +84,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import java.net.InetSocketAddress
+import java.util.concurrent.CopyOnWriteArrayList
 
 /**
  * Widget-Menue (Tabs "Widgets" / "Pro Widgets") und Editor: alles wird sofort gespeichert, der
@@ -703,6 +707,50 @@ class WidgetsScreenTest {
         compose.onNode(tokenFeld).performTextInput("geheim")
         compose.waitForIdle()
         compose.onNodeWithText("Verbindung prüfen").assertIsEnabled()
+    }
+
+    // --- Verbindung pruefen gegen einen lokalen Server --------------------------------
+
+    /** Was die Bridge auf den Pruef-Koerper (leeres Transkript) mit Status 400 antwortet. */
+    private var pruefAntwort = ""
+    private val pruefKoerper = CopyOnWriteArrayList<JSONObject>()
+
+    private fun pruefServer(): HttpServer = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0).apply {
+        createContext("/v1/task") { ex ->
+            pruefKoerper += JSONObject(String(ex.requestBody.readBytes()))
+            val out = pruefAntwort.toByteArray()
+            ex.sendResponseHeaders(400, out.size.toLong())
+            ex.responseBody.use { it.write(out) }
+        }
+        start()
+    }
+
+    /** "Verbindung pruefen" im offenen Editor; wartet auf den Ergebnis-Chip. */
+    private fun pruefen() {
+        click("Verbindung prüfen")
+        compose.waitUntil(10_000) {
+            compose.onAllNodes(hasText("Verbunden", substring = true) or hasText("Fehler:", substring = true))
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
+    @Test fun einClaudeWidgetAnDerHermesBridgeMeldetDenFalschenServer() {
+        pruefAntwort = """{"status":"error","detail":"Das Transkript ist leer"}"""
+        val server = pruefServer()
+        try {
+            store.save(
+                WidgetProfile(
+                    "c", name = "Bau", kind = WidgetKind.CLAUDE_CODE,
+                    serverUrl = "http://127.0.0.1:${server.address.port}", serverToken = "geheim",
+                ),
+            )
+            show()
+            bearbeiten("Bau")
+            pruefen()
+        } finally {
+            server.stop(0)
+        }
+        compose.onNodeWithText("Fehler: Server ist keine claude-bridge — Adresse prüfen").assertExists()
     }
 
     @Test fun derDatenschutzHinweisStehtDa() {
