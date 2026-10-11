@@ -10,9 +10,6 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -33,11 +30,7 @@ import com.chris.whisperloom.ui.components.SwitchRow
  * die das Widget startet. Jede Wahl geht sofort ueber [onChange] in den Speicher, wie die
  * uebrigen Felder des Editors. Die claude-bridge bekommt die Werte je Auftrag als `options`
  * ([WidgetProfile.bridgeOptions]).
- *
- * Effort hat fuenf Werte — als Segmentreihe schnitte "Extra hoch" auf 360 dp ab, deshalb Chips,
- * die umbrechen. TalkBack liest sie als Optionsfelder einer Gruppe, nicht als Kontrollkaestchen.
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ClaudeOptionsSection(profile: WidgetProfile, onChange: (WidgetProfile) -> Unit) {
     val dim = MaterialTheme.colorScheme.onSurfaceVariant
@@ -45,30 +38,38 @@ fun ClaudeOptionsSection(profile: WidgetProfile, onChange: (WidgetProfile) -> Un
     Text(stringResource(R.string.widget_profile_claude_sub), style = MaterialTheme.typography.bodySmall, color = dim)
 
     Text(stringResource(R.string.widget_profile_claude_model), style = MaterialTheme.typography.labelMedium)
-    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-        ClaudeModel.entries.forEachIndexed { i, model ->
-            SegmentedButton(
-                selected = profile.claudeModel == model,
-                onClick = { onChange(profile.copy(claudeModel = model)) },
-                shape = SegmentedButtonDefaults.itemShape(index = i, count = ClaudeModel.entries.size),
-                icon = {},
-                label = { Text(stringResource(claudeModelLabel(model)), maxLines = 1) },
-            )
-        }
-    }
+    ChoiceChips(ClaudeModel.entries, profile.claudeModel, ::claudeModelLabel) { onChange(profile.copy(claudeModel = it)) }
 
     Text(stringResource(R.string.widget_profile_claude_effort), style = MaterialTheme.typography.labelMedium)
+    ChoiceChips(ClaudeEffort.entries, profile.claudeEffort, ::claudeEffortLabel) { onChange(profile.copy(claudeEffort = it)) }
+
+    SwitchRow(
+        headline = stringResource(R.string.widget_profile_ultracode),
+        supporting = stringResource(R.string.widget_profile_ultracode_sub),
+        checked = profile.ultracode,
+        onCheckedChange = { onChange(profile.copy(ultracode = it)) },
+    )
+}
+
+/**
+ * Einfachauswahl als Chips, die umbrechen. Als Segmentreihe schnitte der Effort (fuenf Werte)
+ * "Extra hoch" auf 360 dp ab und das Modell (vier Werte) bei grosser Schrift "Sonnet".
+ * TalkBack liest die Chips als Optionsfelder einer Gruppe, nicht als Kontrollkaestchen.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun <T> ChoiceChips(options: List<T>, selected: T, label: (T) -> Int, onSelect: (T) -> Unit) {
     FlowRow(
         Modifier.fillMaxWidth().selectableGroup(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        ClaudeEffort.entries.forEach { effort ->
-            val selected = profile.claudeEffort == effort
+        options.forEach { option ->
+            val isSelected = option == selected
             FilterChip(
-                selected = selected,
-                onClick = { onChange(profile.copy(claudeEffort = effort)) },
-                label = { Text(stringResource(claudeEffortLabel(effort)), maxLines = 1) },
-                leadingIcon = if (selected) {
+                selected = isSelected,
+                onClick = { onSelect(option) },
+                label = { Text(stringResource(label(option)), maxLines = 1) },
+                leadingIcon = if (isSelected) {
                     { LoomIcon(R.drawable.ic_check, null, Modifier.size(FilterChipDefaults.IconSize)) }
                 } else {
                     null
@@ -77,13 +78,6 @@ fun ClaudeOptionsSection(profile: WidgetProfile, onChange: (WidgetProfile) -> Un
             )
         }
     }
-
-    SwitchRow(
-        headline = stringResource(R.string.widget_profile_ultracode),
-        supporting = stringResource(R.string.widget_profile_ultracode_sub),
-        checked = profile.ultracode,
-        onCheckedChange = { onChange(profile.copy(ultracode = it)) },
-    )
 }
 
 @StringRes

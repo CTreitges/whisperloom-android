@@ -328,6 +328,21 @@ class WidgetsScreenTest {
         }
     }
 
+    @Test fun dasModellSiehtAusWieDerEffort() {
+        // Als Segmentreihe bekam jedes Modell ein Viertel der Zeile, und "Sonnet" wurde auf 360 dp
+        // ab etwa 130 % Schrift abgeschnitten; jetzt umbrechende Chips wie beim Effort. Text misst
+        // Robolectric hier nicht echt (LEGACY-Grafik), geprueft wird deshalb die Darstellung:
+        // so hoch wie die Effort-Chips (eine Segmentreihe ist hoeher) und dieselbe Rolle.
+        store.save(WidgetProfile("c", name = "Claude", kind = WidgetKind.CLAUDE_CODE))
+        show()
+        bearbeiten("Claude")
+        fun hoehe(text: String) = compose.onNode(hasText(text) and isSelectable()).fetchSemanticsNode().boundsInRoot.height
+        listOf("Opus", "Fable", "Sonnet", "Haiku").forEach {
+            assertEquals(it, hoehe("Mittel"), hoehe(it))
+            compose.onNode(hasText(it) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)).assertExists()
+        }
+    }
+
     @Test fun einSprachCommandEditorZeigtKeinenClaudeBlock() {
         show()
         bearbeiten("Sprach-Command")
