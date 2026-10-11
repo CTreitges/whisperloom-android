@@ -27,7 +27,7 @@ class AgentBridgeTest {
     }
 
     private fun bridge(url: String = "https://bridge.example.de", token: String = "geheim") =
-        AgentBridge(url, token, poster)
+        AgentBridge(url, token, poster = poster)
 
     @Test fun derAuftragGehtAnDenEinenEndpunkt() {
         bridge().send("abc", "Kauf Milch", "2026-09-21T20:00:00Z", 4200)
@@ -36,7 +36,7 @@ class AgentBridgeTest {
     }
 
     @Test fun derSchraegstrichAmEndeStoertNicht() {
-        AgentBridge("https://bridge.example.de/", "t", poster).send("a", "x", "", 0)
+        AgentBridge("https://bridge.example.de/", "t", poster = poster).send("a", "x", "", 0)
         assertEquals("https://bridge.example.de/v1/task", aufrufe.single().first)
     }
 
@@ -61,9 +61,9 @@ class AgentBridgeTest {
     }
 
     @Test fun ohneAdresseOderTokenWirdNichtsGesendet() {
-        assertFalse(AgentBridge("", "t", poster).configured)
-        assertFalse(AgentBridge("https://x", "", poster).configured)
-        assertThrows(ApiNotConfiguredException::class.java) { AgentBridge("", "t", poster).send("a", "b", "", 0) }
+        assertFalse(AgentBridge("", "t", poster = poster).configured)
+        assertFalse(AgentBridge("https://x", "", poster = poster).configured)
+        assertThrows(ApiNotConfiguredException::class.java) { AgentBridge("", "t", poster = poster).send("a", "b", "", 0) }
         assertTrue("Nichts darf rausgegangen sein", aufrufe.isEmpty())
     }
 
@@ -98,7 +98,7 @@ class AgentBridgeTest {
     }
 
     @Test fun diePruefungBrauchtAdresseUndToken() {
-        assertThrows(ApiNotConfiguredException::class.java) { AgentBridge("https://x", "", poster).check() }
+        assertThrows(ApiNotConfiguredException::class.java) { AgentBridge("https://x", "", poster = poster).check() }
     }
 }
 

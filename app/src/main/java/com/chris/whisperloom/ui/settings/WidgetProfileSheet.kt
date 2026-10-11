@@ -60,6 +60,7 @@ import com.chris.whisperloom.agent.AgentBridge
 import com.chris.whisperloom.agent.AgentUrlCheck
 import com.chris.whisperloom.agent.ProfileIcon
 import com.chris.whisperloom.agent.SpeechPause
+import com.chris.whisperloom.agent.Tier
 import com.chris.whisperloom.agent.WidgetIcons
 import com.chris.whisperloom.agent.WidgetKind
 import com.chris.whisperloom.agent.WidgetPhoto
@@ -81,7 +82,8 @@ import kotlinx.coroutines.withContext
 
 /**
  * Ein Widget (Profil) bearbeiten: Name (Pflicht) und ob er unter dem Widget steht, Server
- * (Adresse, Token, Pruefen), Symbol (eingebaut oder aus der Galerie), Auto-Stopp mit
+ * (Adresse, Token, Pruefen), beim Claude-Code-Widget Modell, Effort und Ultracode
+ * ([ClaudeOptionsSection]), Symbol (eingebaut oder aus der Galerie), Auto-Stopp mit
  * Sprechpause, Loeschen. Jede Aenderung wird sofort gespeichert, einen Speichern-Knopf gibt es
  * nicht. Das Standardprofil laesst sich bearbeiten, aber nicht loeschen.
  */
@@ -162,7 +164,7 @@ fun WidgetProfileSheet(widgets: WidgetProfilesState, profileId: String, onDismis
             onCheckedChange = { widgets.save(profile.copy(showName = it)) },
         )
 
-        if (profile.kind == WidgetKind.VOICE_COMMAND) {
+        if (profile.kind.tier == Tier.PRO) {
             // Jedes Widget hat seinen eigenen Server (bis 3.7.0 einer fuer alle unter "Erweitert").
             val urlProblem = if (profile.serverUrl.isBlank()) null else AgentUrlCheck.check(profile.serverUrl)
             Text(stringResource(R.string.widget_profile_server), style = MaterialTheme.typography.labelLarge)
@@ -185,10 +187,13 @@ fun WidgetProfileSheet(widgets: WidgetProfilesState, profileId: String, onDismis
                 label = stringResource(R.string.agent_token),
             )
             TestAccessRow(label = stringResource(R.string.agent_check), enabled = profile.serverReady) {
-                AccessTest.bridge(AgentBridge(profile.serverUrl, profile.serverToken))
+                // Mit den Optionen: so prueft die claude-bridge auch Modell und Effort.
+                AccessTest.bridge(AgentBridge(profile.serverUrl, profile.serverToken, profile.bridgeOptions()))
             }
             PrivacyLine(stringResource(R.string.agent_privacy))
         }
+
+        if (profile.kind == WidgetKind.CLAUDE_CODE) ClaudeOptionsSection(profile) { widgets.save(it) }
 
         Text(stringResource(R.string.widget_profile_icon), style = MaterialTheme.typography.labelLarge)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

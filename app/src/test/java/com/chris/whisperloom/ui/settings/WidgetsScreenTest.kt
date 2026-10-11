@@ -388,7 +388,7 @@ class WidgetsScreenTest {
 
     @Test fun dieHilfeFuehrtInsTutorialProWidgets() {
         show()
-        compose.onNodeWithText("Widget platzieren: Startbildschirm lange drücken → Widgets → WhisperLoom → „Sprach-Command“.")
+        compose.onNodeWithText("Widget platzieren: Startbildschirm lange drücken → Widgets → WhisperLoom → „Pro Widget“ → Profil wählen.")
             .assertExists()
         click("Anleitung ansehen")
         assertEquals(Screen.Tutorial(kind = TutorialKind.PRO_WIDGETS), nav.current)

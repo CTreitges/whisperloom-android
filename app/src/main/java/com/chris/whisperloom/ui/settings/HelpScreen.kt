@@ -128,6 +128,7 @@ fun HelpScreen(section: Int, nav: NavState) {
                     HelpLine(R.drawable.ic_add, stringResource(R.string.help_widgets_create))
                     HelpLine(R.drawable.ic_dns, stringResource(R.string.help_widgets_server))
                     HelpLine(R.drawable.ic_home, stringResource(R.string.help_widgets_place))
+                    HelpLine(R.drawable.ic_auto_fix_high, stringResource(R.string.help_widgets_claude))
                     // Weitere Pro-Funktion unter "Erweitert" (3.8.0) — hier wird "Erweitert" erklaert.
                     HelpLine(R.drawable.ic_refresh, stringResource(R.string.help_widgets_models))
                     HelpNavRow(R.drawable.ic_help, stringResource(R.string.advanced_tutorial)) {

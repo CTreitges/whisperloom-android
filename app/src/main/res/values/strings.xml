@@ -590,7 +590,8 @@
     <string name="help_widgets_unlock">Freischalten: Einstellungen → Erweitert → Pro Widgets.</string>
     <string name="help_widgets_create">Anlegen: Widgets → Pro Widgets → Sprach-Command-Widget. Jedes Widget braucht einen Namen; er steht unter dem Widget und lässt sich ausblenden.</string>
     <string name="help_widgets_server">Server je Widget: Adresse und Token trägst du im Widget ein, „Verbindung prüfen“ testet beides.</string>
-    <string name="help_widgets_place">Platzieren: Startbildschirm lange drücken → Widgets → WhisperLoom → „Sprach-Command“, dann das Widget-Profil wählen.</string>
+    <string name="help_widgets_place">Platzieren: Startbildschirm lange drücken → Widgets → WhisperLoom → „Pro Widget“, dann das Widget-Profil wählen.</string>
+    <string name="help_widgets_claude">Das Claude-Code-Widget startet per Sprache eine neue Claude-Code-Session und braucht dafür die claude-bridge auf dem eigenen Server: https://github.com/CTreitges/claude-bridge</string>
     <string name="help_widgets_models">Auch unter Erweitert: „Modelle vom Server“ – das Modell wählst du dann aus der aktuellen Liste des Anbieters, nicht nur aus den Empfehlungen.</string>
     <string name="help_widgets_open">Zu den Widgets</string>
     <string name="help_s6_title">Datenschutz</string>
@@ -742,6 +743,8 @@
 
     <!-- ==== Sprach-Command-Widget (Paket B) ======================================= -->
     <string name="widget_label">Sprach-Command</string>
+    <!-- Eintrag in der Widget-Auswahl des Launchers; Sprach-Command und Claude Code teilen sich diesen einen Eintrag -->
+    <string name="widget_picker_label">Pro Widget</string>
     <string name="widget_description">Pro Widget: sprechen und als Auftrag an deinen eigenen Server schicken.</string>
     <string name="widget_ready">Tippen und sprechen</string>
     <string name="widget_working">Wird gesendet …</string>
@@ -818,7 +821,8 @@
     <string name="widgets_card_new_pro">Neues Pro Widget</string>
     <string name="widgets_card_pro">Deine Pro Widgets</string>
     <string name="widgets_server_missing">Server fehlt</string>
-    <string name="widgets_add_profile">Neues Widget-Profil</string>
+    <!-- %1$s = Widget-Typ (kind_*), etwa „Neues Claude-Code-Widget“ -->
+    <string name="widgets_add_profile">Neues %1$s</string>
     <string name="widgets_card_placed">Auf dem Startbildschirm</string>
     <!-- %1$d = laufende Nummer, %2$s = Profilname -->
     <string name="widgets_placed_row">Widget %1$d · %2$s</string>
@@ -833,6 +837,7 @@
     <string name="widget_mode_autostop">Stoppt nach Sprechpause · %1$s</string>
     <!-- Name für ein neues Profil; %d = laufende Nummer -->
     <string name="widget_profile_default_name">Sprach-Command %d</string>
+    <string name="widget_profile_default_name_claude">Claude Code %d</string>
     <string name="widget_profile_title">Widget bearbeiten</string>
     <string name="widget_profile_name">Name</string>
     <string name="widget_profile_name_sub">Steht unter dem Widget auf dem Startbildschirm.</string>
@@ -852,6 +857,21 @@
     <string name="widget_pause_short_sub">Nach dem letzten Wort 1,2 Sekunden warten, dann senden.</string>
     <string name="widget_pause_normal_sub">Nach dem letzten Wort 2 Sekunden warten, dann senden.</string>
     <string name="widget_pause_long_sub">Nach dem letzten Wort 3,5 Sekunden warten, dann senden — für Denkpausen.</string>
+    <string name="widget_profile_claude">Claude</string>
+    <string name="widget_profile_claude_sub">Gilt für jede Session, die dieses Widget startet.</string>
+    <string name="widget_profile_claude_model">Modell</string>
+    <string name="claude_model_opus">Opus</string>
+    <string name="claude_model_fable">Fable</string>
+    <string name="claude_model_sonnet">Sonnet</string>
+    <string name="claude_model_haiku">Haiku</string>
+    <string name="widget_profile_claude_effort">Effort</string>
+    <string name="claude_effort_low">Niedrig</string>
+    <string name="claude_effort_medium">Mittel</string>
+    <string name="claude_effort_high">Hoch</string>
+    <string name="claude_effort_xhigh">Extra hoch</string>
+    <string name="claude_effort_max">Max</string>
+    <string name="widget_profile_ultracode">Ultracode</string>
+    <string name="widget_profile_ultracode_sub">Claude zerlegt größere Aufgaben in einen Workflow mit mehreren Agenten — gründlicher, verbraucht deutlich mehr Nutzung.</string>
     <string name="widget_profile_delete">Widget löschen</string>
     <!-- %1$s = Profilname -->
     <string name="widget_profile_delete_title">„%1$s“ löschen?</string>
@@ -883,7 +903,7 @@
     <string name="agent_privacy">Der Auftrag geht nur an den Server dieses Widgets. Erkennung und Textverbesserung laufen wie beim Diktat über die eingestellten Anbieter.</string>
     <string name="agent_mic_missing">Für Pro Widgets fehlt die Mikrofon-Berechtigung.</string>
     <string name="agent_mic_allow">Mikrofon erlauben</string>
-    <string name="agent_widget_hint">Widget platzieren: Startbildschirm lange drücken → Widgets → WhisperLoom → „Sprach-Command“.</string>
+    <string name="agent_widget_hint">Widget platzieren: Startbildschirm lange drücken → Widgets → WhisperLoom → „Pro Widget“ → Profil wählen.</string>
     <string name="settings_prompt_sub">Stufe „Prompt“</string>
     <string name="prompt_enable">Stufe „Prompt“ anbieten</string>
     <string name="prompt_enable_sub">Zusätzliche Stufe in Tastatur und Einstellungen → Textverbesserung: formt ein Diktat zu einem gegliederten Prompt für KI-Assistenten wie ChatGPT oder Claude.</string>
@@ -894,7 +914,7 @@
     <string name="tutorial_pro_p3_title">Server eintragen</string>
     <string name="tutorial_pro_p3_body">Jedes Widget hat seine eigene Server-Adresse und sein eigenes Token. „Verbindung prüfen“ sagt dir sofort, ob beides stimmt — ohne einen Auftrag auszulösen.</string>
     <string name="tutorial_pro_p4_title">Auf den Startbildschirm</string>
-    <string name="tutorial_pro_p4_body">Startbildschirm lange drücken → Widgets → WhisperLoom → „Sprach-Command“ hinziehen und das Widget-Profil wählen. Sein Name steht unter dem Widget.</string>
+    <string name="tutorial_pro_p4_body">Startbildschirm lange drücken → Widgets → WhisperLoom → „Pro Widget“ hinziehen und das Widget-Profil wählen. Sein Name steht unter dem Widget.</string>
     <string name="tutorial_pro_p5_title">Tippen, sprechen, tippen</string>
     <string name="tutorial_pro_p5_body">Ein Tipp startet die Aufnahme, der zweite schickt den Auftrag los. Mit Auto-Stopp endet sie nach einer Sprechpause. Das läuft weiter, auch wenn der Bildschirm ausgeht.</string>
     <string name="tutorial_pro_p6_title">Die Antwort kommt im Chat</string>
@@ -908,6 +928,8 @@
     <string name="pro_server_models_sub">Lädt bei jedem Anbieter die aktuelle Modell-Liste – für Erkennung und Textverbesserung.</string>
     <string name="kind_voice_command">Sprach-Command-Widget</string>
     <string name="kind_voice_command_sub">Sprechen und an deinen Server schicken</string>
+    <string name="kind_claude_code">Claude-Code-Widget</string>
+    <string name="kind_claude_code_sub">Sprechen und eine neue Claude-Code-Session starten</string>
     <string name="img_pro_features">Einstellungsliste mit zwei Schaltern, der obere an, darunter eine Zeile mit Pfeil; oben ein Werkzeug-Abzeichen.</string>
     <string name="img_pro_widgets">Widget-Menü mit zwei Tabs, der rechte aktiv. Darunter eine Plus-Zeile zum Anlegen und eine Liste mit zwei Widgets.</string>
     <string name="img_widgets_normal">Startbildschirm mit App-Symbolen und einer gestrichelten, leeren Widget-Fläche mit Uhr-Symbol.</string>

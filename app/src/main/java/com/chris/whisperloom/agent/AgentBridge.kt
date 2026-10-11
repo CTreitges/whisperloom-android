@@ -17,10 +17,16 @@ fun interface BridgePoster {
 }
 
 /**
- * Die Gegenstelle des Sprachauftrags: ein eigener kleiner Dienst (hermes-bridge), der das
- * Transkript entgegennimmt und an den Agenten weiterreicht. Genau ein Endpunkt, ein
+ * Die Gegenstelle des Sprachauftrags: ein eigener kleiner Dienst, der das Transkript
+ * entgegennimmt und an den Agenten weiterreicht — die hermes-bridge (Sprach-Command) oder die
+ * claude-bridge (Claude Code, startet eine neue Session). Genau ein Endpunkt, ein
  * Bearer-Token, Antwort 202 nach der Uebergabe (bis zu [BRIDGE_SYNC_BUDGET_MS]) — die App
- * wartet nicht auf das Ergebnis des Agenten, das kommt spaeter ueber den Messenger.
+ * wartet nicht auf das Ergebnis des Agenten, das kommt spaeter ueber den Messenger bzw.
+ * die Claude-App.
+ *
+ * [options] geht als Feld `options` mit (claude-bridge: Modell, Effort, Ultracode, siehe
+ * [WidgetProfile.bridgeOptions]); ohne Optionen fehlt das Feld ganz, der Koerper ist dann
+ * genau der der hermes-bridge.
  *
  * Der Prompt-Rahmen ("Sprachauftrag von …, per WhisperLoom transkribiert") sitzt bewusst
  * auf der Server-Seite: er gehoert zum Agenten, nicht zum Telefon, und laesst sich dort
@@ -29,6 +35,7 @@ fun interface BridgePoster {
 class AgentBridge(
     baseUrl: String,
     private val token: String,
+    private val options: JSONObject? = null,
     private val poster: BridgePoster = DEFAULT_POSTER,
 ) {
 
@@ -72,6 +79,7 @@ class AgentBridge(
             .put("recorded_at", recordedAt)
             .put("duration_ms", durationMs)
             .put("source", SOURCE)
+            .apply { if (options != null) put("options", options) }
             .toString()
 
     companion object {

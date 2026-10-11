@@ -53,18 +53,24 @@ class WidgetProfilesState(context: Context) {
 
     /**
      * "Neues Widget": heisst "Sprach-Command n" mit der kleinsten freien Nummer ab 2 (das
-     * Standardprofil ist die 1). Aus der Anzahl gebildet, entstuende nach dem Loeschen ein
-     * Doppelname — zwei gleiche Eintraege mit gleichem Symbol, auch fuer TalkBack nicht zu
-     * unterscheiden.
+     * Standardprofil ist die 1) bzw. "Claude Code n" ab 1. Aus der Anzahl gebildet, entstuende
+     * nach dem Loeschen ein Doppelname — zwei gleiche Eintraege mit gleichem Symbol, auch fuer
+     * TalkBack nicht zu unterscheiden.
      *
-     * Der Server kommt vom ersten Profil, das einen brauchbaren hat: meist nutzen alle Widgets
-     * dieselbe Bridge, und ohne Server ginge das neue Widget erst einmal auf "fehlt".
+     * Der Server kommt vom ersten Profil DESSELBEN Typs, das einen brauchbaren hat: meist nutzen
+     * diese Widgets dieselbe Bridge, und ohne Server ginge das neue Widget erst einmal auf "fehlt".
+     * Nie quer ueber die Typen — das erste Claude-Code-Widget erbte sonst die hermes-bridge, und
+     * seine Auftraege landeten dort statt bei der claude-bridge.
      */
     fun createNew(kind: WidgetKind = WidgetKind.VOICE_COMMAND): WidgetProfile {
-        val name = generateSequence(2) { it + 1 }
-            .map { app.getString(R.string.widget_profile_default_name, it) }
+        val (nameRes, first) = when (kind) {
+            WidgetKind.VOICE_COMMAND -> R.string.widget_profile_default_name to 2
+            WidgetKind.CLAUDE_CODE -> R.string.widget_profile_default_name_claude to 1
+        }
+        val name = generateSequence(first) { it + 1 }
+            .map { app.getString(nameRes, it) }
             .first { n -> profiles.none { it.name == n } }
-        val server = profiles.firstOrNull { it.serverReady }
+        val server = profiles.firstOrNull { it.kind == kind && it.serverReady }
         val p = store.create(name).copy(
             kind = kind,
             serverUrl = server?.serverUrl.orEmpty(),

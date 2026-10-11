@@ -292,9 +292,10 @@ class VoiceTaskWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, para
 
         /**
          * Der Server des Widgets, das aufgenommen hat — je Versuch frisch gelesen, damit eine
-         * Korrektur im Editor beim naechsten Versuch wirkt. Bewusst [WidgetProfileStore.get] ohne
-         * Rueckfall aufs Standardprofil: der Auftrag eines geloeschten Widgets geht nie an einen
-         * fremden Server.
+         * Korrektur im Editor beim naechsten Versuch wirkt. Ebenso die Optionen (Claude Code:
+         * Modell, Effort, Ultracode); die Bridge fuehrt eine Kennung ohnehin nur einmal aus.
+         * Bewusst [WidgetProfileStore.get] ohne Rueckfall aufs Standardprofil: der Auftrag eines
+         * geloeschten Widgets geht nie an einen fremden Server.
          *
          * @throws ProfileGoneException Widget geloescht — der Worker verwirft den Auftrag.
          * @throws IllegalStateException Pro Widgets aus oder kein brauchbarer Server — nicht
@@ -305,7 +306,7 @@ class VoiceTaskWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, para
                 ?: throw ProfileGoneException(ctx.getString(R.string.widget_task_profile_gone))
             check(Prefs(ctx).proWidgetsEnabled) { ctx.getString(R.string.widget_task_pro_off) }
             check(profile.serverReady) { ctx.getString(R.string.widget_task_no_server, profile.displayName(ctx)) }
-            return AgentBridge(profile.serverUrl, profile.serverToken)
+            return AgentBridge(profile.serverUrl, profile.serverToken, profile.bridgeOptions())
         }
 
         private fun pipeline(ctx: Context, store: VoiceTaskStore, stillCurrent: () -> Boolean) =

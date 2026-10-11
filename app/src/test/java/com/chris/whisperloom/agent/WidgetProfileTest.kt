@@ -232,10 +232,10 @@ class WidgetProfileTest {
     }
 
     @Test fun dieWidgetTypenSindNachStufeGetrennt() {
-        assertEquals(listOf(WidgetKind.VOICE_COMMAND), WidgetKind.of(Tier.PRO))
+        assertEquals(listOf(WidgetKind.VOICE_COMMAND, WidgetKind.CLAUDE_CODE), WidgetKind.of(Tier.PRO))
         assertTrue("Normale Widgets folgen spaeter", WidgetKind.of(Tier.NORMAL).isEmpty())
         // Gespeicherte Schluessel sind festgeschrieben — ein Umbenennen setzte jedes Profil zurueck.
-        assertEquals(listOf("voice_command"), WidgetKind.entries.map { it.key })
+        assertEquals(listOf("voice_command", "claude_code"), WidgetKind.entries.map { it.key })
         assertEquals(WidgetKind.VOICE_COMMAND, WidgetKind.fromKey(null))
     }
 }

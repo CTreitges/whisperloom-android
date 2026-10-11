@@ -209,7 +209,7 @@ class WidgetConfigActivityTest {
         val activity = oeffnen(id)
 
         compose.onNodeWithText("Welches Widget-Profil?").assertExists()
-        compose.onNodeWithText("Neues Widget-Profil").assertExists()
+        compose.onNodeWithText("Neues Sprach-Command-Widget").assertExists()
         assertFalse(activity.isFinishing)
         assertEquals(Activity.RESULT_CANCELED to id, ergebnis(activity))
     }
@@ -235,7 +235,7 @@ class WidgetConfigActivityTest {
         store.bind(id, WidgetProfile.DEFAULT_ID)
         val activity = oeffnen(id)
 
-        click("Neues Widget-Profil")
+        click("Neues Sprach-Command-Widget")
         compose.onNodeWithText("Widget bearbeiten").assertExists()
         val neu = store.all().single { !it.isDefault }
         assertEquals("Sprach-Command 2", neu.name)
