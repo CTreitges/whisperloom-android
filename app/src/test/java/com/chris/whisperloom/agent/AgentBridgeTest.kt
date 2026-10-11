@@ -134,8 +134,12 @@ class AgentBridgeTest {
 
     @Test fun diePruefungSchicktDieOptionenMit() {
         // So lehnt die claude-bridge ein unbekanntes Modell schon beim Pruefen ab, nicht erst beim Auftrag.
-        AgentBridge("https://claude.example.de", "geheim", optionen(), poster).check()
-        val json = JSONObject(aufrufe.single().third)
+        var koerper = ""
+        AgentBridge("https://claude.example.de", "geheim", optionen()) { _, _, body ->
+            koerper = body
+            throw ApiHttpException(400, "Das Transkript ist leer", body = claudeBridge400)
+        }.check()
+        val json = JSONObject(koerper)
         assertEquals("", json.getString("transcript"))
         assertEquals("sonnet", json.getJSONObject("options").getString("model"))
     }
@@ -164,6 +168,13 @@ class AgentBridgeTest {
         assertThrows(NotClaudeBridgeException::class.java) { pruefer("""{"bridge":"hermes-bridge"}""").check() }
         assertThrows(NotClaudeBridgeException::class.java) { pruefer("<html>Bad Request</html>").check() }
         assertThrows(NotClaudeBridgeException::class.java) { pruefer("").check() }
+    }
+
+    @Test fun einServerDerDenPruefKoerperAnnimmtIstKeineClaudeBridge() {
+        // Die claude-bridge beantwortet ein leeres Transkript nie mit 2xx.
+        val nimmtAlles = { options: JSONObject? -> AgentBridge("https://x.example.de", "geheim", options) { _, _, _ -> "{}" } }
+        assertThrows(NotClaudeBridgeException::class.java) { nimmtAlles(optionen()).check() }
+        nimmtAlles(null).check()
     }
 
     @Test fun derSprachCommandPrueftWieBisher() {

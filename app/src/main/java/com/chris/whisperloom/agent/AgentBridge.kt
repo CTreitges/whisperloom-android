@@ -74,7 +74,10 @@ class AgentBridge(
         } catch (e: ApiHttpException) {
             if (e.code != 400) throw e
             if (options != null && bridgeId(e.body) != CLAUDE_BRIDGE_ID) throw NotClaudeBridgeException()
+            return
         }
+        // Ein leeres Transkript nimmt die claude-bridge nie an — wer hier 2xx antwortet, ist eine andere.
+        if (options != null) throw NotClaudeBridgeException()
     }
 
     /** Feld `bridge` der Antwort; leer, wenn sie kein JSON ist oder keins hat. */
