@@ -113,13 +113,24 @@ class WidgetConfigActivityTest {
 
     // --- Erstplatzierung ------------------------------------------------------------------
 
-    @Test fun mitNurDemStandardprofilLandetDasWidgetSofort() {
+    @Test fun mitNurDemStandardprofilFragtSieTrotzdemNachDemTyp() {
+        // Zwei Pro-Typen: still gebunden waere das Widget immer ein Sprach-Command — wer ein
+        // Claude-Code-Widget wollte, landete unbemerkt bei der hermes-bridge.
         val id = unseres()
-        val activity = erzeugen(id)
+        val activity = oeffnen(id)
+
+        compose.onNodeWithText("Welches Widget-Profil?").assertExists()
+        compose.onNodeWithText("Neues Claude-Code-Widget").assertExists()
+        compose.onNode(hasText("Sprach-Command") and isSelectable()).assertIsSelected()
+        assertFalse(activity.isFinishing)
+        assertFalse("Erst die Wahl bindet", store.isBound(id))
+        assertEquals(Activity.RESULT_CANCELED to id, ergebnis(activity))
+
+        compose.onNode(hasText("Sprach-Command") and isSelectable()).performClick()
+        compose.waitForIdle()
 
         assertEquals(Activity.RESULT_OK to id, ergebnis(activity))
-        assertTrue("Unsichtbar: keine Frage ohne Auswahl", activity.isFinishing)
-        assertTrue(store.isBound(id))
+        assertTrue(activity.isFinishing)
         assertEquals(WidgetProfile.DEFAULT_ID, store.forWidget(id).id)
         // Selbst gezeichnet — das System schickt nach der Konfiguration kein Update.
         assertEquals(ctx.getString(R.string.widget_off), zeile(id))
@@ -156,12 +167,14 @@ class WidgetConfigActivityTest {
         assertEquals("Nur das Standardprofil hat einen Server", ctx.getString(R.string.widget_no_server), zeile(id))
     }
 
-    @Test fun stillGebundenIstEinWidgetMitServerBereit() {
+    @Test fun dasGewaehlteStandardprofilMitServerIstSofortBereit() {
         serverEinrichten(ctx)
         shadowOf(ctx as android.app.Application).grantPermissions(android.Manifest.permission.RECORD_AUDIO)
         val id = unseres()
+        oeffnen(id)
 
-        erzeugen(id)
+        compose.onNode(hasText("Sprach-Command") and isSelectable()).performClick()
+        compose.waitForIdle()
 
         assertEquals(ctx.getString(R.string.widget_ready), zeile(id))
     }
@@ -273,8 +286,8 @@ class WidgetConfigActivityTest {
     }
 
     @Test fun einNeuesClaudeCodeWidgetIstNachDemEditorVorgewaehlt() {
+        // Erstplatzierung mit nur dem Standardprofil: das Sheet steht trotzdem da.
         val id = unseres()
-        store.bind(id, WidgetProfile.DEFAULT_ID)
         oeffnen(id)
 
         click("Neues Claude-Code-Widget")

@@ -37,10 +37,12 @@ import com.chris.whisperloom.ui.theme.WhisperLoomTheme
  *   beim Neu-Konfigurieren "nichts aendern".
  * - Sie ist exported (der Launcher startet sie von aussen) und nimmt deshalb nur Ids an, die
  *   wirklich zu [VoiceTaskWidget] gehoeren.
- * - Erstplatzierung mit nur dem Standardprofil: unsichtbar binden und fertig — es gibt nichts zu
- *   waehlen. Sonst das Sheet "Welches Widget-Profil?", beim Neu-Konfigurieren immer, vorgewaehlt
- *   ist das Profil, das die Instanz gerade zeigt. Zur Wahl stehen alle Pro-Widget-Profile, gleich
- *   welchen Typs: der Typ (Sprach-Command, Claude Code) haengt am Profil, der Provider ist einer.
+ * - Erstplatzierung, wenn es wirklich nichts zu waehlen gibt (nur das Standardprofil UND nur ein
+ *   Pro-Typ): unsichtbar binden und fertig. Sonst das Sheet "Welches Widget-Profil?", beim
+ *   Neu-Konfigurieren immer, vorgewaehlt ist das Profil, das die Instanz gerade zeigt. Zur Wahl
+ *   stehen alle Pro-Widget-Profile, gleich welchen Typs: der Typ (Sprach-Command, Claude Code)
+ *   haengt am Profil, der Provider ist einer. Mit nur dem Standardprofil bietet das Sheet so
+ *   gleich "Neues Claude-Code-Widget" an — still gebunden waere das Widget ein Sprach-Command.
  * - "Ungebunden" heisst Erstplatzierung: Widgets, die schon vor den Profilen lagen, bindet
  *   [VoiceTaskWidget] nach dem App-Update an das Standardprofil ([WidgetProfileStore.adopt]).
  *
@@ -62,7 +64,7 @@ class WidgetConfigActivity : ComponentActivity() {
             return
         }
         val store = WidgetProfileStore(this)
-        if (!store.isBound(widgetId) && store.all().size == 1) {
+        if (!store.isBound(widgetId) && store.all().size == 1 && WidgetKind.of(Tier.PRO).size == 1) {
             pick(WidgetProfile.DEFAULT_ID)
             return
         }
