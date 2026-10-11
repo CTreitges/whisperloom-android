@@ -148,7 +148,7 @@ class VoiceTaskService : Service() {
         }
         recording = true
         // Wird das Diktat gleich lokal verbessert, laedt das Textmodell schon parallel zur Aufnahme.
-        TranscriptionEngine.warmUp(this)
+        TranscriptionEngine.warmUp(this, profile.fixedRefinement()?.mode)
         startedAt = SystemClock.elapsedRealtime()
         recordedAt = Instant.now().toString()
         store.state = VoiceTaskState.RECORDING

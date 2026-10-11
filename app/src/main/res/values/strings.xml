@@ -862,6 +862,7 @@
     <string name="widget_pause_long_sub">Nach dem letzten Wort 3,5 Sekunden warten, dann senden — für Denkpausen.</string>
     <string name="widget_profile_claude">Claude</string>
     <string name="widget_profile_claude_sub">Gilt für jede Session, die dieses Widget startet.</string>
+    <string name="widget_profile_claude_prompt">Dein Auftrag wird immer mit der Textverbesserung „Prompt“ aufbereitet, egal welche Stufe beim Diktat eingestellt ist.</string>
     <string name="widget_profile_claude_model">Modell</string>
     <string name="claude_model_opus">Opus</string>
     <string name="claude_model_fable">Fable</string>

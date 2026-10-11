@@ -36,6 +36,8 @@ fun ClaudeOptionsSection(profile: WidgetProfile, onChange: (WidgetProfile) -> Un
     val dim = MaterialTheme.colorScheme.onSurfaceVariant
     Text(stringResource(R.string.widget_profile_claude), style = MaterialTheme.typography.labelLarge)
     Text(stringResource(R.string.widget_profile_claude_sub), style = MaterialTheme.typography.bodySmall, color = dim)
+    // Die Stufe ist fest ([WidgetProfile.fixedRefinement]) — sonst wundert man sich ueber den umgeformten Text.
+    Text(stringResource(R.string.widget_profile_claude_prompt), style = MaterialTheme.typography.bodySmall, color = dim)
 
     Text(stringResource(R.string.widget_profile_claude_model), style = MaterialTheme.typography.labelMedium)
     ChoiceChips(ClaudeModel.entries, profile.claudeModel, ::claudeModelLabel) { onChange(profile.copy(claudeModel = it)) }

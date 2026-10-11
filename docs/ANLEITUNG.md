@@ -1143,7 +1143,7 @@ Willst du den Auftrag loswerden: Einstellungen → Widgets → Tab „Pro Widget
 
 ### 14.9 Was dabei gesendet wird
 
-An den Server des Widgets gehen: der erkannte Text, eine Auftragskennung, Zeitpunkt und Dauer der Aufnahme, beim Claude-Code-Widget außerdem Modell, Denkaufwand und Ultracode. **Den Auftrag bekommt nur die Adresse, die in diesem Widget eingetragen ist** — nicht der Hersteller der App und nicht der Server eines anderen Widgets. Erkannt und verbessert wird wie beim Diktat: Fürs Mitschreiben geht die Aufnahme an den Erkennungsweg, den du eingestellt hast, und ist die Textverbesserung an, geht der erkannte Text vorher an deren Anbieter (Kapitel 12 beschreibt das im Detail). Ein Auftrag, der noch nicht durchging, liegt so lange auf dem Telefon, bis er abgeschickt, verworfen oder ersetzt wird; er wird nicht in ein Cloud-Backup übernommen. Die Widgets mit Server-Adressen und Tokens sowie ihre Galerie-Bilder werden nur auf dem Gerät gespeichert und nicht gesichert.
+An den Server des Widgets gehen: der erkannte Text, eine Auftragskennung, Zeitpunkt und Dauer der Aufnahme, beim Claude-Code-Widget außerdem Modell, Denkaufwand und Ultracode. **Den Auftrag bekommt nur die Adresse, die in diesem Widget eingetragen ist** — nicht der Hersteller der App und nicht der Server eines anderen Widgets. Erkannt und verbessert wird wie beim Diktat: Fürs Mitschreiben geht die Aufnahme an den Erkennungsweg, den du eingestellt hast, und ist die Textverbesserung an, geht der erkannte Text vorher an deren Anbieter (Kapitel 12 beschreibt das im Detail). Beim Claude-Code-Widget ist die Textverbesserung immer an, mit der Stufe „Prompt“ ([14.10](#1410-claude-code-widget)). Ein Auftrag, der noch nicht durchging, liegt so lange auf dem Telefon, bis er abgeschickt, verworfen oder ersetzt wird; er wird nicht in ein Cloud-Backup übernommen. Die Widgets mit Server-Adressen und Tokens sowie ihre Galerie-Bilder werden nur auf dem Gerät gespeichert und nicht gesichert.
 
 ### 14.10 Claude-Code-Widget
 
@@ -1155,7 +1155,9 @@ Im Editor stehen unter **Claude** zusätzlich:
 - **Denkaufwand (Effort)** — Niedrig, Mittel, Hoch, Extra hoch oder Maximal. Mehr heißt gründlicher, aber langsamer und mit mehr Verbrauch.
 - **Ultracode** — Claude zerlegt größere Aufgaben in einen Workflow mit mehreren Agenten; gründlicher, verbraucht aber deutlich mehr von deinem Nutzungslimit.
 
-Ab Werk: Opus, Extra hoch, Ultracode aus. Die Werte gelten für jede Session, die dieses Widget startet; für andere Einstellungen legst du einfach ein zweites Claude-Code-Widget an. **Verbindung prüfen** erkennt auch, ob unter der Adresse wirklich die claude-bridge läuft — sonst meldet der Chip „Server ist keine claude-bridge — Adresse prüfen“.
+Ab Werk: Opus, Extra hoch, Ultracode aus. Die Werte gelten für jede Session, die dieses Widget startet; für andere Einstellungen legst du einfach ein zweites Claude-Code-Widget an.
+
+Was du sagst, formt das Claude-Code-Widget **immer mit der Textverbesserung „Prompt“** zu einem klaren Auftrag, bevor es an die Bridge geht — egal, welche Stufe du fürs Diktat eingestellt hast, und auch ohne dass „Prompt“ unter Pro-Funktionen eingeschaltet ist. Es rechnet mit dem Modell der Stufe Prompt (**Modell je Stufe**). Klappt die Textverbesserung nicht (kein Netz, kein Textmodell, Fehler beim Anbieter), geht wie beim Diktat der erkannte Text mit Hinweis raus. **Verbindung prüfen** erkennt auch, ob unter der Adresse wirklich die claude-bridge läuft — sonst meldet der Chip „Server ist keine claude-bridge — Adresse prüfen“.
 
 ---
 

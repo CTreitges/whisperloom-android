@@ -2,6 +2,8 @@ package com.chris.whisperloom.agent
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.Refinement
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -317,5 +319,12 @@ class WidgetProfileTest {
         assertEquals("max", gewaehlt.getString("effort"))
         assertTrue(gewaehlt.getBoolean("ultracode"))
         assertSame(java.lang.Boolean.TRUE, gewaehlt.get("ultracode"))
+    }
+
+    @Test fun nurEinClaudeCodeProfilHatEineFesteStufe() {
+        assertEquals(Refinement(RefineMode.PROMPT), WidgetProfile("c", kind = WidgetKind.CLAUDE_CODE).fixedRefinement())
+        // Der Sprach-Command folgt weiter der Diktat-Stufe.
+        assertNull(WidgetProfile("x").fixedRefinement())
+        assertNull(WidgetProfile("x", kind = WidgetKind.VOICE_COMMAND).fixedRefinement())
     }
 }

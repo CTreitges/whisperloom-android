@@ -7,6 +7,7 @@ import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.api.ProviderCatalog
+import com.chris.whisperloom.api.RefinePrompt
 import com.chris.whisperloom.llm.OfflineRefineFixture
 import com.sun.net.httpserver.HttpServer
 import org.junit.After
@@ -47,6 +48,9 @@ class VoiceTaskPipelineFactoryTest {
 
     /** Der ganze Koerper jedes Auftrags, wie er an der Bridge ankam. */
     private val koerper = mutableListOf<org.json.JSONObject>()
+
+    /** Jede Anfrage an die Textverbesserung. */
+    private val veredelungen = mutableListOf<org.json.JSONObject>()
     private val basis get() = "http://127.0.0.1:${server.address.port}"
 
     @Before fun aufbauen() {
@@ -62,7 +66,7 @@ class VoiceTaskPipelineFactoryTest {
             antwort(ex, 200, """{"text":"kauf milch"}""")
         }
         server.createContext("/v1/chat/completions") { ex ->
-            ex.requestBody.readBytes()
+            veredelungen += org.json.JSONObject(String(ex.requestBody.readBytes()))
             val body = veredelung
             if (body == null) antwort(ex, 500, """{"error":{"message":"Modell ueberlastet"}}""")
             else antwort(ex, 200, body)
@@ -267,6 +271,54 @@ class VoiceTaskPipelineFactoryTest {
         val options = koerper.single().getJSONObject("options")
         assertEquals("haiku", options.getString("model"))
         assertEquals("low", options.getString("effort"))
+    }
+
+    // --- Claude Code: immer die Stufe "Prompt" ------------------------------------------------
+
+    /** Die Anweisung an das Sprachmodell (System-Nachricht) der Anfrage [i]. */
+    private fun anweisung(i: Int): String {
+        val messages = veredelungen[i].getJSONArray("messages")
+        return (0 until messages.length()).map { messages.getJSONObject(it) }
+            .first { it.getString("role") == "system" }.getString("content")
+    }
+
+    private val promptAnweisung get() =
+        RefinePrompt.build(RefineMode.PROMPT, german = true, smartFillers = false, short = RefinePrompt.isShort("kauf milch"))
+
+    @Test fun einClaudeWidgetVerbessertImmerAlsPromptDerSprachCommandWieDasDiktat() {
+        Prefs(ctx).language = "de"
+        assertFalse("Prompt ist fuers Diktat nicht eingeschaltet", Prefs(ctx).promptLevelEnabled)
+        val claude = claudeWidget("/a", ClaudeModel.OPUS, ClaudeEffort.XHIGH, ultracode = false)
+        val sprach = widget("Einkauf", "/b")
+
+        auftrag(profileId = claude.id)
+        assertTrue(VoiceTaskWorker.pipelineFactory(ctx, store) { true }.run(null) is TaskOutcome.Sent)
+        auftrag("2026-09-22T00:05:00Z", sprach.id)
+        assertTrue(VoiceTaskWorker.pipelineFactory(ctx, store) { true }.run(null) is TaskOutcome.Sent)
+
+        assertEquals(2, veredelungen.size)
+        assertEquals("Claude-Code-Widget: Stufe Prompt statt Glaetten", promptAnweisung, anweisung(0))
+        assertEquals(
+            "Sprach-Command: weiter die Diktat-Stufe (Glaetten)",
+            RefinePrompt.build(RefineMode.POLISH, german = true, smartFillers = false),
+            anweisung(1),
+        )
+    }
+
+    @Test fun auchMitDiktatOhneTextverbesserungFormtDasClaudeWidgetEinenPrompt() {
+        Prefs(ctx).language = "de"
+        Prefs(ctx).refineMode = RefineMode.OFF
+        val claude = claudeWidget("/a", ClaudeModel.OPUS, ClaudeEffort.XHIGH, ultracode = false)
+        val sprach = widget("Einkauf", "/b")
+
+        auftrag(profileId = sprach.id)
+        assertTrue(VoiceTaskWorker.pipelineFactory(ctx, store) { true }.run(null) is TaskOutcome.Sent)
+        assertTrue("Sprach-Command mit Stufe aus: keine Textverbesserung", veredelungen.isEmpty())
+        auftrag("2026-09-22T00:05:00Z", claude.id)
+        assertTrue(VoiceTaskWorker.pipelineFactory(ctx, store) { true }.run(null) is TaskOutcome.Sent)
+
+        assertEquals(promptAnweisung, anweisung(0))
+        assertEquals(listOf("Kauf milch", "Kauf bitte Milch."), gesendet)
     }
 
     @Test fun eineKorrekturDesServersWirktBeimNaechstenVersuch() {

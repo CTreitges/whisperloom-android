@@ -2,6 +2,8 @@ package com.chris.whisperloom.agent
 
 import android.content.Context
 import com.chris.whisperloom.R
+import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.Refinement
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -65,6 +67,14 @@ data class WidgetProfile(
     fun bridgeOptions(): JSONObject? =
         if (kind != WidgetKind.CLAUDE_CODE) null
         else JSONObject().put("model", claudeModel.key).put("effort", claudeEffort.key).put("ultracode", ultracode)
+
+    /**
+     * Feste Textverbesserung des Widgets statt der Diktat-Stufe: [WidgetKind.CLAUDE_CODE] formt
+     * jeden Auftrag zu einem Prompt — auch wenn das Diktat eine andere Stufe hat oder "Prompt" dort
+     * nicht eingeschaltet ist. null = wie beim Diktat.
+     */
+    fun fixedRefinement(): Refinement? =
+        if (kind == WidgetKind.CLAUDE_CODE) Refinement(RefineMode.PROMPT) else null
 
     fun toJson(): JSONObject = JSONObject()
         .put(K_ID, id)
