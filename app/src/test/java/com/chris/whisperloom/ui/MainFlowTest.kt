@@ -690,22 +690,16 @@ class MainFlowTest {
         assertEquals("gemma3:4b", Prefs(ctx).llmModel)
     }
 
-    @Test fun ollamaCloudZeigtModellAuswahlUndFreieEingabe() {
+    @Test fun ollamaCloudHatKeinModellfeldDieStufenNehmenDieEmpfehlung() {
         prefs.refineMode = RefineMode.POLISH
         prefs.llmProviderId = "ollama-cloud"
         screen(env()) { LlmAccessScreen(it) }
         compose.onNodeWithText("https://ollama.com").assertExists()
-        // Leeres Modell = Empfehlung je Stufe (3.8.6), nicht mehr das erste Katalogmodell.
-        compose.onNodeWithTag("dropdown:Modell").assertTextContains("Empfehlung je Stufe")
-        compose.onNodeWithTag("dropdown:Modell").performClick()
-        compose.waitForIdle()
-        compose.onNodeWithText("GLM 5.3 Flash").assertExists()
-        compose.onNodeWithText("Eigenes Modell …").performClick()
-        compose.waitForIdle()
-        compose.onNode(hasSetTextAction() and hasText("Modell-ID")).performTextInput("kimi-k2.6")
-        compose.onNodeWithText("Übernehmen").performClick()
-        compose.waitForIdle()
-        assertEquals("kimi-k2.6", Prefs(ctx).llmModel)
+        // 3.9.1: Katalog-Anbieter waehlen das Modell je Stufe, "Standard" ist die Empfehlung fuer die Rolle.
+        compose.onNodeWithTag("dropdown:Modell").assertDoesNotExist()
+        compose.onNodeWithText("Standard · Gemma 4 31B (empfohlen)").assertExists()
+        compose.onAllNodesWithText("Standard · Mistral Large 3").fetchSemanticsNodes().let { assertEquals(2, it.size) }
+        assertEquals("", Prefs(ctx).llmModel)
     }
 
     /** Reiner Erkennungs-Anbieter: "wie Erkennung" hiesse keine Textverbesserung — das klar sagen. */

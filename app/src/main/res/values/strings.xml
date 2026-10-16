@@ -475,7 +475,7 @@
     <!-- %1$s = Modell zum Glätten, %2$s = Modell zum Umformulieren -->
     <string name="text_models_recommended_sub">Glätten: %1$s · Umformulieren: %2$s</string>
     <string name="text_models_title">Modell je Stufe</string>
-    <string name="text_models_intro">„Standard“ ist die Empfehlung des Anbieters: ein schnelles Modell zum Glätten, ein stärkeres zum Umformulieren. Beim eigenen Server und bei Ollama ist es das Modell des Zugangs. Gilt für Diktat und Sprachnachrichten.</string>
+    <string name="text_models_intro">„Standard“ ist die Empfehlung des Anbieters: schnell zum Glätten, stärker zum Umformulieren; bei Ollama und eigenem Server das Modell des Zugangs. Gilt für Diktat und Sprachnachrichten.</string>
     <!-- %1$s = Modell, mit dem die Stufe ohne eigenes Modell rechnet -->
     <string name="text_models_standard">Standard · %1$s</string>
     <string name="text_models_standard_option">Standard (%1$s)</string>
