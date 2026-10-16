@@ -32,8 +32,8 @@ android {
         // nicht mehr akzeptiert. compileSdk 37 deckt das ab. Laufzeit-Verhalten von Android 16
         // (erzwungenes edge-to-edge — App nutzt enableEdgeToEdge — u.a.) am Geraet gegenpruefen.
         targetSdk = 36
-        versionCode = 19
-        versionName = "3.9.0"
+        versionCode = 20
+        versionName = "3.9.1"
 
         if (!skipNative) {
             externalNativeBuild {

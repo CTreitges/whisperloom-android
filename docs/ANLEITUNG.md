@@ -16,7 +16,7 @@ Alle Bezeichnungen in dieser Anleitung („Mikro-Knopf starten", „Zugang prüf
 4. [Diktieren mit dem schwebenden Knopf](#4-diktieren-mit-dem-schwebenden-knopf)
 5. [Diktieren mit der Tastatur](#5-diktieren-mit-der-tastatur)
 6. [Sprachnachrichten abtippen](#6-sprachnachrichten-abtippen)
-7. [Anbieter und API-Keys](#7-anbieter-und-api-keys)
+7. [Anbieter und API-Keys](#7-anbieter-und-api-keys) — mit [Fallback](#77-fallback)
 8. [Textverbesserung](#8-textverbesserung) — [Diktat](#81-diktat) · [Sprachnachrichten](#82-sprachnachrichten) · [KI-Zugang](#83-ki-zugang) · [Modell je Stufe](#84-modell-je-stufe) · [Bei Offline-Erkennung](#85-bei-offline-erkennung) · [Feste Regeln](#86-feste-regeln) · [Wörterbuch und Sprache](#87-wörterbuch-und-sprache)
 9. [Offline-Modus](#9-offline-modus) — mit [Lokales Textmodell (Gemma 4)](#97-lokales-textmodell-gemma-4)
 10. [Eigener Server](#10-eigener-server)
@@ -44,6 +44,8 @@ Die Spracherkennung selbst läuft wahlweise
 
 - **online** über einen Dienst deiner Wahl (OpenAI, Groq, Mistral, ElevenLabs, Together AI, DeepInfra, OpenRouter oder ein eigener Server). Du brauchst dafür einmalig einen API-Key des Anbieters; bei Groq ist das kostenlos. Beste Qualität, schnell.
 - **offline** direkt auf dem Gerät mit einem einmalig heruntergeladenen Whisper-Modell (32–574 MB). Die Aufnahme verlässt das Telefon nicht, die Erkennung dauert dafür einige Sekunden.
+
+Scheitert ein Anbieter, kann ein zweiter einspringen: der **Fallback** für Erkennung und Textverbesserung ([7.7](#77-fallback)).
 
 Dazu kommt eine optionale **Textverbesserung**: Ein Sprachmodell (KI) glättet Zeichensetzung und Groß-/Kleinschreibung, formuliert verständlicher oder fasst zusammen — in vier Stufen von „Aus" bis „Zusammenfassen". Das Sprachmodell kann bei einem Online-Anbieter laufen, bei **Ollama Cloud** oder auf deinem eigenen **Ollama** zu Hause (lokal / Homeserver). Erkennst du offline, verbessert ein **lokales Textmodell** (Gemma 4) den Text direkt auf dem Gerät — ohne Netz und ohne Key ([9.7](#97-lokales-textmodell-gemma-4)). Ein **Vokabular** mit Namen und Fachbegriffen — als Liste in der App oder als verknüpfte Textdatei — hilft der Erkennung bei Eigennamen. Unabhängig davon räumt WhisperLoom lokal auf: Füllwörter („ähm", „äh") entfernen, Satzanfänge groß schreiben, ein Leerzeichen anhängen.
 
@@ -350,7 +352,7 @@ Alle Angaben in diesem Kapitel: **Stand 09/2026, Textmodelle 10/2026, ohne Gewä
 
 ### 7.1 Übersicht
 
-Die Spalte „Modelle" nennt die Einträge, wie sie in WhisperLoom im Dropdown stehen (erster Eintrag = Voreinstellung). Bei der Textverbesserung steht davor **Empfehlung je Stufe** (ab Werk, [8.4](#84-modell-je-stufe)): Glätten rechnet dann mit dem ersten Modell, Verschönern, Zusammenfassen und Prompt mit dem zweiten (beide fett).
+Die Spalte „Modelle" nennt die Einträge, wie sie in WhisperLoom im Dropdown stehen (erster Eintrag = Voreinstellung). Bei der Textverbesserung rechnet jede Stufe auf „Standard“ mit der **Empfehlung je Stufe** ([8.4](#84-modell-je-stufe)): Glätten mit dem ersten Modell, Verschönern, Zusammenfassen und Prompt mit dem zweiten (beide fett).
 
 | Anbieter (Dropdown) | Für | Modelle (Erkennung) | Modelle (Textverbesserung) | Preis Erkennung | Kostenlos? | Key holen |
 |---|---|---|---|---|---|---|
@@ -365,7 +367,7 @@ Die Spalte „Modelle" nennt die Einträge, wie sie in WhisperLoom im Dropdown s
 | **Google Gemini** | nur Text | — | **Gemini 3.5 Flash-Lite** · **Gemini 3.8 Flash** · Gemini 2.5 Flash-Lite und Gemini 2.5 Flash (nur Bestandskonten) | — | **ja**, aber Free-Tier-Inhalte dürfen zum Training genutzt werden | https://aistudio.google.com/apikey |
 | **DeepSeek** | nur Text | — | **DeepSeek Flash (V4.1)** · **DeepSeek V4 Pro** · DeepSeek V4 Flash (alter Name) | — | nein | https://platform.deepseek.com/api_keys |
 | **Ollama (lokal / Homeserver)** | nur Text | — | frei — die Liste kommt automatisch von deinem Server (Empfehlung je Hardware in [8.3](#83-ki-zugang)) | — | deine Hardware | kein Key nötig (Feld optional) |
-| **Ollama Cloud** | nur Text | — | **Gemma 4 31B (empfohlen)** · **Mistral Large 3** · GLM 5.3 Flash · GPT-OSS 20B · GPT-OSS 120B; weitere per Knopf unter dem Feld „Modell" ([8.3](#83-ki-zugang)) | — | — | https://ollama.com/settings/keys |
+| **Ollama Cloud** | nur Text | — | **Gemma 4 31B (empfohlen)** · **Mistral Large 3** · GLM 5.3 Flash · GPT-OSS 20B · GPT-OSS 120B; weitere lädt der Knopf im KI-Zugang, wählbar je Stufe ([8.3](#83-ki-zugang)) | — | — | https://ollama.com/settings/keys |
 | **Eigener Server** | Erkennung + Text | frei (z. B. `Systran/faster-whisper-medium`, `whisper-1`) | frei (z. B. `qwen3:8b`) | deine Hardware | — | kein Key nötig, außer dein Server verlangt einen |
 
 Mit der Pro-Funktion **Modelle vom Server** wählst du zusätzlich aus der aktuellen Liste des Anbieters ([7.6](#76-modelle-vom-server-pro-funktion)).
@@ -415,7 +417,7 @@ Dieselben Schritte zeigt WhisperLoom unter **Wo bekomme ich einen Key?** (im Ass
 ### 7.5 Eigenes Modell und Zugang prüfen
 
 - **Eigenes Modell …** (letzter Eintrag im Modell-Dropdown, mit „Modelle vom Server" unten in der Auswahl): Für Modell-IDs, die nicht in der Liste stehen — etwa ein neues Modell des Anbieters oder ein Modell auf dem eigenen Server. Die ID genau so eintragen, wie der Anbieter sie nennt. Für unbekannte IDs setzt WhisperLoom die Parameter selbst: OpenAI-Reasoning-Modelle (z. B. `gpt-5.6-terra`, `o4-mini`) bekommen kein `temperature` und die Denk-Stufe „low", Gemini-3-Modelle kein `temperature` (so rät es Google), Groqs Qwen 3 und GPT-OSS die passende Denk-Stufe, ein Snapshot wie `gpt-5-mini-2025-08-07` erbt vom Listen-Modell. Lehnt ein Server `temperature` trotzdem ab, versucht WhisperLoom es genau einmal ohne und merkt sich das für diesen Anbieter, diese Adresse und dieses Modell: Ab dann geht jede Anfrage gleich ohne `temperature` raus.
-- **Zugang prüfen** (unter Spracherkennung bzw. KI-Zugang; für das Modell einer Stufe **Modell prüfen**, [8.4](#84-modell-je-stufe)): Schickt eine kurze Testanfrage an den eingetragenen Zugang und meldet „Verbunden · x s" oder den Fehlergrund. Praktisch nach jedem Key- oder Anbieterwechsel.
+- **Zugang prüfen** (unter Spracherkennung bzw. KI-Zugang; für das Modell einer Stufe **Modell prüfen**, [8.4](#84-modell-je-stufe)): Schickt eine kurze Testanfrage an den eingetragenen Zugang und meldet „Verbunden · x s" oder den Fehlergrund. Praktisch nach jedem Key- oder Anbieterwechsel. Den Fallback prüfst du mit **Fallback prüfen** ([7.7](#77-fallback)).
 
 ### 7.6 Modelle vom Server (Pro-Funktion)
 
@@ -431,6 +433,30 @@ Eingeschaltet wird das Feld **Modell** unter Spracherkennung und unter KI-Zugang
 WhisperLoom zeigt nur, was passt: unter Spracherkennung Spracherkennungs-Modelle, unter KI-Zugang Chat-Modelle — ohne Einbettungs-, Bild- oder Sprachausgabe-Modelle. Abgeschaltete Modelle fallen weg, soweit der Anbieter ein Datum nennt; ein künftiges Abschaltdatum steht als „Auslauf JJJJ-MM-TT" dabei. Für Modelle ohne eingebauten Eintrag setzt WhisperLoom die Parameter selbst ([7.5](#75-eigenes-modell-und-zugang-prüfen)).
 
 **ElevenLabs** listet Scribe womöglich gar nicht — dann bleibt nur „Empfohlen", und „nicht mehr gelistet" erscheint dort nie. Scheitert „Modelle aktualisieren" bei ElevenLabs mit „Key oder Berechtigung „Models: Lesen" prüfen", fehlt dem Key diese Berechtigung; fürs Diktieren braucht er sie nicht. **Ollama** lädt seine Liste wie bisher bei jedem Öffnen. Die Listen speichert WhisperLoom auf dem Gerät, ohne Key ([Kapitel 12](#12-datenschutz)).
+
+### 7.7 Fallback
+
+Fällt dein Anbieter aus, ist das Guthaben leer, der Key abgelaufen oder ein Modell abgeschaltet, kommt ohne Fallback ein Fehler (Erkennung) bzw. der Text ohne KI (Textverbesserung). Mit **Fallback** springt dann ein zweiter Anbieter ein. Es gibt ihn zweimal, unabhängig voneinander:
+
+- Einstellungen → **Spracherkennung**, unter dem Anbieter (nur bei Online-Erkennung)
+- Einstellungen → **KI-Zugang**, unter dem Zugang für die Textverbesserung (nur, wenn es einen Online-Zugang gibt: nicht bei Offline-Erkennung ohne eigenen Zugang und nicht bei ElevenLabs „wie Erkennung")
+
+Der Schalter **Fallback verwenden** ist ab Werk aus („Ein zweiter Anbieter für den Fall, dass OpenAI scheitert."). Erst wenn er an ist, erscheinen die Felder:
+
+- **Fallback-Anbieter** — beim ersten Einschalten schlägt WhisperLoom einen anderen Anbieter als den ersten vor: OpenAI, und wenn der erste OpenAI ist, Groq. Ein anderer Fallback-Anbieter leert Adresse, Key und Modell des Fallbacks.
+- **Base-URL des Fallbacks** — nur beim Eigenen Server und bei Ollama (lokal).
+- **API-Key des Fallbacks** — leer gelassen nimmt der Fallback den Key eines Zugangs **desselben Anbieters**: in der Spracherkennung den des ersten Anbieters (etwa für ein anderes Modell beim selben Anbieter), im KI-Zugang erst den des KI-Zugangs, dann den der Spracherkennung. Darunter steht dann „Leer gelassen gilt der Key der Spracherkennung." bzw. „… des KI-Zugangs.". Typisch: KI-Zugang Anthropic, Fallback OpenAI mit dem OpenAI-Key der Erkennung, ohne ihn zweimal einzutragen. An einen anderen Anbieter geht nie ein Key.
+- **Modell des Fallbacks** — in der Spracherkennung wie beim ersten Anbieter. Im KI-Zugang gilt es für alle Stufen; ab Werk **Empfehlung je Stufe** des Fallback-Anbieters (die Modelle je Stufe aus [8.4](#84-modell-je-stufe) gehören zum ersten Anbieter). Beim Eigenen Server und bei Ollama (lokal) ist das Modell Pflicht.
+- **Fallback prüfen** — wie „Zugang prüfen", nur für den Fallback.
+
+**Was dann passiert:** Scheitert der erste Anbieter (Netz, Zeitüberschreitung, Fehlerstatus, leere oder unbrauchbare Antwort), schickt WhisperLoom **dieselbe Aufnahme** an den Fallback bzw. lässt ihn den Text verbessern. Die Tastatur sagt dann in der Statuszeile, der Knopf als kurze Meldung „Spracherkennung fehlgeschlagen — mit Fallback Groq erkannt" bzw. „KI-Zugang fehlgeschlagen — mit Fallback OpenAI verbessert"; der Verlauf nennt das Modell, das wirklich gerechnet hat. Mit Fallback wartet die Textverbesserung höchstens 8 s auf die Verbindung zum ersten Anbieter.
+
+- **Geteilte Sprachnachrichten:** Ist der erste beim ersten Stück gescheitert, gehen die weiteren Stücke gleich an den Fallback.
+- **Beide scheitern:** wie ohne Fallback — bei der Erkennung der Fehler des ersten Anbieters (mit „Erneut senden"), bei der Textverbesserung der Text ohne KI; der Hinweis nennt dann beide Gründe („… · Fallback: …").
+- **Offline-Erkennung** mit der Regel „Online, ohne Netz lokal" ([9.7](#97-lokales-textmodell-gemma-4)): erst der KI-Zugang, dann der Fallback, erst danach das lokale Textmodell. Bei Offline-Erkennung gibt es keinen Fallback der Erkennung.
+- **Unvollständig** (Key fehlt, Eigener Server ohne Adresse oder Modell): Der Fallback springt nicht ein.
+
+Datenschutz: Mit Fallback gehen Audio bzw. Text im Fehlerfall zusätzlich an den Fallback-Anbieter ([12](#12-datenschutz)); die Zeile unter den Feldern sagt es.
 
 ---
 
@@ -510,7 +536,9 @@ Jedes 5-Minuten-Stück ([6.3](#63-lange-nachrichten)) geht einzeln an die KI —
 
 Einstellungen → **KI-Zugang**: oben die Karte **Online-Zugang für die Textverbesserung**, darunter die Übersicht **Modell je Stufe** ([8.4](#84-modell-je-stufe)).
 
-Standardmäßig nutzt die Textverbesserung **Anbieter und Key der Erkennung** (Schalter **Eigenen Zugang verwenden** aus). Das ist bei OpenAI, Groq, Mistral und OpenRouter der einfache Weg: ein Konto, ein Key. Im Feld **Modell** steht dann **Empfehlung je Stufe**: Glätten rechnet mit einem schnellen Modell, Verschönern, Zusammenfassen und Prompt mit einem stärkeren — bei OpenAI „GPT-6 Luna" und „GPT-6 Sol", bei Groq „GPT-OSS 20B" und „GPT-OSS 120B" (alle Anbieter: [7.1](#71-übersicht)). Die Unterzeile nennt beide. Wählst du stattdessen ein Modell aus der Liste oder tippst eins per **Eigenes Modell …** ein, rechnen alle Stufen damit, die kein eigenes Modell haben.
+Standardmäßig nutzt die Textverbesserung **Anbieter und Key der Erkennung** (Schalter **Eigenen Zugang verwenden** aus). Das ist bei OpenAI, Groq, Mistral und OpenRouter der einfache Weg: ein Konto, ein Key. Ein Modell wählst du hier nicht: Jede Stufe rechnet ab Werk mit der **Empfehlung je Stufe** — Glätten mit einem schnellen Modell, Verschönern, Zusammenfassen und Prompt mit einem stärkeren, bei OpenAI „GPT-6 Luna" und „GPT-6 Sol", bei Groq „GPT-OSS 20B" und „GPT-OSS 120B" (alle Anbieter: [7.1](#71-übersicht)). Ein anderes Modell stellst du auf der Seite der Stufe ein ([8.4](#84-modell-je-stufe)).
+
+**Update von 3.9.0:** Bis 3.9.0 gab es hier ein Feld **Modell**, das alle Stufen ohne eigenes Modell übernahmen — es wirkte doppelt. Ein dort gewähltes Modell hat beim Update jede Stufe ohne eigenes Modell bekommen; gerechnet wird wie vorher.
 
 Diese Karte regelt nur die **Online**-Textverbesserung. Bei Offline-Erkennung rechnet ab Werk das lokale Textmodell, ganz ohne Online-Zugang ([9.7](#97-lokales-textmodell-gemma-4)).
 
@@ -524,7 +552,7 @@ Diese Karte regelt nur die **Online**-Textverbesserung. Bei Offline-Erkennung re
 - dein Erkennungs-Anbieter keine eingebauten Textmodelle hat (Together AI, DeepInfra) und du kein Modell eintippen willst — „wie Erkennung" geht dort nur mit selbst eingetipptem Modell (**Zugang prüfen** erst dann); ohne kommt der Text ohne KI an, Hinweis „Kein Textmodell eingetragen — unter „KI-Zugang“ ein Modell eintragen", oder
 - du ein anderes Sprachmodell willst als beim Erkennungs-Anbieter.
 
-Dann erscheinen eigene Felder: **Anbieter** (OpenAI · Groq · Mistral · OpenRouter · Anthropic (Claude) · Google Gemini · DeepSeek · Ollama (lokal / Homeserver) · Ollama Cloud · Eigener Server), bei Eigener Server die **Base-URL**, der **API-Key** und das **Modell**. Der Key der Erkennung wird dabei nie an den anderen Anbieter geschickt. Beim Eigenen Server ist das Modellfeld ein Freitext („z. B. qwen3:8b"), mit **Modelle vom Server** eine Auswahl aus der Liste deines Servers ([7.6](#76-modelle-vom-server-pro-funktion)).
+Dann erscheinen eigene Felder: **Anbieter** (OpenAI · Groq · Mistral · OpenRouter · Anthropic (Claude) · Google Gemini · DeepSeek · Ollama (lokal / Homeserver) · Ollama Cloud · Eigener Server), bei Eigener Server die **Base-URL**, der **API-Key** und — nur beim Eigenen Server und bei Ollama (lokal), die keine eingebauten Modelle haben — das **Modell** („Standard aller Stufen, je Stufe änderbar."). Der Key der Erkennung wird dabei nie an den anderen Anbieter geschickt. Beim Eigenen Server ist das Modellfeld ein Freitext („z. B. qwen3:8b"), mit **Modelle vom Server** eine Auswahl aus der Liste deines Servers ([7.6](#76-modelle-vom-server-pro-funktion)).
 
 **Anbieterwechsel setzt die Modelle zurück:** Wählst du einen anderen Anbieter, schaltest „Eigenen Zugang verwenden“ ein oder aus oder wechselst bei „wie Erkennung" den Anbieter der Erkennung, gehen das Modell und die Modelle aller Stufen auf „Standard" zurück. Ein Modell des alten Anbieters kennt der neue meist nicht — bis 3.8.5 blieb es in zwei dieser Fälle stehen, und der Text kam ohne KI. Eine neue Server-Adresse (Ollama) setzt nichts zurück.
 
@@ -534,7 +562,7 @@ Dann erscheinen eigene Felder: **Anbieter** (OpenAI · Groq · Mistral · OpenRo
   **Welches Modell?** Eine Empfehlung je Stufe gibt es hier nicht, weil die Liste von deinem Server kommt. Gemma 4 denkt nicht nach, wenn man es nicht ausdrücklich verlangt, und eignet sich deshalb für Diktate: `gemma4:12b` zum Glätten (schwache Hardware, nur Prozessor mit bis zu 8 GB RAM: `gemma4:e4b`), `gemma4:26b` zum Umformulieren (ein MoE-Modell, das auch auf einem Heimserver ohne Grafikkarte mit 32 GB RAM zügig rechnen soll, nicht gemessen; mit 24-GB-Grafikkarte `gemma4:31b`). Das Modell im Feld **Modell** ist Pflicht und gilt für alle Stufen; schnellere oder stärkere legst du je Stufe fest ([8.4](#84-modell-je-stufe)).
 - **Ollama Cloud** — Modelle laufen auf ollama.com (fest `https://ollama.com`), **API-Key nötig** ([7.4](#74-key-besorgen--schritt-für-schritt)). Empfehlung je Stufe: **Gemma 4 31B (empfohlen)** zum Glätten — schnell und ohne „Nachdenken" — und **Mistral Large 3** zum Umformulieren (ebenfalls ohne Nachdenken, gutes Deutsch, Tempo nicht gemessen); zur Auswahl stehen außerdem GLM 5.3 Flash, GPT-OSS 20B und GPT-OSS 120B.
 
-**Modell-Liste vom Server:** Sobald Ollama verbunden ist (Adresse eingetragen, bei der Cloud auch der Key), lädt WhisperLoom die Modelle, die auf dem Server liegen, automatisch ins Auswahlfeld **Modell**. Der Knopf **Modelle vom Server laden** holt die Liste erneut und meldet „n Modelle gefunden" oder den Grund, warum es nicht geklappt hat (z. B. „Der Server hat keine Modelle …"). Beim lokalen Ollama übernimmt WhisperLoom das erste gefundene Modell, solange noch keins gewählt ist. Ein Modell, das nicht in der Liste steht, trägst du über den letzten Eintrag **Eigenes Modell …** per Name ein; beim lokalen Ollama ohne geladene Liste ist das Feld „Modell" ohnehin ein freies Textfeld. Mit der Pro-Funktion **Modelle vom Server** ([7.6](#76-modelle-vom-server-pro-funktion)) öffnet das Feld die Auswahl mit Suche und der Knopf heißt **Modelle aktualisieren**; geladen wird bei Ollama trotzdem bei jedem Öffnen.
+**Modell-Liste vom Server:** Sobald Ollama verbunden ist (Adresse eingetragen, bei der Cloud auch der Key), lädt WhisperLoom die Modelle, die auf dem Server liegen, automatisch — beim lokalen Ollama ins Feld **Modell**, bei Ollama Cloud in die Auswahl der Stufen ([8.4](#84-modell-je-stufe)). Der Knopf **Modelle vom Server laden** holt die Liste erneut und meldet „n Modelle gefunden" oder den Grund, warum es nicht geklappt hat (z. B. „Der Server hat keine Modelle …"). Beim lokalen Ollama übernimmt WhisperLoom das erste gefundene Modell, solange noch keins gewählt ist. Ein Modell, das nicht in der Liste steht, trägst du über den letzten Eintrag **Eigenes Modell …** per Name ein; beim lokalen Ollama ohne geladene Liste ist das Feld „Modell" ohnehin ein freies Textfeld. Mit der Pro-Funktion **Modelle vom Server** ([7.6](#76-modelle-vom-server-pro-funktion)) öffnet das Feld die Auswahl mit Suche und der Knopf heißt **Modelle aktualisieren**; geladen wird bei Ollama trotzdem bei jedem Öffnen.
 
 **Anbieter nur für Text** — mit Hinweisen, die WhisperLoom direkt an der Auswahl zeigt:
 
@@ -542,18 +570,20 @@ Dann erscheinen eigene Felder: **Anbieter** (OpenAI · Groq · Mistral · OpenRo
 - **Google Gemini**: gratis, aber „Free-Tier: Google darf Inhalte zum Training nutzen."
 - **DeepSeek**: „Server in China — Datenschutz beachten." Das Nachdenken ist bei DeepSeek abgeschaltet, sonst dauert jedes Diktat deutlich länger.
 
-Auch hier gibt es **Zugang prüfen** — WhisperLoom schickt dem Modell eine Mini-Anfrage und wertet die Antwort aus. Bei „Empfehlung je Stufe" prüft es das Modell zum Glätten; jedes andere Modell prüfst du in der Auswahl der Stufe mit **Modell prüfen** ([8.4](#84-modell-je-stufe)).
+Auch hier gibt es **Zugang prüfen** — WhisperLoom schickt dem Modell eine Mini-Anfrage und wertet die Antwort aus. Bei Anbietern mit eingebauten Modellen prüft es die Empfehlung zum Glätten; jedes andere Modell prüfst du in der Auswahl der Stufe mit **Modell prüfen** ([8.4](#84-modell-je-stufe)).
+
+**Fallback:** Unter dem Zugang schaltet **Fallback verwenden** einen zweiten Anbieter zu, der einspringt, wenn der KI-Zugang scheitert ([7.7](#77-fallback)).
 
 **Ohne Netz wartet nichts:** Vor jeder Online-Textverbesserung prüft WhisperLoom, ob das Telefon gerade Internet hat. Fehlt es, geht keine Anfrage raus, und der Text kommt sofort — ohne KI mit dem Hinweis „Textverbesserung übersprungen: Kein Netz für den Online-Zugang" oder, bei Offline-Erkennung, je nach Regel lokal verbessert ([9.7](#97-lokales-textmodell-gemma-4)). Für Server im eigenen Netz (private Adresse, `*.local`, `*.lan`, `*.home.arpa`, `*.internal`, Tailscale mit `100.x` oder `*.ts.net`) reicht eine WLAN- oder VPN-Verbindung, auch ohne Internet. Ein aktives VPN zählt nur, wenn darunter ein Netz da ist — Android meldet ein VPN sonst auch im Funkloch als verbunden. Nach einer Online-Erkennung reicht jedes verbundene Netz: Die Erkennung ist gerade darüber gelaufen.
 
 ### 8.4 Modell je Stufe
 
-Das Modell wählst du auf der Seite der Stufe beim Diktat (Zeile **Modell**, [8.1](#81-diktat)). Es gilt fürs Diktat (Knopf und Tastatur) und für geteilte Sprachnachrichten gemeinsam; deren Seiten zeigen es nur an („Wie beim Diktat · …“). Unter Einstellungen → **KI-Zugang** steht außerdem die Übersicht **Modell je Stufe**: „„Standard“ ist das Modell des Zugangs, bei „Empfehlung je Stufe“ ein schnelles zum Glätten und ein stärkeres zum Umformulieren. Gilt für Diktat und Sprachnachrichten.“ Die Zeilen **Glätten**, **Verschönern**, **Zusammenfassen** und — nur mit der Pro-Funktion „Prompt" ([8.1](#81-diktat)) — **Prompt** zeigen, womit die Stufe rechnet, etwa „Standard · Claude Haiku 5.5" oder ein eigenes Modell wie „Claude Opus 5.5"; ein Tipp führt auf die Seite der Stufe. Darunter: „Ein neuer Anbieter setzt alle Stufen auf „Standard“ zurück."
+Das Modell wählst du auf der Seite der Stufe beim Diktat (Zeile **Modell**, [8.1](#81-diktat)). Es gilt fürs Diktat (Knopf und Tastatur) und für geteilte Sprachnachrichten gemeinsam; deren Seiten zeigen es nur an („Wie beim Diktat · …“). Unter Einstellungen → **KI-Zugang** steht außerdem die Übersicht **Modell je Stufe**: „„Standard“ ist die Empfehlung des Anbieters: schnell zum Glätten, stärker zum Umformulieren; bei Ollama und eigenem Server das Modell des Zugangs. Gilt für Diktat und Sprachnachrichten.“ Die Zeilen **Glätten**, **Verschönern**, **Zusammenfassen** und — nur mit der Pro-Funktion „Prompt" ([8.1](#81-diktat)) — **Prompt** zeigen, womit die Stufe rechnet, etwa „Standard · Claude Haiku 5.5" oder ein eigenes Modell wie „Claude Opus 5.5"; ein Tipp führt auf die Seite der Stufe. Darunter: „Ein neuer Anbieter setzt alle Stufen auf „Standard“ zurück."
 
-**Was „Standard" heißt,** bestimmt das Feld **Modell** des Zugangs ([8.3](#83-ki-zugang)):
+**Was „Standard" heißt:**
 
-- **Empfehlung je Stufe** (ab Werk): Glätten — in jeder Bereinigung — rechnet mit der Empfehlung zum Glätten, Verschönern, Zusammenfassen und Prompt mit der zum Umformulieren. Welche Modelle das je Anbieter sind, steht in [7.1](#71-übersicht).
-- **ein bestimmtes Modell**: Alle Stufen ohne eigenes Modell rechnen damit.
+- bei Anbietern mit eingebauten Modellen die **Empfehlung je Stufe**: Glätten — in jeder Bereinigung — rechnet mit der Empfehlung zum Glätten, Verschönern, Zusammenfassen und Prompt mit der zum Umformulieren. Welche Modelle das je Anbieter sind, steht in [7.1](#71-übersicht).
+- bei Ollama (lokal) und Eigenem Server das Modell im Feld **Modell** des Zugangs ([8.3](#83-ki-zugang)).
 
 **Eigenes Modell für eine Stufe:** Ein Tipp auf die Zeile **Modell** öffnet **Modell für …** (z. B. „Modell für Zusammenfassen"): ganz oben **Standard (…)** mit dem Modell, das die Stufe sonst nimmt, darunter die Modelle des Anbieters mit Preis-Notiz, bei Ollama und mit der Pro-Funktion **Modelle vom Server** die Liste vom Server. Unter der Liste steht **Modell prüfen**, ganz unten **Eigenes Modell …** für eine freie ID und **Schließen**. **Modell prüfen** prüft genau das Modell, mit dem die Stufe gerade rechnet — praktisch bei einer frei eingetippten ID, die sonst erst beim Diktat scheitern würde. **Standard** schaltet die Stufe zurück.
 
@@ -929,6 +959,8 @@ WhisperLoom hat keinen eigenen Server, kein Konto, keine Telemetrie. Was mit dei
 **Offline:** Die Aufnahme verlässt das Gerät nicht. Mit dem **lokalen Textmodell** (Regel „Lokales Textmodell", ab Werk) bleibt auch der erkannte Text auf dem Gerät — Gemma rechnet auf dem Handy und schickt nichts weg. Ins Netz gehen nur die Modell-Downloads von huggingface.co: die Whisper-Modelle von `huggingface.co/ggerganov/whisper.cpp`, die Textmodelle von `huggingface.co/litert-community` (ohne Konto, ohne Key; Hugging Face sieht dabei wie jeder Webserver deine IP-Adresse). Nur mit den Regeln „Online, ohne Netz lokal" oder „Überspringen" und einem eigenen Online-Zugang geht der erkannte Text bei Netz an dieses Sprachmodell ([9.7](#97-lokales-textmodell-gemma-4)).
 
 **Eigener Server:** Audio und Text gehen nur an deinen Server.
+
+**Fallback:** Ist unter Spracherkennung oder KI-Zugang ein Fallback eingeschaltet ([7.7](#77-fallback)), gehen Audio bzw. Text im Fehlerfall zusätzlich an den Fallback-Anbieter — nur dann, wenn der erste gescheitert ist.
 
 **Pro Widgets:** Der Auftrag eines Sprach-Command-Widgets geht nur an den Server, der in genau diesem Widget eingetragen ist. Erkennung und, falls eingeschaltet, Textverbesserung laufen wie beim Diktat über die eingestellten Anbieter (siehe oben, [14.9](#149-was-dabei-gesendet-wird)).
 

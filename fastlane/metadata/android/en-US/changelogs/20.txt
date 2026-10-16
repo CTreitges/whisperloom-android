@@ -1,0 +1,6 @@
+WhisperLoom 3.9.1
+• New: fallback – a second provider steps in when recognition or the AI access fails
+• New: Pro Widget "Claude Code" starts a Claude Code session on your server by voice
+• New: link to the privacy policy in the About sheet
+• Changed: pick the model per level only, the duplicate field in AI access is gone
+• Fixed: several Pro Widgets no longer record at the same time
