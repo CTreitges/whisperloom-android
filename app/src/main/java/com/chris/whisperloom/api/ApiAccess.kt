@@ -161,11 +161,21 @@ object AccessResolver {
         return resolveStt(
             providerId = providerId,
             baseUrl = baseUrl.ifBlank { if (same) primary.baseUrl else "" },
-            apiKey = apiKey.ifBlank { if (same) primary.apiKey else "" },
+            apiKey = apiKey.ifBlank { if (same && sameServer(baseUrl, primary)) primary.apiKey else "" },
             model = model,
             serverModels = serverModels,
         )
     }
+
+    /**
+     * Darf ein leerer Key des Fallbacks den von [donor] erben? Bei Anbietern mit fester Adresse ist
+     * derselbe Anbieter derselbe Server. Beim eigenen Server und bei Ollama lokal nur, wenn die Adresse
+     * leer (= die des Donors) oder dieselbe ist — sonst ginge Server As Key an Server B (Review 3.9.1).
+     */
+    private fun sameServer(baseUrl: String, donor: ApiAccess): Boolean =
+        !donor.provider.needsUrl || baseUrl.isBlank() || normalized(baseUrl) == normalized(donor.baseUrl)
+
+    private fun normalized(url: String) = url.trim().trimEnd('/').lowercase()
 
     /**
      * Fallback der Textverbesserung (3.9.1). Leere Adresse und leerer Key kommen von einem Zugang
@@ -187,7 +197,7 @@ object AccessResolver {
     ): ApiAccess {
         val provider = ProviderCatalog.byId(providerId)
         val donor = listOfNotNull(primary.takeIf { !it.sameAsOffline }, stt.takeIf { !sttOffline })
-            .firstOrNull { it.provider.id == provider.id }
+            .firstOrNull { it.provider.id == provider.id && sameServer(baseUrl, it) }
         val url = baseUrl.trim().ifBlank { donor?.baseUrl ?: provider.baseUrl }
         val modelId = model.trim().ifBlank { provider.recommendedLlmModel(stage) }
         return ApiAccess(

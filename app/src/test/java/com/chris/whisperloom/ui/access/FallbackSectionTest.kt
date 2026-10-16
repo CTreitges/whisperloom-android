@@ -95,7 +95,8 @@ class FallbackSectionTest {
         val p = Prefs(ctx)
         assertTrue(p.sttFallbackEnabled)
         assertEquals("groq", p.sttFallbackProviderId)
-        compose.onNodeWithText("Scheitert OpenAI, springt dieser Anbieter ein.").assertExists()
+        // Ohne Key springt Groq nicht ein — der Schalter sagt es (Review 3.9.1).
+        compose.onNodeWithText("Noch unvollständig", substring = true).assertExists()
         compose.onNodeWithTag("dropdown:Fallback-Anbieter").assertTextContains("Groq", substring = true)
         compose.onNodeWithTag("dropdown:Modell des Fallbacks").assertExists()
         compose.onNodeWithText("Fallback prüfen").assertExists()
@@ -105,6 +106,8 @@ class FallbackSectionTest {
         compose.waitForIdle()
         assertEquals("gsk-fallback", Prefs(ctx).sttFallbackKey)
         assertEquals("sk-openai", Prefs(ctx).apiKey)
+        compose.onNodeWithText("Scheitert OpenAI, springt dieser Anbieter ein.").assertExists()
+        compose.onNodeWithText("Noch unvollständig", substring = true).assertDoesNotExist()
     }
 
     @Test fun erkennungAusschaltenBehaeltDieEingaben() {

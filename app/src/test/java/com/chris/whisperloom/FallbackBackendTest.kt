@@ -97,6 +97,15 @@ class FallbackBackendTest {
         }
     }
 
+    @Test fun hinfaelligerAuftragSchicktNichtsAnDenFallback() {
+        // Review 3.9.1: Widget-Auftrag abgeloest, waehrend der erste im Timeout hing — kein zweiter Upload.
+        val second = Fake("Groq")
+        val backend = FallbackBackend(Fake("OpenAI", fail = ApiNetworkException(SocketTimeoutException("Read timed out"))), second)
+        backend.cancelled = { true }
+        assertTrue(runCatching { backend.transcribe(upload, "de") }.exceptionOrNull() is ApiNetworkException)
+        assertEquals(0, second.calls)
+    }
+
     @Test fun ohneFallbackKeinHinweis() {
         assertNull(TranscriptionEngine.sttFallbackNote(Fake("OpenAI")))
     }

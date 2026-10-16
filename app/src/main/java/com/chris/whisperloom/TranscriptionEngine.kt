@@ -133,6 +133,7 @@ object TranscriptionEngine {
         val durationMs = samples.size * 1000L / AudioRecorder.SAMPLE_RATE
         val trimmed = AudioUtils.trimSilence(samples)
         val backend = backendFactory(prefs, VocabularySource.prompt(app, prefs).text)
+        (backend as? FallbackBackend)?.cancelled = cancelled
         val result = backend.transcribe(WavUpload.fromSamples(trimmed), prefs.language)
         val sttNote = sttFallbackNote(backend)
         val raw = result.text

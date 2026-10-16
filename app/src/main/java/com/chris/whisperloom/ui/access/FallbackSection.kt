@@ -19,6 +19,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.SetupState
 import com.chris.whisperloom.Vocabulary
 import com.chris.whisperloom.api.ApiAccess
 import com.chris.whisperloom.api.Provider
@@ -49,6 +50,7 @@ fun SttFallbackSection() {
     FallbackFrame(
         enabled = prefs.sttFallbackEnabled,
         primary = providerShortName(primary.provider),
+        ready = SetupState.sttFallbackReady(access),
         onEnabledChange = { on ->
             if (on && prefs.sttFallbackProviderId == primary.provider.id && untouched(prefs.sttFallbackUrl, prefs.sttFallbackKey, prefs.sttFallbackModel)) {
                 prefs.sttFallbackProviderId = defaultFallback(ProviderCatalog.sttProviders, primary.provider).id
@@ -139,6 +141,7 @@ fun LlmFallbackSection() {
     FallbackFrame(
         enabled = prefs.llmFallbackEnabled,
         primary = providerShortName(primary.provider),
+        ready = SetupState.llmReady(access),
         onEnabledChange = { on ->
             if (on && prefs.llmFallbackProviderId == primary.provider.id && untouched(prefs.llmFallbackUrl, prefs.llmFallbackKey, prefs.llmFallbackModel)) {
                 prefs.llmFallbackProviderId = defaultFallback(ProviderCatalog.llmProviders, primary.provider).id
@@ -214,13 +217,19 @@ fun LlmFallbackSection() {
 private fun FallbackFrame(
     enabled: Boolean,
     primary: String,
+    ready: Boolean,
     onEnabledChange: (Boolean) -> Unit,
     content: @Composable () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SwitchRow(
             headline = stringResource(R.string.fallback_switch),
-            supporting = stringResource(if (enabled) R.string.fallback_switch_on else R.string.fallback_switch_off, primary),
+            supporting = when {
+                !enabled -> stringResource(R.string.fallback_switch_off, primary)
+                // Unvollstaendig springt er nicht ein (Review 3.9.1) — das muss der Schalter sagen.
+                !ready -> stringResource(R.string.fallback_incomplete)
+                else -> stringResource(R.string.fallback_switch_on, primary)
+            },
             checked = enabled,
             onCheckedChange = onEnabledChange,
         )

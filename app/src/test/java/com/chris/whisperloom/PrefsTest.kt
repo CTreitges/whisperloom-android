@@ -497,6 +497,15 @@ class PrefsTest {
         assertEquals("meta-llama/x", Prefs(ctx).llmModel)
     }
 
+    @Test fun v7VonV2NimmtDenAnbieterAusDerAltenAdresse() {
+        // Review 3.9.1: toV3 setzt stt_provider nur im Editor — v7 darf nicht "openai" annehmen.
+        sp.edit().putString("api_url", "http://192.168.1.5:8000/v1").putString("llm_model", "qwen3:8b").commit()
+        val p = Prefs(ctx)
+        assertEquals("custom", p.sttProviderId)
+        assertEquals("eigener Server hat keinen Katalog: das Modell bleibt im Zugang", "qwen3:8b", p.llmModel)
+        assertEquals("qwen3:8b", p.llmAccess(RefineMode.POLISH).model)
+    }
+
     @Test fun v7OhneModellImZugangAendertNichts() {
         sp.edit().putInt("prefs_version", 6).putString("llm_provider", "openai").putString("llm_model_beautify", "gpt-6").commit()
         val p = Prefs(ctx)

@@ -420,4 +420,24 @@ class AccessResolverTest {
         assertTrue(SetupState.llmReady(bereit))
         assertEquals(600_000, bereit.readTimeoutMs)
     }
+
+    // Review 3.9.1: derselbe Anbieter heisst beim eigenen Server nicht derselbe Server.
+
+    @Test fun sttFallbackEigenerServerMitAndererAdresseErbtKeinenKey() {
+        val primary = AccessResolver.resolveStt("custom", "https://a.example/v1", "key-a", "whisper-1", 0)
+        val andere = AccessResolver.resolveSttFallback(primary, "custom", "https://b.example/v1", "", "whisper-1")
+        assertEquals("https://b.example/v1", andere.baseUrl)
+        assertEquals("Server As Key geht nie an Server B", "", andere.apiKey)
+        // Dieselbe Adresse (auch mit Schraegstrich) oder leer = derselbe Server: dann darf er erben.
+        assertEquals("key-a", AccessResolver.resolveSttFallback(primary, "custom", "https://A.example/v1/", "", "m").apiKey)
+        assertEquals("key-a", AccessResolver.resolveSttFallback(primary, "custom", "", "", "m").apiKey)
+    }
+
+    @Test fun llmFallbackOllamaMitAndererAdresseErbtKeinenKey() {
+        val primary = AccessResolver.resolveLlm(openAiStt, "ollama", "http://192.168.1.5:11434", "ollama-key", "qwen3:8b")
+        val andere = AccessResolver.resolveLlmFallback(openAiStt, primary, "ollama", "http://192.168.1.9:11434", "", "gemma4:12b")
+        assertEquals("", andere.apiKey)
+        val gleiche = AccessResolver.resolveLlmFallback(openAiStt, primary, "ollama", "http://192.168.1.5:11434", "", "gemma4:12b")
+        assertEquals("ollama-key", gleiche.apiKey)
+    }
 }

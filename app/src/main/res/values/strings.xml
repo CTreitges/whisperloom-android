@@ -440,6 +440,7 @@
     <!-- %1$s = erster Anbieter -->
     <string name="fallback_switch_off">Ein zweiter Anbieter für den Fall, dass %1$s scheitert.</string>
     <string name="fallback_switch_on">Scheitert %1$s, springt dieser Anbieter ein.</string>
+    <string name="fallback_incomplete">Noch unvollständig — springt erst ein, wenn Key, Adresse und Modell eingetragen sind.</string>
     <string name="fallback_provider">Fallback-Anbieter</string>
     <string name="fallback_url">Base-URL des Fallbacks</string>
     <string name="fallback_key">API-Key des Fallbacks</string>

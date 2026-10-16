@@ -55,6 +55,9 @@ class FallbackBackend(
 
     @Volatile private var primaryFailed = false
 
+    /** Auftrag hinfaellig (Widget: abgeloest oder verworfen) — dann kein zweiter Upload. */
+    @Volatile var cancelled: () -> Boolean = { false }
+
     /** Womit zuletzt erkannt wurde — nach einem Ausfall der Fallback. */
     override val label: String get() = if (usedFallback) fallback.label else primary.label
 
@@ -66,8 +69,8 @@ class FallbackBackend(
         val error = try {
             return primary.transcribe(upload, language)
         } catch (e: Exception) {
-            // Abgebrochen (Thread unterbrochen): kein zweiter Upload.
-            if (Thread.currentThread().isInterrupted) throw e
+            // Abgebrochen (Thread unterbrochen oder Auftrag hinfaellig): kein zweiter Upload.
+            if (Thread.currentThread().isInterrupted || cancelled()) throw e
             e
         }
         Log.w(TAG, "Erkennung gescheitert, versuche Fallback ${fallback.label}: ${error.message}", error)
