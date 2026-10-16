@@ -19,7 +19,10 @@ import com.chris.whisperloom.ui.components.VersionWithPatchnotes
 
 const val GITHUB_URL = "https://github.com/CTreitges/whisperloom-android"
 
-/** E6 Ueber WhisperLoom (Spec §2.3): Version mit (?) zu den Patchnotes, Lizenzen, Quellcode-Link. */
+// Quelle: docs/privacy.html. Google Play verlangt den Link auch in der App selbst (User-Data-Policy).
+const val PRIVACY_URL = "https://ctreitges.de/fdroid/privacy.html"
+
+/** E6 Ueber WhisperLoom (Spec §2.3): Version mit (?) zu den Patchnotes, Lizenzen, Datenschutz- und Quellcode-Link. */
 @Composable
 fun AboutSheet(snack: SnackController, onPatchnotes: () -> Unit, onDismiss: () -> Unit) {
     LoomSheet(title = stringResource(R.string.settings_group_about), onDismiss = onDismiss) { dismiss ->
@@ -40,6 +43,7 @@ fun AboutSheet(snack: SnackController, onPatchnotes: () -> Unit, onDismiss: () -
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        LinkRow(headline = stringResource(R.string.about_privacy), url = PRIVACY_URL, snack = snack)
         LinkRow(headline = stringResource(R.string.about_source), url = GITHUB_URL, snack = snack)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             TextButton(onClick = dismiss) { Text(stringResource(R.string.common_close)) }

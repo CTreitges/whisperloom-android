@@ -69,7 +69,7 @@ Grundsätze: reine Logik in Android-freien Kotlin-Objekten (JVM-testbar), Compos
 | Textveredelung | `TextPolisher` + `PolishPlan` (Füllwörter eingebaut/eigene/abgewählte, Groß-Schreibung, Whitespace), `Paragrapher` (Absatz-Heuristik), `Vocabulary` (eigene Begriffe, Datei-Parser, Kappung auf 800 Zeichen) + `VocabularySource` (verknüpfte Datei, bei jedem Diktat neu gelesen) |
 | Daten & Start | `Prefs` (SharedPreferences) + `PrefsMigration` (Migrationen bis v6: Einstellungen je Stufe und Weg aus „Lesbarer glätten“, „Füllwörter intelligent“ und „Automatische Absätze“), `RefineMode` (Stufen, `modelStage`: Lesbar rechnet mit dem Glätten-Modell), `Refinement` (`RefineWay`, `PolishCleanup`, `SummarizeForm`, `Refinement.of`: Stufe und Weg → Prompt-Variante), `ModelCache` (geladene Modell-Listen und abgelehnte `temperature` je Anbieter, Adresse und Modell in eigener Datei `whisperloom_models`, ohne Keys), `SetupState` (Zugang vollständig?; „eingerichtet?" entscheidet `ui/nav/SetupRouter`), `AppNav` (Deep-Link-Intents route/step), `WhisperLoomApplication` (Application: Engine-Init, `onTrimMemory`), `ShareTranscribeActivity` (Teilen-Ziel) |
 
-Weitere Unterlagen: [docs/design/ux-spec-v3.md](docs/design/ux-spec-v3.md) (verbindliche UX-Spezifikation der v3-Oberfläche) und [docs/research/](docs/research/README.md) (Recherche-Reports zu Compose-Stack, Anbietern, whisper.cpp und Self-Hosting, Stand 3.0.0), dazu [docs/PLAYSTORE-RELEASE.md](docs/PLAYSTORE-RELEASE.md) (Vorbereitung der Play-Store-Veröffentlichung) und [docs/privacy.html](docs/privacy.html) (Datenschutzerklärung DE/EN, veröffentlicht unter https://ctreitges.de/fdroid/privacy.html).
+Weitere Unterlagen: [docs/design/ux-spec-v3.md](docs/design/ux-spec-v3.md) (verbindliche UX-Spezifikation der v3-Oberfläche) und [docs/research/](docs/research/README.md) (Recherche-Reports zu Compose-Stack, Anbietern, whisper.cpp und Self-Hosting, Stand 3.0.0), dazu [docs/PLAYSTORE-RELEASE.md](docs/PLAYSTORE-RELEASE.md) (Vorbereitung der Play-Store-Veröffentlichung), [docs/PLAY-INTERNER-TEST.md](docs/PLAY-INTERNER-TEST.md) (Klick-Anleitung für den ersten internen Test, Play-Paket `com.whisperloom`) und [docs/privacy.html](docs/privacy.html) (Datenschutzerklärung DE/EN, veröffentlicht unter https://ctreitges.de/fdroid/privacy.html).
 
 ## Bauen
 
@@ -132,9 +132,9 @@ zum `versionCode` die Highlight-Datei existieren.
 2. CMake-Zwischenstand (`app/.cxx`) wird gecacht (Key: Submodul-Commit + `cpp/**` + `build.gradle.kts`).
 3. `tools/check_jni_symbols.py`, dann `testDebugUnitTest lintDebug`, `assembleDebug`.
 4. Signiertes `assembleRelease` mit dem Keystore aus den Secrets.
-5. Prüfung des Release-APKs: `lib/arm64-v8a/libwhisperloom.so` vorhanden, **kein** `assets/*.bin` (Modelle kommen nur per Download), keine anderen ABIs, `zipalign -P 16` und `llvm-readelf` bestätigen 16-KB-Alignment aller `LOAD`-Segmente.
-6. Signiertes `bundleRelease` (Android App Bundle für den Play Store, gleicher Schlüssel als Upload-Key) mit derselben Prüfung auf Native-Lib, Modelle und ABIs.
-7. Artefakte: `whisperloom-debug-apk`, `whisperloom-release-apk`, `whisperloom-release-mapping` (R8-`mapping.txt` zum Entschlüsseln von Stacktraces), `whisperloom-release-aab`, `unit-and-lint-reports`.
+5. Prüfung des Release-APKs: `lib/arm64-v8a/libwhisperloom.so` vorhanden, **kein** `assets/*.bin` (Modelle kommen nur per Download), keine anderen ABIs, `zipalign -P 16` und `llvm-readelf` bestätigen 16-KB-Alignment aller `LOAD`-Segmente, `tools/check_package_id.sh` bestätigt die Paket-ID `com.chris.whisperloom`.
+6. Signiertes `bundleRelease -Pwhisperloom.applicationId=com.whisperloom` (Android App Bundle für den Play Store, gleicher Schlüssel als Upload-Key). Nur die Play-Version heißt `com.whisperloom`; GitHub- und F-Droid-APKs bleiben `com.chris.whisperloom`, damit installierte Apps weiter Updates bekommen. Geprüft werden Native-Lib, Modelle und ABIs, die Paket-ID (bundletool 1.18.3, Prüfsumme fest) sowie R8-Mapping und Native-Symbole in `BUNDLE-METADATA/`. Beides liest Play direkt aus dem Bundle.
+7. Artefakte: `whisperloom-debug-apk`, `whisperloom-release-apk`, `whisperloom-release-mapping` (R8-`mapping.txt` zum Entschlüsseln von Stacktraces des Release-APKs; für Play liegt das passende Mapping im AAB), `whisperloom-play-aab` (`com.whisperloom`), `unit-and-lint-reports`.
 
 ### Release-Signierung
 
