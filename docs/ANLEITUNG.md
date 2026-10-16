@@ -445,7 +445,7 @@ Der Schalter **Fallback verwenden** ist ab Werk aus („Ein zweiter Anbieter fü
 
 - **Fallback-Anbieter** — beim ersten Einschalten schlägt WhisperLoom einen anderen Anbieter als den ersten vor: OpenAI, und wenn der erste OpenAI ist, Groq. Ein anderer Fallback-Anbieter leert Adresse, Key und Modell des Fallbacks.
 - **Base-URL des Fallbacks** — nur beim Eigenen Server und bei Ollama (lokal).
-- **API-Key des Fallbacks** — leer gelassen nimmt der Fallback den Key eines Zugangs **desselben Anbieters**: in der Spracherkennung den des ersten Anbieters (etwa für ein anderes Modell beim selben Anbieter), im KI-Zugang erst den des KI-Zugangs, dann den der Spracherkennung. Darunter steht dann „Leer gelassen gilt der Key der Spracherkennung." bzw. „… des KI-Zugangs.". Typisch: KI-Zugang Anthropic, Fallback OpenAI mit dem OpenAI-Key der Erkennung, ohne ihn zweimal einzutragen. An einen anderen Anbieter geht nie ein Key.
+- **API-Key des Fallbacks** — leer gelassen nimmt der Fallback den Key eines Zugangs **desselben Anbieters**: in der Spracherkennung den des ersten Anbieters (etwa für ein anderes Modell beim selben Anbieter), im KI-Zugang erst den des KI-Zugangs, dann den der Spracherkennung. Darunter steht dann „Leer gelassen gilt der Key der Spracherkennung." bzw. „… des KI-Zugangs.". Typisch: KI-Zugang Anthropic, Fallback OpenAI mit dem OpenAI-Key der Erkennung, ohne ihn zweimal einzutragen. Beim Eigenen Server und bei Ollama (lokal) gilt das nur für dieselbe Adresse — an einen anderen Anbieter oder Server geht nie ein Key.
 - **Modell des Fallbacks** — in der Spracherkennung wie beim ersten Anbieter. Im KI-Zugang gilt es für alle Stufen; ab Werk **Empfehlung je Stufe** des Fallback-Anbieters (die Modelle je Stufe aus [8.4](#84-modell-je-stufe) gehören zum ersten Anbieter). Beim Eigenen Server und bei Ollama (lokal) ist das Modell Pflicht.
 - **Fallback prüfen** — wie „Zugang prüfen", nur für den Fallback.
 
@@ -454,7 +454,7 @@ Der Schalter **Fallback verwenden** ist ab Werk aus („Ein zweiter Anbieter fü
 - **Geteilte Sprachnachrichten:** Ist der erste beim ersten Stück gescheitert, gehen die weiteren Stücke gleich an den Fallback.
 - **Beide scheitern:** wie ohne Fallback — bei der Erkennung der Fehler des ersten Anbieters (mit „Erneut senden"), bei der Textverbesserung der Text ohne KI; der Hinweis nennt dann beide Gründe („… · Fallback: …").
 - **Offline-Erkennung** mit der Regel „Online, ohne Netz lokal" ([9.7](#97-lokales-textmodell-gemma-4)): erst der KI-Zugang, dann der Fallback, erst danach das lokale Textmodell. Bei Offline-Erkennung gibt es keinen Fallback der Erkennung.
-- **Unvollständig** (Key fehlt, Eigener Server ohne Adresse oder Modell): Der Fallback springt nicht ein.
+- **Unvollständig** (Key fehlt, Eigener Server ohne Adresse oder Modell): Der Fallback springt nicht ein; der Schalter sagt „Noch unvollständig — springt erst ein, wenn Key, Adresse und Modell eingetragen sind.“
 
 Datenschutz: Mit Fallback gehen Audio bzw. Text im Fehlerfall zusätzlich an den Fallback-Anbieter ([12](#12-datenschutz)); die Zeile unter den Feldern sagt es.
 
