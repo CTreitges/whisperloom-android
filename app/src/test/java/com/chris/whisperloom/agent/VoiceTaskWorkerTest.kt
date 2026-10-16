@@ -19,6 +19,7 @@ import com.chris.whisperloom.api.ApiNetworkException
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -28,6 +29,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowSystemClock
+import org.robolectric.shadows.ShadowToast
 import java.net.SocketTimeoutException
 import java.time.Duration
 
@@ -155,6 +157,20 @@ class VoiceTaskWorkerTest {
         assertEquals(VoiceTaskState.ERROR, store.state)
         assertTrue(store.message.contains("401"))
         assertTrue("Ein Tipp nach dem Korrigieren des Tokens soll reichen", store.hasWork)
+    }
+
+    @Test fun einEndgueltigerFehlerNenntSeinenGrundAlsMeldungEinZwischenversuchNicht() {
+        // Das 1x1-Widget hat keine Statuszeile — der Grund muss trotzdem ankommen.
+        auftragAnlegen()
+        pipeline(send = { throw ApiHttpException(503, "Hermes nicht erreichbar") })
+        lauf(attempt = 0)
+        shadowOf(android.os.Looper.getMainLooper()).idle()
+        assertNull("Ein Versuch, der wiederholt wird, meldet sich nicht", ShadowToast.getTextOfLatestToast())
+
+        lauf(attempt = VoiceTaskWork.MAX_ATTEMPTS - 1)
+        shadowOf(android.os.Looper.getMainLooper()).idle()
+        assertEquals(store.message, ShadowToast.getTextOfLatestToast())
+        assertTrue(store.message.contains("503"))
     }
 
     @Test fun nichtsVerstandenLaesstNichtsZumWiederholenUebrig() {

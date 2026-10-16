@@ -144,7 +144,7 @@ class TutorialScreenTest {
             Seite("Server eintragen", R.drawable.ill_agent_server, R.string.img_agent_server, R.string.tutorial_pro_p3_body),
             Seite("Auf den Startbildschirm", R.drawable.ill_agent_widget, R.string.img_agent_widget, R.string.tutorial_pro_p4_body),
             Seite("Tippen, sprechen, tippen", R.drawable.ill_agent_record, R.string.img_agent_record, R.string.tutorial_pro_p5_body),
-            Seite("Die Antwort kommt im Chat", R.drawable.ill_agent_answer, R.string.img_agent_answer, R.string.tutorial_pro_p6_body),
+            Seite("So kommt die Antwort", R.drawable.ill_agent_answer, R.string.img_agent_answer, R.string.tutorial_pro_p6_body),
         )
         seiten.forEachIndexed { i, s ->
             compose.onNodeWithText(s.titel).assertIsDisplayed()
@@ -175,7 +175,7 @@ class TutorialScreenTest {
 
     @Test fun losGehtsAufDerLetztenProSeiteSetztNurDasProFlag() {
         show(startPage = 5, kind = TutorialKind.PRO_WIDGETS)
-        compose.onNodeWithText("Die Antwort kommt im Chat").assertIsDisplayed()
+        compose.onNodeWithText("So kommt die Antwort").assertIsDisplayed()
         compose.onNodeWithText("Los geht's").performClick()
         compose.waitForIdle()
         assertTrue(Prefs(ctx).agentTutorialSeen)

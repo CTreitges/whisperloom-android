@@ -11,6 +11,7 @@ import com.chris.whisperloom.agent.Tier
 import com.chris.whisperloom.agent.VoiceTaskStore
 import com.chris.whisperloom.agent.VoiceTaskWidget
 import com.chris.whisperloom.agent.VoiceTaskWork
+import com.chris.whisperloom.agent.WidgetIcons
 import com.chris.whisperloom.agent.WidgetKind
 import com.chris.whisperloom.agent.WidgetPhoto
 import com.chris.whisperloom.agent.WidgetProfile
@@ -139,9 +140,65 @@ class WidgetProfilesStateTest {
         assertFalse(neu.serverReady)
     }
 
+    @Test fun einNeuesClaudeWidgetHeisstClaudeCodeAbEins() {
+        val s = WidgetProfilesState(ctx)
+        val eins = s.createNew(WidgetKind.CLAUDE_CODE)
+        val zwei = s.createNew(WidgetKind.CLAUDE_CODE)
+
+        assertEquals(listOf("Claude Code 1", "Claude Code 2"), listOf(eins.name, zwei.name))
+        assertEquals(WidgetKind.CLAUDE_CODE, eins.kind)
+        assertEquals(
+            "Ab Werk Opus, Extra hoch, ohne Ultracode, mit eigenem Symbol",
+            WidgetProfile(eins.id, name = eins.name, icon = ProfileIcon.BuiltIn("auto_fix_high"), kind = WidgetKind.CLAUDE_CODE),
+            eins,
+        )
+        assertEquals("Sofort gespeichert", eins, WidgetProfileStore(ctx).get(eins.id))
+        assertEquals("Die Sprach-Command-Nummern laufen davon unberuehrt", "Sprach-Command 2", s.createNew().name)
+    }
+
+    @Test fun claudeUndSprachCommandHabenVerschiedeneSymbole() {
+        // Auf dem Startbildschirm und in der Profilwahl sonst nicht zu unterscheiden.
+        val s = WidgetProfilesState(ctx)
+        val sprach = s.createNew()
+        val claude = s.createNew(WidgetKind.CLAUDE_CODE)
+        assertEquals(ProfileIcon.DEFAULT, sprach.icon)
+        assertEquals(ProfileIcon.BuiltIn("auto_fix_high"), claude.icon)
+        assertTrue("Ein eingebautes Symbol, kein unbekannter Schluessel", WidgetIcons.isKnown("auto_fix_high"))
+    }
+
+    @Test fun einClaudeWidgetUebernimmtNieDenServerDesSprachCommands() {
+        // Sonst erbte das erste Claude-Code-Widget die hermes-bridge, und seine Auftraege gingen dorthin.
+        WidgetProfileStore(ctx).save(WidgetProfile("hermes", name = "Hermes", serverUrl = "https://hermes.example.de", serverToken = "h"))
+
+        val claude = WidgetProfilesState(ctx).createNew(WidgetKind.CLAUDE_CODE)
+
+        assertEquals("", claude.serverUrl)
+        assertEquals("", claude.serverToken)
+        assertFalse(claude.serverReady)
+    }
+
+    @Test fun einNeuesWidgetUebernimmtDenServerSeinesTyps() {
+        // Das Claude-Profil steht vorn — ohne Typ-Filter bekaeme der Sprach-Command seine Bridge.
+        val store = WidgetProfileStore(ctx)
+        store.save(
+            WidgetProfile("claude", name = "Claude", kind = WidgetKind.CLAUDE_CODE, serverUrl = "https://claude.example.de", serverToken = "c"),
+        )
+        store.save(WidgetProfile("hermes", name = "Hermes", serverUrl = "https://hermes.example.de", serverToken = "h"))
+        val s = WidgetProfilesState(ctx)
+
+        val sprach = s.createNew(WidgetKind.VOICE_COMMAND)
+        assertEquals("https://hermes.example.de", sprach.serverUrl)
+        assertEquals("h", sprach.serverToken)
+
+        val claude = s.createNew(WidgetKind.CLAUDE_CODE)
+        assertEquals("https://claude.example.de", claude.serverUrl)
+        assertEquals("c", claude.serverToken)
+    }
+
     @Test fun dieProfileLassenSichNachStufeFiltern() {
         val s = WidgetProfilesState(ctx)
         s.createNew()
+        s.createNew(WidgetKind.CLAUDE_CODE)
         assertEquals("Alle bisherigen Profile sind Pro Widgets", s.profiles, s.profiles(Tier.PRO))
         assertTrue(s.profiles(Tier.NORMAL).isEmpty())
     }

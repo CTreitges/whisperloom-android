@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.chris.whisperloom.R
+import com.chris.whisperloom.agent.ProfileIcon
 import com.chris.whisperloom.agent.Tier
 import com.chris.whisperloom.agent.VoiceTaskStore
 import com.chris.whisperloom.agent.VoiceTaskWidget
@@ -49,24 +50,35 @@ class WidgetProfilesState(context: Context) {
     /** Wie viele Widgets dieses Profil ausdruecklich zeigen (fuer die Rueckfrage beim Loeschen). */
     fun boundCount(profileId: String): Int = store.boundCount(profileId)
 
+    /** Was diese Widgets nach dem Loeschen zeigen (fuer die Rueckfrage, [WidgetProfileStore.successor]). */
+    fun successor(profileId: String): WidgetProfile = store.successor(profileId)
+
     fun create(name: String): WidgetProfile = store.create(name).also { changed(redraw = false) }
 
     /**
      * "Neues Widget": heisst "Sprach-Command n" mit der kleinsten freien Nummer ab 2 (das
-     * Standardprofil ist die 1). Aus der Anzahl gebildet, entstuende nach dem Loeschen ein
-     * Doppelname — zwei gleiche Eintraege mit gleichem Symbol, auch fuer TalkBack nicht zu
-     * unterscheiden.
+     * Standardprofil ist die 1) bzw. "Claude Code n" ab 1. Aus der Anzahl gebildet, entstuende
+     * nach dem Loeschen ein Doppelname — zwei gleiche Eintraege mit gleichem Symbol, auch fuer
+     * TalkBack nicht zu unterscheiden.
      *
-     * Der Server kommt vom ersten Profil, das einen brauchbaren hat: meist nutzen alle Widgets
-     * dieselbe Bridge, und ohne Server ginge das neue Widget erst einmal auf "fehlt".
+     * Der Server kommt vom ersten Profil DESSELBEN Typs, das einen brauchbaren hat: meist nutzen
+     * diese Widgets dieselbe Bridge, und ohne Server ginge das neue Widget erst einmal auf "fehlt".
+     * Nie quer ueber die Typen — das erste Claude-Code-Widget erbte sonst die hermes-bridge, und
+     * seine Auftraege landeten dort statt bei der claude-bridge. Das Symbol kommt vom Typ
+     * ([WidgetKind.iconKey]).
      */
     fun createNew(kind: WidgetKind = WidgetKind.VOICE_COMMAND): WidgetProfile {
-        val name = generateSequence(2) { it + 1 }
-            .map { app.getString(R.string.widget_profile_default_name, it) }
+        val (nameRes, first) = when (kind) {
+            WidgetKind.VOICE_COMMAND -> R.string.widget_profile_default_name to 2
+            WidgetKind.CLAUDE_CODE -> R.string.widget_profile_default_name_claude to 1
+        }
+        val name = generateSequence(first) { it + 1 }
+            .map { app.getString(nameRes, it) }
             .first { n -> profiles.none { it.name == n } }
-        val server = profiles.firstOrNull { it.serverReady }
+        val server = profiles.firstOrNull { it.kind == kind && it.serverReady }
         val p = store.create(name).copy(
             kind = kind,
+            icon = ProfileIcon.BuiltIn(kind.iconKey),
             serverUrl = server?.serverUrl.orEmpty(),
             serverToken = server?.serverToken.orEmpty(),
         )
@@ -87,7 +99,7 @@ class WidgetProfilesState(context: Context) {
      * Loeschen. Wartet noch ein Auftrag dieses Profils, geht er mit: sein Server ist weg, und an den
      * eines anderen Widgets darf er nicht gehen.
      *
-     * @return Anzahl der Widgets, die jetzt das Standardprofil zeigen
+     * @return Anzahl der Widgets, die jetzt ein anderes Profil zeigen ([successor])
      */
     fun delete(id: String): Int {
         val task = VoiceTaskStore(app)

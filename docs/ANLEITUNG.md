@@ -1018,19 +1018,19 @@ Einstellungen aus 2.x werden übernommen (Key, URL, Modell, Sprache, Regeln). Of
 
 ## 14. Pro Widgets (Sprach-Command-Widgets)
 
-Pro Widgets sind für Entwickler und Bastler gedacht: Ein **Sprach-Command-Widget** auf dem Startbildschirm nimmt auf und schickt den erkannten Text an einen Server, den du selbst betreibst. Wenn du keinen hast, überspring dieses Kapitel — ab Werk sind Pro Widgets aus, und du merkst von ihnen nichts. Normale Widgets ohne eigenen Server folgen mit einem späteren Update; bis dahin zeigt Einstellungen → **Widgets** nur einen Platzhalter („Normale Widgets für den Startbildschirm kommen mit einem späteren Update.“).
+Pro Widgets sind für Entwickler und Bastler gedacht: Ein **Sprach-Command-Widget** auf dem Startbildschirm nimmt auf und schickt den erkannten Text an einen Server, den du selbst betreibst. Ein **Claude-Code-Widget** startet mit dem Auftrag stattdessen eine neue Claude-Code-Session auf deinem Server ([14.10](#1410-claude-code-widget)). Wenn du keinen hast, überspring dieses Kapitel — ab Werk sind Pro Widgets aus, und du merkst von ihnen nichts. Normale Widgets ohne eigenen Server folgen mit einem späteren Update; bis dahin zeigt Einstellungen → **Widgets** nur einen Platzhalter („Normale Widgets für den Startbildschirm kommen mit einem späteren Update.“).
 
 **Die Idee:** Du tippst auf das Widget, sprichst deinen Auftrag, tippst noch einmal (oder hörst einfach auf zu sprechen, wenn du Auto-Stopp eingeschaltet hast) — WhisperLoom schreibt mit und schickt den Text an deinen eigenen Agenten. Der arbeitet den Auftrag ab und antwortet dort, wo du ihm sonst schreibst. Die App wartet nicht auf die Antwort; sie ist nach ein paar Sekunden fertig. Jedes Widget hat seinen eigenen Namen und seinen eigenen Server — ein Widget kann also an den Agenten zu Hause gehen, ein zweites an einen anderen.
 
 ### 14.1 Was du brauchst
 
-- Einen erreichbaren Server mit der **Bridge** (dem kleinen Gegenstück, das den Auftrag entgegennimmt und an deinen Agenten übergibt; Quellcode und Einrichtung: [hermes-bridge](https://github.com/CTreitges/hermes-bridge)). Adresse und ein **Token** bekommst du von dort. Mehrere Widgets dürfen denselben Server nutzen oder verschiedene.
+- Einen erreichbaren Server mit der **Bridge** (dem kleinen Gegenstück, das den Auftrag entgegennimmt und an deinen Agenten übergibt; Quellcode und Einrichtung: [hermes-bridge](https://github.com/CTreitges/hermes-bridge), für das Claude-Code-Widget die [claude-bridge](https://github.com/CTreitges/claude-bridge)). Adresse und ein **Token** bekommst du von dort. Mehrere Widgets dürfen denselben Server nutzen oder verschiedene.
 - Eine eingerichtete Erkennung — online oder offline, beides geht. Das Mitschreiben läuft genau so wie beim normalen Diktat.
 - Die Mikrofon-Berechtigung. Die hast du aus der Einrichtung meist schon.
 
 ### 14.2 Pro Widgets freischalten
 
-Einstellungen → Gruppe PRO → **Erweitert** → Karte **Pro-Funktionen** → Schalter **Pro Widgets** einschalten („Blendet im Widget-Menü den Tab „Pro Widgets“ ein: Sprach-Command-Widgets mit eigenem Server.“). Darunter erscheinen zwei Zeilen: **Pro Widgets verwalten** öffnet den Tab „Pro Widgets“, **Anleitung Pro Widgets** ein bebildertes Tutorial mit sechs Seiten.
+Einstellungen → Gruppe PRO → **Erweitert** → Karte **Pro-Funktionen** → Schalter **Pro Widgets** einschalten („Blendet im Widget-Menü den Tab „Pro Widgets“ ein: Sprach-Command- und Claude-Code-Widgets mit eigenem Server.“). Darunter erscheinen zwei Zeilen: **Pro Widgets verwalten** öffnet den Tab „Pro Widgets“, **Anleitung Pro Widgets** ein bebildertes Tutorial mit sechs Seiten.
 
 Das Widget-Menü unter Einstellungen → **Widgets** hat danach zwei Tabs: **Widgets** (normale Widgets, noch ein Platzhalter) und **Pro Widgets** — geöffnet wird „Pro Widgets“. Ist der Schalter aus, gibt es keine Tabs, nur den Platzhalter mit dem Hinweis „Für Entwickler: Pro Widgets lassen sich unter „Erweitert“ freischalten.“ und dem Button **Erweitert**.
 
@@ -1038,16 +1038,16 @@ Das Widget-Menü unter Einstellungen → **Widgets** hat danach zwei Tabs: **Wid
 
 ### 14.3 Ein Widget anlegen und bearbeiten
 
-Einstellungen → **Widgets** → Tab **Pro Widgets** → Karte **Neues Pro Widget** → **Sprach-Command-Widget**. WhisperLoom legt ein Widget an („Sprach-Command 2“, „Sprach-Command 3“ …) und öffnet gleich **Widget bearbeiten**. Hat eines deiner Widgets schon einen funktionierenden Server, sind dessen Adresse und Token bereits eingetragen. Das **Standard-Widget** (ab Werk „Sprach-Command“) gibt es immer; du kannst es bearbeiten, aber nicht löschen.
+Einstellungen → **Widgets** → Tab **Pro Widgets** → Karte **Neues Pro Widget** → **Sprach-Command-Widget** oder **Claude-Code-Widget**. WhisperLoom legt ein Widget an („Sprach-Command 2“, „Sprach-Command 3“ … bzw. „Claude Code 1“ …) und öffnet gleich **Widget bearbeiten**. Hat eines deiner Widgets desselben Typs schon einen funktionierenden Server, sind dessen Adresse und Token bereits eingetragen. Das **Standard-Widget** (ab Werk „Sprach-Command“) gibt es immer; du kannst es bearbeiten, aber nicht löschen.
 
-Unter **Deine Pro Widgets** stehen alle Widgets mit Namen, darunter Server und Modus („bridge.example.de · Tippen startet und stoppt“) oder die Warnung **Server fehlt**. Ein Tipp öffnet **Widget bearbeiten**. Jede Änderung gilt sofort, einen Speichern-Knopf gibt es nicht:
+Unter **Deine Pro Widgets** stehen alle Widgets mit Namen, darunter Typ, Server und Modus („Sprach-Command-Widget · bridge.example.de · Tippen startet und stoppt“) oder Typ und die Warnung **Server fehlt**. Ein Tipp öffnet **Widget bearbeiten**. Jede Änderung gilt sofort, einen Speichern-Knopf gibt es nicht:
 
 - **Name** — Pflicht, höchstens 24 Zeichen; er steht unter dem Widget auf dem Startbildschirm. Ist das Feld leer, meldet es „Jedes Widget braucht einen Namen.“ — gespeichert bleibt dann der letzte Name.
 - **Name unter dem Widget anzeigen** — ab Werk an. Ausgeschaltet zeigt das Widget nur seine Kachel.
 - **Server** — Server-Adresse, Token und Verbindung prüfen, siehe [14.4](#144-server-je-widget).
-- **Symbol** — eins von 22 eingebauten (Einkauf, Zuhause, Arbeit, Idee, Termin, Notiz …) oder **Aus Galerie**: ein eigenes Foto, rund zugeschnitten. **Bild entfernen** nimmt wieder das Mikrofon. Das Symbol siehst du, solange das Widget bereit ist oder einen Fehler zeigt; beim Aufnehmen und Senden zeigt es wie gewohnt den Zustand.
+- **Symbol** — eins von 22 eingebauten (Einkauf, Zuhause, Arbeit, Idee, Termin, Notiz …) oder **Aus Galerie**: ein eigenes Foto, rund zugeschnitten. **Bild entfernen** nimmt wieder das Standardsymbol des Typs (Mikrofon beim Sprach-Command, Zauberstab beim Claude-Code-Widget). Das Symbol siehst du, solange das Widget bereit ist oder einen Fehler zeigt; beim Aufnehmen und Senden zeigt es wie gewohnt den Zustand.
 - **Automatisch senden nach Sprechpause** — siehe [14.6](#146-auto-stopp).
-- **Widget löschen** — vorher fragt die App nach. Liegt es auf dem Startbildschirm, zeigt es danach das Standard-Widget. Wartet noch ein Auftrag dieses Widgets, wird er mit verworfen — er geht nie an den Server eines anderen Widgets.
+- **Widget löschen** — vorher fragt die App nach. Liegt es auf dem Startbildschirm, zeigt es danach das erste andere Widget desselben Typs, gibt es keins, das Standard-Widget; die Rückfrage nennt es. Wartet noch ein Auftrag dieses Widgets, wird er mit verworfen — er geht nie an den Server eines anderen Widgets.
 - **Fertig** schließt den Editor.
 
 ### 14.4 Server je Widget
@@ -1062,7 +1062,7 @@ Ein Auftrag geht immer an den Server des Widgets, mit dem du ihn aufgenommen has
 
 ### 14.5 Das Widget auf den Startbildschirm legen
 
-Drücke lange auf eine freie Stelle deines Startbildschirms → **Widgets** → **WhisperLoom** → **Sprach-Command** dorthin ziehen, wo du es haben willst. Hast du mehr als das Standard-Widget angelegt, fragt WhisperLoom jetzt **„Welches Widget-Profil?“** — tipp eins an, und das Widget ist da. Dort kannst du auch gleich ein **Neues Widget-Profil** anlegen; nach dem Bearbeiten ist es vorgewählt, ein Tipp darauf übernimmt es. Wischst du die Frage weg, wird das Widget nicht hinzugefügt. Gibt es nur das Standard-Widget, fragt WhisperLoom nichts. Sind Pro Widgets noch aus, steht in der Frage „Pro Widgets sind aus. In der App unter Einstellungen → Erweitert einschalten.“ — hinlegen geht trotzdem, das Widget zeigt dann „Pro Widgets aus — tippen“.
+Drücke lange auf eine freie Stelle deines Startbildschirms → **Widgets** → **WhisperLoom** → **Pro Widget** dorthin ziehen, wo du es haben willst. Sprach-Command und Claude Code teilen sich diesen einen Eintrag; welcher Typ es wird, entscheidet das Widget-Profil. WhisperLoom fragt deshalb jetzt **„Welches Widget-Profil?“** — tipp eins an, und das Widget ist da. Dort kannst du auch gleich ein **Neues Sprach-Command-Widget** oder ein **Neues Claude-Code-Widget** anlegen; nach dem Bearbeiten ist es vorgewählt, ein Tipp darauf übernimmt es. Wischst du die Frage weg, wird das Widget nicht hinzugefügt. Sind Pro Widgets noch aus, steht in der Frage „Pro Widgets sind aus. In der App unter Einstellungen → Erweitert einschalten.“ — hinlegen geht trotzdem, das Widget zeigt dann „Pro Widgets aus — tippen“.
 
 **Der Name steht unter dem Widget** — wie bei den App-Symbolen, in heller Schrift mit leichtem Schatten, damit er auf jedem Hintergrundbild lesbar bleibt. Zu lange Namen enden mit „…“. Ausblenden: im Editor **Name unter dem Widget anzeigen** ausschalten.
 
@@ -1076,7 +1076,7 @@ Die bebilderte Anleitung dazu liegt unter Erweitert → **Anleitung Pro Widgets*
 
 Ab Werk startet ein Tipp die Aufnahme und ein zweiter Tipp sendet. Schaltest du im Editor **Automatisch senden nach Sprechpause** ein, endet die Aufnahme von selbst, sobald du nach dem Sprechen eine Pause machst, und wird gesendet. Wie lange die Pause sein muss, stellst du darunter ein: **Kurz** (1,2 Sekunden), **Normal** (2 Sekunden) oder **Lang** (3,5 Sekunden, für Denkpausen). Ein Tipp beendet trotzdem jederzeit. Hört das Widget nach dem Start 8 Sekunden lang keine Sprache, verwirft es die Aufnahme und sendet nichts. In sehr lauter Umgebung kann Auto-Stopp zu früh oder zu spät auslösen — dann einfach per Tipp beenden oder das Widget auf „Lang“ stellen.
 
-Alle Widgets zeigen dieselbe Aufnahme: startest du mit einem, zeigen alle „nimmt auf“. Ob Auto-Stopp greift und an welchen Server der Auftrag geht, richtet sich nach dem Widget, mit dem du gestartet hast.
+Die Aufnahme zeigt nur das Widget, mit dem du gestartet hast; die anderen bleiben bereit. Ob Auto-Stopp greift und an welchen Server der Auftrag geht, richtet sich ebenfalls nach diesem Widget.
 
 ### 14.7 Benutzen — was das Widget zeigt
 
@@ -1091,7 +1091,9 @@ Alle Widgets zeigen dieselbe Aufnahme: startest du mit einem, zeigen alle „nim
 | grau mit durchgestrichenem Mikrofon, „Pro Widgets aus — tippen“ | der Schalter „Pro Widgets“ ist aus | öffnet **Erweitert** |
 | rot, „Mikrofon nicht erlaubt — tippen“ | WhisperLoom darf das Mikrofon nicht nutzen | öffnet den Tab „Pro Widgets“ mit der Karte **Mikrofon** |
 
-„Bereit“ und „Server fehlt“ gelten je Widget: Ein Widget mit Server ist bereit, eines ohne zeigt „Server fehlt“. Aufnahme, Senden, „Gesendet“ und Fehler zeigen alle Widgets zugleich — es gibt immer nur einen Auftrag.
+„Bereit“ und „Server fehlt“ gelten je Widget: Ein Widget mit Server ist bereit, eines ohne zeigt „Server fehlt“. Aufnahme, Senden, „Gesendet“ und Fehler zeigt nur das Widget, mit dem du aufgenommen hast. Es gibt aber immer nur einen Auftrag: Tippst du ein anderes Widget an, während eines aufnimmt oder sendet, nimmt es nicht auf und meldet kurz „Ein anderes Widget nimmt gerade auf“ bzw. „Ein anderes Widget sendet gerade noch“; im zweiten Fall stößt der Tipp den Auftrag an wie ein Tipp auf „Wird gesendet …“. Nach einem Fehler darfst du mit einem anderen Widget neu aufnehmen; sobald die neue Aufnahme läuft, ist der gescheiterte Auftrag verworfen. Wird das Widget, mit dem du aufgenommen hast, entfernt, zeigen alle anderen den Auftrag.
+
+Geht etwas schief, nennt WhisperLoom den Grund zusätzlich als kurze Meldung am unteren Bildschirmrand („Kein Ton aufgenommen“, „Zu kurz — länger sprechen“, „Nichts gehört“ oder der Fehler des Servers). Das ganz kleine Widget hat keinen Platz für die Statuszeile und wird dann nur rot. Wurde die App mitten in der Aufnahme vom System beendet, meldet der nächste Tipp „Aufnahme abgebrochen — bitte noch einmal aufnehmen“, und das Widget ist wieder bereit.
 
 Ist ein Versuch gescheitert und folgt noch ein weiterer, bleibt das Widget blau und nennt den Grund: „Zeitüberschreitung … — neuer Versuch folgt, tippen = jetzt“. Ein Tipp sendet dann sofort, statt auf den nächsten Versuch zu warten.
 
@@ -1111,7 +1113,7 @@ Der Schalter unter Erweitert ist aus. Der Tipp führt direkt dorthin.
 Diesem Widget fehlen Server-Adresse oder Token, oder die Adresse ist ungültig. Der Tipp öffnet **Widget bearbeiten** für genau dieses Widget; sobald Adresse und Token stimmen, ist es bereit.
 
 **„Server fehlt im Widget „…“ — tippen für erneuten Versuch“**
-Ein Auftrag wartet, aber sein Widget hat inzwischen keinen gültigen Server mehr. Der Auftrag bleibt gespeichert. Der Tipp — auf dieses oder ein anderes Widget — öffnet **Widget bearbeiten** für das Widget des Auftrags: Server eintragen, dann aufs Widget tippen — er geht los, ohne neu aufzunehmen.
+Ein Auftrag wartet, aber sein Widget hat inzwischen keinen gültigen Server mehr. Der Auftrag bleibt gespeichert. Der Tipp auf das Widget, mit dem du aufgenommen hast, öffnet **Widget bearbeiten** für dessen Profil: Server eintragen, dann aufs Widget tippen — er geht los, ohne neu aufzunehmen.
 
 **„Pro Widgets sind aus — tippen für erneuten Versuch“**
 Du hast Pro Widgets ausgeschaltet, während ein Auftrag wartete. Er bleibt gespeichert. Der Tipp führt nach **Erweitert**: wieder einschalten, dann aufs Widget tippen — oder den Auftrag dort unter **Offener Auftrag** verwerfen.
@@ -1143,7 +1145,21 @@ Willst du den Auftrag loswerden: Einstellungen → Widgets → Tab „Pro Widget
 
 ### 14.9 Was dabei gesendet wird
 
-An den Server des Widgets gehen: der erkannte Text, eine Auftragskennung, Zeitpunkt und Dauer der Aufnahme. **Den Auftrag bekommt nur die Adresse, die in diesem Widget eingetragen ist** — nicht der Hersteller der App und nicht der Server eines anderen Widgets. Erkannt und verbessert wird wie beim Diktat: Fürs Mitschreiben geht die Aufnahme an den Erkennungsweg, den du eingestellt hast, und ist die Textverbesserung an, geht der erkannte Text vorher an deren Anbieter (Kapitel 12 beschreibt das im Detail). Ein Auftrag, der noch nicht durchging, liegt so lange auf dem Telefon, bis er abgeschickt, verworfen oder ersetzt wird; er wird nicht in ein Cloud-Backup übernommen. Die Widgets mit Server-Adressen und Tokens sowie ihre Galerie-Bilder werden nur auf dem Gerät gespeichert und nicht gesichert.
+An den Server des Widgets gehen: der erkannte Text, eine Auftragskennung, Zeitpunkt und Dauer der Aufnahme, beim Claude-Code-Widget außerdem Modell, Denkaufwand und Ultracode. **Den Auftrag bekommt nur die Adresse, die in diesem Widget eingetragen ist** — nicht der Hersteller der App und nicht der Server eines anderen Widgets. Erkannt und verbessert wird wie beim Diktat: Fürs Mitschreiben geht die Aufnahme an den Erkennungsweg, den du eingestellt hast, und ist die Textverbesserung an, geht der erkannte Text vorher an deren Anbieter (Kapitel 12 beschreibt das im Detail). Beim Claude-Code-Widget ist die Textverbesserung immer an, mit der Stufe „Prompt“ ([14.10](#1410-claude-code-widget)). Ein Auftrag, der noch nicht durchging, liegt so lange auf dem Telefon, bis er abgeschickt, verworfen oder ersetzt wird; er wird nicht in ein Cloud-Backup übernommen. Die Widgets mit Server-Adressen und Tokens sowie ihre Galerie-Bilder werden nur auf dem Gerät gespeichert und nicht gesichert.
+
+### 14.10 Claude-Code-Widget
+
+Das Claude-Code-Widget funktioniert wie ein Sprach-Command-Widget, nur geht der Auftrag an die [claude-bridge](https://github.com/CTreitges/claude-bridge): Sie startet auf deinem Server sofort eine neue Claude-Code-Session, die direkt mit dem Auftrag beginnt. Die Session findest du danach in Claude, nicht im Chat deines Agenten. Ein Claude-Code-Widget übernimmt Adresse und Token nur von einem anderen Claude-Code-Widget, nie die Bridge eines Sprach-Commands.
+
+Im Editor stehen unter **Claude** zusätzlich:
+
+- **Modell** — Opus, Fable, Sonnet oder Haiku.
+- **Denkaufwand (Effort)** — Niedrig, Mittel, Hoch, Extra hoch oder Maximal. Mehr heißt gründlicher, aber langsamer und mit mehr Verbrauch.
+- **Ultracode** — Claude zerlegt größere Aufgaben in einen Workflow mit mehreren Agenten; gründlicher, verbraucht aber deutlich mehr von deinem Nutzungslimit.
+
+Ab Werk: Opus, Extra hoch, Ultracode aus. Die Werte gelten für jede Session, die dieses Widget startet; für andere Einstellungen legst du einfach ein zweites Claude-Code-Widget an.
+
+Was du sagst, formt das Claude-Code-Widget **immer mit der Textverbesserung „Prompt“** zu einem klaren Auftrag, bevor es an die Bridge geht — egal, welche Stufe du fürs Diktat eingestellt hast, und auch ohne dass „Prompt“ unter Pro-Funktionen eingeschaltet ist. Es rechnet mit dem Modell der Stufe Prompt: ab Werk dem Standardmodell; ein eigenes stellst du unter **Modell je Stufe** ein, sobald die Pro-Funktion „Prompt“ eingeschaltet ist. Klappt die Textverbesserung nicht (kein Netz, kein Textmodell, Fehler beim Anbieter), geht wie beim Diktat der erkannte Text mit Hinweis raus. **Verbindung prüfen** erkennt auch, ob unter der Adresse wirklich die claude-bridge läuft — sonst meldet der Chip „Server ist keine claude-bridge — Adresse prüfen“.
 
 ---
 

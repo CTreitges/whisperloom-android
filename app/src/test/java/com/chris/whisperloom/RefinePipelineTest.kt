@@ -503,6 +503,16 @@ class RefinePipelineTest {
         assertTrue(LocalTextEngine.isLoaded)
     }
 
+    @Test fun vorwaermenMitFesterStufeAuchWennDasDiktatAusIst() {
+        // Claude-Code-Widget: Stufe "Prompt" fest, die Diktat-Stufe ist dafuer egal.
+        offline(OfflineRefineRule.LOCAL)
+        localModel()
+        prefs.refineMode = RefineMode.OFF
+        TranscriptionEngine.warmUp(ctx, RefineMode.PROMPT)
+        waitLoaded()
+        assertTrue(LocalTextEngine.isLoaded)
+    }
+
     @Test fun keinVorwaermenBeiOnlineUeberspringenOderAus() {
         localModel()
         ownAccess()

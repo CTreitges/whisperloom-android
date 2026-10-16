@@ -37,9 +37,12 @@ import com.chris.whisperloom.ui.theme.WhisperLoomTheme
  *   beim Neu-Konfigurieren "nichts aendern".
  * - Sie ist exported (der Launcher startet sie von aussen) und nimmt deshalb nur Ids an, die
  *   wirklich zu [VoiceTaskWidget] gehoeren.
- * - Erstplatzierung mit nur dem Standardprofil: unsichtbar binden und fertig — es gibt nichts zu
- *   waehlen. Sonst das Sheet "Welches Widget-Profil?", beim Neu-Konfigurieren immer, vorgewaehlt
- *   ist das Profil, das die Instanz gerade zeigt. Zur Wahl stehen nur Sprach-Command-Profile.
+ * - Erstplatzierung, wenn es wirklich nichts zu waehlen gibt (nur das Standardprofil UND nur ein
+ *   Pro-Typ): unsichtbar binden und fertig. Sonst das Sheet "Welches Widget-Profil?", beim
+ *   Neu-Konfigurieren immer, vorgewaehlt ist das Profil, das die Instanz gerade zeigt. Zur Wahl
+ *   stehen alle Pro-Widget-Profile, gleich welchen Typs: der Typ (Sprach-Command, Claude Code)
+ *   haengt am Profil, der Provider ist einer. Mit nur dem Standardprofil bietet das Sheet so
+ *   gleich "Neues Claude-Code-Widget" an — still gebunden waere das Widget ein Sprach-Command.
  * - "Ungebunden" heisst Erstplatzierung: Widgets, die schon vor den Profilen lagen, bindet
  *   [VoiceTaskWidget] nach dem App-Update an das Standardprofil ([WidgetProfileStore.adopt]).
  *
@@ -61,7 +64,7 @@ class WidgetConfigActivity : ComponentActivity() {
             return
         }
         val store = WidgetProfileStore(this)
-        if (!store.isBound(widgetId) && store.all().size == 1) {
+        if (!store.isBound(widgetId) && store.all().size == 1 && WidgetKind.of(Tier.PRO).size == 1) {
             pick(WidgetProfile.DEFAULT_ID)
             return
         }
@@ -93,8 +96,8 @@ class WidgetConfigActivity : ComponentActivity() {
 }
 
 /**
- * "Welches Widget-Profil?": ein Tipp auf ein Profil bestaetigt. "Neues Widget-Profil" legt es an
- * und oeffnet den Editor; danach ist das neue Profil vorgewaehlt (ein Tipp bestaetigt es).
+ * "Welches Widget-Profil?": ein Tipp auf ein Profil bestaetigt. "Neues …" (je Pro-Typ eine Zeile)
+ * legt es an und oeffnet den Editor; danach ist das neue Profil vorgewaehlt (ein Tipp bestaetigt es).
  * Wegwischen bricht ab. Sind Pro Widgets aus, sagt ein Hinweis, wo sie sich einschalten lassen —
  * platzieren geht trotzdem, das Widget zeigt dann "aus".
  */
@@ -110,12 +113,14 @@ private fun ProfileChoice(preselected: String, onPick: (String) -> Unit, onCance
     if (editId == null) {
         LoomSheet(title = stringResource(R.string.widget_config_title), onDismiss = onCancel) {
             if (proOff) InfoCard(stringResource(R.string.widget_config_pro_off))
-            ProfilePicker(widgets.profiles.filter { it.kind == WidgetKind.VOICE_COMMAND }, selected = selected, onPick = onPick)
-            LoomRow(
-                headline = stringResource(R.string.widgets_add_profile),
-                leading = { LoomIcon(R.drawable.ic_add, null, Modifier.size(24.dp), MaterialTheme.colorScheme.primary) },
-                onClick = { editing = widgets.createNew(WidgetKind.VOICE_COMMAND).id },
-            )
+            ProfilePicker(widgets.profiles(Tier.PRO), selected = selected, onPick = onPick)
+            WidgetKind.of(Tier.PRO).forEach { kind ->
+                LoomRow(
+                    headline = stringResource(R.string.widgets_add_profile, stringResource(kind.title)),
+                    leading = { LoomIcon(R.drawable.ic_add, null, Modifier.size(24.dp), MaterialTheme.colorScheme.primary) },
+                    onClick = { editing = widgets.createNew(kind).id },
+                )
+            }
         }
     } else {
         WidgetProfileSheet(widgets, editId) {

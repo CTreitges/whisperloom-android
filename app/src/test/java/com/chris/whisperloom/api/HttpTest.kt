@@ -144,6 +144,8 @@ class HttpTest {
             assertEquals(401, e.code)
             assertEquals("invalid api key", e.detail)
             assertTrue(e.message!!.contains("API-Key"))
+            // Der ganze Koerper bleibt lesbar — etwa fuer die Kennung der claude-bridge.
+            assertEquals("""{"error":{"message":"invalid api key"}}""", e.body)
         }
     }
 

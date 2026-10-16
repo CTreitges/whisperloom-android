@@ -9,6 +9,7 @@ import android.os.SystemClock
 import androidx.core.net.toUri
 import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.Prefs
+import com.chris.whisperloom.R
 
 /**
  * Unsichtbare Zwischenstation zwischen Widget-Tipp und Mikrofon-Dienst.
@@ -48,6 +49,16 @@ class VoiceTaskTrampolineActivity : Activity() {
             openApp()
             return
         }
+        // Ein anderes Widget sendet noch: der neue Auftrag verdraengte dessen (es gibt nur einen),
+        // und der laufende Worker gaebe auf. Dieses Widget zeigt das Senden nicht — also sagen und,
+        // wie frueher der Tipp auf "Wird gesendet …", den Auftrag anstossen (wartet er nur aufs
+        // Netz oder einen Versuch, geht er jetzt raus).
+        val task = VoiceTaskStore(this)
+        if (task.state == VoiceTaskState.WORKING && task.hasWork) {
+            VoiceTaskWidgetView.toast(this, getString(R.string.widget_busy_sending))
+            anstossen()
+            return
+        }
         val service = Intent(this, VoiceTaskService::class.java).setAction(VoiceTaskService.ACTION_START)
         if (widgetId != AppWidgetManager.INVALID_APPWIDGET_ID) service.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
         startForegroundService(service)
@@ -60,7 +71,8 @@ class VoiceTaskTrampolineActivity : Activity() {
      * nicht wieder abbricht.
      *
      * Angestossen wird nur, was das Widget DES AUFTRAGS auch senden kann — egal welches Widget
-     * getippt wurde. Sonst liefe jeder Tipp in denselben Fehler, und ein unsendbarer Auftrag von
+     * getippt wurde (den Fehler zeigt sonst nur das Widget des Auftrags; ist es nicht mehr da,
+     * zeigen ihn alle). Sonst liefe jeder Tipp in denselben Fehler, und ein unsendbarer Auftrag von
      * Widget A blockierte auch B. Reihenfolge wie im Worker: Widget geloescht → verwerfen (wie
      * dort) und neu anfangen; Pro Widgets aus → "Erweitert"; kein gueltiger Server → Editor
      * genau dieses Widgets. Der Auftrag bleibt in den beiden letzten Faellen liegen.

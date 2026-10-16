@@ -17,10 +17,16 @@ fun interface BridgePoster {
 }
 
 /**
- * Die Gegenstelle des Sprachauftrags: ein eigener kleiner Dienst (hermes-bridge), der das
- * Transkript entgegennimmt und an den Agenten weiterreicht. Genau ein Endpunkt, ein
+ * Die Gegenstelle des Sprachauftrags: ein eigener kleiner Dienst, der das Transkript
+ * entgegennimmt und an den Agenten weiterreicht — die hermes-bridge (Sprach-Command) oder die
+ * claude-bridge (Claude Code, startet eine neue Session). Genau ein Endpunkt, ein
  * Bearer-Token, Antwort 202 nach der Uebergabe (bis zu [BRIDGE_SYNC_BUDGET_MS]) — die App
- * wartet nicht auf das Ergebnis des Agenten, das kommt spaeter ueber den Messenger.
+ * wartet nicht auf das Ergebnis des Agenten, das kommt spaeter ueber den Messenger bzw.
+ * die Claude-App.
+ *
+ * [options] geht als Feld `options` mit (claude-bridge: Modell, Effort, Ultracode, siehe
+ * [WidgetProfile.bridgeOptions]); ohne Optionen fehlt das Feld ganz, der Koerper ist dann
+ * genau der der hermes-bridge.
  *
  * Der Prompt-Rahmen ("Sprachauftrag von …, per WhisperLoom transkribiert") sitzt bewusst
  * auf der Server-Seite: er gehoert zum Agenten, nicht zum Telefon, und laesst sich dort
@@ -29,6 +35,7 @@ fun interface BridgePoster {
 class AgentBridge(
     baseUrl: String,
     private val token: String,
+    private val options: JSONObject? = null,
     private val poster: BridgePoster = DEFAULT_POSTER,
 ) {
 
@@ -53,6 +60,12 @@ class AgentBridge(
      * beantwortet die Bridge mit 400 — und zwar ERST, nachdem sie das Token geprueft hat.
      * Also heisst 400 "erreichbar und Token stimmt", 401 "Token falsch", alles andere ist
      * ein echtes Problem. Weder Idempotenz-Speicher noch Rate-Limit werden dabei beruehrt.
+     *
+     * Mit [options] (Claude Code) muss die 400 zusaetzlich `"bridge":"claude-bridge"` tragen:
+     * die hermes-bridge antwortet sonst genauso, ignoriert `options` und gaebe jeden Auftrag an
+     * den falschen Agenten. Ohne Optionen (Sprach-Command) gilt jede 400 wie bisher.
+     *
+     * @throws NotClaudeBridgeException mit Optionen, wenn die Kennung fehlt.
      */
     fun check() {
         if (!configured) throw ApiNotConfiguredException()
@@ -60,8 +73,20 @@ class AgentBridge(
             poster.post(endpoint(), token, body("check", "", "", 0))
         } catch (e: ApiHttpException) {
             if (e.code != 400) throw e
+            if (options != null && bridgeId(e.body) != CLAUDE_BRIDGE_ID) throw NotClaudeBridgeException()
+            return
         }
+        // Ein leeres Transkript nimmt die claude-bridge nie an — wer hier 2xx antwortet, ist eine andere.
+        if (options != null) throw NotClaudeBridgeException()
     }
+
+    /** Feld `bridge` der Antwort; leer, wenn sie kein JSON ist oder keins hat. */
+    private fun bridgeId(body: String): String =
+        try {
+            JSONObject(body).optString("bridge")
+        } catch (e: org.json.JSONException) {
+            ""
+        }
 
     private fun endpoint(): String = Http.endpoint(base, PATH)
 
@@ -72,12 +97,16 @@ class AgentBridge(
             .put("recorded_at", recordedAt)
             .put("duration_ms", durationMs)
             .put("source", SOURCE)
+            .apply { if (options != null) put("options", options) }
             .toString()
 
     companion object {
         const val PATH = "/v1/task"
         const val SOURCE = "widget"
         const val CONTENT_TYPE = "application/json; charset=utf-8"
+
+        /** So weist sich die claude-bridge in der 400-Antwort auf "Verbindung pruefen" aus (Feld `bridge`). */
+        const val CLAUDE_BRIDGE_ID = "claude-bridge"
 
         /**
          * So lange arbeitet die Bridge hoechstens SYNCHRON, bevor sie mit 202 antwortet. Belegt
@@ -109,6 +138,13 @@ class AgentBridge(
         }
     }
 }
+
+/**
+ * "Verbindung pruefen" eines Claude-Code-Widgets: erreichbar, Token stimmt — aber die Antwort
+ * traegt nicht die Kennung der claude-bridge. Meist zeigt die Adresse auf die hermes-bridge, die
+ * das Feld `options` still ignoriert und den Auftrag an den falschen Agenten gaebe.
+ */
+class NotClaudeBridgeException : RuntimeException("Server ist keine claude-bridge")
 
 /**
  * Pruefung der Bridge-Adresse. Dieselben Regeln wie fuer den Erkennungs-Server

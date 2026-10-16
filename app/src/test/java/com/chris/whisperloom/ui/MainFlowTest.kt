@@ -937,6 +937,9 @@ class MainFlowTest {
         listOf(R.string.help_widgets_create, R.string.help_widgets_server, R.string.help_widgets_place).forEach {
             compose.onNodeWithText(ctx.getString(it)).assertExists()
         }
+        // Das Claude-Code-Widget braucht eine eigene Gegenstelle — die Hilfe sagt, welche.
+        compose.onNodeWithText(ctx.getString(R.string.help_widgets_claude)).assertExists()
+        assertTrue(ctx.getString(R.string.help_widgets_claude).contains("https://github.com/CTreitges/claude-bridge"))
         compose.onNodeWithText("Server je Widget", substring = true).assertExists()
         // 3.8.0: die zweite Freischalt-Funktion unter "Erweitert" steht dort, wo "Erweitert" erklaert wird.
         compose.onNodeWithText(ctx.getString(R.string.help_widgets_models)).assertExists()

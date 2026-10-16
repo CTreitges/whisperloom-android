@@ -246,6 +246,7 @@ class VoiceTaskWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, para
         store.state = state
         store.message = message
         VoiceTaskWidgetView.push(ctx, state, message = message)
+        if (state == VoiceTaskState.ERROR) VoiceTaskWidgetView.toast(ctx, message)
     }
 
     companion object {
@@ -276,7 +277,14 @@ class VoiceTaskWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, para
                     // Abgeloest oder verworfen: die lokale Rechnung bricht ab und blockiert das
                     // Textmodell nicht fuer den neuen Auftrag. Bewusst NICHT bei isStopped allein —
                     // der vom System gestoppte Lauf cacht seinen Text fuer den naechsten Versuch.
-                    val dictation = TranscriptionEngine.transcribe(ctx, samples, cancelled = { store.requestId != id })
+                    // Je Versuch frisch wie Server und Optionen; ein geloeschtes Widget scheitert erst beim Senden.
+                    val fixed = WidgetProfileStore(ctx).get(profileId)?.fixedRefinement()
+                    val dictation = TranscriptionEngine.transcribe(
+                        ctx,
+                        samples,
+                        cancelled = { store.requestId != id },
+                        fixedRefinement = fixed,
+                    )
                     dictation.result.skipped?.let { hinweis ->
                         // Nicht nur ins Log: sonst bekaeme der Nutzer stillschweigend Rohtext,
                         // obwohl "Glaetten" eingeschaltet ist, und hielte die Erkennung fuer schlecht.
@@ -292,9 +300,10 @@ class VoiceTaskWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, para
 
         /**
          * Der Server des Widgets, das aufgenommen hat — je Versuch frisch gelesen, damit eine
-         * Korrektur im Editor beim naechsten Versuch wirkt. Bewusst [WidgetProfileStore.get] ohne
-         * Rueckfall aufs Standardprofil: der Auftrag eines geloeschten Widgets geht nie an einen
-         * fremden Server.
+         * Korrektur im Editor beim naechsten Versuch wirkt. Ebenso die Optionen (Claude Code:
+         * Modell, Effort, Ultracode); die Bridge fuehrt eine Kennung ohnehin nur einmal aus.
+         * Bewusst [WidgetProfileStore.get] ohne Rueckfall aufs Standardprofil: der Auftrag eines
+         * geloeschten Widgets geht nie an einen fremden Server.
          *
          * @throws ProfileGoneException Widget geloescht — der Worker verwirft den Auftrag.
          * @throws IllegalStateException Pro Widgets aus oder kein brauchbarer Server — nicht
@@ -305,7 +314,7 @@ class VoiceTaskWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, para
                 ?: throw ProfileGoneException(ctx.getString(R.string.widget_task_profile_gone))
             check(Prefs(ctx).proWidgetsEnabled) { ctx.getString(R.string.widget_task_pro_off) }
             check(profile.serverReady) { ctx.getString(R.string.widget_task_no_server, profile.displayName(ctx)) }
-            return AgentBridge(profile.serverUrl, profile.serverToken)
+            return AgentBridge(profile.serverUrl, profile.serverToken, profile.bridgeOptions())
         }
 
         private fun pipeline(ctx: Context, store: VoiceTaskStore, stillCurrent: () -> Boolean) =

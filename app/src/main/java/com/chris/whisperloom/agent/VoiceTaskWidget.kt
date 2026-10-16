@@ -70,6 +70,10 @@ class VoiceTaskWidget : AppWidgetProvider() {
         val store = WidgetProfileStore(ctx)
         store.remap(oldIds, newIds)
         store.adopt(newIds)
+        // Das startende Widget des Auftrags zieht ebenfalls mit.
+        val task = VoiceTaskStore(ctx)
+        val owner = oldIds.indexOf(task.widgetId)
+        if (owner >= 0 && owner < newIds.size) task.widgetId = newIds[owner]
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val manager = AppWidgetManager.getInstance(ctx)
             val done = Bundle().apply { putBoolean(AppWidgetManager.OPTION_APPWIDGET_RESTORE_COMPLETED, true) }
@@ -94,7 +98,8 @@ class VoiceTaskWidget : AppWidgetProvider() {
 
         /**
          * Der wahre Zustand eines Widgets mit [profile], in dieser Reihenfolge: Pro Widgets aus,
-         * kein Mikrofon, laufender Auftrag (zeigen alle), Profil ohne Server, bereit.
+         * kein Mikrofon, laufender Auftrag (zeigt nur das startende Widget, siehe [forOthers]),
+         * Profil ohne Server, bereit.
          */
         fun resolve(ctx: Context, profile: WidgetProfile): Pair<VoiceTaskState, String> {
             val (state, message) = resolve(ctx)
@@ -103,13 +108,24 @@ class VoiceTaskWidget : AppWidgetProvider() {
 
         /**
          * Ruhezustand je Widget: "bereit" heisst nur mit gueltigem Server im eigenen Profil
-         * bereit, sonst [VoiceTaskState.NO_SERVER]. Alle anderen Zustaende gelten fuer alle
-         * Widgets gleich und bleiben — auch "aus", denn der Schalter ist global.
+         * bereit, sonst [VoiceTaskState.NO_SERVER]. Alle anderen Zustaende bleiben — auch "aus",
+         * denn der Schalter ist global.
          */
         fun idle(state: VoiceTaskState, profile: WidgetProfile): VoiceTaskState = when (state) {
             VoiceTaskState.READY, VoiceTaskState.NO_SERVER ->
                 if (profile.serverReady) VoiceTaskState.READY else VoiceTaskState.NO_SERVER
             else -> state
+        }
+
+        /**
+         * Was ein Widget zeigt, das den Auftrag NICHT gestartet hat ([VoiceTaskStore.widgetId]):
+         * Aufnahme, Senden und Ergebnis gehoeren dem startenden Widget, die anderen bleiben bereit.
+         * Frueher zeigten alle den Auftrag — mit zwei Widgets wurden beide rot, und ein Tipp auf das
+         * andere beendete die Aufnahme des ersten. "Aus" und "kein Mikrofon" gelten weiter fuer alle.
+         */
+        fun forOthers(state: VoiceTaskState): VoiceTaskState = when (state) {
+            VoiceTaskState.RECORDING, VoiceTaskState.WORKING, VoiceTaskState.SENT, VoiceTaskState.ERROR -> VoiceTaskState.READY
+            VoiceTaskState.READY, VoiceTaskState.NO_SERVER, VoiceTaskState.NO_MIC, VoiceTaskState.OFF -> state
         }
 
         /**

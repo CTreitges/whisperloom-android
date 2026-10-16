@@ -18,7 +18,7 @@ import java.util.UUID
  * - [all] liefert das Standardprofil immer zuerst, gespeichert oder virtuell. Lesen schreibt nie.
  * - [forWidget] liefert fuer eine ungebundene oder verwaiste Instanz das Standardprofil.
  * - Das Standardprofil ist nicht loeschbar; wer an einem geloeschten Profil hing, zeigt danach
- *   das Standardprofil.
+ *   das erste andere Profil desselben Typs, sonst das Standardprofil ([successor]).
  * - Ein Foto, das kein Profil mehr nutzt (Profil geloescht, Symbol gewechselt), wird geloescht;
  *   Reste abgebrochener Importe raeumt [sweepPhotos] weg.
  */
@@ -73,7 +73,7 @@ class WidgetProfileStore(context: Context) {
     }
 
     /**
-     * Profil loeschen; daran gebundene Widgets zeigen danach das Standardprofil, sein Foto wird
+     * Profil loeschen; daran gebundene Widgets zeigen danach seinen [successor], sein Foto wird
      * geloescht. Das Standardprofil wird abgelehnt (nichts passiert, Ergebnis 0).
      *
      * @return Anzahl der umgestellten Widgets
@@ -82,13 +82,27 @@ class WidgetProfileStore(context: Context) {
         if (id == WidgetProfile.DEFAULT_ID) return 0
         val profiles = all()
         val gone = profiles.firstOrNull { it.id == id } ?: return 0
+        val target = successor(profiles, id).id
         val rebound = bindings().filterValues { it == id }.keys
         sp.edit {
             putString(KEY_PROFILES, WidgetProfile.encodeAll(profiles - gone))
-            rebound.forEach { putString(bindingKey(it), WidgetProfile.DEFAULT_ID) }
+            rebound.forEach { putString(bindingKey(it), target) }
         }
         (gone.icon as? ProfileIcon.Photo)?.let { WidgetPhoto.delete(app, it.fileName) }
         return rebound.size
+    }
+
+    /**
+     * Was die Widgets von [id] nach dessen Loeschen zeigen: das erste andere Profil desselben
+     * Typs, erst sonst das Standardprofil. Ein Claude-Code-Widget sendet so weiter an eine
+     * claude-bridge, solange es eine gibt — nicht still an die hermes-bridge des Standardprofils.
+     * Fuer den Sprach-Command ist das immer das Standardprofil (es steht vorn).
+     */
+    fun successor(id: String): WidgetProfile = successor(all(), id)
+
+    private fun successor(profiles: List<WidgetProfile>, id: String): WidgetProfile {
+        val kind = profiles.firstOrNull { it.id == id }?.kind
+        return profiles.firstOrNull { it.id != id && it.kind == kind } ?: profiles.first()
     }
 
     fun bind(widgetId: Int, profileId: String) {

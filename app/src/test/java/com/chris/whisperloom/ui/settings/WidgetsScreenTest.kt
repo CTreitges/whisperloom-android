@@ -33,6 +33,7 @@ import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelectable
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -44,6 +45,8 @@ import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
+import com.chris.whisperloom.agent.ClaudeEffort
+import com.chris.whisperloom.agent.ClaudeModel
 import com.chris.whisperloom.agent.ProfileIcon
 import com.chris.whisperloom.agent.SpeechPause
 import com.chris.whisperloom.agent.TEST_SERVER_TOKEN
@@ -68,6 +71,8 @@ import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.PrefsState
 import com.chris.whisperloom.ui.theme.WhisperLoomTheme
 import com.chris.whisperloom.ui.tutorial.TutorialKind
+import com.sun.net.httpserver.HttpServer
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -79,6 +84,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import java.net.InetSocketAddress
+import java.util.concurrent.CopyOnWriteArrayList
 
 /**
  * Widget-Menue (Tabs "Widgets" / "Pro Widgets") und Editor: alles wird sofort gespeichert, der
@@ -216,7 +223,7 @@ class WidgetsScreenTest {
         compose.onNode(tab("Pro Widgets")).assertIsSelected()
         compose.onNode(tab("Widgets")).assertIsNotSelected()
         compose.onNodeWithText(
-            "Sprach-Command-Widgets nehmen auf und schicken den Text an deinen eigenen Server. Jedes Widget hat seinen eigenen Namen und Server.",
+            "Pro Widgets nehmen auf und schicken den Auftrag an deinen eigenen Server — als Sprach-Command oder als neue Claude-Code-Session. Jedes Widget hat seinen eigenen Namen und Server.",
         ).assertIsDisplayed()
         compose.onNode(hasIllustration(R.drawable.ill_pro_widgets, ctx.getString(R.string.img_pro_widgets))).assertExists()
         compose.onNodeWithText("Neues Pro Widget").assertExists()
@@ -267,15 +274,93 @@ class WidgetsScreenTest {
         compose.onNode(namensFeld and hasText("Sprach-Command 2")).assertExists()
     }
 
+    @Test fun neuesClaudeCodeWidgetOeffnetDenEditorMitServerUndClaudeBlock() {
+        show()
+        compose.onNodeWithText("Sprechen und eine neue Claude-Code-Session starten").assertExists()
+        click("Claude-Code-Widget")
+
+        val neu = store.all().single { !it.isDefault }
+        assertEquals("Claude Code 1", neu.name)
+        assertEquals(WidgetKind.CLAUDE_CODE, neu.kind)
+        compose.onNode(namensFeld and hasText("Claude Code 1")).assertExists()
+        // Server wie beim Sprach-Command — die claude-bridge braucht Adresse und Token genauso.
+        compose.onNode(adressFeld).assertExists()
+        compose.onNode(tokenFeld).assertExists()
+        compose.onNodeWithText("Verbindung prüfen").assertExists()
+        // Ab Werk: Opus, Extra hoch, Ultracode aus.
+        compose.onNodeWithText("Claude").assertExists()
+        compose.onNodeWithText("Modell").assertExists()
+        compose.onNode(hasText("Opus") and isSelectable()).assertIsSelected()
+        compose.onNodeWithText("Denkaufwand (Effort)").assertExists()
+        compose.onNode(hasText("Extra hoch") and isSelectable()).assertIsSelected()
+        compose.onNode(hasText("Ultracode") and isToggleable()).assertIsOff()
+    }
+
+    @Test fun claudeEinstellungenWerdenSofortGespeichert() {
+        val p = WidgetProfile("c", name = "Claude", kind = WidgetKind.CLAUDE_CODE)
+        store.save(p)
+        show()
+        bearbeiten("Claude")
+
+        click("Sonnet")
+        assertEquals(ClaudeModel.SONNET, store.get(p.id)!!.claudeModel)
+        compose.onNode(hasText("Sonnet") and isSelectable()).assertIsSelected()
+        compose.onNode(hasText("Opus") and isSelectable()).assertIsNotSelected()
+
+        click("Hoch")
+        assertEquals(ClaudeEffort.HIGH, store.get(p.id)!!.claudeEffort)
+        compose.onNode(hasText("Hoch") and isSelectable()).assertIsSelected()
+        compose.onNode(hasText("Extra hoch") and isSelectable()).assertIsNotSelected()
+
+        click("Ultracode")
+        assertTrue(store.get(p.id)!!.ultracode)
+        compose.onNode(hasText("Ultracode") and isToggleable()).assertIsOn()
+        assertEquals("Nichts anderes geaendert", p.copy(claudeModel = ClaudeModel.SONNET, claudeEffort = ClaudeEffort.HIGH, ultracode = true), store.get(p.id))
+    }
+
+    @Test fun derEffortIstFuerTalkBackEineEinfachauswahl() {
+        // Chips waeren sonst Kontrollkaestchen — es gilt aber genau ein Effort.
+        store.save(WidgetProfile("c", name = "Claude", kind = WidgetKind.CLAUDE_CODE))
+        show()
+        bearbeiten("Claude")
+        listOf("Niedrig", "Mittel", "Hoch", "Extra hoch", "Maximal").forEach {
+            compose.onNode(hasText(it) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)).assertExists()
+        }
+    }
+
+    @Test fun dasModellSiehtAusWieDerEffort() {
+        // Als Segmentreihe bekam jedes Modell ein Viertel der Zeile, und "Sonnet" wurde auf 360 dp
+        // ab etwa 130 % Schrift abgeschnitten; jetzt umbrechende Chips wie beim Effort. Text misst
+        // Robolectric hier nicht echt (LEGACY-Grafik), geprueft wird deshalb die Darstellung:
+        // so hoch wie die Effort-Chips (eine Segmentreihe ist hoeher) und dieselbe Rolle.
+        store.save(WidgetProfile("c", name = "Claude", kind = WidgetKind.CLAUDE_CODE))
+        show()
+        bearbeiten("Claude")
+        fun hoehe(text: String) = compose.onNode(hasText(text) and isSelectable()).fetchSemanticsNode().boundsInRoot.height
+        listOf("Opus", "Fable", "Sonnet", "Haiku").forEach {
+            assertEquals(it, hoehe("Mittel"), hoehe(it))
+            compose.onNode(hasText(it) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)).assertExists()
+        }
+    }
+
+    @Test fun einSprachCommandEditorZeigtKeinenClaudeBlock() {
+        show()
+        bearbeiten("Sprach-Command")
+        compose.onNode(adressFeld).assertExists()
+        compose.onNodeWithText("Denkaufwand (Effort)").assertDoesNotExist()
+        compose.onNodeWithText("Ultracode").assertDoesNotExist()
+        compose.onNodeWithText("Opus").assertDoesNotExist()
+    }
+
     @Test fun einWidgetMitServerZeigtDenHostEinsOhneWarnt() {
         serverEinrichten(ctx)
         store.create("Einkauf")
         show()
         compose.onNodeWithText("Sprach-Command").assertExists()
-        compose.onNodeWithText("bridge.example.de · Tippen startet und stoppt").assertExists()
+        compose.onNodeWithText("Sprach-Command-Widget · bridge.example.de · Tippen startet und stoppt").assertExists()
         // Die Zeile ist fuer TalkBack ein Element: Name und Warnung stehen im selben Knoten.
-        compose.onAllNodes(hasText("Server fehlt")).assertCountEquals(1)
-        compose.onNode(hasText("Einkauf") and hasText("Server fehlt")).assertExists()
+        compose.onAllNodes(hasText("Sprach-Command-Widget · Server fehlt")).assertCountEquals(1)
+        compose.onNode(hasText("Einkauf") and hasText("Sprach-Command-Widget · Server fehlt")).assertExists()
     }
 
     @Test fun derModusStehtInDerZeile() {
@@ -286,13 +371,23 @@ class WidgetsScreenTest {
             ),
         )
         show()
-        compose.onNodeWithText("bridge.example.de · Stoppt nach Sprechpause · Kurz").assertExists()
+        compose.onNodeWithText("Sprach-Command-Widget · bridge.example.de · Stoppt nach Sprechpause · Kurz").assertExists()
+    }
+
+    @Test fun dieZeileNenntDenTyp() {
+        // Claude Code und Sprach-Command sind sonst nur am frei waehlbaren Namen zu unterscheiden.
+        store.save(WidgetProfile("c", name = "Bau", kind = WidgetKind.CLAUDE_CODE, serverUrl = "https://claude.example.de", serverToken = "c"))
+        store.save(WidgetProfile("d", name = "Notiz", kind = WidgetKind.CLAUDE_CODE))
+        show()
+        compose.onNode(hasText("Bau") and hasText("Claude-Code-Widget · claude.example.de · Tippen startet und stoppt")).assertExists()
+        compose.onNode(hasText("Notiz") and hasText("Claude-Code-Widget · Server fehlt")).assertExists()
+        compose.onNode(hasText("Sprach-Command") and hasText("Sprach-Command-Widget · Server fehlt")).assertExists()
     }
 
     @Test fun dasStandardprofilStehtOhneServerMitWarnungDa() {
         show()
         compose.onNodeWithText("Sprach-Command").assertExists()
-        compose.onNodeWithText("Server fehlt").assertExists()
+        compose.onNodeWithText("Sprach-Command-Widget · Server fehlt").assertExists()
         compose.onNodeWithText("Auf dem Startbildschirm").assertDoesNotExist()
     }
 
@@ -388,7 +483,7 @@ class WidgetsScreenTest {
 
     @Test fun dieHilfeFuehrtInsTutorialProWidgets() {
         show()
-        compose.onNodeWithText("Widget platzieren: Startbildschirm lange drücken → Widgets → WhisperLoom → „Sprach-Command“.")
+        compose.onNodeWithText("Widget platzieren: Startbildschirm lange drücken → Widgets → WhisperLoom → „Pro Widget“ → Profil wählen.")
             .assertExists()
         click("Anleitung ansehen")
         assertEquals(Screen.Tutorial(kind = TutorialKind.PRO_WIDGETS), nav.current)
@@ -629,6 +724,91 @@ class WidgetsScreenTest {
         compose.onNodeWithText("Verbindung prüfen").assertIsEnabled()
     }
 
+    // --- Verbindung pruefen gegen einen lokalen Server --------------------------------
+
+    /** Was die Bridge auf den Pruef-Koerper (leeres Transkript) mit Status 400 antwortet. */
+    private var pruefAntwort = ""
+    private val pruefKoerper = CopyOnWriteArrayList<JSONObject>()
+
+    private fun pruefServer(): HttpServer = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0).apply {
+        createContext("/v1/task") { ex ->
+            pruefKoerper += JSONObject(String(ex.requestBody.readBytes()))
+            val out = pruefAntwort.toByteArray()
+            ex.sendResponseHeaders(400, out.size.toLong())
+            ex.responseBody.use { it.write(out) }
+        }
+        start()
+    }
+
+    /** "Verbindung pruefen" im offenen Editor; wartet auf den Ergebnis-Chip. */
+    private fun pruefen() {
+        click("Verbindung prüfen")
+        compose.waitUntil(10_000) {
+            compose.onAllNodes(hasText("Verbunden", substring = true) or hasText("Fehler:", substring = true))
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
+    @Test fun pruefenSchicktDieOptionenDesClaudeWidgetsMit() {
+        pruefAntwort = """{"status":"error","detail":"Das Transkript ist leer","bridge":"claude-bridge"}"""
+        val server = pruefServer()
+        try {
+            store.save(
+                WidgetProfile(
+                    "c", name = "Bau", kind = WidgetKind.CLAUDE_CODE,
+                    claudeModel = ClaudeModel.SONNET, claudeEffort = ClaudeEffort.HIGH, ultracode = true,
+                    serverUrl = "http://127.0.0.1:${server.address.port}", serverToken = "geheim",
+                ),
+            )
+            show()
+            bearbeiten("Bau")
+            pruefen()
+        } finally {
+            server.stop(0)
+        }
+        compose.onNode(hasText("Verbunden", substring = true)).assertExists()
+        val koerper = pruefKoerper.single()
+        assertEquals("", koerper.getString("transcript"))
+        val options = koerper.getJSONObject("options")
+        assertEquals("sonnet", options.getString("model"))
+        assertEquals("high", options.getString("effort"))
+        assertEquals(true, options.get("ultracode"))
+    }
+
+    @Test fun pruefenOhneOptionenBeimSprachCommand() {
+        pruefAntwort = """{"status":"error","detail":"Das Transkript ist leer"}"""
+        val server = pruefServer()
+        try {
+            serverEinrichten(ctx, url = "http://127.0.0.1:${server.address.port}")
+            show()
+            bearbeiten("Sprach-Command")
+            pruefen()
+        } finally {
+            server.stop(0)
+        }
+        compose.onNode(hasText("Verbunden", substring = true)).assertExists()
+        assertFalse("Der Koerper der hermes-bridge bleibt wie er war", pruefKoerper.single().has("options"))
+    }
+
+    @Test fun einClaudeWidgetAnDerHermesBridgeMeldetDenFalschenServer() {
+        pruefAntwort = """{"status":"error","detail":"Das Transkript ist leer"}"""
+        val server = pruefServer()
+        try {
+            store.save(
+                WidgetProfile(
+                    "c", name = "Bau", kind = WidgetKind.CLAUDE_CODE,
+                    serverUrl = "http://127.0.0.1:${server.address.port}", serverToken = "geheim",
+                ),
+            )
+            show()
+            bearbeiten("Bau")
+            pruefen()
+        } finally {
+            server.stop(0)
+        }
+        compose.onNodeWithText("Fehler: Server ist keine claude-bridge — Adresse prüfen").assertExists()
+    }
+
     @Test fun derDatenschutzHinweisStehtDa() {
         // Nur der Auftrag geht exklusiv an den Server des Widgets — erkannt und verbessert wird wie beim Diktat.
         show()
@@ -746,6 +926,34 @@ class WidgetsScreenTest {
         assertNull(store.get(p.id))
         assertEquals(WidgetProfile.DEFAULT_ID, store.forWidget(id).id)
         compose.onNodeWithText("Widget bearbeiten").assertDoesNotExist()
+    }
+
+    @Test fun dieRueckfrageNenntDasProfilDasDieWidgetsDanachZeigen() {
+        // Ein Claude-Code-Widget wandert zum naechsten Claude-Profil, nicht zum Sprach-Command.
+        store.save(WidgetProfile("c1", name = "Bau", kind = WidgetKind.CLAUDE_CODE))
+        store.save(WidgetProfile("c2", name = "Review", kind = WidgetKind.CLAUDE_CODE))
+        val id = widget()
+        store.bind(id, "c1")
+        show()
+        bearbeiten("Bau")
+        click("Widget löschen")
+        compose.onNodeWithText("1 Widget auf dem Startbildschirm zeigt danach „Review“.").assertExists()
+
+        click("Löschen")
+
+        assertEquals("c2", store.forWidget(id).id)
+    }
+
+    @Test fun dasLetzteClaudeProfilWarntVorDemTypwechsel() {
+        // Ohne weiteres Claude-Profil faellt das Widget aufs Standardprofil — das sendet woandershin.
+        store.save(WidgetProfile("c1", name = "Bau", kind = WidgetKind.CLAUDE_CODE))
+        val id = widget()
+        store.bind(id, "c1")
+        show()
+        bearbeiten("Bau")
+        click("Widget löschen")
+        compose.onNodeWithText("Es arbeitet dann als Sprach-Command-Widget und sendet an dessen Server.", substring = true)
+            .assertExists()
     }
 
     @Test fun abbrechenLaesstDasProfilStehen() {

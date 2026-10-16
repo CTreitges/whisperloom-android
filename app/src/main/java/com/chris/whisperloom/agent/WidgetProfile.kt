@@ -2,6 +2,8 @@ package com.chris.whisperloom.agent
 
 import android.content.Context
 import com.chris.whisperloom.R
+import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.Refinement
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -28,6 +30,12 @@ data class WidgetProfile(
     val kind: WidgetKind = WidgetKind.VOICE_COMMAND,
     /** Name unter der Kachel auf dem Startbildschirm anzeigen. */
     val showName: Boolean = true,
+    /** Nur [WidgetKind.CLAUDE_CODE]: Modell der neuen Session. */
+    val claudeModel: ClaudeModel = ClaudeModel.OPUS,
+    /** Nur [WidgetKind.CLAUDE_CODE]: Effort der neuen Session. */
+    val claudeEffort: ClaudeEffort = ClaudeEffort.XHIGH,
+    /** Nur [WidgetKind.CLAUDE_CODE]: Session mit Ultracode (Workflow mit mehreren Agenten). */
+    val ultracode: Boolean = false,
     /** Base-URL der Bridge ohne Pfad, z. B. https://bridge.example.de (wie der Platzhalter im Editor). */
     val serverUrl: String = "",
     /** Bearer-Token der Bridge. */
@@ -47,7 +55,26 @@ data class WidgetProfile(
     /** Ohne Token im Klartext: ein `Log.d("$profile")` oder ein Absturzbericht darf es nie zeigen. */
     override fun toString(): String =
         "WidgetProfile(id=$id, name=$name, icon=$icon, autoStop=$autoStop, pause=$pause, kind=$kind, " +
-            "showName=$showName, serverUrl=$serverUrl, serverToken=${if (serverToken.isEmpty()) "" else "***"})"
+            "showName=$showName, claudeModel=$claudeModel, claudeEffort=$claudeEffort, ultracode=$ultracode, " +
+            "serverUrl=$serverUrl, serverToken=${if (serverToken.isEmpty()) "" else "***"})"
+
+    /**
+     * Was die Bridge ausser dem Transkript braucht: fuer [WidgetKind.CLAUDE_CODE] Modell, Effort
+     * und Ultracode (claude-bridge, Feld `options`), sonst nichts — der Sprach-Command-Auftrag
+     * an die hermes-bridge bleibt so byte-gleich. Im Profil, damit Worker und "Verbindung pruefen"
+     * dieselbe Quelle nutzen.
+     */
+    fun bridgeOptions(): JSONObject? =
+        if (kind != WidgetKind.CLAUDE_CODE) null
+        else JSONObject().put("model", claudeModel.key).put("effort", claudeEffort.key).put("ultracode", ultracode)
+
+    /**
+     * Feste Textverbesserung des Widgets statt der Diktat-Stufe: [WidgetKind.CLAUDE_CODE] formt
+     * jeden Auftrag zu einem Prompt — auch wenn das Diktat eine andere Stufe hat oder "Prompt" dort
+     * nicht eingeschaltet ist. null = wie beim Diktat.
+     */
+    fun fixedRefinement(): Refinement? =
+        if (kind == WidgetKind.CLAUDE_CODE) Refinement(RefineMode.PROMPT) else null
 
     fun toJson(): JSONObject = JSONObject()
         .put(K_ID, id)
@@ -57,6 +84,9 @@ data class WidgetProfile(
         .put(K_PAUSE, pause.key)
         .put(K_KIND, kind.key)
         .put(K_SHOW_NAME, showName)
+        .put(K_CLAUDE_MODEL, claudeModel.key)
+        .put(K_CLAUDE_EFFORT, claudeEffort.key)
+        .put(K_ULTRACODE, ultracode)
         .put(K_SERVER_URL, serverUrl)
         .put(K_SERVER_TOKEN, serverToken)
 
@@ -92,6 +122,9 @@ data class WidgetProfile(
                 pause = SpeechPause.fromKey(text(o, K_PAUSE)),
                 kind = WidgetKind.fromKey(text(o, K_KIND)),
                 showName = o.optBoolean(K_SHOW_NAME, true),
+                claudeModel = ClaudeModel.fromKey(text(o, K_CLAUDE_MODEL)),
+                claudeEffort = ClaudeEffort.fromKey(text(o, K_CLAUDE_EFFORT)),
+                ultracode = o.optBoolean(K_ULTRACODE, false),
                 serverUrl = text(o, K_SERVER_URL).trim(),
                 serverToken = text(o, K_SERVER_TOKEN),
             )
@@ -125,6 +158,9 @@ data class WidgetProfile(
         private const val K_PAUSE = "pause"
         private const val K_KIND = "kind"
         private const val K_SHOW_NAME = "showName"
+        private const val K_CLAUDE_MODEL = "claudeModel"
+        private const val K_CLAUDE_EFFORT = "claudeEffort"
+        private const val K_ULTRACODE = "ultracode"
         private const val K_SERVER_URL = "serverUrl"
         private const val K_SERVER_TOKEN = "serverToken"
     }
@@ -173,5 +209,35 @@ enum class SpeechPause(val key: String, val ms: Long) {
     companion object {
         /** Unbekannt oder fehlend = [NORMAL]. */
         fun fromKey(key: String?): SpeechPause = entries.firstOrNull { it.key == key } ?: NORMAL
+    }
+}
+
+/**
+ * Modell der Claude-Code-Session ([WidgetKind.CLAUDE_CODE]). [key] ist zugleich der Wert, den die
+ * claude-bridge in `options.model` erwartet; gespeichert wird er, nicht der Enum-Name.
+ */
+enum class ClaudeModel(val key: String) {
+    OPUS("opus"),
+    FABLE("fable"),
+    SONNET("sonnet"),
+    HAIKU("haiku");
+
+    companion object {
+        /** Unbekannt oder fehlend = [OPUS]. */
+        fun fromKey(key: String?): ClaudeModel = entries.firstOrNull { it.key == key } ?: OPUS
+    }
+}
+
+/** Effort der Claude-Code-Session; [key] = `options.effort` der claude-bridge. */
+enum class ClaudeEffort(val key: String) {
+    LOW("low"),
+    MEDIUM("medium"),
+    HIGH("high"),
+    XHIGH("xhigh"),
+    MAX("max");
+
+    companion object {
+        /** Unbekannt oder fehlend = [XHIGH]. */
+        fun fromKey(key: String?): ClaudeEffort = entries.firstOrNull { it.key == key } ?: XHIGH
     }
 }
