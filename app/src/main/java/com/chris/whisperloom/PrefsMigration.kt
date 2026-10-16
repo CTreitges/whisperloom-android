@@ -2,6 +2,7 @@ package com.chris.whisperloom
 
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import com.chris.whisperloom.api.AccessResolver
 import com.chris.whisperloom.api.Provider
 import com.chris.whisperloom.api.ProviderCatalog
 
@@ -24,6 +25,9 @@ import com.chris.whisperloom.api.ProviderCatalog
  * Diktats. Seit v6 geht das direkt in die Bereinigung der Sprachnachrichten ([toV6]).
  *
  * v5 -> v6 (3.9.0): Einstellungen je Stufe und Weg ([toV6]).
+ *
+ * v6 -> v7 (3.9.1): Bei Anbietern mit Katalog gibt es im KI-Zugang kein eigenes Modell mehr, das Modell
+ * waehlt jede Stufe ([toV7]).
  */
 internal object PrefsMigration {
 
@@ -31,16 +35,23 @@ internal object PrefsMigration {
         val version = sp.getInt(Prefs.KEY_PREFS_VERSION, 0)
         if (version >= Prefs.PREFS_VERSION) return
         sp.edit {
-            if (version < 3) toV3(sp, this)
-            if (version < 4 && sp.getString(Prefs.KEY_LLM_PROVIDER, "") == GEMINI_ID && sp.getString(Prefs.KEY_LLM_MODEL, "").isNullOrBlank()) {
+            // Was der Editor schreibt, liest sp erst nach dem Commit — v7 bekommt Erkennungs-Anbieter
+            // (aus toV3) und Modell (aus v4) deshalb von hier.
+            var sttProvider = sp.getString(Prefs.KEY_STT_PROVIDER, ProviderCatalog.OPENAI_ID) ?: ProviderCatalog.OPENAI_ID
+            if (version < 3) sttProvider = toV3(sp, this)
+            var llmModel = sp.getString(Prefs.KEY_LLM_MODEL, "").orEmpty()
+            if (version < 4 && sp.getString(Prefs.KEY_LLM_PROVIDER, "") == GEMINI_ID && llmModel.isBlank()) {
                 putString(Prefs.KEY_LLM_MODEL, GEMINI_LEGACY_DEFAULT)
+                llmModel = GEMINI_LEGACY_DEFAULT
             }
             if (version < 6) toV6(sp, this)
+            if (version < 7) toV7(sp, this, llmModel, sttProvider)
             putInt(Prefs.KEY_PREFS_VERSION, Prefs.PREFS_VERSION)
         }
     }
 
-    private fun toV3(sp: SharedPreferences, e: SharedPreferences.Editor) {
+    /** @return der Erkennungs-Anbieter danach (auch, wenn er nur im Editor steht). */
+    private fun toV3(sp: SharedPreferences, e: SharedPreferences.Editor): String {
         if (!sp.contains(Prefs.KEY_REFINE_MODE) && sp.getBoolean(KEY_LLM_POLISH_LEGACY, false)) {
             e.putString(Prefs.KEY_REFINE_MODE, RefineMode.POLISH.key)
         }
@@ -54,6 +65,7 @@ internal object PrefsMigration {
         if (sp.getString(Prefs.KEY_ENGINE, "").isNullOrBlank() && (hasKey || !provider.needsKey)) {
             e.putString(Prefs.KEY_ENGINE, Engine.ONLINE.key)
         }
+        return sp.getString(Prefs.KEY_STT_PROVIDER, null) ?: provider.id
     }
 
     /**
@@ -80,6 +92,25 @@ internal object PrefsMigration {
         }
         putIfAbsent(Prefs.KEY_SUMMARIZE_FORM, (if (paragraphs) SummarizeForm.AUTO else SummarizeForm.PROSE).key)
         putIfAbsent(Prefs.KEY_SHARE_SUMMARIZE_FORM, SummarizeForm.AUTO.key)
+    }
+
+    /**
+     * Das Modell des Zugangs war bei Katalog-Anbietern der Standard aller Stufen ohne eigenes. Seit 3.9.1
+     * waehlt nur noch die Stufe: Stufen ohne eigenes Modell bekommen das alte, danach ist es weg — jede
+     * Stufe rechnet weiter mit demselben Modell wie vorher. Anbieter ohne Katalog (eigener Server, Ollama
+     * lokal, Together/DeepInfra "wie Erkennung") behalten es: dort ist es Pflicht und weiter waehlbar.
+     */
+    private fun toV7(sp: SharedPreferences, e: SharedPreferences.Editor, llmModel: String, sttProvider: String) {
+        val model = llmModel.trim()
+        if (model.isEmpty()) return
+        val llm = sp.getString(Prefs.KEY_LLM_PROVIDER, "").orEmpty()
+        val providerId = if (llm.isBlank() || llm == AccessResolver.LLM_SAME) sttProvider else llm
+        if (ProviderCatalog.byId(providerId).llmModels.isEmpty()) return
+        for (stage in RefineMode.MODEL_STAGES) {
+            val key = Prefs.KEY_LLM_MODEL_PREFIX + stage.key
+            if (sp.getString(key, "").isNullOrBlank()) e.putString(key, model)
+        }
+        e.remove(Prefs.KEY_LLM_MODEL)
     }
 
     private fun cleanup(readable: Boolean, smartFillers: Boolean): PolishCleanup = when {

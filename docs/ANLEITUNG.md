@@ -16,7 +16,7 @@ Alle Bezeichnungen in dieser Anleitung („Mikro-Knopf starten", „Zugang prüf
 4. [Diktieren mit dem schwebenden Knopf](#4-diktieren-mit-dem-schwebenden-knopf)
 5. [Diktieren mit der Tastatur](#5-diktieren-mit-der-tastatur)
 6. [Sprachnachrichten abtippen](#6-sprachnachrichten-abtippen)
-7. [Anbieter und API-Keys](#7-anbieter-und-api-keys)
+7. [Anbieter und API-Keys](#7-anbieter-und-api-keys) — mit [Fallback](#77-fallback)
 8. [Textverbesserung](#8-textverbesserung) — [Diktat](#81-diktat) · [Sprachnachrichten](#82-sprachnachrichten) · [KI-Zugang](#83-ki-zugang) · [Modell je Stufe](#84-modell-je-stufe) · [Bei Offline-Erkennung](#85-bei-offline-erkennung) · [Feste Regeln](#86-feste-regeln) · [Wörterbuch und Sprache](#87-wörterbuch-und-sprache)
 9. [Offline-Modus](#9-offline-modus) — mit [Lokales Textmodell (Gemma 4)](#97-lokales-textmodell-gemma-4)
 10. [Eigener Server](#10-eigener-server)
@@ -44,6 +44,8 @@ Die Spracherkennung selbst läuft wahlweise
 
 - **online** über einen Dienst deiner Wahl (OpenAI, Groq, Mistral, ElevenLabs, Together AI, DeepInfra, OpenRouter oder ein eigener Server). Du brauchst dafür einmalig einen API-Key des Anbieters; bei Groq ist das kostenlos. Beste Qualität, schnell.
 - **offline** direkt auf dem Gerät mit einem einmalig heruntergeladenen Whisper-Modell (32–574 MB). Die Aufnahme verlässt das Telefon nicht, die Erkennung dauert dafür einige Sekunden.
+
+Scheitert ein Anbieter, kann ein zweiter einspringen: der **Fallback** für Erkennung und Textverbesserung ([7.7](#77-fallback)).
 
 Dazu kommt eine optionale **Textverbesserung**: Ein Sprachmodell (KI) glättet Zeichensetzung und Groß-/Kleinschreibung, formuliert verständlicher oder fasst zusammen — in vier Stufen von „Aus" bis „Zusammenfassen". Das Sprachmodell kann bei einem Online-Anbieter laufen, bei **Ollama Cloud** oder auf deinem eigenen **Ollama** zu Hause (lokal / Homeserver). Erkennst du offline, verbessert ein **lokales Textmodell** (Gemma 4) den Text direkt auf dem Gerät — ohne Netz und ohne Key ([9.7](#97-lokales-textmodell-gemma-4)). Ein **Vokabular** mit Namen und Fachbegriffen — als Liste in der App oder als verknüpfte Textdatei — hilft der Erkennung bei Eigennamen. Unabhängig davon räumt WhisperLoom lokal auf: Füllwörter („ähm", „äh") entfernen, Satzanfänge groß schreiben, ein Leerzeichen anhängen.
 
@@ -350,7 +352,7 @@ Alle Angaben in diesem Kapitel: **Stand 09/2026, Textmodelle 10/2026, ohne Gewä
 
 ### 7.1 Übersicht
 
-Die Spalte „Modelle" nennt die Einträge, wie sie in WhisperLoom im Dropdown stehen (erster Eintrag = Voreinstellung). Bei der Textverbesserung steht davor **Empfehlung je Stufe** (ab Werk, [8.4](#84-modell-je-stufe)): Glätten rechnet dann mit dem ersten Modell, Verschönern, Zusammenfassen und Prompt mit dem zweiten (beide fett).
+Die Spalte „Modelle" nennt die Einträge, wie sie in WhisperLoom im Dropdown stehen (erster Eintrag = Voreinstellung). Bei der Textverbesserung rechnet jede Stufe auf „Standard“ mit der **Empfehlung je Stufe** ([8.4](#84-modell-je-stufe)): Glätten mit dem ersten Modell, Verschönern, Zusammenfassen und Prompt mit dem zweiten (beide fett).
 
 | Anbieter (Dropdown) | Für | Modelle (Erkennung) | Modelle (Textverbesserung) | Preis Erkennung | Kostenlos? | Key holen |
 |---|---|---|---|---|---|---|
@@ -365,7 +367,7 @@ Die Spalte „Modelle" nennt die Einträge, wie sie in WhisperLoom im Dropdown s
 | **Google Gemini** | nur Text | — | **Gemini 3.5 Flash-Lite** · **Gemini 3.8 Flash** · Gemini 2.5 Flash-Lite und Gemini 2.5 Flash (nur Bestandskonten) | — | **ja**, aber Free-Tier-Inhalte dürfen zum Training genutzt werden | https://aistudio.google.com/apikey |
 | **DeepSeek** | nur Text | — | **DeepSeek Flash (V4.1)** · **DeepSeek V4 Pro** · DeepSeek V4 Flash (alter Name) | — | nein | https://platform.deepseek.com/api_keys |
 | **Ollama (lokal / Homeserver)** | nur Text | — | frei — die Liste kommt automatisch von deinem Server (Empfehlung je Hardware in [8.3](#83-ki-zugang)) | — | deine Hardware | kein Key nötig (Feld optional) |
-| **Ollama Cloud** | nur Text | — | **Gemma 4 31B (empfohlen)** · **Mistral Large 3** · GLM 5.3 Flash · GPT-OSS 20B · GPT-OSS 120B; weitere per Knopf unter dem Feld „Modell" ([8.3](#83-ki-zugang)) | — | — | https://ollama.com/settings/keys |
+| **Ollama Cloud** | nur Text | — | **Gemma 4 31B (empfohlen)** · **Mistral Large 3** · GLM 5.3 Flash · GPT-OSS 20B · GPT-OSS 120B; weitere lädt der Knopf im KI-Zugang, wählbar je Stufe ([8.3](#83-ki-zugang)) | — | — | https://ollama.com/settings/keys |
 | **Eigener Server** | Erkennung + Text | frei (z. B. `Systran/faster-whisper-medium`, `whisper-1`) | frei (z. B. `qwen3:8b`) | deine Hardware | — | kein Key nötig, außer dein Server verlangt einen |
 
 Mit der Pro-Funktion **Modelle vom Server** wählst du zusätzlich aus der aktuellen Liste des Anbieters ([7.6](#76-modelle-vom-server-pro-funktion)).
@@ -415,7 +417,7 @@ Dieselben Schritte zeigt WhisperLoom unter **Wo bekomme ich einen Key?** (im Ass
 ### 7.5 Eigenes Modell und Zugang prüfen
 
 - **Eigenes Modell …** (letzter Eintrag im Modell-Dropdown, mit „Modelle vom Server" unten in der Auswahl): Für Modell-IDs, die nicht in der Liste stehen — etwa ein neues Modell des Anbieters oder ein Modell auf dem eigenen Server. Die ID genau so eintragen, wie der Anbieter sie nennt. Für unbekannte IDs setzt WhisperLoom die Parameter selbst: OpenAI-Reasoning-Modelle (z. B. `gpt-5.6-terra`, `o4-mini`) bekommen kein `temperature` und die Denk-Stufe „low", Gemini-3-Modelle kein `temperature` (so rät es Google), Groqs Qwen 3 und GPT-OSS die passende Denk-Stufe, ein Snapshot wie `gpt-5-mini-2025-08-07` erbt vom Listen-Modell. Lehnt ein Server `temperature` trotzdem ab, versucht WhisperLoom es genau einmal ohne und merkt sich das für diesen Anbieter, diese Adresse und dieses Modell: Ab dann geht jede Anfrage gleich ohne `temperature` raus.
-- **Zugang prüfen** (unter Spracherkennung bzw. KI-Zugang; für das Modell einer Stufe **Modell prüfen**, [8.4](#84-modell-je-stufe)): Schickt eine kurze Testanfrage an den eingetragenen Zugang und meldet „Verbunden · x s" oder den Fehlergrund. Praktisch nach jedem Key- oder Anbieterwechsel.
+- **Zugang prüfen** (unter Spracherkennung bzw. KI-Zugang; für das Modell einer Stufe **Modell prüfen**, [8.4](#84-modell-je-stufe)): Schickt eine kurze Testanfrage an den eingetragenen Zugang und meldet „Verbunden · x s" oder den Fehlergrund. Praktisch nach jedem Key- oder Anbieterwechsel. Den Fallback prüfst du mit **Fallback prüfen** ([7.7](#77-fallback)).
 
 ### 7.6 Modelle vom Server (Pro-Funktion)
 
@@ -431,6 +433,30 @@ Eingeschaltet wird das Feld **Modell** unter Spracherkennung und unter KI-Zugang
 WhisperLoom zeigt nur, was passt: unter Spracherkennung Spracherkennungs-Modelle, unter KI-Zugang Chat-Modelle — ohne Einbettungs-, Bild- oder Sprachausgabe-Modelle. Abgeschaltete Modelle fallen weg, soweit der Anbieter ein Datum nennt; ein künftiges Abschaltdatum steht als „Auslauf JJJJ-MM-TT" dabei. Für Modelle ohne eingebauten Eintrag setzt WhisperLoom die Parameter selbst ([7.5](#75-eigenes-modell-und-zugang-prüfen)).
 
 **ElevenLabs** listet Scribe womöglich gar nicht — dann bleibt nur „Empfohlen", und „nicht mehr gelistet" erscheint dort nie. Scheitert „Modelle aktualisieren" bei ElevenLabs mit „Key oder Berechtigung „Models: Lesen" prüfen", fehlt dem Key diese Berechtigung; fürs Diktieren braucht er sie nicht. **Ollama** lädt seine Liste wie bisher bei jedem Öffnen. Die Listen speichert WhisperLoom auf dem Gerät, ohne Key ([Kapitel 12](#12-datenschutz)).
+
+### 7.7 Fallback
+
+Fällt dein Anbieter aus, ist das Guthaben leer, der Key abgelaufen oder ein Modell abgeschaltet, kommt ohne Fallback ein Fehler (Erkennung) bzw. der Text ohne KI (Textverbesserung). Mit **Fallback** springt dann ein zweiter Anbieter ein. Es gibt ihn zweimal, unabhängig voneinander:
+
+- Einstellungen → **Spracherkennung**, unter dem Anbieter (nur bei Online-Erkennung)
+- Einstellungen → **KI-Zugang**, unter dem Zugang für die Textverbesserung (nur, wenn es einen Online-Zugang gibt: nicht bei Offline-Erkennung ohne eigenen Zugang und nicht bei ElevenLabs „wie Erkennung")
+
+Der Schalter **Fallback verwenden** ist ab Werk aus („Ein zweiter Anbieter für den Fall, dass OpenAI scheitert."). Erst wenn er an ist, erscheinen die Felder:
+
+- **Fallback-Anbieter** — beim ersten Einschalten schlägt WhisperLoom einen anderen Anbieter als den ersten vor: OpenAI, und wenn der erste OpenAI ist, Groq. Ein anderer Fallback-Anbieter leert Adresse, Key und Modell des Fallbacks.
+- **Base-URL des Fallbacks** — nur beim Eigenen Server und bei Ollama (lokal).
+- **API-Key des Fallbacks** — leer gelassen nimmt der Fallback den Key eines Zugangs **desselben Anbieters**: in der Spracherkennung den des ersten Anbieters (etwa für ein anderes Modell beim selben Anbieter), im KI-Zugang erst den des KI-Zugangs, dann den der Spracherkennung. Darunter steht dann „Leer gelassen gilt der Key der Spracherkennung." bzw. „… des KI-Zugangs.". Typisch: KI-Zugang Anthropic, Fallback OpenAI mit dem OpenAI-Key der Erkennung, ohne ihn zweimal einzutragen. Beim Eigenen Server und bei Ollama (lokal) gilt das nur für dieselbe Adresse — an einen anderen Anbieter oder Server geht nie ein Key.
+- **Modell des Fallbacks** — in der Spracherkennung wie beim ersten Anbieter. Im KI-Zugang gilt es für alle Stufen; ab Werk **Empfehlung je Stufe** des Fallback-Anbieters (die Modelle je Stufe aus [8.4](#84-modell-je-stufe) gehören zum ersten Anbieter). Beim Eigenen Server und bei Ollama (lokal) ist das Modell Pflicht.
+- **Fallback prüfen** — wie „Zugang prüfen", nur für den Fallback.
+
+**Was dann passiert:** Scheitert der erste Anbieter (Netz, Zeitüberschreitung, Fehlerstatus, leere oder unbrauchbare Antwort), schickt WhisperLoom **dieselbe Aufnahme** an den Fallback bzw. lässt ihn den Text verbessern. Die Tastatur sagt dann in der Statuszeile, der Knopf als kurze Meldung „Spracherkennung fehlgeschlagen — mit Fallback Groq erkannt" bzw. „KI-Zugang fehlgeschlagen — mit Fallback OpenAI verbessert"; der Verlauf nennt das Modell, das wirklich gerechnet hat. Mit Fallback wartet die Textverbesserung höchstens 8 s auf die Verbindung zum ersten Anbieter.
+
+- **Geteilte Sprachnachrichten:** Ist der erste beim ersten Stück gescheitert, gehen die weiteren Stücke gleich an den Fallback.
+- **Beide scheitern:** wie ohne Fallback — bei der Erkennung der Fehler des ersten Anbieters (mit „Erneut senden"), bei der Textverbesserung der Text ohne KI; der Hinweis nennt dann beide Gründe („… · Fallback: …").
+- **Offline-Erkennung** mit der Regel „Online, ohne Netz lokal" ([9.7](#97-lokales-textmodell-gemma-4)): erst der KI-Zugang, dann der Fallback, erst danach das lokale Textmodell. Bei Offline-Erkennung gibt es keinen Fallback der Erkennung.
+- **Unvollständig** (Key fehlt, Eigener Server ohne Adresse oder Modell): Der Fallback springt nicht ein; der Schalter sagt „Noch unvollständig — springt erst ein, wenn Key, Adresse und Modell eingetragen sind.“
+
+Datenschutz: Mit Fallback gehen Audio bzw. Text im Fehlerfall zusätzlich an den Fallback-Anbieter ([12](#12-datenschutz)); die Zeile unter den Feldern sagt es.
 
 ---
 
@@ -510,7 +536,9 @@ Jedes 5-Minuten-Stück ([6.3](#63-lange-nachrichten)) geht einzeln an die KI —
 
 Einstellungen → **KI-Zugang**: oben die Karte **Online-Zugang für die Textverbesserung**, darunter die Übersicht **Modell je Stufe** ([8.4](#84-modell-je-stufe)).
 
-Standardmäßig nutzt die Textverbesserung **Anbieter und Key der Erkennung** (Schalter **Eigenen Zugang verwenden** aus). Das ist bei OpenAI, Groq, Mistral und OpenRouter der einfache Weg: ein Konto, ein Key. Im Feld **Modell** steht dann **Empfehlung je Stufe**: Glätten rechnet mit einem schnellen Modell, Verschönern, Zusammenfassen und Prompt mit einem stärkeren — bei OpenAI „GPT-6 Luna" und „GPT-6 Sol", bei Groq „GPT-OSS 20B" und „GPT-OSS 120B" (alle Anbieter: [7.1](#71-übersicht)). Die Unterzeile nennt beide. Wählst du stattdessen ein Modell aus der Liste oder tippst eins per **Eigenes Modell …** ein, rechnen alle Stufen damit, die kein eigenes Modell haben.
+Standardmäßig nutzt die Textverbesserung **Anbieter und Key der Erkennung** (Schalter **Eigenen Zugang verwenden** aus). Das ist bei OpenAI, Groq, Mistral und OpenRouter der einfache Weg: ein Konto, ein Key. Ein Modell wählst du hier nicht: Jede Stufe rechnet ab Werk mit der **Empfehlung je Stufe** — Glätten mit einem schnellen Modell, Verschönern, Zusammenfassen und Prompt mit einem stärkeren, bei OpenAI „GPT-6 Luna" und „GPT-6 Sol", bei Groq „GPT-OSS 20B" und „GPT-OSS 120B" (alle Anbieter: [7.1](#71-übersicht)). Ein anderes Modell stellst du auf der Seite der Stufe ein ([8.4](#84-modell-je-stufe)).
+
+**Update von 3.9.0:** Bis 3.9.0 gab es hier ein Feld **Modell**, das alle Stufen ohne eigenes Modell übernahmen — es wirkte doppelt. Ein dort gewähltes Modell hat beim Update jede Stufe ohne eigenes Modell bekommen; gerechnet wird wie vorher.
 
 Diese Karte regelt nur die **Online**-Textverbesserung. Bei Offline-Erkennung rechnet ab Werk das lokale Textmodell, ganz ohne Online-Zugang ([9.7](#97-lokales-textmodell-gemma-4)).
 
@@ -524,7 +552,7 @@ Diese Karte regelt nur die **Online**-Textverbesserung. Bei Offline-Erkennung re
 - dein Erkennungs-Anbieter keine eingebauten Textmodelle hat (Together AI, DeepInfra) und du kein Modell eintippen willst — „wie Erkennung" geht dort nur mit selbst eingetipptem Modell (**Zugang prüfen** erst dann); ohne kommt der Text ohne KI an, Hinweis „Kein Textmodell eingetragen — unter „KI-Zugang“ ein Modell eintragen", oder
 - du ein anderes Sprachmodell willst als beim Erkennungs-Anbieter.
 
-Dann erscheinen eigene Felder: **Anbieter** (OpenAI · Groq · Mistral · OpenRouter · Anthropic (Claude) · Google Gemini · DeepSeek · Ollama (lokal / Homeserver) · Ollama Cloud · Eigener Server), bei Eigener Server die **Base-URL**, der **API-Key** und das **Modell**. Der Key der Erkennung wird dabei nie an den anderen Anbieter geschickt. Beim Eigenen Server ist das Modellfeld ein Freitext („z. B. qwen3:8b"), mit **Modelle vom Server** eine Auswahl aus der Liste deines Servers ([7.6](#76-modelle-vom-server-pro-funktion)).
+Dann erscheinen eigene Felder: **Anbieter** (OpenAI · Groq · Mistral · OpenRouter · Anthropic (Claude) · Google Gemini · DeepSeek · Ollama (lokal / Homeserver) · Ollama Cloud · Eigener Server), bei Eigener Server die **Base-URL**, der **API-Key** und — nur beim Eigenen Server und bei Ollama (lokal), die keine eingebauten Modelle haben — das **Modell** („Standard aller Stufen, je Stufe änderbar."). Der Key der Erkennung wird dabei nie an den anderen Anbieter geschickt. Beim Eigenen Server ist das Modellfeld ein Freitext („z. B. qwen3:8b"), mit **Modelle vom Server** eine Auswahl aus der Liste deines Servers ([7.6](#76-modelle-vom-server-pro-funktion)).
 
 **Anbieterwechsel setzt die Modelle zurück:** Wählst du einen anderen Anbieter, schaltest „Eigenen Zugang verwenden“ ein oder aus oder wechselst bei „wie Erkennung" den Anbieter der Erkennung, gehen das Modell und die Modelle aller Stufen auf „Standard" zurück. Ein Modell des alten Anbieters kennt der neue meist nicht — bis 3.8.5 blieb es in zwei dieser Fälle stehen, und der Text kam ohne KI. Eine neue Server-Adresse (Ollama) setzt nichts zurück.
 
@@ -534,7 +562,7 @@ Dann erscheinen eigene Felder: **Anbieter** (OpenAI · Groq · Mistral · OpenRo
   **Welches Modell?** Eine Empfehlung je Stufe gibt es hier nicht, weil die Liste von deinem Server kommt. Gemma 4 denkt nicht nach, wenn man es nicht ausdrücklich verlangt, und eignet sich deshalb für Diktate: `gemma4:12b` zum Glätten (schwache Hardware, nur Prozessor mit bis zu 8 GB RAM: `gemma4:e4b`), `gemma4:26b` zum Umformulieren (ein MoE-Modell, das auch auf einem Heimserver ohne Grafikkarte mit 32 GB RAM zügig rechnen soll, nicht gemessen; mit 24-GB-Grafikkarte `gemma4:31b`). Das Modell im Feld **Modell** ist Pflicht und gilt für alle Stufen; schnellere oder stärkere legst du je Stufe fest ([8.4](#84-modell-je-stufe)).
 - **Ollama Cloud** — Modelle laufen auf ollama.com (fest `https://ollama.com`), **API-Key nötig** ([7.4](#74-key-besorgen--schritt-für-schritt)). Empfehlung je Stufe: **Gemma 4 31B (empfohlen)** zum Glätten — schnell und ohne „Nachdenken" — und **Mistral Large 3** zum Umformulieren (ebenfalls ohne Nachdenken, gutes Deutsch, Tempo nicht gemessen); zur Auswahl stehen außerdem GLM 5.3 Flash, GPT-OSS 20B und GPT-OSS 120B.
 
-**Modell-Liste vom Server:** Sobald Ollama verbunden ist (Adresse eingetragen, bei der Cloud auch der Key), lädt WhisperLoom die Modelle, die auf dem Server liegen, automatisch ins Auswahlfeld **Modell**. Der Knopf **Modelle vom Server laden** holt die Liste erneut und meldet „n Modelle gefunden" oder den Grund, warum es nicht geklappt hat (z. B. „Der Server hat keine Modelle …"). Beim lokalen Ollama übernimmt WhisperLoom das erste gefundene Modell, solange noch keins gewählt ist. Ein Modell, das nicht in der Liste steht, trägst du über den letzten Eintrag **Eigenes Modell …** per Name ein; beim lokalen Ollama ohne geladene Liste ist das Feld „Modell" ohnehin ein freies Textfeld. Mit der Pro-Funktion **Modelle vom Server** ([7.6](#76-modelle-vom-server-pro-funktion)) öffnet das Feld die Auswahl mit Suche und der Knopf heißt **Modelle aktualisieren**; geladen wird bei Ollama trotzdem bei jedem Öffnen.
+**Modell-Liste vom Server:** Sobald Ollama verbunden ist (Adresse eingetragen, bei der Cloud auch der Key), lädt WhisperLoom die Modelle, die auf dem Server liegen, automatisch — beim lokalen Ollama ins Feld **Modell**, bei Ollama Cloud in die Auswahl der Stufen ([8.4](#84-modell-je-stufe)). Der Knopf **Modelle vom Server laden** holt die Liste erneut und meldet „n Modelle gefunden" oder den Grund, warum es nicht geklappt hat (z. B. „Der Server hat keine Modelle …"). Beim lokalen Ollama übernimmt WhisperLoom das erste gefundene Modell, solange noch keins gewählt ist. Ein Modell, das nicht in der Liste steht, trägst du über den letzten Eintrag **Eigenes Modell …** per Name ein; beim lokalen Ollama ohne geladene Liste ist das Feld „Modell" ohnehin ein freies Textfeld. Mit der Pro-Funktion **Modelle vom Server** ([7.6](#76-modelle-vom-server-pro-funktion)) öffnet das Feld die Auswahl mit Suche und der Knopf heißt **Modelle aktualisieren**; geladen wird bei Ollama trotzdem bei jedem Öffnen.
 
 **Anbieter nur für Text** — mit Hinweisen, die WhisperLoom direkt an der Auswahl zeigt:
 
@@ -542,18 +570,20 @@ Dann erscheinen eigene Felder: **Anbieter** (OpenAI · Groq · Mistral · OpenRo
 - **Google Gemini**: gratis, aber „Free-Tier: Google darf Inhalte zum Training nutzen."
 - **DeepSeek**: „Server in China — Datenschutz beachten." Das Nachdenken ist bei DeepSeek abgeschaltet, sonst dauert jedes Diktat deutlich länger.
 
-Auch hier gibt es **Zugang prüfen** — WhisperLoom schickt dem Modell eine Mini-Anfrage und wertet die Antwort aus. Bei „Empfehlung je Stufe" prüft es das Modell zum Glätten; jedes andere Modell prüfst du in der Auswahl der Stufe mit **Modell prüfen** ([8.4](#84-modell-je-stufe)).
+Auch hier gibt es **Zugang prüfen** — WhisperLoom schickt dem Modell eine Mini-Anfrage und wertet die Antwort aus. Bei Anbietern mit eingebauten Modellen prüft es die Empfehlung zum Glätten; jedes andere Modell prüfst du in der Auswahl der Stufe mit **Modell prüfen** ([8.4](#84-modell-je-stufe)).
+
+**Fallback:** Unter dem Zugang schaltet **Fallback verwenden** einen zweiten Anbieter zu, der einspringt, wenn der KI-Zugang scheitert ([7.7](#77-fallback)).
 
 **Ohne Netz wartet nichts:** Vor jeder Online-Textverbesserung prüft WhisperLoom, ob das Telefon gerade Internet hat. Fehlt es, geht keine Anfrage raus, und der Text kommt sofort — ohne KI mit dem Hinweis „Textverbesserung übersprungen: Kein Netz für den Online-Zugang" oder, bei Offline-Erkennung, je nach Regel lokal verbessert ([9.7](#97-lokales-textmodell-gemma-4)). Für Server im eigenen Netz (private Adresse, `*.local`, `*.lan`, `*.home.arpa`, `*.internal`, Tailscale mit `100.x` oder `*.ts.net`) reicht eine WLAN- oder VPN-Verbindung, auch ohne Internet. Ein aktives VPN zählt nur, wenn darunter ein Netz da ist — Android meldet ein VPN sonst auch im Funkloch als verbunden. Nach einer Online-Erkennung reicht jedes verbundene Netz: Die Erkennung ist gerade darüber gelaufen.
 
 ### 8.4 Modell je Stufe
 
-Das Modell wählst du auf der Seite der Stufe beim Diktat (Zeile **Modell**, [8.1](#81-diktat)). Es gilt fürs Diktat (Knopf und Tastatur) und für geteilte Sprachnachrichten gemeinsam; deren Seiten zeigen es nur an („Wie beim Diktat · …“). Unter Einstellungen → **KI-Zugang** steht außerdem die Übersicht **Modell je Stufe**: „„Standard“ ist das Modell des Zugangs, bei „Empfehlung je Stufe“ ein schnelles zum Glätten und ein stärkeres zum Umformulieren. Gilt für Diktat und Sprachnachrichten.“ Die Zeilen **Glätten**, **Verschönern**, **Zusammenfassen** und — nur mit der Pro-Funktion „Prompt" ([8.1](#81-diktat)) — **Prompt** zeigen, womit die Stufe rechnet, etwa „Standard · Claude Haiku 5.5" oder ein eigenes Modell wie „Claude Opus 5.5"; ein Tipp führt auf die Seite der Stufe. Darunter: „Ein neuer Anbieter setzt alle Stufen auf „Standard“ zurück."
+Das Modell wählst du auf der Seite der Stufe beim Diktat (Zeile **Modell**, [8.1](#81-diktat)). Es gilt fürs Diktat (Knopf und Tastatur) und für geteilte Sprachnachrichten gemeinsam; deren Seiten zeigen es nur an („Wie beim Diktat · …“). Unter Einstellungen → **KI-Zugang** steht außerdem die Übersicht **Modell je Stufe**: „„Standard“ ist die Empfehlung des Anbieters: schnell zum Glätten, stärker zum Umformulieren; bei Ollama und eigenem Server das Modell des Zugangs. Gilt für Diktat und Sprachnachrichten.“ Die Zeilen **Glätten**, **Verschönern**, **Zusammenfassen** und — nur mit der Pro-Funktion „Prompt" ([8.1](#81-diktat)) — **Prompt** zeigen, womit die Stufe rechnet, etwa „Standard · Claude Haiku 5.5" oder ein eigenes Modell wie „Claude Opus 5.5"; ein Tipp führt auf die Seite der Stufe. Darunter: „Ein neuer Anbieter setzt alle Stufen auf „Standard“ zurück."
 
-**Was „Standard" heißt,** bestimmt das Feld **Modell** des Zugangs ([8.3](#83-ki-zugang)):
+**Was „Standard" heißt:**
 
-- **Empfehlung je Stufe** (ab Werk): Glätten — in jeder Bereinigung — rechnet mit der Empfehlung zum Glätten, Verschönern, Zusammenfassen und Prompt mit der zum Umformulieren. Welche Modelle das je Anbieter sind, steht in [7.1](#71-übersicht).
-- **ein bestimmtes Modell**: Alle Stufen ohne eigenes Modell rechnen damit.
+- bei Anbietern mit eingebauten Modellen die **Empfehlung je Stufe**: Glätten — in jeder Bereinigung — rechnet mit der Empfehlung zum Glätten, Verschönern, Zusammenfassen und Prompt mit der zum Umformulieren. Welche Modelle das je Anbieter sind, steht in [7.1](#71-übersicht).
+- bei Ollama (lokal) und Eigenem Server das Modell im Feld **Modell** des Zugangs ([8.3](#83-ki-zugang)).
 
 **Eigenes Modell für eine Stufe:** Ein Tipp auf die Zeile **Modell** öffnet **Modell für …** (z. B. „Modell für Zusammenfassen"): ganz oben **Standard (…)** mit dem Modell, das die Stufe sonst nimmt, darunter die Modelle des Anbieters mit Preis-Notiz, bei Ollama und mit der Pro-Funktion **Modelle vom Server** die Liste vom Server. Unter der Liste steht **Modell prüfen**, ganz unten **Eigenes Modell …** für eine freie ID und **Schließen**. **Modell prüfen** prüft genau das Modell, mit dem die Stufe gerade rechnet — praktisch bei einer frei eingetippten ID, die sonst erst beim Diktat scheitern würde. **Standard** schaltet die Stufe zurück.
 
@@ -930,6 +960,8 @@ WhisperLoom hat keinen eigenen Server, kein Konto, keine Telemetrie. Was mit dei
 
 **Eigener Server:** Audio und Text gehen nur an deinen Server.
 
+**Fallback:** Ist unter Spracherkennung oder KI-Zugang ein Fallback eingeschaltet ([7.7](#77-fallback)), gehen Audio bzw. Text im Fehlerfall zusätzlich an den Fallback-Anbieter — nur dann, wenn der erste gescheitert ist.
+
 **Pro Widgets:** Der Auftrag eines Sprach-Command-Widgets geht nur an den Server, der in genau diesem Widget eingetragen ist. Erkennung und, falls eingeschaltet, Textverbesserung laufen wie beim Diktat über die eingestellten Anbieter (siehe oben, [14.9](#149-was-dabei-gesendet-wird)).
 
 **Ollama:** Beim Anbieter **Ollama (lokal / Homeserver)** geht der Text für die Textverbesserung nur an dein eigenes Ollama — er verlässt dein Netz nicht. Bei **Ollama Cloud** geht er an ollama.com.
@@ -1018,19 +1050,19 @@ Einstellungen aus 2.x werden übernommen (Key, URL, Modell, Sprache, Regeln). Of
 
 ## 14. Pro Widgets (Sprach-Command-Widgets)
 
-Pro Widgets sind für Entwickler und Bastler gedacht: Ein **Sprach-Command-Widget** auf dem Startbildschirm nimmt auf und schickt den erkannten Text an einen Server, den du selbst betreibst. Wenn du keinen hast, überspring dieses Kapitel — ab Werk sind Pro Widgets aus, und du merkst von ihnen nichts. Normale Widgets ohne eigenen Server folgen mit einem späteren Update; bis dahin zeigt Einstellungen → **Widgets** nur einen Platzhalter („Normale Widgets für den Startbildschirm kommen mit einem späteren Update.“).
+Pro Widgets sind für Entwickler und Bastler gedacht: Ein **Sprach-Command-Widget** auf dem Startbildschirm nimmt auf und schickt den erkannten Text an einen Server, den du selbst betreibst. Ein **Claude-Code-Widget** startet mit dem Auftrag stattdessen eine neue Claude-Code-Session auf deinem Server ([14.10](#1410-claude-code-widget)). Wenn du keinen hast, überspring dieses Kapitel — ab Werk sind Pro Widgets aus, und du merkst von ihnen nichts. Normale Widgets ohne eigenen Server folgen mit einem späteren Update; bis dahin zeigt Einstellungen → **Widgets** nur einen Platzhalter („Normale Widgets für den Startbildschirm kommen mit einem späteren Update.“).
 
 **Die Idee:** Du tippst auf das Widget, sprichst deinen Auftrag, tippst noch einmal (oder hörst einfach auf zu sprechen, wenn du Auto-Stopp eingeschaltet hast) — WhisperLoom schreibt mit und schickt den Text an deinen eigenen Agenten. Der arbeitet den Auftrag ab und antwortet dort, wo du ihm sonst schreibst. Die App wartet nicht auf die Antwort; sie ist nach ein paar Sekunden fertig. Jedes Widget hat seinen eigenen Namen und seinen eigenen Server — ein Widget kann also an den Agenten zu Hause gehen, ein zweites an einen anderen.
 
 ### 14.1 Was du brauchst
 
-- Einen erreichbaren Server mit der **Bridge** (dem kleinen Gegenstück, das den Auftrag entgegennimmt und an deinen Agenten übergibt; Quellcode und Einrichtung: [hermes-bridge](https://github.com/CTreitges/hermes-bridge)). Adresse und ein **Token** bekommst du von dort. Mehrere Widgets dürfen denselben Server nutzen oder verschiedene.
+- Einen erreichbaren Server mit der **Bridge** (dem kleinen Gegenstück, das den Auftrag entgegennimmt und an deinen Agenten übergibt; Quellcode und Einrichtung: [hermes-bridge](https://github.com/CTreitges/hermes-bridge), für das Claude-Code-Widget die [claude-bridge](https://github.com/CTreitges/claude-bridge)). Adresse und ein **Token** bekommst du von dort. Mehrere Widgets dürfen denselben Server nutzen oder verschiedene.
 - Eine eingerichtete Erkennung — online oder offline, beides geht. Das Mitschreiben läuft genau so wie beim normalen Diktat.
 - Die Mikrofon-Berechtigung. Die hast du aus der Einrichtung meist schon.
 
 ### 14.2 Pro Widgets freischalten
 
-Einstellungen → Gruppe PRO → **Erweitert** → Karte **Pro-Funktionen** → Schalter **Pro Widgets** einschalten („Blendet im Widget-Menü den Tab „Pro Widgets“ ein: Sprach-Command-Widgets mit eigenem Server.“). Darunter erscheinen zwei Zeilen: **Pro Widgets verwalten** öffnet den Tab „Pro Widgets“, **Anleitung Pro Widgets** ein bebildertes Tutorial mit sechs Seiten.
+Einstellungen → Gruppe PRO → **Erweitert** → Karte **Pro-Funktionen** → Schalter **Pro Widgets** einschalten („Blendet im Widget-Menü den Tab „Pro Widgets“ ein: Sprach-Command- und Claude-Code-Widgets mit eigenem Server.“). Darunter erscheinen zwei Zeilen: **Pro Widgets verwalten** öffnet den Tab „Pro Widgets“, **Anleitung Pro Widgets** ein bebildertes Tutorial mit sechs Seiten.
 
 Das Widget-Menü unter Einstellungen → **Widgets** hat danach zwei Tabs: **Widgets** (normale Widgets, noch ein Platzhalter) und **Pro Widgets** — geöffnet wird „Pro Widgets“. Ist der Schalter aus, gibt es keine Tabs, nur den Platzhalter mit dem Hinweis „Für Entwickler: Pro Widgets lassen sich unter „Erweitert“ freischalten.“ und dem Button **Erweitert**.
 
@@ -1038,16 +1070,16 @@ Das Widget-Menü unter Einstellungen → **Widgets** hat danach zwei Tabs: **Wid
 
 ### 14.3 Ein Widget anlegen und bearbeiten
 
-Einstellungen → **Widgets** → Tab **Pro Widgets** → Karte **Neues Pro Widget** → **Sprach-Command-Widget**. WhisperLoom legt ein Widget an („Sprach-Command 2“, „Sprach-Command 3“ …) und öffnet gleich **Widget bearbeiten**. Hat eines deiner Widgets schon einen funktionierenden Server, sind dessen Adresse und Token bereits eingetragen. Das **Standard-Widget** (ab Werk „Sprach-Command“) gibt es immer; du kannst es bearbeiten, aber nicht löschen.
+Einstellungen → **Widgets** → Tab **Pro Widgets** → Karte **Neues Pro Widget** → **Sprach-Command-Widget** oder **Claude-Code-Widget**. WhisperLoom legt ein Widget an („Sprach-Command 2“, „Sprach-Command 3“ … bzw. „Claude Code 1“ …) und öffnet gleich **Widget bearbeiten**. Hat eines deiner Widgets desselben Typs schon einen funktionierenden Server, sind dessen Adresse und Token bereits eingetragen. Das **Standard-Widget** (ab Werk „Sprach-Command“) gibt es immer; du kannst es bearbeiten, aber nicht löschen.
 
-Unter **Deine Pro Widgets** stehen alle Widgets mit Namen, darunter Server und Modus („bridge.example.de · Tippen startet und stoppt“) oder die Warnung **Server fehlt**. Ein Tipp öffnet **Widget bearbeiten**. Jede Änderung gilt sofort, einen Speichern-Knopf gibt es nicht:
+Unter **Deine Pro Widgets** stehen alle Widgets mit Namen, darunter Typ, Server und Modus („Sprach-Command-Widget · bridge.example.de · Tippen startet und stoppt“) oder Typ und die Warnung **Server fehlt**. Ein Tipp öffnet **Widget bearbeiten**. Jede Änderung gilt sofort, einen Speichern-Knopf gibt es nicht:
 
 - **Name** — Pflicht, höchstens 24 Zeichen; er steht unter dem Widget auf dem Startbildschirm. Ist das Feld leer, meldet es „Jedes Widget braucht einen Namen.“ — gespeichert bleibt dann der letzte Name.
 - **Name unter dem Widget anzeigen** — ab Werk an. Ausgeschaltet zeigt das Widget nur seine Kachel.
 - **Server** — Server-Adresse, Token und Verbindung prüfen, siehe [14.4](#144-server-je-widget).
-- **Symbol** — eins von 22 eingebauten (Einkauf, Zuhause, Arbeit, Idee, Termin, Notiz …) oder **Aus Galerie**: ein eigenes Foto, rund zugeschnitten. **Bild entfernen** nimmt wieder das Mikrofon. Das Symbol siehst du, solange das Widget bereit ist oder einen Fehler zeigt; beim Aufnehmen und Senden zeigt es wie gewohnt den Zustand.
+- **Symbol** — eins von 22 eingebauten (Einkauf, Zuhause, Arbeit, Idee, Termin, Notiz …) oder **Aus Galerie**: ein eigenes Foto, rund zugeschnitten. **Bild entfernen** nimmt wieder das Standardsymbol des Typs (Mikrofon beim Sprach-Command, Zauberstab beim Claude-Code-Widget). Das Symbol siehst du, solange das Widget bereit ist oder einen Fehler zeigt; beim Aufnehmen und Senden zeigt es wie gewohnt den Zustand.
 - **Automatisch senden nach Sprechpause** — siehe [14.6](#146-auto-stopp).
-- **Widget löschen** — vorher fragt die App nach. Liegt es auf dem Startbildschirm, zeigt es danach das Standard-Widget. Wartet noch ein Auftrag dieses Widgets, wird er mit verworfen — er geht nie an den Server eines anderen Widgets.
+- **Widget löschen** — vorher fragt die App nach. Liegt es auf dem Startbildschirm, zeigt es danach das erste andere Widget desselben Typs, gibt es keins, das Standard-Widget; die Rückfrage nennt es. Wartet noch ein Auftrag dieses Widgets, wird er mit verworfen — er geht nie an den Server eines anderen Widgets.
 - **Fertig** schließt den Editor.
 
 ### 14.4 Server je Widget
@@ -1062,7 +1094,7 @@ Ein Auftrag geht immer an den Server des Widgets, mit dem du ihn aufgenommen has
 
 ### 14.5 Das Widget auf den Startbildschirm legen
 
-Drücke lange auf eine freie Stelle deines Startbildschirms → **Widgets** → **WhisperLoom** → **Sprach-Command** dorthin ziehen, wo du es haben willst. Hast du mehr als das Standard-Widget angelegt, fragt WhisperLoom jetzt **„Welches Widget-Profil?“** — tipp eins an, und das Widget ist da. Dort kannst du auch gleich ein **Neues Widget-Profil** anlegen; nach dem Bearbeiten ist es vorgewählt, ein Tipp darauf übernimmt es. Wischst du die Frage weg, wird das Widget nicht hinzugefügt. Gibt es nur das Standard-Widget, fragt WhisperLoom nichts. Sind Pro Widgets noch aus, steht in der Frage „Pro Widgets sind aus. In der App unter Einstellungen → Erweitert einschalten.“ — hinlegen geht trotzdem, das Widget zeigt dann „Pro Widgets aus — tippen“.
+Drücke lange auf eine freie Stelle deines Startbildschirms → **Widgets** → **WhisperLoom** → **Pro Widget** dorthin ziehen, wo du es haben willst. Sprach-Command und Claude Code teilen sich diesen einen Eintrag; welcher Typ es wird, entscheidet das Widget-Profil. WhisperLoom fragt deshalb jetzt **„Welches Widget-Profil?“** — tipp eins an, und das Widget ist da. Dort kannst du auch gleich ein **Neues Sprach-Command-Widget** oder ein **Neues Claude-Code-Widget** anlegen; nach dem Bearbeiten ist es vorgewählt, ein Tipp darauf übernimmt es. Wischst du die Frage weg, wird das Widget nicht hinzugefügt. Sind Pro Widgets noch aus, steht in der Frage „Pro Widgets sind aus. In der App unter Einstellungen → Erweitert einschalten.“ — hinlegen geht trotzdem, das Widget zeigt dann „Pro Widgets aus — tippen“.
 
 **Der Name steht unter dem Widget** — wie bei den App-Symbolen, in heller Schrift mit leichtem Schatten, damit er auf jedem Hintergrundbild lesbar bleibt. Zu lange Namen enden mit „…“. Ausblenden: im Editor **Name unter dem Widget anzeigen** ausschalten.
 
@@ -1076,7 +1108,7 @@ Die bebilderte Anleitung dazu liegt unter Erweitert → **Anleitung Pro Widgets*
 
 Ab Werk startet ein Tipp die Aufnahme und ein zweiter Tipp sendet. Schaltest du im Editor **Automatisch senden nach Sprechpause** ein, endet die Aufnahme von selbst, sobald du nach dem Sprechen eine Pause machst, und wird gesendet. Wie lange die Pause sein muss, stellst du darunter ein: **Kurz** (1,2 Sekunden), **Normal** (2 Sekunden) oder **Lang** (3,5 Sekunden, für Denkpausen). Ein Tipp beendet trotzdem jederzeit. Hört das Widget nach dem Start 8 Sekunden lang keine Sprache, verwirft es die Aufnahme und sendet nichts. In sehr lauter Umgebung kann Auto-Stopp zu früh oder zu spät auslösen — dann einfach per Tipp beenden oder das Widget auf „Lang“ stellen.
 
-Alle Widgets zeigen dieselbe Aufnahme: startest du mit einem, zeigen alle „nimmt auf“. Ob Auto-Stopp greift und an welchen Server der Auftrag geht, richtet sich nach dem Widget, mit dem du gestartet hast.
+Die Aufnahme zeigt nur das Widget, mit dem du gestartet hast; die anderen bleiben bereit. Ob Auto-Stopp greift und an welchen Server der Auftrag geht, richtet sich ebenfalls nach diesem Widget.
 
 ### 14.7 Benutzen — was das Widget zeigt
 
@@ -1091,7 +1123,9 @@ Alle Widgets zeigen dieselbe Aufnahme: startest du mit einem, zeigen alle „nim
 | grau mit durchgestrichenem Mikrofon, „Pro Widgets aus — tippen“ | der Schalter „Pro Widgets“ ist aus | öffnet **Erweitert** |
 | rot, „Mikrofon nicht erlaubt — tippen“ | WhisperLoom darf das Mikrofon nicht nutzen | öffnet den Tab „Pro Widgets“ mit der Karte **Mikrofon** |
 
-„Bereit“ und „Server fehlt“ gelten je Widget: Ein Widget mit Server ist bereit, eines ohne zeigt „Server fehlt“. Aufnahme, Senden, „Gesendet“ und Fehler zeigen alle Widgets zugleich — es gibt immer nur einen Auftrag.
+„Bereit“ und „Server fehlt“ gelten je Widget: Ein Widget mit Server ist bereit, eines ohne zeigt „Server fehlt“. Aufnahme, Senden, „Gesendet“ und Fehler zeigt nur das Widget, mit dem du aufgenommen hast. Es gibt aber immer nur einen Auftrag: Tippst du ein anderes Widget an, während eines aufnimmt oder sendet, nimmt es nicht auf und meldet kurz „Ein anderes Widget nimmt gerade auf“ bzw. „Ein anderes Widget sendet gerade noch“; im zweiten Fall stößt der Tipp den Auftrag an wie ein Tipp auf „Wird gesendet …“. Nach einem Fehler darfst du mit einem anderen Widget neu aufnehmen; sobald die neue Aufnahme läuft, ist der gescheiterte Auftrag verworfen. Wird das Widget, mit dem du aufgenommen hast, entfernt, zeigen alle anderen den Auftrag.
+
+Geht etwas schief, nennt WhisperLoom den Grund zusätzlich als kurze Meldung am unteren Bildschirmrand („Kein Ton aufgenommen“, „Zu kurz — länger sprechen“, „Nichts gehört“ oder der Fehler des Servers). Das ganz kleine Widget hat keinen Platz für die Statuszeile und wird dann nur rot. Wurde die App mitten in der Aufnahme vom System beendet, meldet der nächste Tipp „Aufnahme abgebrochen — bitte noch einmal aufnehmen“, und das Widget ist wieder bereit.
 
 Ist ein Versuch gescheitert und folgt noch ein weiterer, bleibt das Widget blau und nennt den Grund: „Zeitüberschreitung … — neuer Versuch folgt, tippen = jetzt“. Ein Tipp sendet dann sofort, statt auf den nächsten Versuch zu warten.
 
@@ -1111,7 +1145,7 @@ Der Schalter unter Erweitert ist aus. Der Tipp führt direkt dorthin.
 Diesem Widget fehlen Server-Adresse oder Token, oder die Adresse ist ungültig. Der Tipp öffnet **Widget bearbeiten** für genau dieses Widget; sobald Adresse und Token stimmen, ist es bereit.
 
 **„Server fehlt im Widget „…“ — tippen für erneuten Versuch“**
-Ein Auftrag wartet, aber sein Widget hat inzwischen keinen gültigen Server mehr. Der Auftrag bleibt gespeichert. Der Tipp — auf dieses oder ein anderes Widget — öffnet **Widget bearbeiten** für das Widget des Auftrags: Server eintragen, dann aufs Widget tippen — er geht los, ohne neu aufzunehmen.
+Ein Auftrag wartet, aber sein Widget hat inzwischen keinen gültigen Server mehr. Der Auftrag bleibt gespeichert. Der Tipp auf das Widget, mit dem du aufgenommen hast, öffnet **Widget bearbeiten** für dessen Profil: Server eintragen, dann aufs Widget tippen — er geht los, ohne neu aufzunehmen.
 
 **„Pro Widgets sind aus — tippen für erneuten Versuch“**
 Du hast Pro Widgets ausgeschaltet, während ein Auftrag wartete. Er bleibt gespeichert. Der Tipp führt nach **Erweitert**: wieder einschalten, dann aufs Widget tippen — oder den Auftrag dort unter **Offener Auftrag** verwerfen.
@@ -1134,7 +1168,7 @@ Beim Hinzufügen erscheint „Welches Widget-Profil?“, und du hast die Frage w
 **Das Widget bleibt auf „Wird gesendet …“ stehen oder zeigt „… — neuer Versuch folgt“**
 Ein Versuch ist gescheitert, meist am Netz oder an einem Server, der gerade erst startet. WhisperLoom versucht es von allein erneut, mit wachsendem Abstand. Ein Tipp auf die Fläche sendet sofort, ohne auf den nächsten Termin oder auf Netz zu warten. Läuft gerade ein Versuch, lässt der Tipp ihn in Ruhe; hängt er länger als drei Minuten, ersetzt ihn der Tipp. Das gilt nicht, solange die Offline-Erkennung noch rechnet: sie lässt sich nicht abbrechen, ein zweiter Versuch müsste hinter ihr warten und würde alles nur verlängern. Der Tipp tut dann nichts — bei einer langen Aufnahme und einem großen Modell kann das einige Minuten dauern. Doppelt ankommen kann dabei praktisch nichts: die Bridge führt denselben Auftrag innerhalb einer Stunde nur einmal aus. Geht er erst später erneut hinaus (etwa ein roter Auftrag, den du am nächsten Tag noch einmal sendest) oder wurde die Bridge dazwischen neu gestartet, kann er in seltenen Fällen ein zweites Mal ausgeführt werden — dann nämlich, wenn der erste Versuch schon angekommen war und nur die Antwort verloren ging. Ohne Netz scheitert der sofortige Versuch ehrlich, und nach einigen Versuchen wird das Widget rot.
 
-Hängt es trotzdem immer wieder: Einstellungen des Telefons → Apps → WhisperLoom → Akku → **Nicht eingeschränkt**. Manche Hersteller halten Hintergrundaufträge sonst lange zurück. Für die Fehlersuche am Rechner zeigt `adb shell dumpsys jobscheduler com.chris.whisperloom`, worauf der Auftrag wartet, und `adb shell am get-standby-bucket com.chris.whisperloom` die Standby-Stufe der App.
+Hängt es trotzdem immer wieder: Einstellungen des Telefons → Apps → WhisperLoom → Akku → **Nicht eingeschränkt**. Manche Hersteller halten Hintergrundaufträge sonst lange zurück. Für die Fehlersuche am Rechner zeigt `adb shell dumpsys jobscheduler com.chris.whisperloom`, worauf der Auftrag wartet, und `adb shell am get-standby-bucket com.chris.whisperloom` die Standby-Stufe der App (bei der Play-Version jeweils `com.whisperloom` statt `com.chris.whisperloom`).
 
 Willst du den Auftrag loswerden: Einstellungen → Widgets → Tab „Pro Widgets“ → Karte **Offener Auftrag** → **Offenen Auftrag verwerfen**. Sind Pro Widgets aus, steht die Karte unter Einstellungen → **Erweitert**. Sie erscheint nur, solange ein Auftrag wartet.
 
@@ -1143,7 +1177,21 @@ Willst du den Auftrag loswerden: Einstellungen → Widgets → Tab „Pro Widget
 
 ### 14.9 Was dabei gesendet wird
 
-An den Server des Widgets gehen: der erkannte Text, eine Auftragskennung, Zeitpunkt und Dauer der Aufnahme. **Den Auftrag bekommt nur die Adresse, die in diesem Widget eingetragen ist** — nicht der Hersteller der App und nicht der Server eines anderen Widgets. Erkannt und verbessert wird wie beim Diktat: Fürs Mitschreiben geht die Aufnahme an den Erkennungsweg, den du eingestellt hast, und ist die Textverbesserung an, geht der erkannte Text vorher an deren Anbieter (Kapitel 12 beschreibt das im Detail). Ein Auftrag, der noch nicht durchging, liegt so lange auf dem Telefon, bis er abgeschickt, verworfen oder ersetzt wird; er wird nicht in ein Cloud-Backup übernommen. Die Widgets mit Server-Adressen und Tokens sowie ihre Galerie-Bilder werden nur auf dem Gerät gespeichert und nicht gesichert.
+An den Server des Widgets gehen: der erkannte Text, eine Auftragskennung, Zeitpunkt und Dauer der Aufnahme, beim Claude-Code-Widget außerdem Modell, Denkaufwand und Ultracode. **Den Auftrag bekommt nur die Adresse, die in diesem Widget eingetragen ist** — nicht der Hersteller der App und nicht der Server eines anderen Widgets. Erkannt und verbessert wird wie beim Diktat: Fürs Mitschreiben geht die Aufnahme an den Erkennungsweg, den du eingestellt hast, und ist die Textverbesserung an, geht der erkannte Text vorher an deren Anbieter (Kapitel 12 beschreibt das im Detail). Beim Claude-Code-Widget ist die Textverbesserung immer an, mit der Stufe „Prompt“ ([14.10](#1410-claude-code-widget)). Ein Auftrag, der noch nicht durchging, liegt so lange auf dem Telefon, bis er abgeschickt, verworfen oder ersetzt wird; er wird nicht in ein Cloud-Backup übernommen. Die Widgets mit Server-Adressen und Tokens sowie ihre Galerie-Bilder werden nur auf dem Gerät gespeichert und nicht gesichert.
+
+### 14.10 Claude-Code-Widget
+
+Das Claude-Code-Widget funktioniert wie ein Sprach-Command-Widget, nur geht der Auftrag an die [claude-bridge](https://github.com/CTreitges/claude-bridge): Sie startet auf deinem Server sofort eine neue Claude-Code-Session, die direkt mit dem Auftrag beginnt. Die Session findest du danach in Claude, nicht im Chat deines Agenten. Ein Claude-Code-Widget übernimmt Adresse und Token nur von einem anderen Claude-Code-Widget, nie die Bridge eines Sprach-Commands.
+
+Im Editor stehen unter **Claude** zusätzlich:
+
+- **Modell** — Opus, Fable, Sonnet oder Haiku.
+- **Denkaufwand (Effort)** — Niedrig, Mittel, Hoch, Extra hoch oder Maximal. Mehr heißt gründlicher, aber langsamer und mit mehr Verbrauch.
+- **Ultracode** — Claude zerlegt größere Aufgaben in einen Workflow mit mehreren Agenten; gründlicher, verbraucht aber deutlich mehr von deinem Nutzungslimit.
+
+Ab Werk: Opus, Extra hoch, Ultracode aus. Die Werte gelten für jede Session, die dieses Widget startet; für andere Einstellungen legst du einfach ein zweites Claude-Code-Widget an.
+
+Was du sagst, formt das Claude-Code-Widget **immer mit der Textverbesserung „Prompt“** zu einem klaren Auftrag, bevor es an die Bridge geht — egal, welche Stufe du fürs Diktat eingestellt hast, und auch ohne dass „Prompt“ unter Pro-Funktionen eingeschaltet ist. Es rechnet mit dem Modell der Stufe Prompt: ab Werk dem Standardmodell; ein eigenes stellst du unter **Modell je Stufe** ein, sobald die Pro-Funktion „Prompt“ eingeschaltet ist. Klappt die Textverbesserung nicht (kein Netz, kein Textmodell, Fehler beim Anbieter), geht wie beim Diktat der erkannte Text mit Hinweis raus. **Verbindung prüfen** erkennt auch, ob unter der Adresse wirklich die claude-bridge läuft — sonst meldet der Chip „Server ist keine claude-bridge — Adresse prüfen“.
 
 ---
 

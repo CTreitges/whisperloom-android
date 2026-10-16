@@ -1,0 +1,6 @@
+WhisperLoom 3.9.1
+• Neu: Fallback – ein zweiter Anbieter springt ein, wenn Spracherkennung oder KI-Zugang scheitern
+• Neu: Pro Widget „Claude Code“ startet per Sprachauftrag eine Claude-Code-Session auf deinem Server
+• Neu: Link zur Datenschutzerklärung im Über-Fenster
+• Geändert: Modell nur noch je Stufe wählen, das doppelte Feld im KI-Zugang ist weg
+• Behoben: Mehrere Pro Widgets nehmen nicht mehr gleichzeitig auf

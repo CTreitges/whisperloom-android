@@ -1,5 +1,6 @@
 package com.chris.whisperloom.agent
 
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.util.Log
 import androidx.core.content.edit
@@ -69,6 +70,16 @@ class VoiceTaskStore(context: Context) {
     var profileId: String
         get() = sp.getString(KEY_PROFILE_ID, "") ?: ""
         private set(v) = sp.edit { putString(KEY_PROFILE_ID, v) }
+
+    /**
+     * Das Widget, das den laufenden Auftrag gestartet hat. Nur es zeigt Aufnahme, Senden und
+     * Ergebnis ([VoiceTaskWidgetView.pushTo]); die anderen bleiben bereit. INVALID = unbekannt
+     * (Auftrag von vor dem Update) — dann zeigen ihn wie frueher alle. Ueberlebt [clear]: auch
+     * "Gesendet" und ein Fehler ohne Auftrag gehoeren noch dem startenden Widget.
+     */
+    var widgetId: Int
+        get() = sp.getInt(KEY_WIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
+        set(v) = sp.edit { putInt(KEY_WIDGET_ID, v) }
 
     /** ISO-8601, geht als `recorded_at` an die Bridge. */
     var recordedAt: String
@@ -147,6 +158,7 @@ class VoiceTaskStore(context: Context) {
         private const val KEY_REFINE_SKIPPED = "refine_skipped"
         private const val KEY_ATTEMPT_STARTED = "attempt_started_at"
         private const val KEY_OFFLINE_RECOGNITION = "offline_recognition"
+        private const val KEY_WIDGET_ID = "widget_id"
         private const val TAG = "VoiceTaskStore"
     }
 }

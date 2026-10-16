@@ -2,12 +2,13 @@ WhisperLoom types for you: tap, speak, done – the recognised text lands right 
 
 Three ways to dictate:
 • A floating button above all apps (your keyboard stays as it is). Tap to record, tap again to insert, drag to ✕ to discard.
-• A dictation keyboard with hold-to-talk for apps that block overlays. Swipe right to lock – recording continues hands-free, with pause and resume; while paused the microphone is free, even if you open another app in between. Swipe left to discard. The wand above the microphone opens the text levels without leaving the app.
-• Pro Widgets for developers: voice command widgets on the home screen send voice tasks to your own server (see below). Off by default.
+• A dictation keyboard with hold-to-talk for apps that block overlays. Swipe right to lock – hands-free, with pause and resume. Swipe left to discard. The wand above the microphone opens the text levels without leaving the app.
+• Pro Widgets for developers: voice tasks from the home screen to your own server or as a new Claude Code session (see below). Off by default.
 
 Recognition your way:
 • Online with your own account at OpenAI, Groq (free tier), Mistral, ElevenLabs (Scribe), Together, DeepInfra, OpenRouter, or any OpenAI-compatible server you host yourself (speaches, whisper.cpp server).
 • Offline on the device with whisper.cpp. Models (Tiny to Large v3 Turbo) are downloaded on demand – none is bundled.
+• Fallback: if the first provider fails, a second one steps in – for recognition and text refinement.
 • Vocabulary for names and technical terms: as a list in the app or as a linked .md/.txt file that is re-read with every dictation.
 • For tinkerers, under Settings → Advanced ("Erweitert"): "Models from the server" loads each provider's current model list.
 
@@ -21,8 +22,8 @@ History: find your dictations from keyboard and button again – with the raw te
 
 Transcribe voice messages: share a message from WhatsApp, Telegram or Signal → WhisperLoom. The text appears in paragraphs, verbatim or without fillers, ready to copy or forward. Optionally with its own AI level: polish (with its own clean-up), rephrase or summarise.
 
-Pro Widgets for your own agent: tap, speak, tap – a voice command widget transcribes and sends the task to a server you run yourself. Delivery keeps going with the screen off. Each widget has its own name, server and token, an icon or gallery picture and optional auto-stop after a pause; resizes freely from 1 × 1 to 4 × 2. Unlock them under Settings → Advanced. Requires your own server (the counterpart's source code is on GitHub).
+Pro Widgets for your own agent: tap, speak, tap – a voice command widget transcribes and sends the task to a server you run yourself; the Claude Code widget starts a new Claude Code session via claude-bridge, with the model and effort you choose. Delivery keeps going with the screen off. Each widget has its own name, server and token, an icon or gallery picture and optional auto-stop after a pause; resizes freely from 1 × 1 to 4 × 2. Unlock them under Settings → Advanced. Requires your own server (the counterpart's source code is on GitHub).
 
 What's new is shown right in the app – tap the “?” next to the version number.
 
-Privacy: your API key never leaves the device. Online, audio and vocabulary go to the provider you chose, and with online text refinement the recognised text goes to the language model you chose; offline, the recording never leaves the phone, and the local text model refines the text on the device. WhisperLoom does not store recordings. The history stays on the device only, never goes into a backup and can be switched off. No accounts, no ads, no tracking.
+Privacy: your API key never leaves the device. Online, audio and vocabulary go to the provider you chose (after an error also to a fallback you switched on), and with online text refinement the recognised text goes to the language model you chose; offline, the recording never leaves the phone, and the local text model refines the text on the device. WhisperLoom does not store recordings. The history stays on the device only, never goes into a backup and can be switched off. No accounts, no ads, no tracking.

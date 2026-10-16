@@ -9,6 +9,7 @@ import com.chris.whisperloom.api.ApiNetworkException
 import com.chris.whisperloom.api.TextRefiner
 import com.chris.whisperloom.api.WavUpload
 import com.chris.whisperloom.agent.AgentBridge
+import com.chris.whisperloom.agent.NotClaudeBridgeException
 import java.net.SocketTimeoutException
 import java.util.Locale
 
@@ -19,7 +20,7 @@ import java.util.Locale
  */
 object AccessTest {
 
-    enum class Kind { UNAUTHORIZED, NO_CREDIT, RATE_LIMIT, SERVER, TIMEOUT, NETWORK, UNKNOWN }
+    enum class Kind { UNAUTHORIZED, NO_CREDIT, RATE_LIMIT, SERVER, TIMEOUT, NETWORK, NOT_CLAUDE_BRIDGE, UNKNOWN }
 
     sealed class Outcome {
         data class Ok(val millis: Long) : Outcome()
@@ -40,6 +41,7 @@ object AccessTest {
         is ApiNetworkException ->
             if (e.cause is SocketTimeoutException) Outcome.Failed(Kind.TIMEOUT)
             else Outcome.Failed(Kind.NETWORK, message = e.message.orEmpty())
+        is NotClaudeBridgeException -> Outcome.Failed(Kind.NOT_CLAUDE_BRIDGE)
         else -> Outcome.Failed(Kind.UNKNOWN, message = e.message ?: e.javaClass.simpleName)
     }
 
@@ -57,7 +59,8 @@ object AccessTest {
     /**
      * Sprachauftrag-Bridge: ein leeres Transkript, das die Bridge mit 400 beantwortet —
      * NACHDEM sie das Token geprueft hat. Also loest die Pruefung keinen Auftrag aus und
-     * unterscheidet trotzdem "Token falsch" (401) von "Server nicht da" (Netzfehler).
+     * unterscheidet trotzdem "Token falsch" (401) von "Server nicht da" (Netzfehler). Ein
+     * Claude-Code-Widget verlangt dabei die Kennung der claude-bridge ([NotClaudeBridgeException]).
      */
     fun bridge(bridge: AgentBridge): Outcome = timed { bridge.check() }
 

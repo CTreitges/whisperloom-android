@@ -2,10 +2,13 @@ package com.chris.whisperloom.agent
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.Refinement
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -49,6 +52,10 @@ class WidgetProfileTest {
         assertEquals("", p.serverUrl)
         assertEquals("", p.serverToken)
         assertFalse(p.serverReady)
+        // Claude Code: ohne gespeicherte Wahl Opus mit Effort "Extra hoch", Ultracode aus.
+        assertEquals(ClaudeModel.OPUS, p.claudeModel)
+        assertEquals(ClaudeEffort.XHIGH, p.claudeEffort)
+        assertFalse(p.ultracode)
     }
 
     @Test fun unbekannteFelderStoerenNicht() {
@@ -58,7 +65,10 @@ class WidgetProfileTest {
 
     @Test fun jsonNullIstLeerUndNichtDerText_null() {
         // optString macht aus JSON-null sonst "null" — das Widget hiesse dann "null".
-        val p = lies("""{"id":"x","name":null,"icon":null,"pause":null,"kind":null,"showName":null,"serverUrl":null,"serverToken":null}""")
+        val p = lies(
+            """{"id":"x","name":null,"icon":null,"pause":null,"kind":null,"showName":null,"claudeModel":null,""" +
+                """"claudeEffort":null,"ultracode":null,"serverUrl":null,"serverToken":null}""",
+        )
         assertEquals(WidgetProfile("x"), p)
     }
 
@@ -194,6 +204,9 @@ class WidgetProfileTest {
         assertFalse(json.getBoolean("showName"))
         assertEquals("https://b.example.de", json.getString("serverUrl"))
         assertEquals("t", json.getString("serverToken"))
+        assertEquals("opus", json.getString("claudeModel"))
+        assertEquals("xhigh", json.getString("claudeEffort"))
+        assertFalse(json.getBoolean("ultracode"))
     }
 
     // --- Server je Widget (3.7.1) -------------------------------------------------
@@ -229,13 +242,89 @@ class WidgetProfileTest {
         assertTrue(mit.toString().contains("serverToken=***"))
         assertTrue("Der Rest bleibt lesbar", mit.toString().contains("name=Einkauf"))
         assertTrue(WidgetProfile("x").toString().contains("serverToken=)"))
+        val claude = mit.copy(kind = WidgetKind.CLAUDE_CODE, claudeModel = ClaudeModel.SONNET, ultracode = true)
+        assertFalse(claude.toString().contains("streng-geheim-42"))
+        assertTrue(claude.toString().contains("claudeModel=SONNET, claudeEffort=XHIGH, ultracode=true"))
     }
 
     @Test fun dieWidgetTypenSindNachStufeGetrennt() {
-        assertEquals(listOf(WidgetKind.VOICE_COMMAND), WidgetKind.of(Tier.PRO))
+        assertEquals(listOf(WidgetKind.VOICE_COMMAND, WidgetKind.CLAUDE_CODE), WidgetKind.of(Tier.PRO))
         assertTrue("Normale Widgets folgen spaeter", WidgetKind.of(Tier.NORMAL).isEmpty())
         // Gespeicherte Schluessel sind festgeschrieben — ein Umbenennen setzte jedes Profil zurueck.
-        assertEquals(listOf("voice_command"), WidgetKind.entries.map { it.key })
+        assertEquals(listOf("voice_command", "claude_code"), WidgetKind.entries.map { it.key })
+        // Das Symbol neuer Widgets ist ein eingebautes — ein unbekannter Schluessel wuerde still zum Mikrofon.
+        assertEquals(listOf("mic", "auto_fix_high"), WidgetKind.entries.map { it.iconKey })
+        assertTrue(WidgetKind.entries.all { WidgetIcons.isKnown(it.iconKey) })
         assertEquals(WidgetKind.VOICE_COMMAND, WidgetKind.fromKey(null))
+        assertEquals(WidgetKind.CLAUDE_CODE, lies("""{"id":"x","kind":"claude_code"}""")!!.kind)
+    }
+
+    // --- Claude Code ----------------------------------------------------------------
+
+    @Test fun einClaudeProfilUeberstehtDenJsonRoundtrip() {
+        val p = WidgetProfile(
+            id = "c1",
+            name = "Claude",
+            kind = WidgetKind.CLAUDE_CODE,
+            claudeModel = ClaudeModel.SONNET,
+            claudeEffort = ClaudeEffort.HIGH,
+            ultracode = true,
+            serverUrl = "https://claude.example.de",
+            serverToken = "geheim",
+        )
+        assertEquals(p, WidgetProfile.fromJson(p.toJson()))
+        assertEquals(listOf(WidgetProfile.DEFAULT, p), WidgetProfile.decodeAll(WidgetProfile.encodeAll(listOf(WidgetProfile.DEFAULT, p))))
+    }
+
+    @Test fun modellUndEffortHabenFesteSchluessel() {
+        // Gespeichert UND an die claude-bridge geschickt — ein Umbenennen braeche beides.
+        assertEquals(listOf("opus", "fable", "sonnet", "haiku"), ClaudeModel.entries.map { it.key })
+        assertEquals(listOf("low", "medium", "high", "xhigh", "max"), ClaudeEffort.entries.map { it.key })
+    }
+
+    @Test fun modellUndEffortWerdenTolerantGelesen() {
+        ClaudeModel.entries.forEach { m ->
+            assertEquals(m, lies(WidgetProfile("x", claudeModel = m).toJson().toString())!!.claudeModel)
+        }
+        ClaudeEffort.entries.forEach { e ->
+            assertEquals(e, lies(WidgetProfile("x", claudeEffort = e).toJson().toString())!!.claudeEffort)
+        }
+        val fremd = lies("""{"id":"x","claudeModel":"gpt","claudeEffort":"ultra","ultracode":"ja"}""")!!
+        assertEquals(ClaudeModel.OPUS, fremd.claudeModel)
+        assertEquals(ClaudeEffort.XHIGH, fremd.claudeEffort)
+        assertFalse(fremd.ultracode)
+        assertEquals("Der Enum-Name ist kein Schluessel", ClaudeModel.OPUS, ClaudeModel.fromKey("SONNET"))
+        assertEquals(ClaudeEffort.XHIGH, ClaudeEffort.fromKey(null))
+    }
+
+    @Test fun nurEinClaudeCodeProfilHatBridgeOptionen() {
+        // Der Sprach-Command-Auftrag an die hermes-bridge bleibt ohne "options" — auch wenn im
+        // Profil (etwa nach einem Typwechsel) Claude-Werte stehen.
+        assertNull(WidgetProfile("x").bridgeOptions())
+        assertNull(WidgetProfile("x", claudeModel = ClaudeModel.HAIKU, ultracode = true).bridgeOptions())
+
+        val standard = WidgetProfile("c", kind = WidgetKind.CLAUDE_CODE).bridgeOptions()!!
+        assertEquals("opus", standard.getString("model"))
+        assertEquals("xhigh", standard.getString("effort"))
+        assertFalse(standard.getBoolean("ultracode"))
+        // getBoolean liest auch den Text "false" — der Wert selbst muss ein Wahrheitswert sein.
+        assertSame(java.lang.Boolean.FALSE, standard.get("ultracode"))
+        assertTrue(standard.get("model") is String)
+        assertEquals(3, standard.length())
+
+        val gewaehlt = WidgetProfile(
+            "c", kind = WidgetKind.CLAUDE_CODE, claudeModel = ClaudeModel.FABLE, claudeEffort = ClaudeEffort.MAX, ultracode = true,
+        ).bridgeOptions()!!
+        assertEquals("fable", gewaehlt.getString("model"))
+        assertEquals("max", gewaehlt.getString("effort"))
+        assertTrue(gewaehlt.getBoolean("ultracode"))
+        assertSame(java.lang.Boolean.TRUE, gewaehlt.get("ultracode"))
+    }
+
+    @Test fun nurEinClaudeCodeProfilHatEineFesteStufe() {
+        assertEquals(Refinement(RefineMode.PROMPT), WidgetProfile("c", kind = WidgetKind.CLAUDE_CODE).fixedRefinement())
+        // Der Sprach-Command folgt weiter der Diktat-Stufe.
+        assertNull(WidgetProfile("x").fixedRefinement())
+        assertNull(WidgetProfile("x", kind = WidgetKind.VOICE_COMMAND).fixedRefinement())
     }
 }

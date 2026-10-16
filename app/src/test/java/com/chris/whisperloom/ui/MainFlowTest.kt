@@ -690,22 +690,16 @@ class MainFlowTest {
         assertEquals("gemma3:4b", Prefs(ctx).llmModel)
     }
 
-    @Test fun ollamaCloudZeigtModellAuswahlUndFreieEingabe() {
+    @Test fun ollamaCloudHatKeinModellfeldDieStufenNehmenDieEmpfehlung() {
         prefs.refineMode = RefineMode.POLISH
         prefs.llmProviderId = "ollama-cloud"
         screen(env()) { LlmAccessScreen(it) }
         compose.onNodeWithText("https://ollama.com").assertExists()
-        // Leeres Modell = Empfehlung je Stufe (3.8.6), nicht mehr das erste Katalogmodell.
-        compose.onNodeWithTag("dropdown:Modell").assertTextContains("Empfehlung je Stufe")
-        compose.onNodeWithTag("dropdown:Modell").performClick()
-        compose.waitForIdle()
-        compose.onNodeWithText("GLM 5.3 Flash").assertExists()
-        compose.onNodeWithText("Eigenes Modell …").performClick()
-        compose.waitForIdle()
-        compose.onNode(hasSetTextAction() and hasText("Modell-ID")).performTextInput("kimi-k2.6")
-        compose.onNodeWithText("Übernehmen").performClick()
-        compose.waitForIdle()
-        assertEquals("kimi-k2.6", Prefs(ctx).llmModel)
+        // 3.9.1: Katalog-Anbieter waehlen das Modell je Stufe, "Standard" ist die Empfehlung fuer die Rolle.
+        compose.onNodeWithTag("dropdown:Modell").assertDoesNotExist()
+        compose.onNodeWithText("Standard · Gemma 4 31B (empfohlen)").assertExists()
+        compose.onAllNodesWithText("Standard · Mistral Large 3").fetchSemanticsNodes().let { assertEquals(2, it.size) }
+        assertEquals("", Prefs(ctx).llmModel)
     }
 
     /** Reiner Erkennungs-Anbieter: "wie Erkennung" hiesse keine Textverbesserung — das klar sagen. */
@@ -937,6 +931,9 @@ class MainFlowTest {
         listOf(R.string.help_widgets_create, R.string.help_widgets_server, R.string.help_widgets_place).forEach {
             compose.onNodeWithText(ctx.getString(it)).assertExists()
         }
+        // Das Claude-Code-Widget braucht eine eigene Gegenstelle — die Hilfe sagt, welche.
+        compose.onNodeWithText(ctx.getString(R.string.help_widgets_claude)).assertExists()
+        assertTrue(ctx.getString(R.string.help_widgets_claude).contains("https://github.com/CTreitges/claude-bridge"))
         compose.onNodeWithText("Server je Widget", substring = true).assertExists()
         // 3.8.0: die zweite Freischalt-Funktion unter "Erweitert" steht dort, wo "Erweitert" erklaert wird.
         compose.onNodeWithText(ctx.getString(R.string.help_widgets_models)).assertExists()
@@ -1148,6 +1145,18 @@ class MainFlowTest {
         compose.waitForIdle()
         assertEquals(Screen.Patchnotes, nav.current)
         compose.onNodeWithText("Quellcode auf GitHub").assertDoesNotExist()
+    }
+
+    /** Google Play verlangt einen Link zur Datenschutzerklaerung in der App selbst (User-Data-Policy). */
+    @Test fun ueberSheetOeffnetDieDatenschutzerklaerung() {
+        screen(env()) { SettingsHubScreen(it) }
+        compose.onNodeWithText("Über WhisperLoom").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Datenschutzerklärung").performClick()
+        compose.waitForIdle()
+        val intent = shadowOf(ctx as Application).nextStartedActivity
+        assertEquals(android.content.Intent.ACTION_VIEW, intent?.action)
+        assertEquals("https://ctreitges.de/fdroid/privacy.html", intent?.dataString)
     }
 
     @Test fun ausDenPatchnotesFuehrtZurueckInDenHubOhneSheet() {

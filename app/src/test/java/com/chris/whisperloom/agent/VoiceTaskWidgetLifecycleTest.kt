@@ -77,6 +77,19 @@ class VoiceTaskWidgetLifecycleTest {
         assertTrue(shadowOf(manager).getViewFor(neu).contentDescription.startsWith("Einkauf"))
     }
 
+    @Test fun nachDerWiederherstellungZiehtAuchDasStartendeWidgetDesAuftragsMit() {
+        val neu = widget()
+        VoiceTaskStore(ctx).widgetId = 7
+
+        senden(
+            Intent(AppWidgetManager.ACTION_APPWIDGET_RESTORED)
+                .putExtra(AppWidgetManager.EXTRA_APPWIDGET_OLD_IDS, intArrayOf(7))
+                .putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, intArrayOf(neu)),
+        )
+
+        assertEquals(neu, VoiceTaskStore(ctx).widgetId)
+    }
+
     @Test fun nachDemUpdateWerdenBestandsWidgetsUebernommen() {
         val einkauf = store.create("Einkauf")
         val alt = widget()

@@ -1,5 +1,6 @@
 package com.chris.whisperloom.ui.access
 
+import com.chris.whisperloom.agent.NotClaudeBridgeException
 import com.chris.whisperloom.api.ApiHttpException
 import com.chris.whisperloom.api.ApiNetworkException
 import org.junit.Assert.assertEquals
@@ -27,6 +28,10 @@ class AccessTestTest {
         assertEquals(AccessTest.Kind.TIMEOUT, AccessTest.classify(ApiNetworkException(SocketTimeoutException("Read timed out"))).kind)
         assertEquals(AccessTest.Kind.NETWORK, AccessTest.classify(ApiNetworkException(UnknownHostException("api"))).kind)
         assertEquals(AccessTest.Kind.NETWORK, AccessTest.classify(ApiNetworkException(IOException("x"))).kind)
+    }
+
+    @Test fun eineFalscheBridgeHatEinenEigenenText() {
+        assertEquals(AccessTest.Kind.NOT_CLAUDE_BRIDGE, AccessTest.classify(NotClaudeBridgeException()).kind)
     }
 
     @Test fun sonstigesIstUnbekanntMitMeldung() {

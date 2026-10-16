@@ -24,7 +24,8 @@ enum class VoiceTaskState {
 
     /**
      * Das Profil dieses Widgets hat keinen gueltigen Server — Tipp oeffnet seinen Editor. Ein
-     * Ruhezustand je Widget: laeuft ein Auftrag, zeigen alle Widgets ihn ([VoiceTaskWidget.idle]).
+     * Ruhezustand je Widget ([VoiceTaskWidget.idle]); einen laufenden Auftrag zeigt nur das Widget,
+     * das ihn gestartet hat ([VoiceTaskWidget.forOthers]).
      */
     NO_SERVER,
 }

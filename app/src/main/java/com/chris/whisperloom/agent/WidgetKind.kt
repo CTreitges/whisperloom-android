@@ -1,6 +1,5 @@
 package com.chris.whisperloom.agent
 
-import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import com.chris.whisperloom.R
 
@@ -9,16 +8,27 @@ enum class Tier { NORMAL, PRO }
 
 /**
  * Widget-Typen. Gespeichert wird [key] (stabil), nie der Enum-Name — wie bei [SpeechPause].
- * Neuer Typ = neuer Eintrag (plus eigener Provider); das Widget-Menue zeigt ihn dann von selbst.
+ * Neuer Typ = neuer Eintrag; das Widget-Menue zeigt ihn dann von selbst. Einen eigenen Provider
+ * (eigener Eintrag in der Widget-Auswahl des Launchers) braucht nur ein Typ mit eigener Optik oder
+ * eigenem Verhalten. [CLAUDE_CODE] unterscheidet sich nur im Auftrag an die Bridge und haengt
+ * deshalb wie [VOICE_COMMAND] am einen [VoiceTaskWidget] — der Typ steht im Profil.
  */
 enum class WidgetKind(
     val key: String,
     val tier: Tier,
     @StringRes val title: Int,
     @StringRes val description: Int,
-    @DrawableRes val icon: Int,
+    /**
+     * Symbol neuer Widgets dieses Typs, als Schluessel aus [WidgetIcons] (gespeichert wird nie
+     * die R.drawable-Zahl): so unterscheiden sich die Typen auf dem Startbildschirm und in der
+     * Profilwahl auch ohne passenden Namen.
+     */
+    val iconKey: String,
 ) {
-    VOICE_COMMAND("voice_command", Tier.PRO, R.string.kind_voice_command, R.string.kind_voice_command_sub, R.drawable.ic_mic);
+    VOICE_COMMAND("voice_command", Tier.PRO, R.string.kind_voice_command, R.string.kind_voice_command_sub, WidgetIcons.DEFAULT_KEY),
+
+    /** Startet ueber die claude-bridge eine neue Claude-Code-Session; Modell und Effort stehen im Profil. */
+    CLAUDE_CODE("claude_code", Tier.PRO, R.string.kind_claude_code, R.string.kind_claude_code_sub, "auto_fix_high");
 
     companion object {
         /** Unbekannt oder fehlend = [VOICE_COMMAND]: alle Profile bis 3.7.0 sind Sprach-Command-Widgets. */

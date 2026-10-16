@@ -53,15 +53,25 @@ object TranscriptionEngine {
     /**
      * @param prompt Vokabular fuer den Erkenner — die Aufrufer mit Context geben
      *   [VocabularySource.prompt] mit, damit die verknuepfte Datei bei JEDEM Diktat frisch gelesen wird.
+     *   Der Fallback bekommt dasselbe.
      */
     internal fun backend(
         prefs: Prefs,
         prompt: String = Vocabulary.prompt(Vocabulary.entries(prefs.apiPrompt)).text,
     ): TranscriptionBackend = when (prefs.engine) {
-        Engine.ONLINE -> OnlineBackend(prefs.sttAccess(), prompt)
+        Engine.ONLINE -> {
+            val primary = OnlineBackend(prefs.sttAccess(), prompt)
+            // Ein unvollstaendiger Fallback (Key fehlt, eigener Server ohne Modell) springt gar nicht erst ein.
+            val fallback = prefs.sttFallbackAccess()?.takeIf(SetupState::sttFallbackReady)
+            if (fallback == null) primary else FallbackBackend(primary, OnlineBackend(fallback, prompt))
+        }
         Engine.OFFLINE -> OfflineBackend(prefs.offlineModel, prefs.offlineAccurate, prompt)
         null -> throw ApiNotConfiguredException()
     }
+
+    /** Hinweis, wenn der Fallback der Erkennung eingesprungen ist; null = der erste hat erkannt. */
+    internal fun sttFallbackNote(backend: TranscriptionBackend): String? =
+        (backend as? FallbackBackend)?.takeIf { it.usedFallback }?.let { sttFallbackMessage(it.fallbackLabel) }
 
     /**
      * Naht fuer Tests: Offline-Erkennung ohne libwhisperloom.so simulieren (Fake-Backend). Die
@@ -74,12 +84,15 @@ object TranscriptionEngine {
      * Aufnahmestart (Tastatur, schwebender Knopf, Widget): wird das Diktat gleich lokal verbessert,
      * laedt das Textmodell schon jetzt im Hintergrund — parallel zu Aufnahme und Erkennung statt
      * danach (Init Sekunden bis gut 30 s). Kehrt sofort zurueck.
+     *
+     * @param mode feste Stufe des Auftrags ([com.chris.whisperloom.agent.WidgetProfile.fixedRefinement]);
+     *   null = die Stufe des Diktats.
      */
-    fun warmUp(context: Context) {
+    fun warmUp(context: Context, mode: RefineMode? = null) {
         val app = context.applicationContext
         val prefs = Prefs(app)
         if (prefs.engine != Engine.OFFLINE) return
-        if (RefinePlan.of(app, prefs, prefs.refinementFor(RefineWay.DICTATION).mode).route == RefineRoute.Local) {
+        if (RefinePlan.of(app, prefs, mode ?: prefs.refinementFor(RefineWay.DICTATION).mode).route == RefineRoute.Local) {
             LocalTextEngine.warmUp(prefs.localLlmModel)
         }
     }
@@ -95,6 +108,8 @@ object TranscriptionEngine {
      *   Rechnung bricht dann ab, statt das Textmodell fuer den naechsten Auftrag zu blockieren.
      * @param onRefineStart die Textverbesserung beginnt (online oder lokal) — ab jetzt hilft [skip].
      *   Nicht, wenn ohne KI weitergeht (Stufe aus, kein Netz, kein Textmodell, Ueberspringen).
+     * @param fixedRefinement feste Verarbeitung statt der des Diktats (Claude-Code-Widget: immer
+     *   "Prompt", [com.chris.whisperloom.agent.WidgetProfile.fixedRefinement]); null = wie beim Diktat.
      * @return Rohtext, Sprache, Dauer und das Ergebnis von KI und Regeln ([refine]); scheitert die
      *   Textverbesserung, kommt der erkannte Text mit Hinweis ([Refined.skipped]) durch. Leerer
      *   Rohtext = nichts erkannt, dann auch kein Text.
@@ -109,6 +124,7 @@ object TranscriptionEngine {
         skip: RefineSkip? = null,
         cancelled: () -> Boolean = { false },
         onRefineStart: () -> Unit = {},
+        fixedRefinement: Refinement? = null,
     ): Dictation {
         val app = context.applicationContext
         val prefs = Prefs(app)
@@ -116,17 +132,20 @@ object TranscriptionEngine {
 
         val durationMs = samples.size * 1000L / AudioRecorder.SAMPLE_RATE
         val trimmed = AudioUtils.trimSilence(samples)
-        val result = backendFactory(prefs, VocabularySource.prompt(app, prefs).text)
-            .transcribe(WavUpload.fromSamples(trimmed), prefs.language)
+        val backend = backendFactory(prefs, VocabularySource.prompt(app, prefs).text)
+        (backend as? FallbackBackend)?.cancelled = cancelled
+        val result = backend.transcribe(WavUpload.fromSamples(trimmed), prefs.language)
+        val sttNote = sttFallbackNote(backend)
         val raw = result.text
         val language = effectiveLanguage(prefs.language, result.detectedLanguage)
         // Diktat, Knopf und Widget: die Stufe und ihre Einstellungen fuers Diktat, nie die der Sprachnachrichten.
-        val refinement = prefs.refinementFor(RefineWay.DICTATION)
-        if (raw.isBlank()) return Dictation("", language, durationMs, Refined(refinement, ""))
+        val refinement = fixedRefinement ?: prefs.refinementFor(RefineWay.DICTATION)
+        if (raw.isBlank()) return Dictation("", language, durationMs, Refined(refinement, "", note = sttNote))
 
         // Die Online-Erkennung hat das Netz gerade bewiesen; offline erkannt zaehlt nur ein validiertes.
         val refined = refine(app, raw, language, refinement, prefs.engine != Engine.OFFLINE, skip, cancelled, onRefineStart)
-        return Dictation(raw, language, durationMs, refined)
+        val note = listOfNotNull(sttNote, refined.note).joinToString(" · ").ifEmpty { null }
+        return Dictation(raw, language, durationMs, refined.copy(note = note))
     }
 
     /**
@@ -197,6 +216,9 @@ object TranscriptionEngine {
     }
 
     private const val TAG = "TranscriptionEngine"
+
+    /** Nur zur Info, kein Fehler: der erste Anbieter ist gescheitert, der Fallback ([label]) hat erkannt. */
+    fun sttFallbackMessage(label: String): String = "Spracherkennung fehlgeschlagen — mit Fallback $label erkannt"
 }
 
 /**

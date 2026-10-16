@@ -116,6 +116,29 @@ class Prefs(context: Context) {
             else sp.edit { putInt(KEY_READ_TIMEOUT, v.coerceIn(MIN_TIMEOUT_SEC, MAX_TIMEOUT_SEC)) }
         }
 
+    // --- Fallback der Erkennung (3.9.1): zweiter Anbieter, wenn der erste scheitert -------------
+
+    /** Ab Werk aus. Ohne Schalter bleibt alles beim ersten Anbieter, wie bisher. */
+    var sttFallbackEnabled: Boolean
+        get() = sp.getBoolean(KEY_STT_FALLBACK, false)
+        set(v) = sp.edit { putBoolean(KEY_STT_FALLBACK, v) }
+
+    var sttFallbackProviderId: String
+        get() = sp.getString(KEY_STT_FALLBACK_PROVIDER, ProviderCatalog.OPENAI_ID) ?: ProviderCatalog.OPENAI_ID
+        set(v) = sp.edit { putString(KEY_STT_FALLBACK_PROVIDER, v) }
+
+    var sttFallbackUrl: String
+        get() = sp.getString(KEY_STT_FALLBACK_URL, "") ?: ""
+        set(v) = sp.edit { putString(KEY_STT_FALLBACK_URL, v) }
+
+    var sttFallbackKey: String
+        get() = sp.getString(KEY_STT_FALLBACK_KEY, "") ?: ""
+        set(v) = sp.edit { putString(KEY_STT_FALLBACK_KEY, v) }
+
+    var sttFallbackModel: String
+        get() = sp.getString(KEY_STT_FALLBACK_MODEL, "") ?: ""
+        set(v) = sp.edit { putString(KEY_STT_FALLBACK_MODEL, v) }
+
     // --- Textverbesserung (LLM) ----------------------------------------------
 
     /** [AccessResolver.LLM_SAME] = Transkriptions-Zugang wiederverwenden, sonst Provider-ID. */
@@ -131,7 +154,11 @@ class Prefs(context: Context) {
         get() = sp.getString(KEY_LLM_KEY, "") ?: ""
         set(v) = sp.edit { putString(KEY_LLM_KEY, v) }
 
-    /** Modell des Online-Zugangs = Standard fuer alle Stufen ohne eigenes ([llmModelFor]); "" = Empfehlung je Stufe. */
+    /**
+     * Modell des Online-Zugangs = Standard fuer alle Stufen ohne eigenes ([llmModelFor]). Seit 3.9.1 nur
+     * noch bei Anbietern ohne Katalog waehlbar (eigener Server, Ollama lokal, Together/DeepInfra); bei
+     * Katalog-Anbietern "" = Empfehlung je Stufe, ein altes Modell verschiebt [PrefsMigration] in die Stufen.
+     */
     var llmModel: String
         get() = sp.getString(KEY_LLM_MODEL, "") ?: ""
         set(v) = sp.edit { putString(KEY_LLM_MODEL, v) }
@@ -160,6 +187,30 @@ class Prefs(context: Context) {
         remove(KEY_LLM_MODEL)
         RefineMode.MODEL_STAGES.forEach { remove(KEY_LLM_MODEL_PREFIX + it.key) }
     }
+
+    // --- Fallback der Textverbesserung (3.9.1) -------------------------------------------------
+
+    /** Ab Werk aus. Ohne Schalter faellt ein gescheiterter Auftrag wie bisher auf den Text ohne KI zurueck. */
+    var llmFallbackEnabled: Boolean
+        get() = sp.getBoolean(KEY_LLM_FALLBACK, false)
+        set(v) = sp.edit { putBoolean(KEY_LLM_FALLBACK, v) }
+
+    var llmFallbackProviderId: String
+        get() = sp.getString(KEY_LLM_FALLBACK_PROVIDER, ProviderCatalog.OPENAI_ID) ?: ProviderCatalog.OPENAI_ID
+        set(v) = sp.edit { putString(KEY_LLM_FALLBACK_PROVIDER, v) }
+
+    var llmFallbackUrl: String
+        get() = sp.getString(KEY_LLM_FALLBACK_URL, "") ?: ""
+        set(v) = sp.edit { putString(KEY_LLM_FALLBACK_URL, v) }
+
+    var llmFallbackKey: String
+        get() = sp.getString(KEY_LLM_FALLBACK_KEY, "") ?: ""
+        set(v) = sp.edit { putString(KEY_LLM_FALLBACK_KEY, v) }
+
+    /** Ein Modell fuer alle Stufen; "" = Empfehlung des Fallback-Anbieters je Stufe. */
+    var llmFallbackModel: String
+        get() = sp.getString(KEY_LLM_FALLBACK_MODEL, "") ?: ""
+        set(v) = sp.edit { putString(KEY_LLM_FALLBACK_MODEL, v) }
 
     /**
      * Gespeicherte Stufe. "Prompt" gilt nur, solange sie eingeschaltet ist — sonst waere sie
@@ -412,9 +463,32 @@ class Prefs(context: Context) {
         stage = mode,
     )
 
+    /** Fallback der Erkennung; null = Schalter aus. Ob er vollstaendig ist, prueft [SetupState.sttFallbackReady]. */
+    fun sttFallbackAccess(): ApiAccess? = if (!sttFallbackEnabled) null else AccessResolver.resolveSttFallback(
+        primary = sttAccess(),
+        providerId = sttFallbackProviderId,
+        baseUrl = sttFallbackUrl,
+        apiKey = sttFallbackKey,
+        model = sttFallbackModel,
+        serverModels = modelCache,
+    )
+
+    /** Fallback der Textverbesserung fuer die Stufe von [mode]; null = Schalter aus. Bereit: [SetupState.llmReady]. */
+    fun llmFallbackAccess(mode: RefineMode? = null): ApiAccess? = if (!llmFallbackEnabled) null else AccessResolver.resolveLlmFallback(
+        stt = sttAccess(),
+        primary = llmAccess(mode),
+        providerId = llmFallbackProviderId,
+        baseUrl = llmFallbackUrl,
+        apiKey = llmFallbackKey,
+        model = llmFallbackModel,
+        serverModels = modelCache,
+        sttOffline = engine == Engine.OFFLINE,
+        stage = mode,
+    )
+
     companion object {
         /** Stand der Einstellungen; [PrefsMigration] hebt aeltere an. */
-        internal const val PREFS_VERSION = 6
+        internal const val PREFS_VERSION = 7
 
         internal const val KEY_PREFS_VERSION = "prefs_version"
         private const val KEY_LANGUAGE = "language"
@@ -427,13 +501,23 @@ class Prefs(context: Context) {
         private const val KEY_VOCAB_FILE_URI = "vocab_file_uri"
         private const val KEY_VOCAB_FILE_NAME = "vocab_file_name"
         private const val KEY_READ_TIMEOUT = "api_read_timeout_sec"
+        private const val KEY_STT_FALLBACK = "stt_fallback"
+        private const val KEY_STT_FALLBACK_PROVIDER = "stt_fallback_provider"
+        private const val KEY_STT_FALLBACK_URL = "stt_fallback_url"
+        private const val KEY_STT_FALLBACK_KEY = "stt_fallback_key"
+        private const val KEY_STT_FALLBACK_MODEL = "stt_fallback_model"
         internal const val KEY_LLM_PROVIDER = "llm_provider"
         private const val KEY_LLM_URL = "llm_url"
         private const val KEY_LLM_KEY = "llm_key"
         internal const val KEY_LLM_MODEL = "llm_model"
+        private const val KEY_LLM_FALLBACK = "llm_fallback"
+        private const val KEY_LLM_FALLBACK_PROVIDER = "llm_fallback_provider"
+        private const val KEY_LLM_FALLBACK_URL = "llm_fallback_url"
+        private const val KEY_LLM_FALLBACK_KEY = "llm_fallback_key"
+        private const val KEY_LLM_FALLBACK_MODEL = "llm_fallback_model"
 
         /** + [RefineMode.key] der Stufe: llm_model_polish, llm_model_beautify, llm_model_summarize, llm_model_prompt. */
-        private const val KEY_LLM_MODEL_PREFIX = "llm_model_"
+        internal const val KEY_LLM_MODEL_PREFIX = "llm_model_"
         internal const val KEY_REFINE_MODE = "refine_mode"
 
         /** Fruehere Stufe "Absaetze" in [KEY_REFINE_MODE] — gilt als Glaetten. */

@@ -159,7 +159,7 @@
         <receiver
             android:name=".agent.VoiceTaskWidget"
             android:exported="false"
-            android:label="@string/widget_label">
+            android:label="@string/widget_picker_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
