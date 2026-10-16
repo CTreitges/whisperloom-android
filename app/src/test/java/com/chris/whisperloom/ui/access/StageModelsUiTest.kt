@@ -47,7 +47,7 @@ import java.util.Collections
  * Seite "KI-Zugang" (3.9.0, vorher Text › Online-Zugang & Modelle): Uebersicht "Modell je Stufe" (Standard-Label je
  * Rolle, Zeilen fuehren auf die Stufen-Seiten, Zuruecksetzen beim Anbieterwechsel, Hinweis ohne Online-Zugang oder
  * ohne Modell des Zugangs), die Auswahl auf der Stufen-Seite (eigenes Modell schreiben, Server-Liste, "Modell
- * pruefen") und der Eintrag "Empfehlung je Stufe" im Modellfeld des Zugangs. Nur
+ * pruefen") und das Modellfeld des Zugangs, das es seit 3.9.1 nur noch ohne Katalog gibt. Nur
  * "Modell pruefen" fragt, und zwar einen lokalen JDK-HttpServer; sonst geht nichts raus (Liste im Cache).
  */
 @RunWith(RobolectricTestRunner::class)
@@ -146,11 +146,24 @@ class StageModelsUiTest {
         compose.onAllNodesWithText("Standard · Claude Sonnet 5.5").fetchSemanticsNodes().let { assertEquals(3, it.size) }
     }
 
-    @Test fun dasModellDesZugangsIstDerStandardAllerStufen() {
-        anthropic()
-        prefs.llmModel = "claude-opus-5-5"
+    /**
+     * 3.9.1: Bei Anbietern mit Katalog hat der KI-Zugang kein Modellfeld mehr — es waere ohnehin von den
+     * Stufen ueberschrieben worden. Bis 3.9.0 stand dort "Modell" mit "Empfehlung je Stufe".
+     */
+    @Test fun katalogAnbieterHatImZugangKeinModellfeld() = keinModellfeld(pro = false)
+
+    @Test fun katalogAnbieterHatImZugangAuchMitProKeinModellfeld() = keinModellfeld(pro = true)
+
+    private fun keinModellfeld(pro: Boolean) {
+        anthropic(key = if (pro) "" else "sk-ant")
+        prefs.serverModelsEnabled = pro
         show()
-        compose.onAllNodesWithText("Standard · Claude Opus 5.5").fetchSemanticsNodes().let { assertEquals(3, it.size) }
+        compose.onNodeWithTag("dropdown:Modell").assertDoesNotExist()
+        compose.onNodeWithTag("picker:Modell").assertDoesNotExist()
+        compose.onNodeWithText("Empfehlung je Stufe").assertDoesNotExist()
+        // Das Modell steht je Stufe, "Standard" ist die Empfehlung fuer ihre Rolle.
+        compose.onNodeWithText("Standard · Claude Haiku 5.5").assertExists()
+        compose.onAllNodesWithText("Standard · Claude Sonnet 5.5").fetchSemanticsNodes().let { assertEquals(2, it.size) }
     }
 
     @Test fun eineStufeBekommtEinEigenesModellUndZurueckAufStandard() {
@@ -252,25 +265,17 @@ class StageModelsUiTest {
         compose.onAllNodesWithText("Standard · qwen3:8b").fetchSemanticsNodes().let { assertEquals(3, it.size) }
     }
 
-    // --- Modellfeld des Zugangs: "Empfehlung je Stufe" ------------------------------------------
+    // --- Modellfeld des Zugangs: nur noch ohne Katalog ---------------------------------------------
 
-    @Test fun modellfeldBietetEmpfehlungJeStufeMitBeidenModellen() {
-        anthropic()
+    @Test fun ohneKatalogIstDasModellDesZugangsDerStandardAllerStufen() {
+        prefs.llmProviderId = "custom"
+        prefs.llmUrl = "http://127.0.0.1:1/v1"
         show()
-        compose.onNodeWithTag("dropdown:Modell").assertTextContains("Empfehlung je Stufe")
-        compose.onNodeWithTag("dropdown:Modell").performClick()
+        compose.onNode(hasSetTextAction() and hasText("Modell")).performTextInput("qwen3:8b")
         compose.waitForIdle()
-        compose.onNodeWithText("Glätten: Claude Haiku 5.5 · Umformulieren: Claude Sonnet 5.5").assertExists()
-        click("Claude Opus 5.5")
-        assertEquals("claude-opus-5-5", Prefs(ctx).llmModel)
-        compose.onNodeWithTag("dropdown:Modell").assertTextContains("Claude Opus 5.5")
-        compose.onAllNodesWithText("Standard · Claude Opus 5.5").fetchSemanticsNodes().let { assertEquals(3, it.size) }
-
-        compose.onNodeWithTag("dropdown:Modell").performClick()
-        compose.waitForIdle()
-        click("Empfehlung je Stufe")
-        assertEquals("", Prefs(ctx).llmModel)
-        compose.onNodeWithText("Standard · Claude Haiku 5.5").assertExists()
+        assertEquals("qwen3:8b", Prefs(ctx).llmModel)
+        compose.onNodeWithText("Standard aller Stufen, je Stufe änderbar.", substring = true).assertExists()
+        compose.onAllNodesWithText("Standard · qwen3:8b").fetchSemanticsNodes().let { assertEquals(3, it.size) }
     }
 
     @Test fun ohneKatalogKeineEmpfehlungJeStufe() {
@@ -284,19 +289,16 @@ class StageModelsUiTest {
         compose.onNodeWithText("Standard ·", substring = true).assertDoesNotExist()
     }
 
-    @Test fun pickerMitProHatEmpfehlungJeStufeOben() {
-        anthropic(key = "")
+    @Test fun pickerMitProOhneKatalogHatKeineEmpfehlung() {
         prefs.serverModelsEnabled = true
-        prefs.llmModel = "claude-sonnet-5"
+        prefs.llmProviderId = "custom"
+        prefs.llmUrl = "http://127.0.0.1:1/v1"
+        prefs.llmModel = "qwen3:8b"
         show()
-        compose.onNodeWithTag("picker:Modell").assertTextContains("Claude Sonnet 5").performClick()
+        compose.onNodeWithTag("picker:Modell").assertTextContains("qwen3:8b").performClick()
         compose.waitForIdle()
-        row("Empfehlung je Stufe").assertIsNotSelected()
-        row("Claude Sonnet 5").assertIsSelected()
-        row("Empfehlung je Stufe").performClick()
-        compose.waitForIdle()
-        assertEquals("", Prefs(ctx).llmModel)
-        compose.onNodeWithTag("picker:Modell").assertTextContains("Empfehlung je Stufe")
+        compose.onNodeWithText("Empfehlung je Stufe").assertDoesNotExist()
+        compose.onNodeWithText("Eigenes Modell …").assertExists()
     }
 
     // --- "Modell pruefen" im Sheet der Stufe ----------------------------------------------------

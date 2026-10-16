@@ -39,6 +39,13 @@ class PrefsState(val prefs: Prefs) {
     var vocabFileUri: String by pref({ prefs.vocabFileUri }) { prefs.vocabFileUri = it }
     var vocabFileName: String by pref({ prefs.vocabFileName }) { prefs.vocabFileName = it }
 
+    // Fallback der Erkennung (3.9.1)
+    var sttFallbackEnabled: Boolean by pref({ prefs.sttFallbackEnabled }) { prefs.sttFallbackEnabled = it }
+    var sttFallbackProviderId: String by pref({ prefs.sttFallbackProviderId }) { prefs.sttFallbackProviderId = it }
+    var sttFallbackUrl: String by pref({ prefs.sttFallbackUrl }) { prefs.sttFallbackUrl = it }
+    var sttFallbackKey: String by pref({ prefs.sttFallbackKey }) { prefs.sttFallbackKey = it }
+    var sttFallbackModel: String by pref({ prefs.sttFallbackModel }) { prefs.sttFallbackModel = it }
+
     // Textverbesserung
     var llmProviderId: String by pref({ prefs.llmProviderId }) { prefs.llmProviderId = it }
     var llmUrl: String by pref({ prefs.llmUrl }) { prefs.llmUrl = it }
@@ -47,6 +54,13 @@ class PrefsState(val prefs: Prefs) {
     var refineMode: RefineMode by pref({ prefs.refineMode }) { prefs.refineMode = it }
     var promptLevelEnabled: Boolean by pref({ prefs.promptLevelEnabled }) { prefs.promptLevelEnabled = it }
     var shareRefineMode: RefineMode by pref({ prefs.shareRefineMode }) { prefs.shareRefineMode = it }
+
+    // Fallback der Textverbesserung (3.9.1)
+    var llmFallbackEnabled: Boolean by pref({ prefs.llmFallbackEnabled }) { prefs.llmFallbackEnabled = it }
+    var llmFallbackProviderId: String by pref({ prefs.llmFallbackProviderId }) { prefs.llmFallbackProviderId = it }
+    var llmFallbackUrl: String by pref({ prefs.llmFallbackUrl }) { prefs.llmFallbackUrl = it }
+    var llmFallbackKey: String by pref({ prefs.llmFallbackKey }) { prefs.llmFallbackKey = it }
+    var llmFallbackModel: String by pref({ prefs.llmFallbackModel }) { prefs.llmFallbackModel = it }
 
     // Stufen-Einstellungen je Weg (Bereinigung, Form) und Absaetze des Diktats je Stufe
     private val polishCleanups: Map<RefineWay, PrefField<PolishCleanup>> = RefineWay.entries.associateWith { way ->
@@ -201,6 +215,29 @@ class PrefsState(val prefs: Prefs) {
         serverModels = prefs.modelCache,
         sttOffline = engine == Engine.OFFLINE,
         stageModel = stageModel,
+        stage = mode,
+    )
+
+    /** Wie [Prefs.sttFallbackAccess], ueber die Spiegel — auch bei ausgeschaltetem Schalter, fuer die Felder. */
+    fun sttFallbackAccess(): ApiAccess = AccessResolver.resolveSttFallback(
+        primary = sttAccess(),
+        providerId = sttFallbackProviderId,
+        baseUrl = sttFallbackUrl,
+        apiKey = sttFallbackKey,
+        model = sttFallbackModel,
+        serverModels = prefs.modelCache,
+    )
+
+    /** Wie [Prefs.llmFallbackAccess], ueber die Spiegel — auch bei ausgeschaltetem Schalter, fuer die Felder. */
+    fun llmFallbackAccess(mode: RefineMode? = null): ApiAccess = AccessResolver.resolveLlmFallback(
+        stt = sttAccess(),
+        primary = llmAccess(mode),
+        providerId = llmFallbackProviderId,
+        baseUrl = llmFallbackUrl,
+        apiKey = llmFallbackKey,
+        model = llmFallbackModel,
+        serverModels = prefs.modelCache,
+        sttOffline = engine == Engine.OFFLINE,
         stage = mode,
     )
 

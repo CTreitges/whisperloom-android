@@ -46,10 +46,11 @@ object SharedRefine {
             val hint = route.hint ?: return Result(RefineMode.OFF, null, null)
             return Result(mode, null, RefinePlan.message(hint))
         }
-        // Der einzige Hinweis von plan.refine: online gescheitert, lokal verbessert.
+        // Hinweise von plan.refine: online gescheitert und lokal verbessert — oder mit dem Fallback verbessert,
+        // das zeigt die Ansicht nicht eigens (der Text ist ja verbessert).
         var localFallback = false
         val result = run(prefs, parts, language, isCancelled, { onStart(route == RefineRoute.Local) }) { raw, refinement ->
-            plan.refine(raw, language, refinement, onNote = { localFallback = true }, cancelled = isCancelled)
+            plan.refine(raw, language, refinement, onNote = { if (it == RefinePlan.MSG_ONLINE_FAILED_LOCAL) localFallback = true }, cancelled = isCancelled)
         }
         return if (result.paragraphs != null) result.copy(localFallback = localFallback) else result
     }

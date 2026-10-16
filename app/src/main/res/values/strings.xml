@@ -399,16 +399,18 @@
     <string name="text_own_access">Eigenen Zugang verwenden</string>
     <string name="text_own_access_off">Nutzt Anbieter und Key der Erkennung (%1$s).</string>
     <string name="text_own_access_off_offline">Bei Offline-Erkennung geht ohne eigenen Zugang kein Text online.</string>
-    <string name="text_own_access_on">Eigener Anbieter, Key und Modell.</string>
+    <string name="text_own_access_on">Eigener Anbieter und Key. Das Modell wählst du je Stufe.</string>
     <string name="text_llm_provider">Anbieter</string>
     <string name="text_llm_model">Modell</string>
     <string name="text_llm_model_placeholder">z. B. qwen3:8b</string>
+    <!-- Nur ohne Katalog (eigener Server, Ollama lokal): das Modell des Zugangs ist der Standard aller Stufen -->
+    <string name="text_llm_model_all">Standard aller Stufen, je Stufe änderbar. Genau so, wie der Anbieter die ID nennt.</string>
     <string name="text_model_custom">Eigenes Modell …</string>
     <string name="text_gemini_warning">Free-Tier: Google darf Inhalte zum Training nutzen.</string>
     <string name="text_deepseek_warning">Server in China — Datenschutz beachten.</string>
     <string name="text_anthropic_note">OpenAI-Kompatibilitätsschicht — von Anthropic als Test-Werkzeug eingestuft.</string>
     <string name="text_ollama_local_note">Dein eigenes Ollama, z. B. auf einem Homeserver im gleichen WLAN oder per VPN. Dort OLLAMA_HOST=0.0.0.0 setzen, sonst hört Ollama nur lokal. Der Text bleibt in deinem Netz.</string>
-    <string name="text_ollama_cloud_note">Modelle laufen auf ollama.com. Den Key legst du unter ollama.com/settings/keys an. Weitere Modelle lädt der Knopf unter dem Feld „Modell“ vom Server.</string>
+    <string name="text_ollama_cloud_note">Modelle laufen auf ollama.com. Den Key legst du unter ollama.com/settings/keys an. Weitere Modelle lädt der Knopf darunter vom Server, wählen kannst du sie auf den Seiten der Stufen.</string>
     <string name="text_ollama_url">Server-Adresse</string>
     <string name="text_ollama_url_hint">Adresse deines Ollama-Servers mit Port, meist :11434. http:// nur im eigenen Netz (LAN/VPN).</string>
     <string name="text_ollama_load_models">Modelle vom Server laden</string>
@@ -433,6 +435,22 @@
     <string name="text_no_llm">%1$s erkennt nur Sprache und bietet keine Textverbesserung.</string>
     <string name="text_add_access">Eigenen Zugang eintragen</string>
     <string name="text_test">Zugang prüfen</string>
+    <!-- Fallback (3.9.1): zweiter Anbieter, wenn der erste scheitert — für Spracherkennung und KI-Zugang -->
+    <string name="fallback_switch">Fallback verwenden</string>
+    <!-- %1$s = erster Anbieter -->
+    <string name="fallback_switch_off">Ein zweiter Anbieter für den Fall, dass %1$s scheitert.</string>
+    <string name="fallback_switch_on">Scheitert %1$s, springt dieser Anbieter ein.</string>
+    <string name="fallback_provider">Fallback-Anbieter</string>
+    <string name="fallback_url">Base-URL des Fallbacks</string>
+    <string name="fallback_key">API-Key des Fallbacks</string>
+    <string name="fallback_key_optional">API-Key des Fallbacks (optional)</string>
+    <string name="fallback_key_from_stt">Leer gelassen gilt der Key der Spracherkennung.</string>
+    <string name="fallback_key_from_llm">Leer gelassen gilt der Key des KI-Zugangs.</string>
+    <string name="fallback_model">Modell des Fallbacks</string>
+    <string name="fallback_test">Fallback prüfen</string>
+    <!-- %1$s = Fallback-Anbieter -->
+    <string name="fallback_stt_privacy">Scheitert die Erkennung, geht das Audio zusätzlich an %1$s.</string>
+    <string name="fallback_llm_privacy">Scheitert die Textverbesserung, geht der erkannte Text zusätzlich an %1$s.</string>
     <!-- Wörterbuch & Regeln (3.9.0): Vokabular und die festen Regeln ohne KI -->
     <string name="dict_card_vocab">Wörterbuch</string>
     <string name="dict_card_rules">Feste Regeln</string>
@@ -457,7 +475,7 @@
     <!-- %1$s = Modell zum Glätten, %2$s = Modell zum Umformulieren -->
     <string name="text_models_recommended_sub">Glätten: %1$s · Umformulieren: %2$s</string>
     <string name="text_models_title">Modell je Stufe</string>
-    <string name="text_models_intro">„Standard“ ist das Modell des Zugangs, bei „Empfehlung je Stufe“ ein schnelles zum Glätten und ein stärkeres zum Umformulieren. Gilt für Diktat und Sprachnachrichten.</string>
+    <string name="text_models_intro">„Standard“ ist die Empfehlung des Anbieters: ein schnelles Modell zum Glätten, ein stärkeres zum Umformulieren. Beim eigenen Server und bei Ollama ist es das Modell des Zugangs. Gilt für Diktat und Sprachnachrichten.</string>
     <!-- %1$s = Modell, mit dem die Stufe ohne eigenes Modell rechnet -->
     <string name="text_models_standard">Standard · %1$s</string>
     <string name="text_models_standard_option">Standard (%1$s)</string>

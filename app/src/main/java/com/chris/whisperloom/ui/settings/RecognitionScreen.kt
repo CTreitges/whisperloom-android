@@ -18,6 +18,7 @@ import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import com.chris.whisperloom.ui.access.PrivacyLine
 import com.chris.whisperloom.ui.access.SttAccessSection
+import com.chris.whisperloom.ui.access.SttFallbackSection
 import com.chris.whisperloom.ui.components.DetailScaffold
 import com.chris.whisperloom.ui.components.OutlinedSection
 import com.chris.whisperloom.ui.components.ScrollColumn
@@ -40,8 +41,8 @@ import com.chris.whisperloom.ui.theme.loom
 import com.chris.whisperloom.whisper.ModelCatalog
 
 /**
- * E1 — Spracherkennung (UX-Spec §2.4): Engine, Transkriptions-Zugang bzw. Offline-Modell, Sprache.
- * Das Vokabular steht seit 3.9.0 unter Woerterbuch & Regeln.
+ * E1 — Spracherkennung (UX-Spec §2.4): Engine, Transkriptions-Zugang mit Fallback (3.9.1) bzw.
+ * Offline-Modell, Sprache. Das Vokabular steht seit 3.9.0 unter Woerterbuch & Regeln.
  */
 @Composable
 fun RecognitionScreen(nav: NavState) {
@@ -73,6 +74,8 @@ fun RecognitionScreen(nav: NavState) {
             if (!offline) {
                 SectionCard(title = stringResource(R.string.rec_card_transcription)) {
                     SttAccessSection(snack, showPrivacy = false)
+                    // 3.9.1: direkt unter dem ersten Anbieter, Felder erst mit dem Schalter.
+                    SttFallbackSection()
                 }
             } else {
                 SectionCard(title = stringResource(R.string.rec_card_offline)) {

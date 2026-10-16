@@ -29,4 +29,11 @@ object SetupState {
      */
     fun llmReady(access: ApiAccess): Boolean =
         access.refineBlock == null && llmComplete(access.baseUrl, access.apiKey, access.provider.needsKey, access.model)
+
+    /**
+     * Fallback der Erkennung brauchbar: wie [sttComplete] und mit Modell — der eigene Server hat keinen
+     * Default, ohne Modell lehnen speaches/LocalAI mit 422 ab. Sonst springt er gar nicht erst ein.
+     */
+    fun sttFallbackReady(access: ApiAccess): Boolean =
+        sttComplete(access.baseUrl, access.apiKey, access.provider.needsKey) && access.model.isNotBlank()
 }

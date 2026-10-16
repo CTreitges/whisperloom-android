@@ -61,7 +61,7 @@ class PrefsTest {
             assertEquals(way.name, PolishCleanup.PLAIN, p.polishCleanupFor(way))
             assertEquals(way.name, SummarizeForm.AUTO, p.summarizeFormFor(way))
         }
-        assertEquals(6, sp.getInt("prefs_version", 0))
+        assertEquals(7, sp.getInt("prefs_version", 0))
         // Ohne Engine ist die App nicht eingerichtet — auch nicht mit Key.
         assertFalse(TranscriptionEngine.isConfigured(ctx))
     }
@@ -83,7 +83,7 @@ class PrefsTest {
         assertEquals("sk-alt", stt.apiKey)
         assertEquals(Prefs.DEFAULT_LLM_MODEL, p.llmAccess().model)
         assertTrue(TranscriptionEngine.isConfigured(ctx))
-        assertEquals(6, sp.getInt("prefs_version", 0))
+        assertEquals(7, sp.getInt("prefs_version", 0))
     }
 
     // --- Review KOR-2/SEC-3: v2 hatte eine freie api_url ohne Anbieter ---------------------
@@ -150,14 +150,17 @@ class PrefsTest {
         // Stand 3.7: prefs_version 3, Gemini gewaehlt, Modell leer = damalige Voreinstellung 2.5 Flash-Lite.
         sp.edit().putInt("prefs_version", 3).putString("llm_provider", "gemini").putString("llm_key", "AIza").commit()
         val p = Prefs(ctx)
-        assertEquals("gemini-2.5-flash-lite", p.llmModel)
-        assertEquals("gemini-2.5-flash-lite", p.llmAccess().model)
-        assertEquals(6, sp.getInt("prefs_version", 0))
+        // Seit v7 (3.9.1) steht das Modell in den Stufen, nicht mehr im Zugang — gerechnet wird wie vorher.
+        assertEquals("", p.llmModel)
+        RefineMode.MODEL_STAGES.forEach { assertEquals(it.name, "gemini-2.5-flash-lite", p.llmModelFor(it)) }
+        assertEquals("gemini-2.5-flash-lite", p.llmAccess(RefineMode.POLISH).model)
+        assertEquals("gemini-2.5-flash-lite", p.llmAccess(RefineMode.BEAUTIFY).model)
+        assertEquals(7, sp.getInt("prefs_version", 0))
     }
 
     @Test fun geminiMitGewaehltemModellUndAndereAnbieterBleibenUnveraendert() {
         sp.edit().putInt("prefs_version", 3).putString("llm_provider", "gemini").putString("llm_model", "gemini-2.5-flash").commit()
-        assertEquals("gemini-2.5-flash", Prefs(ctx).llmModel)
+        assertEquals("gemini-2.5-flash", Prefs(ctx).llmModelFor(RefineMode.POLISH))
 
         sp.edit().clear().putInt("prefs_version", 3).putString("llm_provider", "deepseek").commit()
         assertEquals("", Prefs(ctx).llmModel)
@@ -352,7 +355,7 @@ class PrefsTest {
             assertEquals(fall, share, p.polishCleanupFor(RefineWay.SHARE))
             assertEquals(fall, diktat.key, sp.getString("polish_cleanup", null))
             assertEquals(fall, share.key, sp.getString("share_polish_cleanup", null))
-            assertEquals(6, sp.getInt("prefs_version", 0))
+            assertEquals(7, sp.getInt("prefs_version", 0))
         }
     }
 
@@ -388,7 +391,7 @@ class PrefsTest {
         val p = Prefs(ctx)
         assertEquals(PolishCleanup.READABLE, p.polishCleanupFor(RefineWay.DICTATION))
         assertEquals(PolishCleanup.READABLE, p.polishCleanupFor(RefineWay.SHARE))
-        assertEquals(6, sp.getInt("prefs_version", 0))
+        assertEquals(7, sp.getInt("prefs_version", 0))
 
         sp.edit().clear().putInt("prefs_version", 4).putBoolean("polish_readable", false).putBoolean("smart_fillers", true).commit()
         assertEquals(PolishCleanup.CLEAN, Prefs(ctx).polishCleanupFor(RefineWay.SHARE))
@@ -443,6 +446,122 @@ class PrefsTest {
         val p = Prefs(ctx)
         assertEquals(PolishCleanup.PLAIN, p.polishCleanupFor(RefineWay.DICTATION))
         assertFalse(sp.contains("polish_cleanup"))
+    }
+
+    // --- v7 (3.9.1): kein Modell mehr im Zugang bei Katalog-Anbietern ---------------------------
+
+    @Test fun v7VerschiebtDasModellDesZugangsInDieStufenOhneEigenes() {
+        sp.edit().putInt("prefs_version", 6)
+            .putString("llm_provider", "anthropic").putString("llm_key", "sk-ant")
+            .putString("llm_model", "claude-opus-5-5")
+            .putString("llm_model_summarize", "claude-haiku-5-5")
+            .commit()
+        val before = mapOf(
+            RefineMode.POLISH to "claude-opus-5-5",
+            RefineMode.BEAUTIFY to "claude-opus-5-5",
+            RefineMode.SUMMARIZE to "claude-haiku-5-5",
+            RefineMode.PROMPT to "claude-opus-5-5",
+        )
+        val p = Prefs(ctx)
+        assertEquals("", p.llmModel)
+        assertFalse(sp.contains("llm_model"))
+        // Jede Stufe rechnet mit demselben Modell wie vor dem Update; die eigene bleibt eigene.
+        before.forEach { (stage, model) ->
+            assertEquals(stage.name, model, p.llmModelFor(stage))
+            assertEquals(stage.name, model, p.llmAccess(stage).model)
+        }
+        assertEquals(7, sp.getInt("prefs_version", 0))
+    }
+
+    @Test fun v7WieErkennungNimmtDenAnbieterDerErkennung() {
+        sp.edit().putInt("prefs_version", 6).putString("stt_provider", "groq").putString("api_key", "gsk")
+            .putString("llm_model", "openai/gpt-oss-120b").commit()
+        val p = Prefs(ctx)
+        assertEquals("", p.llmModel)
+        assertEquals("openai/gpt-oss-120b", p.llmModelFor(RefineMode.POLISH))
+        assertEquals("openai/gpt-oss-120b", p.llmAccess(RefineMode.PROMPT).model)
+    }
+
+    @Test fun v7LaesstDasModellOhneKatalogStehen() {
+        // Eigener Server und Ollama lokal: ohne Modell des Zugangs ginge gar nichts — es bleibt der Standard.
+        for (provider in listOf("custom", "ollama")) {
+            sp.edit().clear().putInt("prefs_version", 6).putString("llm_provider", provider)
+                .putString("llm_url", "http://192.168.1.5:11434").putString("llm_model", "qwen3:8b").commit()
+            val p = Prefs(ctx)
+            assertEquals(provider, "qwen3:8b", p.llmModel)
+            RefineMode.MODEL_STAGES.forEach { assertEquals("$provider ${it.name}", "", p.llmModelFor(it)) }
+            assertEquals(provider, "qwen3:8b", p.llmAccess(RefineMode.BEAUTIFY).model)
+        }
+        // Together "wie Erkennung": kein Textmodell im Katalog, das eingetragene bleibt.
+        sp.edit().clear().putInt("prefs_version", 6).putString("stt_provider", "together").putString("llm_model", "meta-llama/x").commit()
+        assertEquals("meta-llama/x", Prefs(ctx).llmModel)
+    }
+
+    @Test fun v7OhneModellImZugangAendertNichts() {
+        sp.edit().putInt("prefs_version", 6).putString("llm_provider", "openai").putString("llm_model_beautify", "gpt-6").commit()
+        val p = Prefs(ctx)
+        assertEquals("", p.llmModelFor(RefineMode.POLISH))
+        assertEquals("gpt-6", p.llmModelFor(RefineMode.BEAUTIFY))
+        assertTrue(sp.all.keys.filter { it.startsWith("llm_model") }.toSet() == setOf("llm_model_beautify"))
+    }
+
+    @Test fun v7LaeuftNurEinmal() {
+        sp.edit().putInt("prefs_version", 6).putString("llm_provider", "openai").putString("llm_model", "gpt-6").commit()
+        Prefs(ctx)
+        // Danach gesetzt (etwa von einem Downgrade): kein zweites Verschieben.
+        sp.edit().putString("llm_model", "gpt-6-luna").putString("llm_model_polish", "").commit()
+        assertEquals("", Prefs(ctx).llmModelFor(RefineMode.POLISH))
+        assertEquals("gpt-6-luna", Prefs(ctx).llmModel)
+    }
+
+    // --- Fallback (3.9.1) ----------------------------------------------------------------------
+
+    @Test fun fallbackIstAbWerkAus() {
+        val p = Prefs(ctx)
+        assertFalse(p.sttFallbackEnabled)
+        assertFalse(p.llmFallbackEnabled)
+        assertNull(p.sttFallbackAccess())
+        assertNull(p.llmFallbackAccess(RefineMode.POLISH))
+    }
+
+    @Test fun fallbackDerErkennungLiestSeineEigenenFelder() {
+        val p = Prefs(ctx)
+        p.sttProviderId = "openai"
+        p.apiKey = "sk"
+        p.sttFallbackEnabled = true
+        p.sttFallbackProviderId = "groq"
+        p.sttFallbackKey = "gsk"
+        val fb = requireNotNull(Prefs(ctx).sttFallbackAccess())
+        assertEquals("groq", fb.provider.id)
+        assertEquals("gsk", fb.apiKey)
+        assertEquals("https://api.groq.com/openai/v1", fb.baseUrl)
+        assertEquals(fb.provider.defaultSttModel, fb.model)
+        assertTrue(SetupState.sttFallbackReady(fb))
+        // Der erste Zugang bleibt, wie er ist.
+        assertEquals("openai", Prefs(ctx).sttAccess().provider.id)
+    }
+
+    @Test fun fallbackDerTextverbesserungNimmtDieEmpfehlungJeStufe() {
+        val p = Prefs(ctx)
+        p.engine = Engine.ONLINE
+        p.sttProviderId = "openai"
+        p.apiKey = "sk"
+        p.llmProviderId = "anthropic"
+        p.llmKey = "sk-ant"
+        p.setLlmModelFor(RefineMode.POLISH, "claude-opus-5-5")
+        p.llmFallbackEnabled = true
+        p.llmFallbackProviderId = "openai"
+        val fresh = Prefs(ctx)
+        val polish = requireNotNull(fresh.llmFallbackAccess(RefineMode.POLISH))
+        val beautify = requireNotNull(fresh.llmFallbackAccess(RefineMode.BEAUTIFY))
+        // Das Stufen-Modell gehoert zu Anthropic und zaehlt beim Fallback nicht.
+        assertEquals(polish.provider.recommendedLlmModel(RefineMode.POLISH), polish.model)
+        assertEquals(beautify.provider.recommendedLlmModel(RefineMode.BEAUTIFY), beautify.model)
+        // Key leer gelassen: OpenAI ist der Anbieter der Erkennung, also dessen Key.
+        assertEquals("sk", polish.apiKey)
+        assertTrue(SetupState.llmReady(polish))
+        p.llmFallbackModel = "gpt-6"
+        assertEquals("gpt-6", Prefs(ctx).llmFallbackAccess(RefineMode.SUMMARIZE)?.model)
     }
 
     // --- Modell je Stufe (3.8.6) ------------------------------------------------------
@@ -552,7 +671,7 @@ class PrefsTest {
         assertEquals(Prefs.DEFAULT_LOCAL_LLM_MODEL, p.localLlmModel)
         assertFalse(sp.contains("offline_refine"))
         assertFalse(sp.contains("local_llm_model"))
-        assertEquals(6, sp.getInt("prefs_version", 0))
+        assertEquals(7, sp.getInt("prefs_version", 0))
     }
 
     @Test fun unbekannteOfflineRegelGiltAlsLokal() {

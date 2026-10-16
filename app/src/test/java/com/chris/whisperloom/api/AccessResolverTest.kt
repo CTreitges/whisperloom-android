@@ -333,4 +333,91 @@ class AccessResolverTest {
         assertEquals("gsk", llm.apiKey)
         assertEquals("https://api.groq.com/openai/v1", llm.baseUrl)
     }
+
+    // --- Fallback (3.9.1) ----------------------------------------------------------------------
+
+    private val openAiStt = AccessResolver.resolveStt("openai", "", "sk-openai", "", 0)
+
+    @Test fun sttFallbackAnderenAnbietersBekommtNieDenKeyDesErsten() {
+        val fb = AccessResolver.resolveSttFallback(openAiStt, "groq", "", "", "")
+        assertEquals("groq", fb.provider.id)
+        assertEquals("https://api.groq.com/openai/v1", fb.baseUrl)
+        assertEquals("", fb.apiKey)
+        assertEquals(fb.provider.defaultSttModel, fb.model)
+        assertFalse("ohne Key nicht bereit", SetupState.sttFallbackReady(fb))
+        assertTrue(SetupState.sttFallbackReady(AccessResolver.resolveSttFallback(openAiStt, "groq", "", "gsk", "")))
+    }
+
+    @Test fun sttFallbackDesselbenAnbietersNimmtDenKeyDesErsten() {
+        // Etwa ein anderes Modell beim selben Anbieter: Key und Adresse leer = die des ersten.
+        val fb = AccessResolver.resolveSttFallback(openAiStt, "openai", "", "", "whisper-1")
+        assertEquals("sk-openai", fb.apiKey)
+        assertEquals("whisper-1", fb.model)
+        // Ein eigener Key gewinnt.
+        assertEquals("sk-zwei", AccessResolver.resolveSttFallback(openAiStt, "openai", "", "sk-zwei", "").apiKey)
+    }
+
+    @Test fun sttFallbackEigenerServerBrauchtAdresseUndModell() {
+        val ohne = AccessResolver.resolveSttFallback(openAiStt, "custom", "", "", "")
+        assertEquals("", ohne.baseUrl)
+        assertFalse(SetupState.sttFallbackReady(ohne))
+        val ohneModell = AccessResolver.resolveSttFallback(openAiStt, "custom", "http://192.168.1.5:8000/v1", "", "")
+        assertFalse("speaches/LocalAI lehnen ein leeres model ab", SetupState.sttFallbackReady(ohneModell))
+        val bereit = AccessResolver.resolveSttFallback(openAiStt, "custom", "http://192.168.1.5:8000/v1", "", "whisper-1")
+        assertTrue(SetupState.sttFallbackReady(bereit))
+        assertEquals(600_000, bereit.readTimeoutMs)
+    }
+
+    @Test fun llmFallbackNimmtDenKeyDesKiZugangsDesselbenAnbieters() {
+        val primary = AccessResolver.resolveLlm(openAiStt, "anthropic", "", "sk-ant", "")
+        val fb = AccessResolver.resolveLlmFallback(openAiStt, primary, "anthropic", "", "", "claude-haiku-5-5")
+        assertEquals("sk-ant", fb.apiKey)
+        assertEquals(primary.baseUrl, fb.baseUrl)
+    }
+
+    @Test fun llmFallbackNimmtDenKeyDerErkennungDesselbenAnbieters() {
+        // Der haeufige Fall: Anthropic als KI-Zugang, OpenAI (= Erkennung) als Fallback, ohne zweiten Key.
+        val primary = AccessResolver.resolveLlm(openAiStt, "anthropic", "", "sk-ant", "")
+        val fb = AccessResolver.resolveLlmFallback(openAiStt, primary, "openai", "", "", "")
+        assertEquals("sk-openai", fb.apiKey)
+        assertEquals("https://api.openai.com/v1", fb.baseUrl)
+        assertTrue(SetupState.llmReady(fb))
+    }
+
+    @Test fun llmFallbackEinesFremdenAnbietersBleibtOhneKey() {
+        val primary = AccessResolver.resolveLlm(openAiStt, "anthropic", "", "sk-ant", "")
+        val fb = AccessResolver.resolveLlmFallback(openAiStt, primary, "groq", "", "", "")
+        assertEquals("", fb.apiKey)
+        assertFalse(SetupState.llmReady(fb))
+    }
+
+    @Test fun llmFallbackOfflineNimmtNieDenAbgewaehltenKeyDerErkennung() {
+        // Offline erkannt: der gespeicherte Online-Zugang ist abgewaehlt, sein Key geht nirgends hin.
+        val primary = AccessResolver.resolveLlm(openAiStt, "anthropic", "", "sk-ant", "", sttOffline = true)
+        val fb = AccessResolver.resolveLlmFallback(openAiStt, primary, "openai", "", "", "", sttOffline = true)
+        assertEquals("", fb.apiKey)
+        val same = AccessResolver.resolveLlm(openAiStt, AccessResolver.LLM_SAME, "", "", "", sttOffline = true)
+        assertEquals("", AccessResolver.resolveLlmFallback(openAiStt, same, "openai", "", "", "", sttOffline = true).apiKey)
+    }
+
+    @Test fun llmFallbackOhneModellNimmtDieEmpfehlungJeStufe() {
+        val primary = AccessResolver.resolveLlm(openAiStt, "anthropic", "", "sk-ant", "", stageModel = "claude-opus-5-5", stage = RefineMode.POLISH)
+        val polish = AccessResolver.resolveLlmFallback(openAiStt, primary, "anthropic", "", "", "", stage = RefineMode.POLISH)
+        val beautify = AccessResolver.resolveLlmFallback(openAiStt, primary, "anthropic", "", "", "", stage = RefineMode.BEAUTIFY)
+        // Das Stufen-Modell des ersten zaehlt nicht — der Fallback rechnet mit seiner Empfehlung.
+        assertEquals(polish.provider.recommendedLlmModel(RefineMode.POLISH), polish.model)
+        assertEquals(beautify.provider.recommendedLlmModel(RefineMode.BEAUTIFY), beautify.model)
+        assertEquals("gpt-6", AccessResolver.resolveLlmFallback(openAiStt, primary, "openai", "", "", " gpt-6 ", stage = RefineMode.PROMPT).model)
+    }
+
+    @Test fun llmFallbackOllamaLokalBrauchtAdresseUndModell() {
+        val primary = AccessResolver.resolveLlm(openAiStt, AccessResolver.LLM_SAME, "", "", "")
+        val ohne = AccessResolver.resolveLlmFallback(openAiStt, primary, "ollama", "", "", "")
+        assertEquals("", ohne.baseUrl)
+        assertEquals("", ohne.model)
+        assertFalse(SetupState.llmReady(ohne))
+        val bereit = AccessResolver.resolveLlmFallback(openAiStt, primary, "ollama", "http://192.168.1.5:11434", "", "qwen3:8b")
+        assertTrue(SetupState.llmReady(bereit))
+        assertEquals(600_000, bereit.readTimeoutMs)
+    }
 }

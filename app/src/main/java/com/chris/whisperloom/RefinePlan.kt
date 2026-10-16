@@ -29,17 +29,25 @@ internal class RefinePlan(
     private val localModelId: String,
     /** Merkt ein Modell, das temperature abgelehnt hat — dauerhaft je Anbieter, Adresse und Modell (ModelCache). */
     private val rememberNoTemperature: (ApiAccess) -> Unit = {},
+    /**
+     * Fallback der Textverbesserung (3.9.1, [Prefs.llmFallbackAccess], nur bereit): scheitert [access],
+     * rechnet er — vor der lokalen Ausweichloesung. null = keiner.
+     */
+    @Volatile private var fallback: ApiAccess? = null,
 ) {
 
     /** Einmal online gescheitert: weitere Stuecke (geteilte Audios) gleich lokal statt wieder in den Timeout. */
     @Volatile private var onlineFailed = false
+
+    /** Der erste Zugang ist gescheitert: weitere Stuecke gehen gleich an den [fallback]. */
+    @Volatile private var primaryFailed = false
 
     /**
      * Bearbeiteter Text auf der [route]. [RefineRoute.Raw] rechnet nie — der Aufrufer fragt die Route
      * vorher. Fehler werden geworfen wie bei [TextRefiner]; der Aufrufer faellt auf den Rohtext zurueck.
      *
      * @param onNote Hinweis, der den Text nicht betrifft: online gescheitert, lokal verbessert
-     *   ([MSG_ONLINE_FAILED_LOCAL]).
+     *   ([MSG_ONLINE_FAILED_LOCAL]) oder mit dem Fallback verbessert ([fallbackMessage]).
      * @param cancelled Abbruch des Auftrags (Tipp "ohne KI"): keine lokale Ausweichrechnung mehr.
      * @throws RefineRejectedException wenn das Modell geantwortet hat, statt den Text zu bearbeiten.
      * @throws RuntimeException mit [MSG_LOCAL_FAILED], wenn die lokale Rechnung scheitert.
@@ -57,8 +65,7 @@ internal class RefinePlan(
             local(raw, language, refinement, cancelled)
         } else {
             try {
-                TextRefiner(access, connectTimeoutMs(route), ::temperatureRejected)
-                    .refine(raw, language, refinement.mode, refinement.smartFillers, refinement.paragraphs)
+                online(route, raw, language, refinement, onNote, cancelled)
             } catch (e: Exception) {
                 if (!route.fallbackLocal || cancelled()) throw e
                 Log.w(TAG, "Online gescheitert, verbessere lokal: ${e.message}", e)
@@ -69,6 +76,44 @@ internal class RefinePlan(
     }
 
     /**
+     * Erst [access], scheitert der, der [fallback]. Mit Fallback wartet der erste kuerzer auf die
+     * Verbindung ([FALLBACK_CONNECT_TIMEOUT_MS]). Scheitern beide, sagt die Meldung es von beiden.
+     */
+    private fun online(
+        route: RefineRoute.Online,
+        raw: String,
+        language: String,
+        refinement: Refinement,
+        onNote: (String) -> Unit,
+        cancelled: () -> Boolean,
+    ): String {
+        val second = fallback
+        var firstError: Exception? = null
+        if (!primaryFailed) {
+            val timeout = if (second != null) FALLBACK_CONNECT_TIMEOUT_MS else connectTimeoutMs(route)
+            try {
+                return TextRefiner(access, timeout, ::temperatureRejected)
+                    .refine(raw, language, refinement.mode, refinement.smartFillers, refinement.paragraphs)
+            } catch (e: Exception) {
+                if (second == null || cancelled()) throw e
+                Log.w(TAG, "KI-Zugang gescheitert, versuche Fallback ${second.provider.name}: ${e.message}", e)
+                primaryFailed = true
+                firstError = e
+            }
+        }
+        val text = try {
+            TextRefiner(requireNotNull(second), connectTimeoutMs(route), ::fallbackTemperatureRejected)
+                .refine(raw, language, refinement.mode, refinement.smartFillers, refinement.paragraphs)
+        } catch (e: Exception) {
+            val first = firstError ?: throw RuntimeException(fallbackFailed(e), e)
+            throw RuntimeException("${first.message ?: first.javaClass.simpleName} · ${fallbackFailed(e)}", first)
+                .apply { addSuppressed(e) }
+        }
+        onNote(fallbackMessage(second.provider.name))
+        return text
+    }
+
+    /**
      * Womit [refine] gerechnet hat, als Anzeige: das Modell des Online-Zugangs oder — auf der Route
      * [RefineRoute.Local] bzw. nach einem Online-Fehler — das lokale Textmodell. null auf [RefineRoute.Raw].
      */
@@ -76,12 +121,18 @@ internal class RefinePlan(
         route is RefineRoute.Raw -> null
         route == RefineRoute.Local || onlineFailed -> TextModelCatalog.byId(localModelId).label
         // Wie ui.components.modelLabel: Katalog-Label, sonst die freie ID.
+        primaryFailed -> fallback?.let { it.modelOption?.label ?: it.model }
         else -> access.modelOption?.label ?: access.model
     }
 
     private fun temperatureRejected(withoutTemperature: ApiAccess) {
         rememberNoTemperature(withoutTemperature)
         access = withoutTemperature
+    }
+
+    private fun fallbackTemperatureRejected(withoutTemperature: ApiAccess) {
+        rememberNoTemperature(withoutTemperature)
+        fallback = withoutTemperature
     }
 
     /** Init, nativer Fehler, Speicher: als [MSG_LOCAL_FAILED]. Eine unplausible Antwort behaelt ihre eigene Meldung. */
@@ -115,7 +166,15 @@ internal class RefinePlan(
         /** Kein Ausfall, nur zur Info: der Text ist verbessert, nur eben lokal (refine_online_failed_local). */
         const val MSG_ONLINE_FAILED_LOCAL = "Online-Textverbesserung fehlgeschlagen — lokal verbessert"
 
-        /** Connect-Timeout, wenn das lokale Modell einspringen kann: lieber frueh lokal als 15 s warten. */
+        /**
+         * Kein Ausfall, nur zur Info: der KI-Zugang ist gescheitert, der Fallback ([provider]) hat verbessert.
+         * Fehlt die Zeile, hat der erste Anbieter gerechnet.
+         */
+        fun fallbackMessage(provider: String): String = "KI-Zugang fehlgeschlagen — mit Fallback $provider verbessert"
+
+        private fun fallbackFailed(e: Exception) = "Fallback: ${e.message ?: e.javaClass.simpleName}"
+
+        /** Connect-Timeout, wenn etwas einspringen kann (Fallback, lokales Modell): lieber frueh wechseln als 15 s warten. */
         const val FALLBACK_CONNECT_TIMEOUT_MS = 8_000
 
         /** Naht fuer Tests: Netz faken. Produktion: aktives Netz + NET_CAPABILITY_VALIDATED (bzw. die Netze unter einem VPN). */
@@ -150,7 +209,9 @@ internal class RefinePlan(
             // Passt kein Textmodell ins Geraet, wirkt jede Regel wie "Ueberspringen".
             val rule = prefs.offlineRefine.effective(OfflineSupport.textModelFits(context))
             val route = RefineDecision.route(engine, rule, stageActive, ownOnlineReady, network, localReady)
-            return RefinePlan(route, access, localModelId, prefs.modelCache::rememberNoTemperature)
+            // Ein unvollstaendiger Fallback (Key, Adresse oder Modell fehlt) springt gar nicht erst ein.
+            val fallback = prefs.llmFallbackAccess(mode)?.takeIf(SetupState::llmReady)
+            return RefinePlan(route, access, localModelId, prefs.modelCache::rememberNoTemperature, fallback)
         }
 
         fun message(hint: RefineHint): String = when (hint) {

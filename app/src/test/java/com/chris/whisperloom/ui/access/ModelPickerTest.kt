@@ -22,6 +22,7 @@ import com.chris.whisperloom.ModelCache
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.RefineWay
 import com.chris.whisperloom.api.ApiAccess
 import com.chris.whisperloom.api.ModelKind
 import com.chris.whisperloom.api.RemoteModel
@@ -30,6 +31,7 @@ import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SystemStatus
 import com.chris.whisperloom.ui.settings.LlmAccessScreen
 import com.chris.whisperloom.ui.settings.RecognitionScreen
+import com.chris.whisperloom.ui.settings.StageScreen
 import com.chris.whisperloom.ui.state.AppEnv
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.PrefsState
@@ -112,6 +114,12 @@ class ModelPickerTest {
     private fun text() {
         prefs.refineMode = RefineMode.POLISH
         show { LlmAccessScreen(it) }
+    }
+
+    /** Seite der Stufe beim Diktat, "Modell" oeffnet das Sheet — dort waehlen Katalog-Anbieter seit 3.9.1. */
+    private fun stufe(stage: RefineMode) {
+        show { StageScreen(stage, RefineWay.DICTATION, it) }
+        click("Modell")
     }
 
     /** Legt eine Liste ab, als waere sie vor [ageMs] geladen worden. */
@@ -231,12 +239,12 @@ class ModelPickerTest {
 
     @Test fun einDatierterSnapshotZaehltAlsGelistet() {
         // Anthropic listet claude-haiku-4-5-20251001 statt claude-haiku-4-5 — kein falsches "nicht mehr gelistet".
+        // Seit 3.9.1 waehlt das Modell die Stufe, also im Sheet der Stufe.
         prefs.serverModelsEnabled = true
         prefs.llmProviderId = "anthropic"
-        prefs.llmModel = "claude-haiku-4-5"
+        prefs.setLlmModelFor(RefineMode.POLISH, "claude-haiku-4-5")
         cache(prefs.llmAccess(), ModelKind.LLM, "claude-haiku-4-5-20251001", "claude-opus-5-5")
-        text()
-        openPicker()
+        stufe(RefineMode.POLISH)
         row("Claude Haiku 4.5 (Legacy)").assertIsSelected().assert(!hasText("nicht mehr gelistet", substring = true))
         row("Claude Sonnet 5").assertTextContains("nicht mehr gelistet", substring = true)
     }
@@ -284,20 +292,26 @@ class ModelPickerTest {
         assertEquals("whisper-large-v3-custom", Prefs(ctx).apiModel)
     }
 
-    @Test fun textverbesserungWaehltAusDerServerListe() {
+    @Test fun textverbesserungHatKeinModellfeldAberDenLadeKnopf() {
+        prefs.serverModelsEnabled = true
+        prefs.llmProviderId = "groq"
+        text()
+        // 3.9.1: kein Modell im KI-Zugang, der Knopf laedt die Liste fuer die Stufen.
+        compose.onNodeWithTag("picker:Modell").assertDoesNotExist()
+        compose.onNodeWithText("Modelle aktualisieren").assertExists()
+    }
+
+    @Test fun textverbesserungWaehltAusDerServerListeJeStufe() {
         prefs.serverModelsEnabled = true
         prefs.llmProviderId = "groq"
         cache(prefs.llmAccess(), ModelKind.LLM, "moonshotai/kimi-k3", "openai/gpt-oss-20b")
-        text()
-        compose.onNodeWithTag("dropdown:Modell").assertDoesNotExist()
-        openPicker()
-        // Ohne eigenes Modell gilt die Empfehlung je Stufe (3.8.6) — sie steht oben und ist gewaehlt.
-        row("Empfehlung je Stufe").assertIsSelected()
+        stufe(RefineMode.BEAUTIFY)
         row("GPT-OSS 20B").assertIsNotSelected()
         row("Qwen 3.8 27B (Preview)").assertTextContains("nicht mehr gelistet", substring = true)
         row("moonshotai/kimi-k3").performClick()
         compose.waitForIdle()
-        assertEquals("moonshotai/kimi-k3", Prefs(ctx).llmModel)
+        assertEquals("moonshotai/kimi-k3", Prefs(ctx).llmModelFor(RefineMode.BEAUTIFY))
+        assertEquals("", Prefs(ctx).llmModel)
     }
 
     // --- Knopf "Modelle aktualisieren" ----------------------------------------------------
@@ -469,23 +483,29 @@ class ModelPickerTest {
 
     // --- Ollama Cloud: der Hinweis nennt den Knopf, ohne seinen Namen (der haengt an Pro) ---
 
-    /** Hinweis sichtbar, darunter das Feld "Modell", darunter der Knopf [knopf]. Ohne Key: keine Anfrage. */
-    private fun ollamaCloudHinweisPasstZumKnopf(pro: Boolean, feld: String, knopf: String) {
+    /**
+     * Hinweis sichtbar, darunter der Knopf [knopf]; ein Feld "Modell" gibt es seit 3.9.1 nicht mehr (Katalog),
+     * gewaehlt wird auf den Seiten der Stufen. Ohne Key: keine Anfrage.
+     */
+    private fun ollamaCloudHinweisPasstZumKnopf(pro: Boolean, knopf: String) {
         prefs.serverModelsEnabled = pro
         prefs.llmProviderId = "ollama-cloud"
         text()
         val hinweis = ctx.getString(R.string.text_ollama_cloud_note)
         compose.onNodeWithText(hinweis).assertExists()
-        assertTrue(hinweis.contains("unter dem Feld „Modell“"))
-        val modell = compose.onNodeWithTag(feld).fetchSemanticsNode().boundsInRoot
+        assertTrue(hinweis.contains("Knopf darunter"))
+        assertTrue(hinweis.contains("Seiten der Stufen"))
+        compose.onNodeWithTag("dropdown:Modell").assertDoesNotExist()
+        compose.onNodeWithTag("picker:Modell").assertDoesNotExist()
+        val oben = compose.onNodeWithText(hinweis).fetchSemanticsNode().boundsInRoot
         val unten = compose.onNodeWithText(knopf).fetchSemanticsNode().boundsInRoot
-        assertTrue("$knopf steht unter dem Feld „Modell“", unten.top >= modell.bottom)
+        assertTrue("$knopf steht unter dem Hinweis", unten.top >= oben.bottom)
         assertEquals(0, hits.get())
     }
 
     @Test fun ollamaCloudHinweisStimmtOhnePro() =
-        ollamaCloudHinweisPasstZumKnopf(pro = false, feld = "dropdown:Modell", knopf = "Modelle vom Server laden")
+        ollamaCloudHinweisPasstZumKnopf(pro = false, knopf = "Modelle vom Server laden")
 
     @Test fun ollamaCloudHinweisStimmtMitPro() =
-        ollamaCloudHinweisPasstZumKnopf(pro = true, feld = "picker:Modell", knopf = "Modelle aktualisieren")
+        ollamaCloudHinweisPasstZumKnopf(pro = true, knopf = "Modelle aktualisieren")
 }

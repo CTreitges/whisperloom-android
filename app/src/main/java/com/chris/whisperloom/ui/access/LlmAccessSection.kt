@@ -48,8 +48,9 @@ import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.theme.loom
 
 /**
- * Karte "Online-Zugang fuer die Textverbesserung" (E2, Spec §2.5): Schalter, eigener Anbieter, Modell, Test.
- * Ollama laedt seine Modelle immer vom Server; mit Pro "Modelle vom Server" jeder Anbieter
+ * Karte "Online-Zugang fuer die Textverbesserung" (E2, Spec §2.5): Schalter, eigener Anbieter, Test. Ein
+ * Modell gibt es hier seit 3.9.1 nur noch ohne Katalog (eigener Server, Ollama lokal) — sonst waehlt es
+ * jede Stufe. Ollama laedt seine Modelle immer vom Server; mit Pro "Modelle vom Server" jeder Anbieter
  * ([ModelPickerSheet]).
  */
 @Composable
@@ -77,20 +78,11 @@ fun LlmAccessSection(snack: SnackController) {
     // also kein Picker, sondern das freie Feld wie ohne Pro.
     val pickable = pro && provider.hasLlm
     val loadable = !noLlmWithoutOwn && (pickable || provider.isOllama)
-    // Anbieter mit Katalog: leeres Modell = "Empfehlung je Stufe" (3.8.6) — Glaetten und Umformulieren
-    // bekommen je ihre Empfehlung. Ohne Katalog (eigener Server, Ollama lokal) ist das Modell Pflicht.
+    // Anbieter mit Katalog: das Modell waehlt seit 3.9.1 jede Stufe ("Standard" = Empfehlung je Stufe) —
+    // hier gibt es keins mehr. Ohne Katalog (eigener Server, Ollama lokal, Together/DeepInfra "wie
+    // Erkennung") ist das Modell des Zugangs Pflicht und der Standard aller Stufen.
     val catalog = provider.llmModels.isNotEmpty()
-    val recommended = stringResource(R.string.text_models_recommended)
-    val recommendedSub = stringResource(
-        R.string.text_models_recommended_sub,
-        recommendedLabel(provider, RefineMode.POLISH),
-        recommendedLabel(provider, RefineMode.BEAUTIFY),
-    )
-    val modelValue = when {
-        catalog && prefs.llmModel.isBlank() -> recommended
-        llm.model.isBlank() -> ""
-        else -> modelLabel(llm)
-    }
+    val modelValue = if (llm.model.isBlank()) "" else modelLabel(llm)
 
     // Lokal gibt es kein Default-Modell: das erste gefundene uebernehmen.
     val takeFirst: (ModelCache.Entry) -> Unit = { e ->
@@ -202,24 +194,26 @@ fun LlmAccessSection(snack: SnackController) {
                     FilledTonalButton(onClick = { switchToOwn() }) { Text(stringResource(R.string.text_add_access)) }
                 },
             )
+            // Katalog: das Modell steht auf den Seiten der Stufen (Uebersicht "Modell je Stufe" darunter).
+            catalog -> Unit
             pickable -> LoomPickerField(
                 label = stringResource(R.string.text_llm_model),
                 value = modelValue,
                 onClick = { showPicker = true },
                 isError = llm.model.isBlank(),
-                supportingText = if (provider.llmModels.isEmpty()) ({ Text(stringResource(R.string.model_custom_info)) }) else null,
+                supportingText = { Text(stringResource(R.string.text_llm_model_all)) },
             )
-            provider.isOllama && (server.ids.isNotEmpty() || provider.llmModels.isNotEmpty()) -> LoomDropdown(
+            provider.isOllama && server.ids.isNotEmpty() -> LoomDropdown(
                 label = stringResource(R.string.text_llm_model),
                 value = modelValue,
-                options = listOfNotNull("".takeIf { catalog }) + (provider.llmModels.map { it.id } + server.ids).distinct(),
-                optionLabel = { id -> if (id.isEmpty()) recommended else provider.llmModel(id)?.label ?: id },
-                optionSupporting = { id -> recommendedSub.takeIf { id.isEmpty() } },
+                options = server.ids,
+                optionLabel = { it },
                 onSelect = { prefs.llmModel = it },
                 extraOption = stringResource(R.string.text_model_custom),
                 onExtra = { showCustomModel = true },
+                supportingText = { Text(stringResource(R.string.text_llm_model_all)) },
             )
-            provider.llmModels.isEmpty() -> OutlinedTextField(
+            else -> OutlinedTextField(
                 value = prefs.llmModel,
                 onValueChange = { prefs.llmModel = it },
                 modifier = Modifier.fillMaxWidth(),
@@ -227,17 +221,7 @@ fun LlmAccessSection(snack: SnackController) {
                 placeholder = { Text(stringResource(R.string.text_llm_model_placeholder)) },
                 singleLine = true,
                 isError = llm.model.isBlank(),
-                supportingText = { Text(stringResource(R.string.model_custom_info)) },
-            )
-            else -> LoomDropdown(
-                label = stringResource(R.string.text_llm_model),
-                value = modelValue,
-                options = listOf(null) + provider.llmModels,
-                optionLabel = { it?.label ?: recommended },
-                optionSupporting = { option -> recommendedSub.takeIf { option == null } },
-                onSelect = { prefs.llmModel = it?.id.orEmpty() },
-                extraOption = stringResource(R.string.text_model_custom),
-                onExtra = { showCustomModel = true },
+                supportingText = { Text(stringResource(R.string.text_llm_model_all)) },
             )
         }
 
@@ -272,8 +256,6 @@ fun LlmAccessSection(snack: SnackController) {
                 showCustomModel = true
             },
             onDismiss = { showPicker = false },
-            standard = recommended.takeIf { catalog },
-            standardNote = recommendedSub,
         )
     }
     if (showCustomModel) {
@@ -287,7 +269,7 @@ fun LlmAccessSection(snack: SnackController) {
 }
 
 /** Name der Empfehlung des Anbieters fuer die Stufe von [mode] ("Claude Haiku 5.5"). */
-private fun recommendedLabel(provider: Provider, mode: RefineMode): String =
+internal fun recommendedLabel(provider: Provider, mode: RefineMode): String =
     provider.recommendedLlmModel(mode).let { id -> provider.llmModel(id)?.label ?: id }
 
 /**

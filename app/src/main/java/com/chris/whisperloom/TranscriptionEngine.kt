@@ -53,15 +53,25 @@ object TranscriptionEngine {
     /**
      * @param prompt Vokabular fuer den Erkenner — die Aufrufer mit Context geben
      *   [VocabularySource.prompt] mit, damit die verknuepfte Datei bei JEDEM Diktat frisch gelesen wird.
+     *   Der Fallback bekommt dasselbe.
      */
     internal fun backend(
         prefs: Prefs,
         prompt: String = Vocabulary.prompt(Vocabulary.entries(prefs.apiPrompt)).text,
     ): TranscriptionBackend = when (prefs.engine) {
-        Engine.ONLINE -> OnlineBackend(prefs.sttAccess(), prompt)
+        Engine.ONLINE -> {
+            val primary = OnlineBackend(prefs.sttAccess(), prompt)
+            // Ein unvollstaendiger Fallback (Key fehlt, eigener Server ohne Modell) springt gar nicht erst ein.
+            val fallback = prefs.sttFallbackAccess()?.takeIf(SetupState::sttFallbackReady)
+            if (fallback == null) primary else FallbackBackend(primary, OnlineBackend(fallback, prompt))
+        }
         Engine.OFFLINE -> OfflineBackend(prefs.offlineModel, prefs.offlineAccurate, prompt)
         null -> throw ApiNotConfiguredException()
     }
+
+    /** Hinweis, wenn der Fallback der Erkennung eingesprungen ist; null = der erste hat erkannt. */
+    internal fun sttFallbackNote(backend: TranscriptionBackend): String? =
+        (backend as? FallbackBackend)?.takeIf { it.usedFallback }?.let { sttFallbackMessage(it.fallbackLabel) }
 
     /**
      * Naht fuer Tests: Offline-Erkennung ohne libwhisperloom.so simulieren (Fake-Backend). Die
@@ -122,17 +132,19 @@ object TranscriptionEngine {
 
         val durationMs = samples.size * 1000L / AudioRecorder.SAMPLE_RATE
         val trimmed = AudioUtils.trimSilence(samples)
-        val result = backendFactory(prefs, VocabularySource.prompt(app, prefs).text)
-            .transcribe(WavUpload.fromSamples(trimmed), prefs.language)
+        val backend = backendFactory(prefs, VocabularySource.prompt(app, prefs).text)
+        val result = backend.transcribe(WavUpload.fromSamples(trimmed), prefs.language)
+        val sttNote = sttFallbackNote(backend)
         val raw = result.text
         val language = effectiveLanguage(prefs.language, result.detectedLanguage)
         // Diktat, Knopf und Widget: die Stufe und ihre Einstellungen fuers Diktat, nie die der Sprachnachrichten.
         val refinement = fixedRefinement ?: prefs.refinementFor(RefineWay.DICTATION)
-        if (raw.isBlank()) return Dictation("", language, durationMs, Refined(refinement, ""))
+        if (raw.isBlank()) return Dictation("", language, durationMs, Refined(refinement, "", note = sttNote))
 
         // Die Online-Erkennung hat das Netz gerade bewiesen; offline erkannt zaehlt nur ein validiertes.
         val refined = refine(app, raw, language, refinement, prefs.engine != Engine.OFFLINE, skip, cancelled, onRefineStart)
-        return Dictation(raw, language, durationMs, refined)
+        val note = listOfNotNull(sttNote, refined.note).joinToString(" · ").ifEmpty { null }
+        return Dictation(raw, language, durationMs, refined.copy(note = note))
     }
 
     /**
@@ -203,6 +215,9 @@ object TranscriptionEngine {
     }
 
     private const val TAG = "TranscriptionEngine"
+
+    /** Nur zur Info, kein Fehler: der erste Anbieter ist gescheitert, der Fallback ([label]) hat erkannt. */
+    fun sttFallbackMessage(label: String): String = "Spracherkennung fehlgeschlagen — mit Fallback $label erkannt"
 }
 
 /**

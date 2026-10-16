@@ -145,6 +145,62 @@ object AccessResolver {
     }
 
     /**
+     * Fallback der Erkennung (3.9.1): eigener Anbieter, Key und Modell. Leere Felder fuellen sich nur aus
+     * [primary], wenn es derselbe Anbieter ist (etwa ein anderes Modell mit demselben Key) — ein Key geht
+     * nie an einen anderen Anbieter. Leeres Modell = Empfehlung des Anbieters wie beim ersten.
+     */
+    fun resolveSttFallback(
+        primary: ApiAccess,
+        providerId: String,
+        baseUrl: String,
+        apiKey: String,
+        model: String,
+        serverModels: ServerModelLookup = ServerModelLookup.NONE,
+    ): ApiAccess {
+        val same = ProviderCatalog.byId(providerId).id == primary.provider.id
+        return resolveStt(
+            providerId = providerId,
+            baseUrl = baseUrl.ifBlank { if (same) primary.baseUrl else "" },
+            apiKey = apiKey.ifBlank { if (same) primary.apiKey else "" },
+            model = model,
+            serverModels = serverModels,
+        )
+    }
+
+    /**
+     * Fallback der Textverbesserung (3.9.1). Leere Adresse und leerer Key kommen von einem Zugang
+     * desselben Anbieters: erst vom KI-Zugang ([primary]), dann von der Erkennung ([stt], nur online
+     * erkannt — offline ist sie abgewaehlt). So reicht z. B. "Anthropic, Fallback OpenAI" ohne den
+     * OpenAI-Key ein zweites Mal. Das Modell gilt fuer alle Stufen; leer = Empfehlung des Anbieters
+     * fuer [stage]. Die Stufen-Modelle gehoeren zum ersten Anbieter und zaehlen hier nie.
+     */
+    fun resolveLlmFallback(
+        stt: ApiAccess,
+        primary: ApiAccess,
+        providerId: String,
+        baseUrl: String,
+        apiKey: String,
+        model: String,
+        serverModels: ServerModelLookup = ServerModelLookup.NONE,
+        sttOffline: Boolean = false,
+        stage: RefineMode? = null,
+    ): ApiAccess {
+        val provider = ProviderCatalog.byId(providerId)
+        val donor = listOfNotNull(primary.takeIf { !it.sameAsOffline }, stt.takeIf { !sttOffline })
+            .firstOrNull { it.provider.id == provider.id }
+        val url = baseUrl.trim().ifBlank { donor?.baseUrl ?: provider.baseUrl }
+        val modelId = model.trim().ifBlank { provider.recommendedLlmModel(stage) }
+        return ApiAccess(
+            baseUrl = url,
+            apiKey = apiKey.trim().ifBlank { donor?.apiKey.orEmpty() },
+            model = modelId,
+            readTimeoutMs = timeoutMs(0, provider),
+            provider = provider,
+            modelOption = option(provider, ModelKind.LLM, url, modelId, serverModels),
+        )
+    }
+
+    /**
      * Katalog zuerst; nur ohne Treffer den Cache fragen (der liest JSON) und Flags ableiten. Hat ein
      * Textmodell `temperature` schon einmal abgelehnt (gemerkt in [serverModels]), geht es ohne raus —
      * auch ein Katalog-Modell, der Katalog darf irren (Claude Sonnet 5 bis 3.8.5).
