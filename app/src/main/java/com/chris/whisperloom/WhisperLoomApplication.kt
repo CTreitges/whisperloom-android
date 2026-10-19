@@ -21,6 +21,7 @@ class WhisperLoomApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        seedPreset()
         migrateWidgetServer()
         WhisperEngine.init(this)
         LocalTextEngine.init(this)
@@ -33,6 +34,15 @@ class WhisperLoomApplication : Application() {
             WhisperEngine.release()
             // Gibt nie mitten in einer Rechnung frei (close waehrend der Generierung = SIGSEGV).
             LocalTextEngine.release()
+        }
+    }
+
+    /** Vorbelegung eines Einzel-Builds ([PresetSeed]) — vor jeder [Prefs]-Instanz; ein Fehler verhindert den Start nie. */
+    private fun seedPreset() {
+        try {
+            PresetSeed.applyFromAssets(this)
+        } catch (e: Exception) {
+            Log.e(TAG, "Vorbelegung nicht uebernommen", e)
         }
     }
 

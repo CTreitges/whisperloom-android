@@ -179,8 +179,41 @@ abstract class CopyPatchnotesAssets : DefaultTask() {
     }
 }
 
+// ---- Einzel-Build mit vorbelegten Einstellungen (PresetSeed) ----
+// -Pwhisperloom.presetFile=/pfad/preset.json legt die Datei als Asset preset.json ins APK. Sie enthaelt
+// API-Keys und liegt deshalb AUSSERHALB des Repos; ohne Property hat kein Build ein preset.json.
+val presetFile: File? = providers.gradleProperty("whisperloom.presetFile").orNull?.let { file(it) }
+
+abstract class CopyPresetAsset : DefaultTask() {
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val preset: RegularFileProperty
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @get:Inject
+    abstract val fs: FileSystemOperations
+
+    @TaskAction
+    fun copy() {
+        fs.sync {
+            into(outputDir)
+            from(preset) { rename { "preset.json" } }
+        }
+    }
+}
+
 androidComponents {
     onVariants { variant ->
+        if (presetFile != null) {
+            val copyPreset = tasks.register<CopyPresetAsset>(
+                "copy${variant.name.replaceFirstChar { it.uppercase() }}PresetAsset",
+            ) {
+                preset.set(presetFile)
+            }
+            variant.sources.assets?.addGeneratedSourceDirectory(copyPreset, CopyPresetAsset::outputDir)
+        }
         val copyPatchnotes = tasks.register<CopyPatchnotesAssets>(
             "copy${variant.name.replaceFirstChar { it.uppercase() }}PatchnotesAssets",
         ) {
