@@ -48,7 +48,8 @@ import kotlin.math.abs
  * Der Knopf zeigt vier Zustaende ([BubbleState]), weil die Transkription ueber das Netz
  * laeuft und spuerbar dauert: bereit, nimmt auf (mit Timer), sendet, fehlgeschlagen.
  * Ein fehlgeschlagenes Diktat bleibt gepuffert und kann per Tippen erneut gesendet
- * werden; Ziehen auf das Abbrechen-Ziel am unteren Rand verwirft es. Laeuft die
+ * werden; Ziehen auf das Abbrechen-Ziel am unteren Rand verwirft es, ohne Ziehen die
+ * Bedienungshilfe-Aktion "Aufnahme verwerfen" ([BubbleActions]). Laeuft die
  * Textverbesserung, fuegt ein Tipp den erkannten Text sofort ohne KI ein ([RefineSkip]).
  *
  * Optik: [BubbleVisuals] beschreibt den Zustand, [BubbleRenderer] zeichnet ihn,
@@ -66,6 +67,7 @@ class FloatingMicService : Service() {
 
     private var bubbleView: View? = null
     private var renderer: BubbleRenderer? = null
+    private var actions: BubbleActions? = null
     private lateinit var cancelTarget: CancelTarget
     private lateinit var lp: WindowManager.LayoutParams
 
@@ -73,6 +75,9 @@ class FloatingMicService : Service() {
 
     /** IDLE-Hinweis "Kopiert — einfuegen" (2 s nach dem Clipboard-Fallback). */
     private var copiedHint = false
+
+    /** IDLE-Hinweis "Eingefuegt" (2 s nach dem Einfuegen per Bedienungshilfe). */
+    private var insertedHint = false
 
     /** Audio des letzten fehlgeschlagenen Versuchs — Grundlage fuer den Wiederholen-Tipp. */
     private var pendingSamples: FloatArray? = null
@@ -102,9 +107,10 @@ class FloatingMicService : Service() {
     }
 
     private val clearCopiedHint = Runnable {
-        if (state == BubbleState.IDLE && copiedHint) {
+        if (state == BubbleState.IDLE && (copiedHint || insertedHint)) {
             copiedHint = false
-            render()
+            insertedHint = false
+            render(quiet = true) // der Hinweis laeuft ab, kein neuer Zustand: nicht ansagen
         }
     }
 
@@ -185,9 +191,11 @@ class FloatingMicService : Service() {
             x = start.x
             y = start.y
         }
-        // Touch-Ziel ist der 68-dp-Kreis; der Klick-Listener bedient TalkBacks Doppeltipp.
+        // Touch-Ziel ist der 68-dp-Kreis; der Klick-Listener bedient TalkBacks Doppeltipp, die
+        // Aktionen das Verwerfen ohne Ziehen.
         r.bubble.setOnTouchListener(dragTapListener())
         r.bubble.setOnClickListener { onTap() }
+        actions = BubbleActions(r.bubble, onRetry = ::retry, onDiscard = ::discardByAction)
         recorder.onAmplitude = { amp -> r.level = amp }
         wm.addView(v, lp)
         bubbleView = v
@@ -307,26 +315,29 @@ class FloatingMicService : Service() {
 
     private fun elapsedMs() = SystemClock.elapsedRealtime() - recordingStartedAt
 
-    private fun render() {
-        val visual = BubbleVisuals.visualFor(state, copiedHint, BubbleAnimators.reduceMotion(this), refining)
-        renderer?.render(visual, elapsedMs())
+    private fun render(quiet: Boolean = false) {
+        val visual = BubbleVisuals.visualFor(
+            state, copiedHint, BubbleAnimators.reduceMotion(this), refining, insertedHint,
+        )
+        renderer?.render(visual, elapsedMs(), quiet)
     }
 
     /**
-     * Zustand setzen und zeichnen. [copied] zeigt in IDLE fuer 2 s "Kopiert — einfuegen";
-     * TalkBack bekommt nur echte Wechsel angesagt.
+     * Zustand setzen und zeichnen. [copied] zeigt in IDLE fuer 2 s "Kopiert — einfuegen", [inserted]
+     * ebenso "Eingefuegt". Angesagt wird ueber die Live-Region des Knopfs ([BubbleRenderer]).
      */
-    private fun applyState(next: BubbleState, copied: Boolean = false) {
+    private fun applyState(next: BubbleState, copied: Boolean = false, inserted: Boolean = false) {
         val previous = state
         state = next
         if (next != BubbleState.SENDING) refining = false
         copiedHint = copied
+        insertedHint = inserted
         main.removeCallbacks(tick)
         main.removeCallbacks(clearCopiedHint)
         render()
-        if (previous != next) renderer?.announce()
+        actions?.show(next)
         if (next == BubbleState.RECORDING) main.post(tick)
-        if (copied) main.postDelayed(clearCopiedHint, BubbleMotion.COPIED_HINT_MS)
+        if (copied || inserted) main.postDelayed(clearCopiedHint, BubbleMotion.COPIED_HINT_MS)
         if ((previous == BubbleState.RECORDING) != (next == BubbleState.RECORDING)) refreshNotification()
     }
 
@@ -343,15 +354,19 @@ class FloatingMicService : Service() {
             startActivity(AppNav.setup(this))
             return
         }
-        if (recorder.start()) {
-            recordingStartedAt = SystemClock.elapsedRealtime()
-            pendingSamples = null
-            applyState(BubbleState.RECORDING)
-            renderer?.haptic(BubbleMotion.Haptic.CONFIRM)
-            TranscriptionEngine.warmUp(this) // lokales Textmodell parallel zur Aufnahme laden
-        } else {
+        // Erst "nimmt auf" zeigen und ansagen, dann das Mikrofon oeffnen — sonst landet die Ansage
+        // bei Lautsprecher-Ausgabe im Diktat (UX-Spec §6.20). Der Ticker laeuft erst danach an.
+        recordingStartedAt = SystemClock.elapsedRealtime() // Anzeige "0:00"
+        pendingSamples = null
+        applyState(BubbleState.RECORDING)
+        if (!recorder.start()) {
+            applyState(BubbleState.IDLE)
             toast(getString(R.string.kb_error))
+            return
         }
+        recordingStartedAt = SystemClock.elapsedRealtime() // die Uhr zaehlt ab offenem Mikrofon
+        renderer?.haptic(BubbleMotion.Haptic.CONFIRM)
+        TranscriptionEngine.warmUp(this) // lokales Textmodell parallel zur Aufnahme laden
     }
 
     private fun stopRec() {
@@ -400,6 +415,13 @@ class FloatingMicService : Service() {
         }
     }
 
+    /** Verwerfen ueber die Bedienungshilfe-Aktion: wie das Loslassen ueber dem ✕, ohne Ziehen. */
+    private fun discardByAction() {
+        if (!canDiscard()) return
+        renderer?.haptic(BubbleMotion.Haptic.REJECT)
+        discard()
+    }
+
     /** Verwirft eine laufende Aufnahme oder das gepufferte Audio. */
     private fun discard() {
         if (state == BubbleState.RECORDING) recorder.cancel()
@@ -415,12 +437,14 @@ class FloatingMicService : Service() {
         renderer?.haptic(BubbleMotion.Haptic.CONFIRM)
     }
 
-    /** Main-Thread: die Uebertragung ist in der Textverbesserung angekommen — Label und Ansage nennen den Ausweg. */
+    /**
+     * Main-Thread: die Uebertragung ist in der Textverbesserung angekommen — Label und
+     * stateDescription nennen den Ausweg; die Live-Region sagt ihn an.
+     */
     private fun showRefining(skip: RefineSkip) {
         if (refineSkip !== skip || state != BubbleState.SENDING) return
         refining = true
         render()
-        renderer?.announce()
     }
 
     /** Laeuft auf dem io-Thread. */
@@ -441,12 +465,17 @@ class FloatingMicService : Service() {
             pendingSamples = null
             main.post {
                 var copied = false
-                if (out.isNotBlank() && !TextInserterAccessibilityService.tryInsert(out)) {
-                    fallbackClipboard(out)
-                    copied = true
+                var inserted = false
+                if (out.isNotBlank()) {
+                    inserted = TextInserterAccessibilityService.tryInsert(out)
+                    if (!inserted) {
+                        fallbackClipboard(out)
+                        copied = true
+                    }
                 }
-                applyState(BubbleState.IDLE, copied = copied)
+                applyState(BubbleState.IDLE, copied = copied, inserted = inserted)
                 renderer?.flashSuccess()
+                renderer?.haptic(BubbleMotion.Haptic.SUCCESS)
                 dictation.result.skipped?.let { toast(getString(R.string.refine_skipped, it)) }
                     ?: dictation.result.note?.let { toast(it) }
             }
@@ -493,6 +522,7 @@ class FloatingMicService : Service() {
         cancelTarget.hide()
         renderer?.release()
         renderer = null
+        actions = null
         runCatching { bubbleView?.let { wm.removeView(it) } }
         bubbleView = null
         if (recorder.hasSession) recorder.cancel()

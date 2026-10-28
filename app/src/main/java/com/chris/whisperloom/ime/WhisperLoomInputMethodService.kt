@@ -4,7 +4,6 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.inputmethodservice.InputMethodService
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -762,7 +761,10 @@ class WhisperLoomInputMethodService : InputMethodService() {
                 fieldGone = gone
                 applyState(BubbleState.IDLE)
                 // Erfolg nur, wenn der Text sicher liegt: im Feld oder im Verlauf.
-                if (gone == null || inHistory) rings?.flashSuccess()
+                if (gone == null || inHistory) {
+                    rings?.flashSuccess()
+                    haptic(BubbleMotion.Haptic.SUCCESS)
+                }
                 showIdleStatus()
                 // Text ist eingefuegt, nur die Veredelung fiel aus — Hinweis statt Fehlerzustand.
                 if (gone == null) {
@@ -932,7 +934,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
     private fun reduceMotion() = BubbleAnimators.reduceMotion(this)
 
     private fun haptic(kind: BubbleMotion.Haptic) {
-        micButton?.performHapticFeedback(BubbleMotion.hapticConstant(kind, Build.VERSION.SDK_INT))
+        micButton?.let { BubbleAnimators.haptic(it, kind) }
     }
 
     // --- Text einfuegen -----------------------------------------------------

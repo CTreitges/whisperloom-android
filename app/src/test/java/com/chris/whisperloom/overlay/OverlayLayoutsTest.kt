@@ -3,6 +3,7 @@ package com.chris.whisperloom.overlay
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
@@ -41,7 +42,7 @@ class OverlayLayoutsTest {
         val bubble = v.findViewById<View>(R.id.bubble)
         assertTrue(bubble.isClickable)
         assertTrue(bubble.isFocusable)
-        assertEquals(ctx.getString(R.string.cd_bubble_idle), bubble.contentDescription)
+        assertEquals(ctx.getString(R.string.cd_bubble), bubble.contentDescription)
         assertEquals(View.IMPORTANT_FOR_ACCESSIBILITY_NO, v.findViewById<View>(R.id.bubble_label).importantForAccessibility)
         assertEquals(View.IMPORTANT_FOR_ACCESSIBILITY_NO, v.findViewById<View>(R.id.pulse_ring).importantForAccessibility)
     }
@@ -56,7 +57,8 @@ class OverlayLayoutsTest {
         assertEquals(76, dp(R.id.bubble_progress))
         assertEquals(68, dp(R.id.bubble))
         assertEquals(28, dp(R.id.bubble_icon))
-        assertEquals(22, (v.findViewById<View>(R.id.bubble_label).layoutParams.height / d).toInt())
+        assertEquals("Label waechst mit der Schrift (§6.20)", ViewGroup.LayoutParams.WRAP_CONTENT, v.findViewById<View>(R.id.bubble_label).layoutParams.height)
+        assertEquals(22, (v.findViewById<View>(R.id.bubble_label).minimumHeight / d).toInt())
         assertEquals("tnum", v.findViewById<TextView>(R.id.bubble_label).fontFeatureSettings)
     }
 
@@ -68,31 +70,40 @@ class OverlayLayoutsTest {
 
         r.render(BubbleVisuals.visualFor(BubbleState.IDLE), 0)
         assertEquals(View.GONE, label.visibility)
-        assertEquals(ctx.getString(R.string.cd_bubble_idle), bubble.contentDescription)
+        assertEquals(ctx.getString(R.string.cd_bubble_idle), bubble.stateDescription?.toString())
 
         r.render(BubbleVisuals.visualFor(BubbleState.RECORDING), 7_000)
         assertEquals(View.VISIBLE, label.visibility)
         assertEquals("● 0:07", label.text.toString())
-        assertEquals(ctx.getString(R.string.cd_bubble_recording, "0:07"), bubble.contentDescription)
+        assertEquals(ctx.getString(R.string.cd_bubble_recording), bubble.stateDescription?.toString())
+        assertEquals(ctx.getString(R.string.cd_bubble_timer, "0:07"), bubble.contentDescription)
         assertEquals(View.VISIBLE, v.findViewById<View>(R.id.pulse_ring).visibility)
         r.updateTimer(65_000)
         assertEquals("● 1:05", label.text.toString())
-        assertEquals(ctx.getString(R.string.cd_bubble_recording, "1:05"), bubble.contentDescription)
+        assertEquals(ctx.getString(R.string.cd_bubble_recording), bubble.stateDescription?.toString())
+        assertEquals(ctx.getString(R.string.cd_bubble_timer, "1:05"), bubble.contentDescription)
 
         r.render(BubbleVisuals.visualFor(BubbleState.SENDING), 0)
         assertEquals(ctx.getString(R.string.float_sending), label.text.toString())
         assertEquals(View.VISIBLE, v.findViewById<View>(R.id.bubble_progress).visibility)
-        assertEquals(ctx.getString(R.string.cd_bubble_sending), bubble.contentDescription)
+        assertEquals(ctx.getString(R.string.cd_bubble_sending), bubble.stateDescription?.toString())
 
         r.render(BubbleVisuals.visualFor(BubbleState.ERROR), 0)
         assertEquals(ctx.getString(R.string.float_retry_hint), label.text.toString())
-        assertEquals(ctx.getString(R.string.cd_bubble_error), bubble.contentDescription)
+        assertEquals(ctx.getString(R.string.cd_bubble_error), bubble.stateDescription?.toString())
         assertEquals(View.GONE, v.findViewById<View>(R.id.bubble_progress).visibility)
 
         r.render(BubbleVisuals.visualFor(BubbleState.IDLE, copiedHint = true), 0)
         assertEquals(ctx.getString(R.string.float_copied_short), label.text.toString())
+        assertEquals(ctx.getString(R.string.cd_bubble_copied), bubble.stateDescription?.toString())
+
+        r.render(BubbleVisuals.visualFor(BubbleState.IDLE, insertedHint = true), 0)
+        assertEquals(ctx.getString(R.string.float_inserted_short), label.text.toString())
+        assertEquals(ctx.getString(R.string.cd_bubble_inserted), bubble.stateDescription?.toString())
+        assertEquals("Der Name bleibt fest", ctx.getString(R.string.cd_bubble), bubble.contentDescription)
 
         r.flashSuccess()
+        r.haptic(BubbleMotion.Haptic.SUCCESS)
         r.shake()
         r.release()
     }

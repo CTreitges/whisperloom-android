@@ -2,7 +2,8 @@
 <!-- Schwebender Diktat-Knopf (UX-Spec §5.1). Ebenen hinten -> vorn im 96-dp-Container:
      pulse_ring (84, nur RECORDING) · state_ring (72, 2 dp) · bubble_progress (76, Sende-Bogen,
      nur SENDING) · bubble (68, Fuellung + Icon 28, einziges fokussierbares Element).
-     Darunter die Label-Pille (22 dp), 4 dp unter dem Kreis (Container-Rand 14 dp minus 10). -->
+     Darunter die Label-Pille (mind. 22 dp, waechst mit der Schrift), 4 dp unter dem Kreis
+     (Container-Rand 14 dp minus 10). Name fest cd_bubble, Zustand als stateDescription (§6.20). -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="wrap_content"
@@ -59,7 +60,7 @@
             android:layout_gravity="center"
             android:clickable="true"
             android:focusable="true"
-            android:contentDescription="@string/cd_bubble_idle"
+            android:contentDescription="@string/cd_bubble"
             android:elevation="8dp"
             android:outlineAmbientShadowColor="@color/loom_scrim"
             android:outlineSpotShadowColor="@color/loom_scrim"
@@ -97,7 +98,8 @@
     <TextView
         android:id="@+id/bubble_label"
         android:layout_width="wrap_content"
-        android:layout_height="22dp"
+        android:layout_height="wrap_content"
+        android:minHeight="22dp"
         android:layout_marginTop="-10dp"
         android:background="@drawable/label_bg"
         android:fontFeatureSettings="tnum"

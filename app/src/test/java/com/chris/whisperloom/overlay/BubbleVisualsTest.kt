@@ -73,16 +73,35 @@ class BubbleVisualsTest {
         assertEquals(BubbleVisual.LabelStyle.ERROR, v.labelStyle)
     }
 
-    @Test fun kopiertHinweisAendertNurIconUndLabelVonIdle() {
+    @Test fun kopiertHinweisAendertNurIconLabelUndBeschreibungVonIdle() {
         val plain = BubbleVisuals.visualFor(BubbleState.IDLE)
         val copied = BubbleVisuals.visualFor(BubbleState.IDLE, copiedHint = true)
         assertEquals(BubbleVisual.Icon.CONTENT_COPY, copied.icon)
         assertEquals(BubbleVisual.Label.COPIED, copied.label)
-        assertEquals(plain.copy(icon = copied.icon, label = copied.label), copied)
+        // Ohne die Beschreibung hoerte TalkBack nur "Diktat starten" — nicht, dass der Text kopiert ist.
+        assertEquals(BubbleVisual.Description.COPIED, copied.description)
+        assertEquals(plain.copy(icon = copied.icon, label = copied.label, description = copied.description), copied)
         // In den anderen Zustaenden wirkt der Hinweis nicht.
         for (s in listOf(BubbleState.RECORDING, BubbleState.SENDING, BubbleState.ERROR)) {
             assertEquals(BubbleVisuals.visualFor(s), BubbleVisuals.visualFor(s, copiedHint = true))
         }
+    }
+
+    @Test fun eingefuegtHinweisAendertNurLabelUndBeschreibungVonIdle() {
+        val plain = BubbleVisuals.visualFor(BubbleState.IDLE)
+        val inserted = BubbleVisuals.visualFor(BubbleState.IDLE, insertedHint = true)
+        assertEquals(BubbleVisual.Label.INSERTED, inserted.label)
+        assertEquals(BubbleVisual.Description.INSERTED, inserted.description)
+        assertEquals("Icon bleibt das Mikrofon", plain.copy(label = inserted.label, description = inserted.description), inserted)
+        for (s in listOf(BubbleState.RECORDING, BubbleState.SENDING, BubbleState.ERROR)) {
+            assertEquals(BubbleVisuals.visualFor(s), BubbleVisuals.visualFor(s, insertedHint = true))
+        }
+    }
+
+    @Test fun kopiertGehtVorEingefuegt() {
+        // Beides zugleich gibt es im Dienst nicht; falls doch, zaehlt der Hinweis, der eine Handlung verlangt.
+        val both = BubbleVisuals.visualFor(BubbleState.IDLE, copiedHint = true, insertedHint = true)
+        assertEquals(BubbleVisuals.visualFor(BubbleState.IDLE, copiedHint = true), both)
     }
 
     @Test fun reduceMotionErsetztNurDenPulsDurchStatischenRing() {
