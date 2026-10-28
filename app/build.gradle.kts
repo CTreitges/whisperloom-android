@@ -17,6 +17,8 @@ val appId = providers.gradleProperty("whisperloom.applicationId").orNull ?: "com
 // Prototyp-Builds neben der installierten App (z. B. -Pwhisperloom.applicationId=com.chris.whisperloom.proto):
 // eigener Launcher-Name (-Pwhisperloom.appLabel="WhisperLoom Proto") und Versions-Zusatz
 // (-Pwhisperloom.versionSuffix=-proto). Ohne die Properties bleibt alles wie bisher.
+// Nur fuer assembleDebug/assembleRelease gedacht: die Patchnotes-Tests vergleichen BuildConfig.VERSION_NAME
+// exakt mit CHANGELOG-Kopf und Highlights, mit Suffix waeren sie rot (Review 3.10.0).
 val appLabel = providers.gradleProperty("whisperloom.appLabel").orNull ?: "@string/app_name"
 val versionSuffix = providers.gradleProperty("whisperloom.versionSuffix").orNull ?: ""
 

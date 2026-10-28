@@ -807,6 +807,27 @@ class MainFlowTest {
         compose.onNodeWithText("Noch kein Modell geladen").assertExists()
     }
 
+    /** Das Banner "Offline gewaehlt, aber kein Modell geladen" fuehrt in die Spracherkennung — dort liegt seit dem Neuaufbau die Whisper-Liste. */
+    @Test fun homeBannerOhneOfflineModellFuehrtZurSpracherkennung() {
+        prefs.engine = Engine.OFFLINE
+        prefs.tutorialSeen = true
+        val nav = screen(env(readyStatus)) { HomeScreen(it) }
+        compose.onNodeWithText("Offline gewählt, aber kein Modell geladen.").assertExists()
+        compose.onNodeWithText("Offline · kein Modell geladen").assertExists()
+        compose.onNodeWithText("Beheben").performClick()
+        compose.waitForIdle()
+        assertEquals(Screen.Recognition, nav.current)
+    }
+
+    @Test fun hilfeOfflineZuLangsamFuehrtZurSpracherkennung() {
+        val nav = screen(env()) { HelpScreen(8, it) }
+        compose.onNodeWithText("Offline zu langsam").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Öffnen").performClick()
+        compose.waitForIdle()
+        assertEquals(Screen.Recognition, nav.current)
+    }
+
     @Test fun modellZeileIstEinAuswaehlbaresElementMitNamen() {
         // Review SPEC-3: TalkBack liest "Base, Optionsfeld, …" statt viermal nur "Optionsfeld".
         val store = ModelStore(ctx)

@@ -208,6 +208,19 @@ class TextModelUiTest {
         }
     }
 
+    @Test fun whisperLadenIstWaehrendEinesTextmodellDownloadsGesperrt() {
+        // Der Dienst laedt immer nur eins: ein laufender Textmodell-Download sperrt auch die Whisper-Zeilen in der Spracherkennung.
+        ModelDownloads.update("gemma4_e2b", DownloadState.Running(1_000, TextModelCatalog.GEMMA4_E2B.bytes, 500))
+        try {
+            prefs.engine = Engine.OFFLINE
+            screen(env(SystemStatus(totalRamBytes = 16L shl 30))) { RecognitionScreen(it) }
+            compose.onNodeWithContentDescription("Base herunterladen").assertIsNotEnabled()
+            compose.onNodeWithContentDescription("Small herunterladen").assertIsNotEnabled()
+        } finally {
+            ModelDownloads.clear("gemma4_e2b")
+        }
+    }
+
     @Test fun whisperZeileWirdErstNachDemLadenWaehlbar() {
         prefs.engine = Engine.OFFLINE
         screen(env()) { RecognitionScreen(it) }
