@@ -880,6 +880,8 @@
     <string name="widget_profile_autostop">Automatisch senden nach Sprechpause</string>
     <string name="widget_profile_autostop_sub">Nach einer Sprechpause endet die Aufnahme und wird gesendet. Ein Tipp beendet jederzeit. Hört das Widget 8 Sekunden lang nichts, wird nichts gesendet.</string>
     <string name="widget_profile_pause">Sprechpause</string>
+    <string name="widget_profile_language">Sprache</string>
+    <string name="widget_profile_language_app">Wie in der App (%1$s)</string>
     <string name="widget_pause_short">Kurz</string>
     <string name="widget_pause_normal">Normal</string>
     <string name="widget_pause_long">Lang</string>

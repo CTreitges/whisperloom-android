@@ -703,6 +703,20 @@ class TranscriptionEngineTest {
         assertFalse(sttBody.contains("name=\"language\""))
     }
 
+    /** Sprache je Widget (CTR-273, F1): der Parameter gewinnt, null/leer = die der App. */
+    @Test fun eigeneSpracheGewinntGegenDieDerApp() {
+        useLocalServer()
+        prefs.language = "de"
+        val en = TranscriptionEngine.transcribe(ctx, speech, language = "en")
+        assertEquals("en", en.language)
+        assertTrue(sttBody.contains("name=\"language\"\r\n\r\nen\r\n"))
+        for (wieApp in listOf(null, "")) {
+            val de = TranscriptionEngine.transcribe(ctx, speech, language = wieApp)
+            assertEquals("de", de.language)
+            assertTrue(sttBody.contains("name=\"language\"\r\n\r\nde\r\n"))
+        }
+    }
+
     /** gpt-transcribe meldet `languages: [{code}]` (CTR-273, 273-1) — sonst bliebe die Sprache "auto". */
     @Test fun autoSpracheAusDerListeVonGptTranscribe() {
         useLocalServer()

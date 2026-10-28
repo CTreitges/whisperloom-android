@@ -278,12 +278,13 @@ class VoiceTaskWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, para
                     // Textmodell nicht fuer den neuen Auftrag. Bewusst NICHT bei isStopped allein —
                     // der vom System gestoppte Lauf cacht seinen Text fuer den naechsten Versuch.
                     // Je Versuch frisch wie Server und Optionen; ein geloeschtes Widget scheitert erst beim Senden.
-                    val fixed = WidgetProfileStore(ctx).get(profileId)?.fixedRefinement()
+                    val profile = WidgetProfileStore(ctx).get(profileId)
                     val dictation = TranscriptionEngine.transcribe(
                         ctx,
                         samples,
                         cancelled = { store.requestId != id },
-                        fixedRefinement = fixed,
+                        fixedRefinement = profile?.fixedRefinement(),
+                        language = profile?.language,
                     )
                     dictation.result.skipped?.let { hinweis ->
                         // Nicht nur ins Log: sonst bekaeme der Nutzer stillschweigend Rohtext,

@@ -56,6 +56,24 @@ class WidgetProfileTest {
         assertEquals(ClaudeModel.OPUS, p.claudeModel)
         assertEquals(ClaudeEffort.XHIGH, p.claudeEffort)
         assertFalse(p.ultracode)
+        // Vor CTR-273: keine eigene Sprache = wie in der App.
+        assertEquals("", p.language)
+    }
+
+    // --- Sprache je Widget (CTR-273, F1) -------------------------------------------------
+
+    @Test fun dieSpracheUeberstehtDenRoundtrip() {
+        for (lang in listOf("", "auto", "en", "de+en")) {
+            val p = WidgetProfile("x", language = lang)
+            assertEquals(lang, lies(p.toJson().toString())!!.language)
+        }
+        assertEquals("en", WidgetProfile("x", language = "en").toJson().getString("language"))
+        assertTrue(WidgetProfile("x", language = "en").toString().contains("language=en"))
+    }
+
+    @Test fun eineSpracheAusJsonNullIstWieDieApp() {
+        assertEquals("", lies("""{"id":"x","language":null}""")!!.language)
+        assertEquals("en", lies("""{"id":"x","language":" en "}""")!!.language)
     }
 
     @Test fun unbekannteFelderStoerenNicht() {
