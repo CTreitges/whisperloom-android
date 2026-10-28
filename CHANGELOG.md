@@ -9,8 +9,13 @@ Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](ht
 - **Schwebender Knopf ohne Ziehen.** Mit TalkBack, Switch Access oder Voice Access gibt es am Knopf die Aktionen **Aufnahme verwerfen** (während der Aufnahme und nach einem Fehler) und **Erneut senden** (nach einem Fehler). Verwerfen ging bisher nur durch Ziehen auf das ✕.
 - **„Eingefügt“ am Knopf.** Nach dem Einfügen steht 2 Sekunden „Eingefügt“ unter dem Knopf, und TalkBack sagt es an.
 - **Spürbarer Erfolg.** Ist der Text eingefügt, vibriert das Handy kurz anders als beim Start und beim Senden: auf neueren Geräten als eigenes Muster, sonst als doppeltes Tippen. Das gilt für den Knopf und die Diktat-Tastatur.
+- **Halten zum Sprechen am Knopf.** Halte den schwebenden Knopf gedrückt und sprich. Lässt du los, wird gesendet. Ziehst du dabei auf das ✕, wird verworfen. Antippen geht weiter wie bisher. Ausschalten kannst du es unter Knopf & Tastatur › **Halten zum Sprechen**. Wie lange du halten musst, richtet sich nach der Einstellung „Berührungs- und Haltedauer“ deines Handys.
+- **Knopf ausblenden.** Ziehst du den Knopf in Ruhe nach unten, erscheint **Ausblenden**. Lässt du ihn dort los, verschwindet er für 15 Minuten. Mit TalkBack geht das über die Aktion **15 Minuten ausblenden**. In der Benachrichtigung steht, bis wann. Dort holst du ihn mit **Einblenden** früher zurück. Er kommt an derselben Stelle wieder.
+- **Lange Diktate am Knopf.** Mit Online-Erkennung meldet der Knopf nach 10 Minuten: „Noch 2 Minuten“. Nach 12 Minuten sendet er von selbst, damit der Anbieter das Diktat nicht ablehnt. Offline gibt es keine Grenze.
 
 ### Geändert
+
+- **Nie in Passwortfelder.** Ist das Feld ein Passwortfeld, fügt der Knopf nichts ein. Der Text kommt auch nicht in die Zwischenablage und nicht in den Verlauf. Du siehst nur einen Hinweis. Zahlen- und Telefonfelder gehen weiter.
 
 - **TalkBack am Knopf:** Der Knopf heißt jetzt „Mikrofon“ (während der Aufnahme mit Zeit, z. B. „Mikrofon, 0:07“), danach kommt, was gerade passiert („Aufnahme läuft — antippen zum Beenden“, „Wird übertragen“, „Fehler …“). Angesagt wird nur ein echter Wechsel; während der Aufnahme liest TalkBack die Zeit nicht jede Sekunde vor.
 - **„Aufnahme läuft“ kommt vor dem Mikrofon.** Der Knopf zeigt und meldet die Aufnahme, bevor sich das Mikrofon öffnet.
