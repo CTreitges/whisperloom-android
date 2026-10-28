@@ -18,8 +18,15 @@ import kotlin.math.roundToInt
  * Abbrechen-Ziel (UX-Spec §5.2): eigenes, nicht beruehrbares Overlay-Fenster unten mittig
  * plus Scrim-Fenster (Verlauf ueber dem unteren Bildschirmviertel). Erscheint beim Ziehen in
  * RECORDING/ERROR; im Magnet-Radius waechst der Kreis auf 1,12 und faerbt sich errorContainer.
+ * In IDLE ist es das Ausblenden-Ziel ([Kind.SNOOZE], §6.21): eigenes Icon und Label, ohne Fehlerfarbe.
  */
 class CancelTarget(private val ctx: Context, private val wm: WindowManager) {
+
+    enum class Kind { DISCARD, SNOOZE }
+
+    /** Was Loslassen ueber dem Ziel ausloest; gilt fuer das zuletzt gezeigte Ziel. */
+    var kind = Kind.DISCARD
+        private set
 
     private var root: View? = null
     private var scrim: View? = null
@@ -35,8 +42,9 @@ class CancelTarget(private val ctx: Context, private val wm: WindowManager) {
     val isShown: Boolean get() = root != null
 
     @SuppressLint("InflateParams") // Overlay-Fenster ohne Elternteil; die LayoutParams setzt wm.addView.
-    fun show() {
+    fun show(kind: Kind = Kind.DISCARD) {
         if (root != null) return
+        this.kind = kind
         val dm = ctx.resources.displayMetrics
         val size = (BubblePosition.CANCEL_SIZE_DP * dm.density).roundToInt()
         showScrim(dm.heightPixels / 4)
@@ -46,6 +54,11 @@ class CancelTarget(private val ctx: Context, private val wm: WindowManager) {
         icon = v.findViewById(R.id.cancel_icon)
         label = v.findViewById(R.id.cancel_label)
         circle?.background?.mutate()?.alpha = FILL_ALPHA
+        if (kind == Kind.SNOOZE) {
+            icon?.setImageResource(R.drawable.ic_visibility_off)
+            label?.setText(R.string.float_snooze_label)
+            circle?.contentDescription = ctx.getString(R.string.cd_snooze)
+        }
 
         // Kreis-Unterkante 96 dp ueber dem Rand; das Label haengt darunter in den Rand hinein.
         circleTop = dm.heightPixels - (BubblePosition.CANCEL_MARGIN_DP * dm.density).roundToInt() - size
@@ -82,6 +95,12 @@ class CancelTarget(private val ctx: Context, private val wm: WindowManager) {
         val c = circle ?: return
         val scale = if (hit) BubbleMotion.CANCEL_HIT_SCALE else 1f
         c.animate().scaleX(scale).scaleY(scale).setDuration(HIT_SCALE_MS).start()
+        if (kind == Kind.SNOOZE) {
+            // Ausblenden ist kein Verlust: nur kraeftigere Fuellung, keine Fehlerfarbe.
+            c.background.mutate().alpha = if (hit) 255 else FILL_ALPHA
+            label?.setText(if (hit) R.string.float_snooze_release else R.string.float_snooze_label)
+            return
+        }
         c.setBackgroundResource(if (hit) R.drawable.cancel_fill_hit else R.drawable.cancel_fill)
         c.background.mutate().alpha = if (hit) 255 else FILL_ALPHA
         icon?.imageTintList = ColorStateList.valueOf(

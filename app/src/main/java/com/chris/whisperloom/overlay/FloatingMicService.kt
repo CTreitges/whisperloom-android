@@ -132,6 +132,23 @@ class FloatingMicService : Service() {
     /** Der Hinweis "noch 2 Minuten" kam schon. */
     private var longWarned = false
 
+    /** Ende des Ausblendens auf der elapsedRealtime-Uhr (zaehlt im Tiefschlaf weiter); 0 = sichtbar. */
+    private var snoozeEndsAt = 0L
+
+    /** Dasselbe Ende als Uhrzeit fuer die Notification; 0 = sichtbar. */
+    private var snoozedUntil = 0L
+
+    /**
+     * Prueft das Ende des Ausblendens in kurzen Schritten: Handler-Fristen laufen auf der Uptime, die
+     * im Tiefschlaf steht — ein einziges postDelayed(15 min) kaeme nach einer Schlafphase zu spaet.
+     */
+    private val snoozeCheck = object : Runnable {
+        override fun run() {
+            val left = snoozeEndsAt - SystemClock.elapsedRealtime()
+            if (left <= 0) unsnooze() else main.postDelayed(this, minOf(left, SNOOZE_CHECK_MS))
+        }
+    }
+
     /** Touch-Geste am Knopf: Tipp, Halten zum Sprechen, Ziehen ([BubbleGesture]). */
     private val gesture = BubbleGesture()
 
@@ -176,6 +193,7 @@ class FloatingMicService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
+        if (intent?.action == ACTION_SNOOZE_END) unsnooze()
         return START_STICKY
     }
 
@@ -194,11 +212,14 @@ class FloatingMicService : Service() {
         }
     }
 
-    /** Akzentfarbe der Notification folgt der Aufnahme (loom_recording waehrend RECORDING). */
+    /**
+     * Akzentfarbe der Notification folgt der Aufnahme (loom_recording waehrend RECORDING);
+     * ausgeblendet nennt sie das Ende und bietet "Einblenden".
+     */
     private fun refreshNotification() {
         runCatching {
             getSystemService(NotificationManager::class.java)
-                .notify(BubbleNotification.ID, BubbleNotification.build(this, state))
+                .notify(BubbleNotification.ID, BubbleNotification.build(this, state, snoozedUntil))
         }
     }
 
@@ -229,7 +250,7 @@ class FloatingMicService : Service() {
         // Aktionen das Verwerfen ohne Ziehen.
         r.bubble.setOnTouchListener(dragTapListener())
         r.bubble.setOnClickListener { onTap() }
-        actions = BubbleActions(r.bubble, onRetry = ::retry, onDiscard = ::discardByAction)
+        actions = BubbleActions(r.bubble, onRetry = ::retry, onDiscard = ::discardByAction, onSnooze = ::snoozeByAction)
         recorder.onAmplitude = { amp -> r.level = amp }
         wm.addView(v, lp)
         bubbleView = v
@@ -300,7 +321,10 @@ class FloatingMicService : Service() {
                     val dy = (e.rawY - downY).toInt()
                     if ((abs(dx) > touchSlop || abs(dy) > touchSlop) && gesture.beyondSlop()) {
                         main.removeCallbacks(holdStart)
-                        if (canDiscard()) cancelTarget.show()
+                        when {
+                            canDiscard() -> cancelTarget.show()
+                            state == BubbleState.IDLE -> cancelTarget.show(CancelTarget.Kind.SNOOZE)
+                        }
                     }
                     if (!gesture.dragging) return true // unter der Schwelle: noch nicht verschieben
                     val p = clampToScreen(startX + dx, startY + dy, root.width, root.height)
@@ -335,7 +359,12 @@ class FloatingMicService : Service() {
 
     /** Loslassen nach einem Zug; [held] = dabei laeuft eine gehaltene Aufnahme. */
     private fun drop(held: Boolean) {
-        if (cancelTarget.isHit) {
+        if (cancelTarget.isHit && cancelTarget.kind == CancelTarget.Kind.SNOOZE) {
+            renderer?.haptic(BubbleMotion.Haptic.CONFIRM)
+            cancelTarget.hide()
+            restorePosition() // kommt nach dem Ausblenden an der gemerkten Stelle zurueck
+            snooze()
+        } else if (cancelTarget.isHit) {
             renderer?.haptic(BubbleMotion.Haptic.REJECT)
             cancelTarget.hide()
             // Der Knopf soll nach dem Verwerfen nicht ueber dem Ziel liegen
@@ -347,6 +376,37 @@ class FloatingMicService : Service() {
             savePosition()
             if (held) stopRec()
         }
+    }
+
+    // --- Ausblenden (UX-Spec §6.21) ----------------------------------------------
+
+    /** Ausblenden ueber die Bedienungshilfe-Aktion: wie das Loslassen ueber dem Ziel, ohne Ziehen. */
+    private fun snoozeByAction() {
+        renderer?.haptic(BubbleMotion.Haptic.CONFIRM)
+        snooze()
+    }
+
+    /**
+     * Knopf fuer [SNOOZE_MS] ausblenden. Der Dienst laeuft weiter und nimmt nur den View weg —
+     * aus dem Hintergrund duerfte er unter Android 15 nicht wieder starten.
+     */
+    private fun snooze() {
+        if (state != BubbleState.IDLE) return
+        snoozeEndsAt = SystemClock.elapsedRealtime() + SNOOZE_MS
+        snoozedUntil = System.currentTimeMillis() + SNOOZE_MS
+        bubbleView?.visibility = View.GONE
+        main.removeCallbacks(snoozeCheck)
+        main.postDelayed(snoozeCheck, SNOOZE_CHECK_MS)
+        refreshNotification()
+    }
+
+    private fun unsnooze() {
+        if (snoozeEndsAt == 0L) return
+        snoozeEndsAt = 0L
+        snoozedUntil = 0L
+        main.removeCallbacks(snoozeCheck)
+        bubbleView?.visibility = View.VISIBLE
+        refreshNotification()
     }
 
     private fun restorePosition() {
@@ -582,6 +642,7 @@ class FloatingMicService : Service() {
         main.removeCallbacks(tick)
         main.removeCallbacks(clearCopiedHint)
         main.removeCallbacks(holdStart)
+        main.removeCallbacks(snoozeCheck)
         cancelTarget.hide()
         renderer?.release()
         renderer = null
@@ -599,6 +660,13 @@ class FloatingMicService : Service() {
         /** Assistenten-Schritt "Mikrofon erlauben" (UX-Spec §2.2). */
         private const val SETUP_STEP_MIC = 3
         const val ACTION_STOP = "com.chris.whisperloom.STOP_FLOAT"
+        const val ACTION_SNOOZE_END = "com.chris.whisperloom.SNOOZE_END_FLOAT"
+
+        /** Ausblenden fest 15 min, ohne Einstellung (UX-Spec §6.21). */
+        const val SNOOZE_MS = 15 * 60_000L
+
+        /** Takt, in dem das Ende des Ausblendens geprueft wird. */
+        private const val SNOOZE_CHECK_MS = 30_000L
 
         /**
          * Naht fuer Tests: ist das Zielfeld ein Passwortfeld? Robolectric hat kein aktives Fenster
