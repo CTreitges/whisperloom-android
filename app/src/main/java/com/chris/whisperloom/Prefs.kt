@@ -388,7 +388,7 @@ class Prefs(context: Context) {
         set(v) = sp.edit { putInt(KEY_FLOAT_Y, v) }
 
     /**
-     * Halten zum Sprechen am schwebenden Knopf (UX-Spec §6.21). Ungespeichert an — Tippen geht
+     * Halten zum Sprechen am schwebenden Knopf (UX-Spec §6.22). Ungespeichert an — Tippen geht
      * weiter, es kommt nur eine Geste dazu. Kuenftige Zugangs-Profile (CTR-272) setzen es aus.
      */
     var holdToTalk: Boolean

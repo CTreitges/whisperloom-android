@@ -18,7 +18,7 @@ import kotlin.math.roundToInt
  * Abbrechen-Ziel (UX-Spec §5.2): eigenes, nicht beruehrbares Overlay-Fenster unten mittig
  * plus Scrim-Fenster (Verlauf ueber dem unteren Bildschirmviertel). Erscheint beim Ziehen in
  * RECORDING/ERROR; im Magnet-Radius waechst der Kreis auf 1,12 und faerbt sich errorContainer.
- * In IDLE ist es das Ausblenden-Ziel ([Kind.SNOOZE], §6.21): eigenes Icon und Label, ohne Fehlerfarbe.
+ * In IDLE ist es das Ausblenden-Ziel ([Kind.SNOOZE], §6.22): eigenes Icon und Label, ohne Fehlerfarbe.
  */
 class CancelTarget(private val ctx: Context, private val wm: WindowManager) {
 

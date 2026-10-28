@@ -1703,15 +1703,18 @@ Ergänzt §5.1 (V1), §5.4 und §5.6; wo sie widersprechen, gilt dieser Abschnit
   48 × 48 dp groß; ein `OnTouchListener` hat einen Klickpfad; Gesten-Funktionen gibt es auch als Bedienungshilfe-Aktion.
   Die zu schmalen IME-Tasten (§5.3) sind als bekannte Lücke festgehalten, bis die Tastenreihe überarbeitet ist.
 
-### 6.21 Nachtrag: Diktat-Knopf — Halten, Passwortfelder, Höchstdauer, Ausblenden
+### 6.22 Nachtrag: Diktat-Knopf — Halten, Passwortfelder, Höchstdauer, Ausblenden
 
-Ergänzt §5.1, §5.2, §5.5 und §6.20; wo sie widersprechen, gilt dieser Abschnitt. Herleitung: Plan CTR-274 (Bedienmuster
+(§6.21 ist von CTR-272 „Zugang Basis 2“ belegt, PR #36.) Ergänzt §5.1, §5.2, §5.5 und §6.20; wo sie widersprechen, gilt
+dieser Abschnitt. Herleitung: Plan CTR-274 (Bedienmuster
 nach Vorbild Wispr Flow, außerhalb des Repos). Übernommen sind nur Bedienmuster, keine Form, Icons, Farben oder
 Animationen.
 
 - **V1 Halten zum Sprechen.** In IDLE startet Halten ohne Bewegung die Aufnahme, sobald die Halte-Zeit des Systems
   (`ViewConfiguration.getLongPressTimeout()`, folgt der Einstellung „Berührungs- und Haltedauer“) abgelaufen ist:
-  RECORDING wie beim Tipp, Haptik `CONFIRM`. Loslassen sendet (`CONTEXT_CLICK`). Zieht der Finger im Halten über den
+  RECORDING wie beim Tipp, Haptik `CONFIRM`. Loslassen sendet (`CONTEXT_CLICK`) — außer in der ersten Sekunde nach
+  Ablauf der Halte-Zeit (`BubbleGesture.HOLD_MIN_MS`, gemessen an den Touch-Zeitstempeln): Das war ein langsamer Tipp, die Aufnahme läuft weiter wie nach einem
+  Tipp (kein fast leerer Clip, den die Erkennung mit Erfundenem füllt). Zieht der Finger im Halten über den
   Touch-Slop, verschiebt er den Knopf und zeigt das ✕; Loslassen darüber verwirft (§5.2), sonst wird gesendet und die
   neue Position gemerkt. Bewegt sich der Finger vor Ablauf der Halte-Zeit, ist es nur Verschieben. Ein abgefangener
   Touch (`ACTION_CANCEL`) im Halten sendet, damit kein Diktat verloren geht (wie die IME). Kurzer Tipp, TalkBack-Doppeltipp
@@ -1726,13 +1729,14 @@ Animationen.
 - **V1 Höchstdauer (nur Online-Erkennung).** Gleiche Grenzen wie die IME (`DictationSession.LONG_MS`/`MAX_MS`): ab
   10 min einmal Haptik `REJECT` und Toast `float_too_long_soon`; bei 12 min sendet der Knopf von selbst (wie ein Tipp)
   mit Toast `float_too_long_sent`. Offline gibt es keine Grenze. Gemessen wird die Aufnahmezeit seit offenem Mikrofon.
+  Deckt sich mit der Höchstdauer aus §6.21 (CTR-272 B2); treffen beide zusammen, gilt §6.21 (Warnung 20 s vor Ende).
 - **V1/§5.2 Ausblenden statt Beenden.** In IDLE erscheint beim Ziehen dasselbe Ziel unten mittig als
   Ausblenden-Ziel: Icon `ic_visibility_off`, Label `float_snooze_label` „Ausblenden“, im Magnet-Radius
   `float_snooze_release` „Loslassen zum Ausblenden“, Füllung bleibt `surfaceContainerHigh` (kein `errorContainer`).
   Loslassen darüber: Haptik `CONFIRM`, Knopf springt an die gemerkte Position und wird für **15 min** ausgeblendet
   (fest, keine Einstellung, kein Schütteln). Danach oder per Notification-Aktion kommt er an derselben Stelle zurück.
   Ohne Ziehen: Bedienungshilfe-Aktion `cd_bubble_snooze` „15 Minuten ausblenden“ in IDLE (§5.6). Der Dienst läuft
-  weiter; „Beenden“ bleibt.
+  weiter; „Beenden“ bleibt. Ein erneuter Start aus der App blendet ebenfalls ein (falls Notifications aus sind).
 - **§5.5 Notification beim Ausblenden.** Text `float_snoozed_text` „Ausgeblendet bis %1$s“ (Uhrzeit im
   Geräteformat), zusätzliche Aktion `float_snooze_end` „Einblenden“ (`ic_visibility`, `ACTION_SNOOZE_END`) vor
   „Beenden“. Danach wieder §5.5.

@@ -38,7 +38,7 @@ class BubbleNotificationTest {
         assertEquals(ctx.getString(R.string.float_running), n.extras.getCharSequence(Notification.EXTRA_TITLE).toString())
     }
 
-    /** UX-Spec §6.21: ausgeblendet nennt die Uhrzeit und bietet "Einblenden" vor "Beenden". */
+    /** UX-Spec §6.22: ausgeblendet nennt die Uhrzeit und bietet "Einblenden" vor "Beenden". */
     @Test fun ausgeblendetMitEinblendenAktion() {
         val until = 1_700_000_000_000L
         val n = BubbleNotification.build(ctx, BubbleState.IDLE, snoozedUntil = until)

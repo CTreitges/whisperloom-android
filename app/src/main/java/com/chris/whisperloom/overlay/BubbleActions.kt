@@ -10,7 +10,7 @@ import com.chris.whisperloom.R
  *
  * - **Aufnahme verwerfen** in RECORDING und ERROR (sonst nur per Ziehen aufs ✕),
  * - **Erneut senden** in ERROR (dasselbe wie der Tipp, aber mit Namen im Aktionsmenue),
- * - **15 Minuten ausblenden** in IDLE (sonst nur per Ziehen aufs Ausblenden-Ziel, §6.21).
+ * - **15 Minuten ausblenden** in IDLE (sonst nur per Ziehen aufs Ausblenden-Ziel, §6.22).
  *
  * TalkBack, Switch Access und Voice Access bieten sie im Aktionsmenue an.
  */

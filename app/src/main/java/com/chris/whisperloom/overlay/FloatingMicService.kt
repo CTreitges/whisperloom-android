@@ -104,7 +104,7 @@ class FloatingMicService : Service() {
                 return
             }
             val elapsed = elapsedMs()
-            // Grenzen der IME (UX-Spec §6.21): online ab 10 min ein Hinweis, bei 12 min senden.
+            // Grenzen der IME (UX-Spec §6.22): online ab 10 min ein Hinweis, bei 12 min senden.
             when (DictationSession.length(elapsed, lengthLimited)) {
                 DictationSession.Length.MAX -> {
                     toast(getString(R.string.float_too_long_sent))
@@ -152,7 +152,7 @@ class FloatingMicService : Service() {
     /** Touch-Geste am Knopf: Tipp, Halten zum Sprechen, Ziehen ([BubbleGesture]). */
     private val gesture = BubbleGesture()
 
-    /** Halte-Zeit abgelaufen: im Ruhezustand die Aufnahme starten (UX-Spec §6.21). */
+    /** Halte-Zeit abgelaufen: im Ruhezustand die Aufnahme starten (UX-Spec §6.22). */
     private val holdStart = Runnable {
         if (gesture.holdElapsed(prefs.holdToTalk, state == BubbleState.IDLE)) startRec()
     }
@@ -193,7 +193,9 @@ class FloatingMicService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
-        if (intent?.action == ACTION_SNOOZE_END) unsnooze()
+        // Auch ein erneuter Start aus der App blendet ein — ohne Notification-Recht fehlt sonst
+        // jeder Weg zurueck ausser Warten oder Beenden.
+        if (intent == null || intent.action == null || intent.action == ACTION_SNOOZE_END) unsnooze()
         return START_STICKY
     }
 
@@ -313,8 +315,7 @@ class FloatingMicService : Service() {
                 MotionEvent.ACTION_DOWN -> {
                     downX = e.rawX; downY = e.rawY; startX = lp.x; startY = lp.y
                     gesture.down()
-                    // Halte-Zeit des Systems: folgt der Einstellung "Beruehrungs- und Haltedauer".
-                    main.postDelayed(holdStart, ViewConfiguration.getLongPressTimeout().toLong())
+                    main.postDelayed(holdStart, holdTimeout())
                 }
                 MotionEvent.ACTION_MOVE -> {
                     val dx = (e.rawX - downX).toInt()
@@ -338,7 +339,10 @@ class FloatingMicService : Service() {
                     val held = gesture.held
                     when (gesture.up()) {
                         BubbleGesture.Release.TAP -> onTap()
-                        BubbleGesture.Release.SEND -> stopRec()
+                        // Kurz nach dem Start losgelassen = langsamer Tipp: weiter aufnehmen statt
+                        // einen fast leeren Clip zu senden, den die Erkennung mit Erfundenem fuellt.
+                        BubbleGesture.Release.SEND ->
+                            if (!BubbleGesture.isSlowTap(e.downTime, e.eventTime, holdTimeout())) stopRec()
                         BubbleGesture.Release.DROP -> drop(held)
                         BubbleGesture.Release.NONE -> Unit
                     }
@@ -357,6 +361,9 @@ class FloatingMicService : Service() {
         }
     }
 
+    /** Halte-Zeit des Systems: folgt der Einstellung "Beruehrungs- und Haltedauer". */
+    private fun holdTimeout() = ViewConfiguration.getLongPressTimeout().toLong()
+
     /** Loslassen nach einem Zug; [held] = dabei laeuft eine gehaltene Aufnahme. */
     private fun drop(held: Boolean) {
         if (cancelTarget.isHit && cancelTarget.kind == CancelTarget.Kind.SNOOZE) {
@@ -364,7 +371,9 @@ class FloatingMicService : Service() {
             cancelTarget.hide()
             restorePosition() // kommt nach dem Ausblenden an der gemerkten Stelle zurueck
             snooze()
-        } else if (cancelTarget.isHit) {
+        } else if (cancelTarget.isHit && canDiscard()) {
+            // canDiscard: das Ziel blieb stehen, waehrend die Aufnahme schon in SENDING ging
+            // (12-min-Grenze, totes Mikrofon) — dann nichts verwerfen, die Uebertragung laeuft.
             renderer?.haptic(BubbleMotion.Haptic.REJECT)
             cancelTarget.hide()
             // Der Knopf soll nach dem Verwerfen nicht ueber dem Ziel liegen
@@ -378,7 +387,7 @@ class FloatingMicService : Service() {
         }
     }
 
-    // --- Ausblenden (UX-Spec §6.21) ----------------------------------------------
+    // --- Ausblenden (UX-Spec §6.22) ----------------------------------------------
 
     /** Ausblenden ueber die Bedienungshilfe-Aktion: wie das Loslassen ueber dem Ziel, ohne Ziehen. */
     private fun snoozeByAction() {
@@ -405,6 +414,7 @@ class FloatingMicService : Service() {
         snoozeEndsAt = 0L
         snoozedUntil = 0L
         main.removeCallbacks(snoozeCheck)
+        restorePosition() // Display kann sich gedreht haben: neu an den Rand begrenzen
         bubbleView?.visibility = View.VISIBLE
         refreshNotification()
     }
@@ -579,7 +589,7 @@ class FloatingMicService : Service() {
             if (!password) History.record(applicationContext, HistorySource.BUBBLE, dictation)
             pendingSamples = null
             main.post {
-                // Passwortfeld: weder einfuegen noch in die Zwischenablage (UX-Spec §6.21). Die
+                // Passwortfeld: weder einfuegen noch in die Zwischenablage (UX-Spec §6.22). Die
                 // Bedienungshilfe prueft beim Einfuegen selbst noch einmal (Fokus kann wechseln).
                 val result = when {
                     out.isBlank() -> null
@@ -662,7 +672,7 @@ class FloatingMicService : Service() {
         const val ACTION_STOP = "com.chris.whisperloom.STOP_FLOAT"
         const val ACTION_SNOOZE_END = "com.chris.whisperloom.SNOOZE_END_FLOAT"
 
-        /** Ausblenden fest 15 min, ohne Einstellung (UX-Spec §6.21). */
+        /** Ausblenden fest 15 min, ohne Einstellung (UX-Spec §6.22). */
         const val SNOOZE_MS = 15 * 60_000L
 
         /** Takt, in dem das Ende des Ausblendens geprueft wird. */

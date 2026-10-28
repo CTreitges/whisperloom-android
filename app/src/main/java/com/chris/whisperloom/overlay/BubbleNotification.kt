@@ -15,7 +15,8 @@ import java.util.Date
 /**
  * Foreground-Notification des schwebenden Knopfs (UX-Spec §5.5, N1): weisse Silhouette als
  * Small-Icon, Akzentfarbe loom_primary (waehrend RECORDING loom_recording), Aktion "Beenden",
- * Tipp oeffnet Home. Ausgeblendet zusaetzlich "Einblenden" (§6.21). Als eigenes Objekt, damit der Builder ohne laufenden Service testbar ist.
+ * Tipp oeffnet Home. Ausgeblendet zusaetzlich "Einblenden" (§6.22). Als eigenes Objekt, damit der
+ * Builder ohne laufenden Service testbar ist.
  */
 object BubbleNotification {
 
@@ -31,7 +32,7 @@ object BubbleNotification {
 
     /**
      * [snoozedUntil] > 0: der Knopf ist bis zu dieser Uhrzeit (Wanduhr, ms) ausgeblendet — Text mit
-     * Uhrzeit und Aktion "Einblenden" vor "Beenden" (UX-Spec §6.21).
+     * Uhrzeit und Aktion "Einblenden" vor "Beenden" (UX-Spec §6.22).
      */
     fun build(ctx: Context, state: BubbleState, snoozedUntil: Long = 0L): Notification {
         val flags = PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT

@@ -30,7 +30,7 @@ import org.robolectric.shadows.ShadowWindowManagerImpl
 import java.time.Duration
 
 /**
- * Hoechstdauer am schwebenden Knopf (UX-Spec §6.21): bei Online-Erkennung ab 10 min ein Hinweis,
+ * Hoechstdauer am schwebenden Knopf (UX-Spec §6.22): bei Online-Erkennung ab 10 min ein Hinweis,
  * bei 12 min sendet der Knopf von selbst — wie die IME, damit kein Diktat an der Grenze des
  * Anbieters (413) verloren geht. Offline gibt es keine Grenze.
  */

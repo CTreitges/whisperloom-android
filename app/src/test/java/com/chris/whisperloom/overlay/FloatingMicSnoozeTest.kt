@@ -33,7 +33,7 @@ import org.robolectric.shadows.ShadowWindowManagerImpl
 import java.time.Duration
 
 /**
- * Ausblenden statt Beenden (UX-Spec §6.21): der Knopf verschwindet fuer 15 min, der Dienst laeuft
+ * Ausblenden statt Beenden (UX-Spec §6.22): der Knopf verschwindet fuer 15 min, der Dienst laeuft
  * weiter, die Notification bietet "Einblenden". Ausgeloest per Bedienungshilfe-Aktion (das Ziehen
  * aufs Ziel prueft der Gerätetest); das Ziel selbst wird am Zug in IDLE geprueft.
  */
@@ -101,6 +101,14 @@ class FloatingMicSnoozeTest {
         warten(0)
         assertEquals(View.VISIBLE, root.visibility)
         assertTrue(FloatingMicService.isRunning)
+    }
+
+    /** Ohne Notification-Recht fehlt "Einblenden": ein erneuter Start aus der App blendet ein. */
+    @Test fun erneuterStartBlendetEin() {
+        ausblendenPerAktion()
+        controller!!.withIntent(Intent(app, FloatingMicService::class.java)).startCommand(0, 2)
+        warten(0)
+        assertEquals(View.VISIBLE, root.visibility)
     }
 
     /** Auch im Tiefschlaf zaehlt die Zeit: die Frist haengt an elapsedRealtime, nicht an der Uptime. */

@@ -45,7 +45,7 @@ class TextInserterAccessibilityService : AccessibilityService() {
         /** Versucht den Text einzufuegen; [InsertResult.FAILED], wenn Dienst aus oder kein Fokusfeld. */
         fun tryInsert(text: String): InsertResult = instance?.insert(text) ?: InsertResult.FAILED
 
-        /** Fuegt [text] an der Cursor-Position von [node] ein — nie in ein Passwortfeld (UX-Spec §6.21). */
+        /** Fuegt [text] an der Cursor-Position von [node] ein — nie in ein Passwortfeld (UX-Spec §6.22). */
         internal fun insertInto(node: AccessibilityNodeInfo?, text: String): InsertResult {
             if (text.isEmpty()) return InsertResult.INSERTED
             if (node == null) return InsertResult.FAILED

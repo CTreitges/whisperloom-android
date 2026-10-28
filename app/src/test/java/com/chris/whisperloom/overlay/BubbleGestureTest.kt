@@ -7,7 +7,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Halten zum Sprechen am schwebenden Knopf (UX-Spec §6.21), ohne Android. */
+/** Halten zum Sprechen am schwebenden Knopf (UX-Spec §6.22), ohne Android. */
 class BubbleGestureTest {
 
     private val g = BubbleGesture()
@@ -77,6 +77,12 @@ class BubbleGestureTest {
         g.down()
         assertFalse(g.held)
         assertEquals(Release.TAP, g.up())
+    }
+
+    @Test fun langsamerTippErstAbEinerSekundeNachDerHaltezeitGesendet() {
+        val hold = 400L
+        assertTrue(BubbleGesture.isSlowTap(downTime = 1_000, upTime = 1_000 + hold + 999, holdTimeout = hold))
+        assertFalse(BubbleGesture.isSlowTap(downTime = 1_000, upTime = 1_000 + hold + BubbleGesture.HOLD_MIN_MS, holdTimeout = hold))
     }
 
     @Test fun loslassenOhneDruck() {
