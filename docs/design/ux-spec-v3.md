@@ -1667,6 +1667,38 @@ Neuordnung, Verlauf“ (2026-10-08, außerhalb des Repos).
   an/aus (aus löscht nach Rückfrage), Größe 10–500 (Rückfrage beim Verkleinern), Alle löschen, Hinweis „nur auf diesem
   Gerät“. Untere Aktionsleiste stapelt die Knöpfe bei großer Schrift.
 
+### 6.20 Nachtrag 3.10.0: Zugang Basis — Knopf ohne Ziehen, Ansagen, Erfolgs-Haptik
+
+Ergänzt §5.1 (V1), §5.4 und §5.6; wo sie widersprechen, gilt dieser Abschnitt. Zweckbestimmung und Wortliste:
+`docs/ZWECKBESTIMMUNG.md`. Herleitung: Plan CTR-272, Paket B (Schritte B1, B5(1), B6; außerhalb des Repos).
+
+- **V1 Name und Zustand getrennt.** `contentDescription` des Knopfs ist fest `cd_bubble` „Mikrofon“. Was gerade
+  passiert und was ein Tipp tut, steht in der `stateDescription`: die bisherigen Texte `cd_bubble_idle|recording|
+  sending|refining|error`, neu `cd_bubble_inserted` „Eingefügt“ und `cd_bubble_copied` „Kopiert — einfügen“. In der
+  Textverbesserung nennt die `stateDescription` den Ausweg („Antippen fügt ihn ohne KI ein“).
+- **V1 Ansagen ohne `announceForAccessibility`.** Der Aufruf ist seit API 36 abgekündigt und entfällt an beiden
+  Stellen (Zustandswechsel, Textverbesserung). Stattdessen ist der Knopf eine Live-Region: `polite`, im Fehler
+  `assertive`. Sie meldet nur echte Wechsel, weil sich die `stateDescription` nur dann ändert. Während der Aufnahme
+  schreibt der Sekunden-Ticker die Zeit in die `stateDescription`; ab der ersten vollen Sekunde ist die Region deshalb
+  `none` (wie die Statuszeile der IME, §6.12 A11y), beim Verlassen der Aufnahme wieder wie oben.
+- **V1 „nimmt auf“ vor dem Mikrofon.** Der Knopf geht erst in RECORDING (Füllung, `stateDescription`, Ansage), dann
+  öffnet sich das Mikrofon. Schlägt das Öffnen fehl, geht er zurück nach IDLE mit Toast `kb_error`.
+- **V1 Verwerfen ohne Ziehen (WCAG 2.5.7).** Bedienungshilfe-Aktionen am Knopf: in RECORDING `cd_kb_discard`
+  „Aufnahme verwerfen“; in ERROR `cd_kb_retry` „Erneut senden“ und `cd_kb_discard`. Verwerfen wirkt wie das Ziehen
+  aufs ✕ (Toast `float_discarded`, Haptik `REJECT`, IDLE). Das Ziehen bleibt unverändert.
+- **V1 „Eingefügt“.** Nach erfolgreichem Einfügen zeigt der Knopf 2 s (wie „kopiert“) die Pille `float_inserted_short`
+  „Eingefügt“ und die `stateDescription` `cd_bubble_inserted`, danach IDLE.
+- **V1 Label wächst mit.** `bubble_label` hat `wrap_content` und `minHeight` 22 dp statt fester 22 dp; bei großer
+  Schrift wird es höher statt abgeschnitten.
+- **§5.4 Erfolg mit Haptik.** SENDING → IDLE (Erfolg) bekommt `BubbleMotion.Haptic.SUCCESS`, deutlich anders als Start
+  (`CONFIRM`) und Senden (`CONTEXT_CLICK`): ab API 34 `TOGGLE_OFF`, darunter ein Doppelimpuls aus zwei `KEYBOARD_TAP` im
+  Abstand von 80 ms (ohne `VIBRATE`-Berechtigung). Gilt für Knopf und IME-Mikro-Taste, jeweils dort, wo der grüne
+  Erfolgs-Ring kommt.
+- **§5.6 Prüfung.** Ein Test-Helfer (`A11yViewChecks`, Test-Quellsatz) prüft Knopf, IME und Widget bei 360 dp und
+  Schriftgröße 1 / 1,3 / 2: jedes sichtbare klickbare Element hat Text oder Beschreibung und ist mindestens
+  48 × 48 dp groß; ein `OnTouchListener` hat einen Klickpfad; Gesten-Funktionen gibt es auch als Bedienungshilfe-Aktion.
+  Die zu schmalen IME-Tasten (§5.3) sind als bekannte Lücke festgehalten, bis die Tastenreihe überarbeitet ist.
+
 ---
 
 ## 7. Akzeptanzkriterien (prüfbar, je Screen)
