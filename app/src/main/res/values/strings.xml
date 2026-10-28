@@ -500,6 +500,8 @@
     <string name="button_card_bubble">Schwebender Knopf</string>
     <string name="button_reset_pos">Position zurücksetzen</string>
     <string name="button_reset_pos_sub">Setzt den Knopf an die Startposition</string>
+    <string name="button_hold_to_talk">Halten zum Sprechen</string>
+    <string name="button_hold_to_talk_sub">Knopf gedrückt halten und sprechen. Loslassen sendet. Antippen geht weiter.</string>
     <string name="button_pos_reset_done">Position zurückgesetzt</string>
     <string name="button_text_output">Textausgabe</string>
     <string name="button_text_output_a11y">Bedienungshilfe: fügt direkt ins Feld ein</string>
@@ -702,6 +704,16 @@
     <string name="cd_bubble_inserted">Eingefügt</string>
     <string name="cd_bubble_copied">Kopiert — jetzt einfügen</string>
     <string name="cd_cancel">Diktat verwerfen</string>
+    <!-- §6.21 Diktat-Knopf: Passwortfelder, Höchstdauer, Ausblenden -->
+    <string name="float_password_blocked">Nicht eingefügt: Das ist ein Passwortfeld</string>
+    <string name="float_too_long_soon">Noch 2 Minuten — dann sendet der Knopf von selbst</string>
+    <string name="float_too_long_sent">12 Minuten erreicht — Diktat wird gesendet</string>
+    <string name="float_snooze_label">Ausblenden</string>
+    <string name="float_snooze_release">Loslassen zum Ausblenden</string>
+    <string name="float_snoozed_text">Ausgeblendet bis %1$s</string>
+    <string name="float_snooze_end">Einblenden</string>
+    <string name="cd_bubble_snooze">15 Minuten ausblenden</string>
+    <string name="cd_snooze">Knopf ausblenden</string>
 
     <!-- §6.12 IME-Tastatur (V2) -->
     <string name="kb_hint_hold">Halte das Mikrofon gedrückt und sprich</string>

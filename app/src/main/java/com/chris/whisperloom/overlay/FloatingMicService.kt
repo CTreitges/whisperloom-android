@@ -106,6 +106,14 @@ class FloatingMicService : Service() {
         }
     }
 
+    /** Touch-Geste am Knopf: Tipp, Halten zum Sprechen, Ziehen ([BubbleGesture]). */
+    private val gesture = BubbleGesture()
+
+    /** Halte-Zeit abgelaufen: im Ruhezustand die Aufnahme starten (UX-Spec §6.21). */
+    private val holdStart = Runnable {
+        if (gesture.holdElapsed(prefs.holdToTalk, state == BubbleState.IDLE)) startRec()
+    }
+
     private val clearCopiedHint = Runnable {
         if (state == BubbleState.IDLE && (copiedHint || insertedHint)) {
             copiedHint = false
@@ -248,7 +256,6 @@ class FloatingMicService : Service() {
         var downY = 0f
         var startX = 0
         var startY = 0
-        var moved = false
 
         // Kein performClick(): es spielte den System-Klickton ab — genau zum Aufnahmestart, also
         // mit im Diktat. TalkBack bedient den Knopf ueber den OnClickListener (addBubble).
@@ -257,16 +264,19 @@ class FloatingMicService : Service() {
             val root = bubbleView ?: return false
             when (e.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
-                    downX = e.rawX; downY = e.rawY; startX = lp.x; startY = lp.y; moved = false
+                    downX = e.rawX; downY = e.rawY; startX = lp.x; startY = lp.y
+                    gesture.down()
+                    // Halte-Zeit des Systems: folgt der Einstellung "Beruehrungs- und Haltedauer".
+                    main.postDelayed(holdStart, ViewConfiguration.getLongPressTimeout().toLong())
                 }
                 MotionEvent.ACTION_MOVE -> {
                     val dx = (e.rawX - downX).toInt()
                     val dy = (e.rawY - downY).toInt()
-                    if (abs(dx) > touchSlop || abs(dy) > touchSlop) {
-                        if (!moved && canDiscard()) cancelTarget.show()
-                        moved = true
+                    if ((abs(dx) > touchSlop || abs(dy) > touchSlop) && gesture.beyondSlop()) {
+                        main.removeCallbacks(holdStart)
+                        if (canDiscard()) cancelTarget.show()
                     }
-                    if (!moved) return true // unter der Schwelle: noch nicht verschieben
+                    if (!gesture.dragging) return true // unter der Schwelle: noch nicht verschieben
                     val p = clampToScreen(startX + dx, startY + dy, root.width, root.height)
                     lp.x = p.x
                     lp.y = p.y
@@ -274,26 +284,42 @@ class FloatingMicService : Service() {
                     updateCancelHit()
                 }
                 MotionEvent.ACTION_UP -> {
-                    if (!moved) {
-                        onTap()
-                    } else if (cancelTarget.isHit) {
-                        renderer?.haptic(BubbleMotion.Haptic.REJECT)
-                        cancelTarget.hide()
-                        // Der Knopf soll nach dem Verwerfen nicht ueber dem Ziel liegen
-                        // bleiben — zurueck an die gemerkte Position.
-                        restorePosition()
-                        discard()
-                    } else {
-                        cancelTarget.hide()
-                        savePosition()
+                    main.removeCallbacks(holdStart)
+                    val held = gesture.held
+                    when (gesture.up()) {
+                        BubbleGesture.Release.TAP -> onTap()
+                        BubbleGesture.Release.SEND -> stopRec()
+                        BubbleGesture.Release.DROP -> drop(held)
+                        BubbleGesture.Release.NONE -> Unit
                     }
                 }
                 MotionEvent.ACTION_CANCEL -> {
+                    main.removeCallbacks(holdStart)
+                    val dragged = gesture.dragging
+                    val send = gesture.cancel()
                     cancelTarget.hide()
-                    if (moved) savePosition()
+                    if (dragged) savePosition()
+                    // Ein abgefangener Touch soll kein gehaltenes Diktat fressen (wie die IME).
+                    if (send) stopRec()
                 }
             }
             return true
+        }
+    }
+
+    /** Loslassen nach einem Zug; [held] = dabei laeuft eine gehaltene Aufnahme. */
+    private fun drop(held: Boolean) {
+        if (cancelTarget.isHit) {
+            renderer?.haptic(BubbleMotion.Haptic.REJECT)
+            cancelTarget.hide()
+            // Der Knopf soll nach dem Verwerfen nicht ueber dem Ziel liegen
+            // bleiben — zurueck an die gemerkte Position.
+            restorePosition()
+            discard()
+        } else {
+            cancelTarget.hide()
+            savePosition()
+            if (held) stopRec()
         }
     }
 
@@ -519,6 +545,7 @@ class FloatingMicService : Service() {
         isRunning = false
         main.removeCallbacks(tick)
         main.removeCallbacks(clearCopiedHint)
+        main.removeCallbacks(holdStart)
         cancelTarget.hide()
         renderer?.release()
         renderer = null
