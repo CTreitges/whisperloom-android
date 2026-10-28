@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ein-Knopf-Tastatur (Konzept §4.1): Vorschauzeile · Aufnehmen (fast die ganze Flaeche, >= 96 dp) neben
+     Loeschen (>= 64 dp, mit Abstand) in EINER Zeile (Schalterzugang tastet zeilenweise) · unten klein
+     "Tastatur wechseln" und die Statuszeile. Nur normale Knoepfe mit genau einer Klick-Aktion, kein Halten,
+     kein Wischen. Pane-Titel und stateDescription setzt der Dienst. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/simple_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/keyboard_bg"
+    android:paddingHorizontal="12dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="12dp">
+
+    <!-- Vorlaeufiger Text bei TalkBack bzw. Profil "nur Vorschau" (Konzept §6.3): bewusst KEINE Live-Region. -->
+    <TextView
+        android:id="@+id/simple_preview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="32dp"
+        android:paddingHorizontal="8dp"
+        android:gravity="center_vertical"
+        android:textColor="@color/loom_onSurface"
+        android:textSize="18sp"
+        android:maxLines="2"
+        android:ellipsize="start"
+        android:contentDescription="@string/simple_cd_preview"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/simple_row"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:orientation="horizontal"
+        android:baselineAligned="false">
+
+        <Button
+            android:id="@+id/simple_record"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="3"
+            android:minHeight="96dp"
+            android:backgroundTint="@color/simple_ready"
+            android:textColor="@color/simple_on"
+            android:textSize="26sp"
+            android:textAllCaps="false"
+            android:drawableStart="@drawable/ic_mic"
+            android:drawableTint="@color/simple_on"
+            android:drawablePadding="12dp"
+            android:paddingHorizontal="20dp"
+            android:text="@string/simple_btn_record" />
+
+        <Space
+            android:layout_width="12dp"
+            android:layout_height="match_parent" />
+
+        <Button
+            android:id="@+id/simple_delete"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:minWidth="64dp"
+            android:minHeight="64dp"
+            android:backgroundTint="@color/simple_delete"
+            android:textColor="@color/simple_on"
+            android:textSize="18sp"
+            android:textAllCaps="false"
+            android:drawableTop="@drawable/ic_backspace"
+            android:drawableTint="@color/simple_on"
+            android:paddingHorizontal="8dp"
+            android:text="@string/simple_btn_delete" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:baselineAligned="false">
+
+        <Button
+            android:id="@+id/simple_switch"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:minWidth="48dp"
+            android:textColor="@color/loom_onSurfaceVariant"
+            android:textSize="14sp"
+            android:textAllCaps="false"
+            android:drawableStart="@drawable/ic_keyboard"
+            android:drawableTint="@color/loom_onSurfaceVariant"
+            android:drawablePadding="8dp"
+            android:text="@string/simple_btn_switch" />
+
+        <!-- Fehler: ein Satz, eine Handlung; Live-Region "assertive" nur im Fehlerfall (setzt der Dienst). -->
+        <TextView
+            android:id="@+id/simple_status"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:gravity="center_vertical|end"
+            android:accessibilityLiveRegion="polite"
+            android:textColor="@color/loom_onSurface"
+            android:textSize="16sp" />
+    </LinearLayout>
+</LinearLayout>

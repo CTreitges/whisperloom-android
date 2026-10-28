@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Platzhalter-Start (Etappe 1): Mikrofon-Dialog, Tastatur einschalten/waehlen, Testfeld. Die richtige
+     Start-App mit Einrichtung folgt in Etappe 3 (U5). -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/simple_start_title"
+            android:textColor="@color/loom_onSurface"
+            android:textSize="28sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/simple_start_intro"
+            android:textColor="@color/loom_onSurfaceVariant"
+            android:textSize="18sp" />
+
+        <Button
+            android:id="@+id/simple_start_mic"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginTop="24dp"
+            android:textAllCaps="false"
+            android:textSize="20sp"
+            android:text="@string/simple_start_mic" />
+
+        <Button
+            android:id="@+id/simple_start_enable"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginTop="12dp"
+            android:textAllCaps="false"
+            android:textSize="20sp"
+            android:text="@string/simple_start_enable" />
+
+        <Button
+            android:id="@+id/simple_start_pick"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginTop="12dp"
+            android:textAllCaps="false"
+            android:textSize="20sp"
+            android:text="@string/simple_start_pick" />
+
+        <EditText
+            android:id="@+id/simple_start_field"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:minHeight="120dp"
+            android:gravity="top|start"
+            android:hint="@string/simple_start_test_hint"
+            android:inputType="textMultiLine|textCapSentences"
+            android:importantForAutofill="no"
+            android:textColor="@color/loom_onSurface"
+            android:textColorHint="@color/loom_onSurfaceVariant"
+            android:textSize="20sp" />
+    </LinearLayout>
+</ScrollView>

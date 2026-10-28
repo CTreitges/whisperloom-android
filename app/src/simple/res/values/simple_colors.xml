@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Zustandsfarben der Ein-Knopf-Tastatur (Konzept §4.2): nie nur Farbe — Text und Symbol kommen dazu.
+     Kontrast zu Weiss jeweils >= 4,5:1. -->
+<resources>
+    <color name="simple_ready">#1F5FA8</color>
+    <color name="simple_recording">#B3261E</color>
+    <color name="simple_wait">#5F6368</color>
+    <color name="simple_inserted">#2E7D32</color>
+    <color name="simple_error">#C25E00</color>
+    <color name="simple_delete">#3C434D</color>
+    <color name="simple_on">#FFFFFF</color>
+</resources>
