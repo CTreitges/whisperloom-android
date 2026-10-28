@@ -1722,7 +1722,7 @@ Ergänzt §5.3, §6.12 und §6.13; wo sie widersprechen, gilt dieser Abschnitt. 
   wächst dadurch von 261 auf 268 dp.
 - **V2 Verwerfen mit Rückgängig.** Nach jedem Verwerfen von Hand (Wischen, ✕-Taste, Aktion) hält der Recorder das
   Audio noch kurz. Die Statuszeile zeigt `kb_discarded` „Aufnahme verworfen — hier tippen holt sie zurück“ und ist
-  so lange ein Knopf; ein Tipp holt die Aufnahme als **Pause** zurück (senden, weiter, verwerfen). Frist: 2 s bzw.
+  so lange ein Knopf, dazu kommt die Aktion „Rückgängig“ (`history_undo`) an der Mikro-Taste; ein Tipp holt die Aufnahme als **Pause** zurück (senden, weiter, verwerfen). Die Frist übersteht den Neuaufbau der Tastatur. Frist: 2 s bzw.
   `AccessibilityManager.getRecommendedTimeoutMillis` (Systemeinstellung „Zeit zum Reagieren“). Ein neues Diktat,
   das Schließen der Tastatur oder ein Tastaturwechsel beenden die Frist. Kein Rückgängig beim Schließen des Felds.
 - **V2 Quittungsdauer.** Alle Quittungen der Statuszeile (Stufe gewählt, „Erst senden oder verwerfen“) folgen
