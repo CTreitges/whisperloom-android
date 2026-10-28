@@ -76,13 +76,11 @@ class HomeStatusTest {
         assertEquals(Tone.ERROR, HomeStatus.permissionsTone(true, false, true))
     }
 
-    @Test fun tastaturZeileUndModelleZeile() {
+    @Test fun tastaturZeile() {
+        // Die Zeile "Offline-Modelle" gibt es seit dem Neuaufbau nicht mehr (ihr Wert steht in der Spracherkennung).
         assertEquals(HomeStatus.Keyboard.ACTIVE, HomeStatus.keyboard(true, true))
         assertEquals(HomeStatus.Keyboard.ENABLED, HomeStatus.keyboard(true, false))
         assertEquals(HomeStatus.Keyboard.OFF, HomeStatus.keyboard(false, true))
-        assertTrue(HomeStatus.showModelsRow(1, Engine.ONLINE))
-        assertTrue(HomeStatus.showModelsRow(0, Engine.OFFLINE))
-        assertFalse(HomeStatus.showModelsRow(0, Engine.ONLINE))
     }
 
     @Test fun textZeileWarntNurBeiGewaehlterStufeOhneMoeglichenChat() {

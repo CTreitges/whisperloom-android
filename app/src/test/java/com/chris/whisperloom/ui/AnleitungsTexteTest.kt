@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefinePlan
 import com.chris.whisperloom.api.TextRefiner
+import com.chris.whisperloom.whisper.OfflineNotAvailableException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -113,11 +114,16 @@ class AnleitungsTexteTest {
     @Test fun verweiseNennenDieSeitenDerNeuenOrdnung() {
         // 3.9.0: den Menuepunkt "Text" gibt es nicht mehr, die Erkennung heisst "Spracherkennung",
         // die Tastatur "Diktat-Tastatur" und der Knopf "Schwebender Knopf".
-        val alt = Regex("""[›→] Text(?![a-zäöü])|„Text“|unter Erkennung\b|Diktier-Tastatur|chwebende[rm]? Mikro-Knopf""")
+        // Neuaufbau: "Erweitert" heisst "Pro-Funktionen", die Seite "Offline-Modelle" gibt es nicht mehr
+        // (Whisper-Modelle in der Spracherkennung, Textmodelle auf der Offline-Textverbesserung).
+        val alt = Regex("""[›→] Text(?![a-zäöü])|„Text“|unter Erkennung\b|Diktier-Tastatur|chwebende[rm]? Mikro-Knopf|→ Erweitert|„Erweitert“|Offline-Modelle\b""")
         assertEquals(emptyMap<String, String>(), texte.filterValues { alt.containsMatchIn(it) })
         // Meldungen aus dem Code nennen die Seite, auf der man es beheben kann.
         listOf(TextRefiner.MSG_NO_LLM, TextRefiner.MSG_NO_MODEL, TextRefiner.MSG_OFFLINE).forEach { assertTrue(it, it.contains("„KI-Zugang“")) }
-        assertTrue(RefinePlan.MSG_LOCAL_MISSING, RefinePlan.MSG_LOCAL_MISSING.contains("„Offline-Modelle“"))
+        assertTrue(RefinePlan.MSG_LOCAL_MISSING, RefinePlan.MSG_LOCAL_MISSING.contains("„Offline-Textverbesserung“"))
+        listOf(OfflineNotAvailableException.MSG_NO_MODEL, OfflineNotAvailableException.MSG_LOAD_FAILED).forEach {
+            assertTrue(it, it.contains("unter Spracherkennung"))
+        }
     }
 
     @Test fun jedeIllustrationHatEinenKurzenBildtext() {

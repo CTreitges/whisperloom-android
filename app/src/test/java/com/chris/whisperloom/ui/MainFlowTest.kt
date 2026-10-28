@@ -61,7 +61,6 @@ import com.chris.whisperloom.ui.nav.SetupRouter
 import com.chris.whisperloom.ui.nav.SystemStatus
 import com.chris.whisperloom.ui.settings.ButtonKeyboardScreen
 import com.chris.whisperloom.ui.settings.HelpScreen
-import com.chris.whisperloom.ui.settings.ModelsScreen
 import com.chris.whisperloom.ui.settings.RecognitionScreen
 import com.chris.whisperloom.whisper.DownloadState
 import com.chris.whisperloom.whisper.ModelCatalog
@@ -789,10 +788,16 @@ class MainFlowTest {
         compose.onNodeWithTag("dropdown:Sprache").assertExists()
     }
 
-    // --- E4 Offline-Modelle -------------------------------------------------------
+    // --- Whisper-Modelle in der Spracherkennung (bis 3.9.1 E4 Offline-Modelle) -----------------
+
+    /** Spracherkennung mit Offline gewaehlt: die Modell-Liste steht direkt auf der Seite. */
+    private fun offlineModelle(status: SystemStatus = SystemStatus()): NavState {
+        prefs.engine = Engine.OFFLINE
+        return screen(env(status)) { RecognitionScreen(it) }
+    }
 
     @Test fun modelleZeigenVierEintraegeEmpfehlungUndGrossGedimmt() {
-        screen(env(SystemStatus(totalRamBytes = 4L shl 30))) { ModelsScreen(it) }
+        offlineModelle(SystemStatus(totalRamBytes = 4L shl 30))
         listOf("Tiny", "Base", "Small", "Large v3 Turbo").forEach { compose.onNodeWithText(it).assertExists() }
         // Die Textmodelle darunter haben eigene Empfehlung und RAM-Grenze (TextModelUiTest).
         compose.onNode(hasText("Small") and hasText("Empfohlen")).assertExists()
@@ -808,7 +813,7 @@ class MainFlowTest {
         store.ensureDir()
         RandomAccessFile(store.file(ModelCatalog.BASE), "rw").use { it.setLength(ModelCatalog.BASE.bytes) }
         try {
-            screen(env()) { ModelsScreen(it) }
+            offlineModelle()
             compose.onNode(isSelectable() and hasText("Small")).assertIsNotEnabled().assertIsSelected() // Default, nicht installiert
             compose.onNode(isSelectable() and hasText("Base")).assertIsEnabled().assertIsNotSelected().performClick()
             compose.waitForIdle()
@@ -825,7 +830,7 @@ class MainFlowTest {
         // Review KOR-6: der Dienst ignoriert einen zweiten Start still — der Knopf darf ihn gar nicht anbieten.
         ModelDownloads.update("tiny", DownloadState.Failed("Netzwerkfehler beim Laden", retryable = true))
         try {
-            screen(env()) { ModelsScreen(it) }
+            offlineModelle()
             compose.onNodeWithText("Erneut").assertIsEnabled()
             ModelDownloads.update("base", DownloadState.Running(1_000, 60_000_000, 500))
             compose.waitForIdle()
@@ -926,7 +931,7 @@ class MainFlowTest {
         bild(R.drawable.ill_pro_widgets, R.string.img_pro_widgets).assertExists()
         bildtext(R.string.img_help_offline).assertDoesNotExist()
         bildtext(R.string.img_help_privacy).assertDoesNotExist()
-        compose.onNodeWithText("Freischalten: Einstellungen → Erweitert → Pro Widgets.").assertExists()
+        compose.onNodeWithText("Freischalten: Einstellungen → Pro-Funktionen → Pro Widgets.").assertExists()
         // Spec §8.3: anlegen (Name), Server je Widget, platzieren (Widget-Profil) — jede Zeile ist Pflicht.
         listOf(R.string.help_widgets_create, R.string.help_widgets_server, R.string.help_widgets_place).forEach {
             compose.onNodeWithText(ctx.getString(it)).assertExists()
@@ -1013,45 +1018,65 @@ class MainFlowTest {
         assertEquals(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS, shadowOf(ctx as Application).nextStartedActivity?.action)
     }
 
-    @Test fun hubZeigtElfZeilenInSechsGruppen() {
-        // 3.9.0 nach Gegenstaenden: Text, Modelle & Zugaenge, Bedienung, Verlauf, Pro, Info — in genau dieser Reihenfolge.
+    @Test fun hubZeigtAchtZeilenInDreiGruppen() {
+        // Neuaufbau: Sprache & Text, Bedienung, Weiteres — in genau dieser Reihenfolge, ohne Ein-Zeilen-Gruppen.
         prefs.engine = Engine.ONLINE
         screen(env()) { SettingsHubScreen(it) }
         val reihenfolge = listOf(
-            "TEXT", "Textverbesserung", "Wörterbuch & Regeln",
-            "MODELLE & ZUGÄNGE", "Spracherkennung", "KI-Zugang", "Offline-Modelle",
-            "BEDIENUNG", "Knopf & Tastatur", "Widgets",
-            "VERLAUF", "Verlauf",
-            "PRO", "Erweitert",
-            "INFO", "Anleitung & Hilfe", "Über WhisperLoom",
+            "SPRACHE & TEXT", "Spracherkennung", "Textverbesserung", "Wörterbuch & Regeln",
+            "BEDIENUNG", "Knopf & Tastatur",
+            "WEITERES", "Verlauf", "Pro-Funktionen", "Anleitung & Hilfe", "Über WhisperLoom",
         )
         val oben = reihenfolge.map { compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
         assertEquals("Von oben nach unten: $reihenfolge", oben.sorted(), oben)
         assertEquals("Keine zwei auf einer Hoehe", oben.size, oben.toSet().size)
         compose.onNodeWithText("Version ${BuildConfig.VERSION_NAME}").assertExists()
+        // Bis 3.9.1 eigene Zeilen bzw. Gruppen: jetzt Unterseiten der Textverbesserung bzw. der Spracherkennung.
+        listOf("KI-Zugang", "Offline-Modelle", "Widgets", "Erweitert", "MODELLE & ZUGÄNGE", "PRO", "INFO").forEach {
+            compose.onNodeWithText(it).assertDoesNotExist()
+        }
+    }
+
+    @Test fun mitProWidgetsHatDieBedienungZweiZeilen() {
+        prefs.engine = Engine.ONLINE
+        prefs.proWidgetsEnabled = true
+        screen(env()) { SettingsHubScreen(it) }
+        val reihenfolge = listOf("BEDIENUNG", "Knopf & Tastatur", "Widgets", "WEITERES")
+        val oben = reihenfolge.map { compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
+        assertEquals("Von oben nach unten: $reihenfolge", oben.sorted(), oben)
     }
 
     @Test fun dieLetzteZeileJederGruppeHatKeinenTrenner() {
         prefs.engine = Engine.ONLINE
         screen(env()) { SettingsHubScreen(it) }
         val zeilen = listOf(
-            "Textverbesserung", "Wörterbuch & Regeln", "Spracherkennung", "KI-Zugang", "Offline-Modelle",
-            "Knopf & Tastatur", "Widgets", "Verlauf", "Erweitert", "Anleitung & Hilfe", "Über WhisperLoom",
+            "Spracherkennung", "Textverbesserung", "Wörterbuch & Regeln", "Knopf & Tastatur",
+            "Verlauf", "Pro-Funktionen", "Anleitung & Hilfe", "Über WhisperLoom",
         ).map { it to compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
         // Jeder Trenner gehoert zur naechsthoeheren Zeile ueber ihm.
         val mitTrenner = compose.onAllNodesWithTag(HUB_DIVIDER_TAG).fetchSemanticsNodes().map { trenner ->
             zeilen.filter { it.second < trenner.boundsInRoot.top }.maxBy { it.second }.first
         }
-        assertEquals(listOf("Textverbesserung", "Spracherkennung", "KI-Zugang", "Knopf & Tastatur", "Anleitung & Hilfe"), mitTrenner)
+        assertEquals(listOf("Spracherkennung", "Textverbesserung", "Verlauf", "Pro-Funktionen", "Anleitung & Hilfe"), mitTrenner)
+    }
+
+    @Test fun mitProWidgetsBekommtKnopfUndTastaturEinenTrenner() {
+        prefs.engine = Engine.ONLINE
+        prefs.proWidgetsEnabled = true
+        screen(env()) { SettingsHubScreen(it) }
+        val knopf = compose.onNodeWithText("Knopf & Tastatur").fetchSemanticsNode().boundsInRoot.top
+        val widgets = compose.onNodeWithText("Widgets").fetchSemanticsNode().boundsInRoot.top
+        val dazwischen = compose.onAllNodesWithTag(HUB_DIVIDER_TAG).fetchSemanticsNodes()
+            .count { it.boundsInRoot.top in knopf..widgets }
+        assertEquals(1, dazwischen)
     }
 
     @Test fun dieGruppenSindUeberschriftenInNormalerSchreibung() {
-        // Grossbuchstaben nur fuer das Auge; TalkBack liest "Modelle & Zugänge" und springt per Ueberschrift.
+        // Grossbuchstaben nur fuer das Auge; TalkBack liest "Sprache & Text" und springt per Ueberschrift.
         prefs.engine = Engine.ONLINE
         screen(env()) { SettingsHubScreen(it) }
         mapOf(
-            "TEXT" to "Text", "MODELLE & ZUGÄNGE" to "Modelle & Zugänge", "BEDIENUNG" to "Bedienung", "VERLAUF" to "Verlauf",
-            "PRO" to "Pro", "INFO" to "Info",
+            "SPRACHE & TEXT" to "Sprache & Text", "BEDIENUNG" to "Bedienung", "WEITERES" to "Weiteres",
         ).forEach { (sichtbar, gelesen) ->
             compose.onNodeWithText(sichtbar)
                 .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))

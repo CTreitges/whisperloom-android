@@ -53,8 +53,12 @@ sealed class Screen(val key: String) {
     data object LlmAccess : Screen("llm-access")
     data object ButtonKeyboard : Screen("button")
 
-    /** "Offline-Modelle": Erkennungs- und Textmodelle, dazu die Regel bei Offline-Erkennung (3.9.0). */
-    data object Models : Screen("models")
+    /**
+     * "Offline-Textverbesserung" (Neuaufbau 3.10): Textmodelle und die Regel bei Offline-Erkennung, eine
+     * Unterseite der Textverbesserung. Bis 3.9.1 Teil der Seite "Offline-Modelle" ("models"), deren
+     * Whisper-Liste jetzt in der Spracherkennung steht — siehe [decode].
+     */
+    data object OfflineText : Screen("offline-text")
 
     /** "Erweitert": Pro-/Entwickler-Funktionen freischalten (bis 3.7.0 "agent", siehe [decode]). */
     data object Advanced : Screen("advanced")
@@ -138,12 +142,15 @@ sealed class Screen(val key: String) {
                 "text" -> Refine
                 "text-page" -> when (parts.getOrNull(1)) {
                     "access" -> LlmAccess
-                    "offline" -> Models
+                    "offline" -> OfflineText
                     "rules" -> Dictionary
                     else -> Refine
                 }
                 "button" -> ButtonKeyboard
-                "models" -> Models
+                "offline-text" -> OfflineText
+                // Bis 3.9.1 "Offline-Modelle": die Seite begann mit der Whisper-Liste, die jetzt in der
+                // Spracherkennung steht; die Textmodelle haben ihre eigene Seite (OfflineText).
+                "models" -> Recognition
                 // "agent" = Name bis 3.7.0, steht noch in gespeicherten Back-Stacks.
                 "advanced", "agent" -> Advanced
                 "widgets" -> Widgets(WidgetTab.fromKey(parts.getOrNull(1)), parts.getOrNull(2)?.ifEmpty { null })
@@ -223,7 +230,8 @@ fun rememberNavState(initial: () -> List<Screen>): NavState =
 
 /**
  * Deep-Link-Wunsch aus dem Start-Intent (AppNav) — `route` home|settings|refine|llm-access|models|setup|advanced|widgets,
- * optional `step` 1..7 (setup) bzw. [profileId] (widgets: dessen Editor oeffnen).
+ * optional `step` 1..7 (setup) bzw. [profileId] (widgets: dessen Editor oeffnen). `models` fuehrt seit dem
+ * Neuaufbau zur Offline-Textverbesserung (der Tastatur-Hinweis meint das Textmodell).
  */
 data class RouteRequest(val route: String, val step: Int? = null, val profileId: String? = null) {
     companion object {

@@ -4,6 +4,21 @@ Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](ht
 
 ## [Unreleased]
 
+### Geändert
+
+- **Einstellungen neu geordnet (Prototyp UI-Neuaufbau).** Der Hub hat drei Gruppen statt sechs: **Sprache & Text** (Spracherkennung, Textverbesserung, Wörterbuch & Regeln), **Bedienung** (Knopf & Tastatur, Widgets) und **Weiteres** (Verlauf, Pro-Funktionen, Anleitung & Hilfe, Über WhisperLoom). Die Ein-Zeilen-Gruppen Verlauf und Pro entfallen. Was wohin umgezogen ist:
+  - **KI-Zugang** ist keine Zeile der Einstellungen mehr, sondern steht in der **Textverbesserung** in der neuen Karte **Zugang & Modelle** (Unterzeile wie bisher, etwa „Wie Erkennung · OpenAI · Empfehlung je Stufe“). Die Seite selbst ist unverändert; der Tastatur-Hinweis „KI-Zugang fehlt“ führt weiter direkt hin, Zurück landet in der Textverbesserung.
+  - **Offline-Modelle** gibt es als Seite nicht mehr. Die Whisper-Modelle stehen unter **Spracherkennung**, sobald oben „Offline-Modell“ gewählt ist (Laden, Auswahl, Löschen, Speicherzeile, Leerzustand „Noch kein Modell geladen“); der zweite Umschalter Online/Offline und die Warnkarte „Kein Modell geladen“ entfallen. Die Textmodelle und die Regel „Textverbesserung bei Offline-Erkennung“ stehen auf der neuen Unterseite **Offline-Textverbesserung** (Textverbesserung → Zugang & Modelle → **Bei Offline-Erkennung**); das Home-Banner und der Tastatur-Hinweis „Offline ohne Textmodell“ führen dorthin.
+  - **Erweitert** heißt **Pro-Funktionen** (Karte **Freischalten** mit den drei Schaltern) und steht unter Weiteres; alle Hinweise in der App und im Pro-Widgets-Tutorial nennen den neuen Namen.
+  - Die Zeile **Widgets** erscheint erst, wenn Pro Widgets eingeschaltet sind; der Platzhalter „Normale Widgets folgen bald“ steht nicht mehr im Hub (im Widget-Menü bleibt er, erreichbar über Anleitung & Hilfe).
+- **Startbildschirm:** Die Status-Karte hat vier Zeilen (Spracherkennung, Textverbesserung, Berechtigungen, Diktat-Tastatur). Die Zeile „Offline-Modelle“ entfällt; die Zeile Spracherkennung nennt bei Offline das geladene Modell („Offline · Small (190 MB)“) oder „Offline · kein Modell geladen“ und führt zur Spracherkennung — dieselbe Unterzeile wie im Hub.
+- **Meldungen:** „Kein Offline-Modell geladen — unter Spracherkennung laden“, „Offline-Modell konnte nicht geladen werden — unter Spracherkennung löschen und neu laden“, „Kein Textmodell geladen — unter „Offline-Textverbesserung“ laden oder „Überspringen“ wählen“; der Schritt 2b des Assistenten und die Hilfe „Offline-Modus“ nennen die neuen Orte.
+
+### Technik
+
+- `Screen.Models` → `Screen.OfflineText` (Schlüssel `offline-text`, `ui/settings/OfflineTextScreen.kt`); `Screen.decode("models")` landet auf der Spracherkennung, `text-page:offline` auf der Offline-Textverbesserung. Die Routen `models` und `llm-access` bauen den Stapel Start › Einstellungen › Textverbesserung › Seite. `ModelsScreen.kt` entfällt: die Whisper-Liste zeichnet `RecognitionScreen` (`ModelListSection`, Abschnitt `rec_card_offline`), die Regel-Karte liegt in `OfflineTextScreen`. `HomeStatus.showModelsRow` entfällt, `SettingsValues.recognitionValue` liefert die Zeile für Hub und Home. Strings neu: `settings_section_speech`, `settings_section_more`, `refine_card_models`, `offline_text_title`, `models_notif_result_title`; entfallen: `settings_section_text|models|history|pro|info`, `settings_group_models`, `models_title`, `models_section_stt|llm`, `home_row_models`, `home_val_models`, `home_val_models_none`, `rec_no_model`, `rec_load_model`, `widgets_sub_normal_soon`.
+- Prototyp-Build neben der installierten App: `-Pwhisperloom.applicationId=com.chris.whisperloom.proto -Pwhisperloom.appLabel="WhisperLoom Proto" -Pwhisperloom.versionSuffix=-proto` (Manifest-Platzhalter `${appLabel}` am `<application>`, Standard `@string/app_name`).
+
 ## [3.9.1] — 2026-10-16
 
 ### Hinzugefügt

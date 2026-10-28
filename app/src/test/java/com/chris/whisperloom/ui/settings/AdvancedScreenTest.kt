@@ -89,7 +89,7 @@ class AdvancedScreenTest {
 
     @Test fun derScreenHeisstErweitertUndErklaertSichKurz() {
         show()
-        compose.onNodeWithText("Erweitert").assertExists()
+        compose.onNodeWithText("Pro-Funktionen").assertExists() // Seitentitel (bis 3.9.1 "Erweitert")
         compose.onNodeWithText("Pro-Funktionen für Entwickler und Bastler. Für das normale Diktieren brauchst du hier nichts.")
             .assertIsDisplayed()
         compose.onNode(hasIllustration(R.drawable.ill_pro_features, ctx.getString(R.string.img_pro_features))).assertExists()
@@ -97,7 +97,7 @@ class AdvancedScreenTest {
 
     @Test fun jedeProFunktionHatIhrenSchalterUndIstZuerstAus() {
         show()
-        compose.onNodeWithText("Pro-Funktionen").assertExists()
+        compose.onNodeWithText("Freischalten").assertExists()
         ProFeature.entries.forEach {
             compose.onNodeWithText(ctx.getString(it.title)).assertIsDisplayed().assertIsOff()
             compose.onNodeWithText(ctx.getString(it.sub)).assertExists()

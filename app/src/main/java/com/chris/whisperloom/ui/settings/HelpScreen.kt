@@ -154,7 +154,8 @@ fun HelpScreen(section: Int, nav: NavState) {
                     ProblemEntry(stringResource(R.string.help_p4), stringResource(R.string.help_p4_body)) {
                         SystemIntents.open(ctx, SystemIntents.appDetails(ctx))
                     }
-                    ProblemEntry(stringResource(R.string.help_p5), stringResource(R.string.help_p5_body)) { nav.push(Screen.Models) }
+                    // Die Whisper-Modelle stehen in der Spracherkennung (bis 3.9.1 "Offline-Modelle").
+                    ProblemEntry(stringResource(R.string.help_p5), stringResource(R.string.help_p5_body)) { nav.push(Screen.Recognition) }
                 }
             }
             item { HelpFooter(snack) { nav.push(Screen.Patchnotes) } }

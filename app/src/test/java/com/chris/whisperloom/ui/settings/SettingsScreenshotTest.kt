@@ -282,6 +282,47 @@ class SettingsScreenshotTest {
         shot("ki-zugang-modelle-gesperrt")
     }
 
+    // --- Neuaufbau: Hub mit drei Gruppen, Whisper-Modelle in der Spracherkennung, Offline-Textverbesserung ---
+
+    /** Offline geht, ein Textmodell passt (16 GB), Small ist geladen. */
+    private val offlineReady = SystemStatus(
+        micGranted = true, canDrawOverlays = true, a11yRunning = true,
+        installedModels = setOf("small"), totalRamBytes = 16L shl 30,
+    )
+
+    @Test fun hubMitProWidgets() {
+        // Die Zeile "Widgets" gibt es nur mit Pro Widgets (BEDIENUNG hat dann zwei Zeilen).
+        prefs.proWidgetsEnabled = true
+        screen { SettingsHubScreen(it) }
+        shot("einstellungen-hub-pro-widgets")
+    }
+
+    @Test fun spracherkennungOffline() {
+        // Offline gewaehlt: die Whisper-Modelle stehen direkt auf der Seite (bis 3.9.1 "Offline-Modelle").
+        prefs.engine = Engine.OFFLINE
+        screen(offlineReady) { RecognitionScreen(it) }
+        shot("spracherkennung-offline")
+        nachOben(hasText("Small"))
+        shot("spracherkennung-offline-modelle")
+    }
+
+    @Test fun offlineTextverbesserung() {
+        prefs.engine = Engine.OFFLINE
+        screen(offlineReady) { OfflineTextScreen(it) }
+        shot("offline-textverbesserung")
+        nachOben(hasText("Textverbesserung bei Offline-Erkennung"), abstandPx = 400f)
+        shot("offline-textverbesserung-regel")
+    }
+
+    @Test fun textverbesserungZugangUndModelle() {
+        // Die Karte "Zugang & Modelle" unter den Stufen: KI-Zugang (bis 3.9.1 eine Hub-Zeile) und die
+        // Offline-Textverbesserung, wo das Geraet offline erkennen kann.
+        anthropic()
+        screen(offlineReady) { RefineScreen(it) }
+        nachOben(hasText("Zugang & Modelle"), abstandPx = 400f)
+        shot("textverbesserung-zugang-modelle")
+    }
+
     @Test fun modellPickerDerStufeMitStandard() {
         anthropic()
         screen { StageScreen(RefineMode.BEAUTIFY, RefineWay.DICTATION, it) }

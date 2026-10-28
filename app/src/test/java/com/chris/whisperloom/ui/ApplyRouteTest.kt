@@ -24,7 +24,7 @@ class ApplyRouteTest {
     )
 
     private fun stapel(route: RouteRequest, facts: SetupFacts = eingerichtet): List<Screen> {
-        val nav = NavState(listOf(Screen.Home, Screen.Models))
+        val nav = NavState(listOf(Screen.Home, Screen.OfflineText))
         applyRoute(nav, route, facts)
         return nav.snapshot()
     }
@@ -38,14 +38,20 @@ class ApplyRouteTest {
         assertEquals(listOf(Screen.Home, Screen.SettingsHub, Screen.Advanced), stapel(RouteRequest(AppNav.ROUTE_AGENT)))
     }
 
-    @Test fun modelsOeffnetDieOfflineModelleUeberDenEinstellungen() {
-        // Tastatur-Hinweis "Offline ohne Textmodell".
-        assertEquals(listOf(Screen.Home, Screen.SettingsHub, Screen.Models), stapel(RouteRequest(AppNav.ROUTE_MODELS)))
+    @Test fun modelsOeffnetDieOfflineTextverbesserungUeberDerTextverbesserung() {
+        // Tastatur-Hinweis "Offline ohne Textmodell": Zurueck fuehrt in die Textverbesserung (Neuaufbau).
+        assertEquals(
+            listOf(Screen.Home, Screen.SettingsHub, Screen.Refine, Screen.OfflineText),
+            stapel(RouteRequest(AppNav.ROUTE_MODELS)),
+        )
     }
 
-    @Test fun kiZugangLiegtUeberDenEinstellungen() {
-        // Tastatur-Hinweis "KI-Zugang fehlt" (bis 3.8.6 nur der Hub).
-        assertEquals(listOf(Screen.Home, Screen.SettingsHub, Screen.LlmAccess), stapel(RouteRequest(AppNav.ROUTE_LLM_ACCESS)))
+    @Test fun kiZugangLiegtUeberDerTextverbesserung() {
+        // Tastatur-Hinweis "KI-Zugang fehlt" (bis 3.8.6 nur der Hub, bis 3.9.1 direkt ueber dem Hub).
+        assertEquals(
+            listOf(Screen.Home, Screen.SettingsHub, Screen.Refine, Screen.LlmAccess),
+            stapel(RouteRequest(AppNav.ROUTE_LLM_ACCESS)),
+        )
     }
 
     @Test fun textverbesserungLiegtUeberDenEinstellungen() {
@@ -55,7 +61,7 @@ class ApplyRouteTest {
 
     @Test fun eineUnbekannteRouteLaesstDenStapelInRuhe() {
         // Die Activity ist exportiert: was sie nicht kennt, aendert nichts.
-        assertEquals(listOf(Screen.Home, Screen.Models), stapel(RouteRequest("unbekannt")))
+        assertEquals(listOf(Screen.Home, Screen.OfflineText), stapel(RouteRequest("unbekannt")))
     }
 
     @Test fun widgetsOeffnetDenTabProWidgets() {

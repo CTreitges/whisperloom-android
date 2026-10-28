@@ -919,7 +919,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
             Status.NOT_CONFIGURED -> v.setOnClickListener { startActivity(AppNav.setup(this)) }
             // Der KI-Zugang wird unter Einstellungen › KI-Zugang eingerichtet, nicht im Assistenten.
             Status.NEEDS_LLM -> v.setOnClickListener { startActivity(AppNav.llmAccess(this)) }
-            // Das Textmodell laedt man unter Offline-Modelle.
+            // Das Textmodell laedt man unter Textverbesserung › Offline-Textverbesserung (Route "models").
             Status.NEEDS_LOCAL -> v.setOnClickListener { startActivity(AppNav.models(this)) }
             // Ausweg waehrend der Textverbesserung: Text sofort ohne KI einfuegen.
             Status.REFINING -> v.setOnClickListener { skipRefine() }

@@ -188,7 +188,7 @@ class WidgetConfigActivityTest {
         val id = unseres()
         oeffnen(id)
 
-        compose.onNodeWithText("Pro Widgets sind aus. In der App unter Einstellungen → Erweitert einschalten.").assertExists()
+        compose.onNodeWithText("Pro Widgets sind aus. In der App unter Einstellungen → Pro-Funktionen einschalten.").assertExists()
         compose.onNode(hasText("Einkauf") and isSelectable()).assertExists()
     }
 
@@ -198,7 +198,7 @@ class WidgetConfigActivityTest {
         oeffnen(unseres())
 
         compose.onNodeWithText("Welches Widget-Profil?").assertExists()
-        compose.onNodeWithText("Pro Widgets sind aus. In der App unter Einstellungen → Erweitert einschalten.").assertDoesNotExist()
+        compose.onNodeWithText("Pro Widgets sind aus. In der App unter Einstellungen → Pro-Funktionen einschalten.").assertDoesNotExist()
     }
 
     // --- Neu konfigurieren ------------------------------------------------------------------

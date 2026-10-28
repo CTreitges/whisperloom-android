@@ -39,7 +39,7 @@ object AppNav {
     /** Einstellungen (E): IME-Zahnrad. */
     fun settings(ctx: Context): Intent = intent(ctx, ROUTE_SETTINGS)
 
-    /** Offline-Modelle (E4): Tastatur-Hinweis "Offline ohne Textmodell". */
+    /** Offline-Textverbesserung (Textmodell und Regel; bis 3.9.1 Offline-Modelle): Tastatur-Hinweis "Offline ohne Textmodell". */
     fun models(ctx: Context): Intent = intent(ctx, ROUTE_MODELS)
 
     /** Textverbesserung: Hinweis im Sprachnachrichten-Fenster (eigene Activity). */

@@ -33,7 +33,7 @@ import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.SetupRouter
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SystemStatus
-import com.chris.whisperloom.ui.settings.ModelsScreen
+import com.chris.whisperloom.ui.settings.OfflineTextScreen
 import com.chris.whisperloom.ui.settings.RecognitionScreen
 import com.chris.whisperloom.ui.settings.SettingsHubScreen
 import com.chris.whisperloom.ui.settings.LlmAccessScreen
@@ -102,22 +102,38 @@ class TextModelUiTest {
 
     // --- E4 Offline-Modelle: Abschnitt Textverbesserung --------------------------------------
 
-    @Test fun offlineModelleHabenZweiAbschnitteInDieserReihenfolge() {
-        screen(env()) { ModelsScreen(it) }
-        val reihenfolge = listOf(
-            "SPRACHERKENNUNG", "Small", "Quelle: huggingface.co/ggerganov/whisper.cpp",
-            "TEXTVERBESSERUNG", "Gemma 4 E2B", "Gemma 4 E4B", "Quelle: huggingface.co/litert-community (Gemma 4, Apache 2.0)",
-        )
+    @Test fun whisperModelleStehenInDerSpracherkennung() {
+        // Neuaufbau: die Seite "Offline-Modelle" ist geteilt — offline gewaehlt zeigt die Spracherkennung
+        // die Whisper-Liste, die Textmodelle stehen auf der Offline-Textverbesserung.
+        prefs.engine = Engine.OFFLINE
+        screen(env()) { RecognitionScreen(it) }
+        val reihenfolge = listOf("OFFLINE-MODELL", "Small", "Quelle: huggingface.co/ggerganov/whisper.cpp")
         val oben = reihenfolge.map { compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
         assertEquals("Von oben nach unten: $reihenfolge", oben.sorted(), oben)
-        // Ueberschriften: TalkBack liest normale Schreibung und springt per Ueberschrift.
-        compose.onNodeWithText("TEXTVERBESSERUNG")
+        compose.onNodeWithText("Gemma 4 E2B").assertDoesNotExist()
+        // Ueberschrift: TalkBack liest normale Schreibung und springt per Ueberschrift.
+        compose.onNodeWithText("OFFLINE-MODELL")
             .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf("Textverbesserung")))
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf("Offline-Modell")))
+    }
+
+    @Test fun onlineZeigtDieSpracherkennungKeineWhisperListe() {
+        prefs.engine = Engine.ONLINE
+        screen(env()) { RecognitionScreen(it) }
+        compose.onNodeWithText("Transkription").assertExists()
+        listOf("OFFLINE-MODELL", "Small", "Noch kein Modell geladen").forEach { compose.onNodeWithText(it).assertDoesNotExist() }
+    }
+
+    @Test fun offlineTextverbesserungZeigtNurDieTextmodelle() {
+        screen(env()) { OfflineTextScreen(it) }
+        val reihenfolge = listOf("Gemma 4 E2B", "Gemma 4 E4B", "Quelle: huggingface.co/litert-community (Gemma 4, Apache 2.0)")
+        val oben = reihenfolge.map { compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
+        assertEquals("Von oben nach unten: $reihenfolge", oben.sorted(), oben)
+        listOf("Small", "SPRACHERKENNUNG", "Online-Dienst").forEach { compose.onNodeWithText(it).assertDoesNotExist() }
     }
 
     @Test fun textmodelleNennenGroesseInklusiveCacheUndE4bIstUnter8GbGedimmt() {
-        screen(env(SystemStatus(totalRamBytes = 6L shl 30))) { ModelsScreen(it) }
+        screen(env(SystemStatus(totalRamBytes = 6L shl 30))) { OfflineTextScreen(it) }
         val e2b = TextModelCatalog.GEMMA4_E2B
         compose.onNodeWithText(
             "${size(e2b.bytes)} · +${size(e2b.extraDiskBytes)} beim ersten Start · ~1,8 GB RAM · Gerät ab 6 GB RAM",
@@ -131,7 +147,7 @@ class TextModelUiTest {
     }
 
     @Test fun ladenStartetDenDownloadDesTextmodellsNachDemDialogFuerMobileDaten() {
-        screen(env()) { ModelsScreen(it) }
+        screen(env()) { OfflineTextScreen(it) }
         compose.onNodeWithContentDescription("Gemma 4 E2B herunterladen").performClick()
         compose.waitForIdle()
         // Robolectric meldet ein Mobilfunknetz: erst D2, ohne Bestaetigung kein Download.
@@ -146,7 +162,7 @@ class TextModelUiTest {
 
     @Test fun installiertesTextmodellIstWaehlbarUndSetztDasLokaleModell() {
         installSparse(ctx, TextModelCatalog.GEMMA4_E4B)
-        screen(env()) { ModelsScreen(it) }
+        screen(env()) { OfflineTextScreen(it) }
         compose.onNode(isSelectable() and hasText("Gemma 4 E2B")).assertIsEnabled().assertIsSelected() // Standard, nicht geladen: Tipp laedt
         compose.onNode(isSelectable() and hasText("Gemma 4 E4B")).assertIsEnabled().performClick()
         compose.waitForIdle()
@@ -157,7 +173,7 @@ class TextModelUiTest {
     /** Der Fall des Nutzers (16 GB): E4B war erst nach einem Download per Radio waehlbar. */
     @Test fun e4bIstAufGrossemGeraetTippbarUndDerTippLaedtEs() {
         installSparse(ctx, TextModelCatalog.GEMMA4_E2B)
-        screen(env(SystemStatus(installedTextModels = setOf("gemma4_e2b"), totalRamBytes = 16L shl 30))) { ModelsScreen(it) }
+        screen(env(SystemStatus(installedTextModels = setOf("gemma4_e2b"), totalRamBytes = 16L shl 30))) { OfflineTextScreen(it) }
         compose.onNode(isSelectable() and hasText("Gemma 4 E4B")).assertIsEnabled().assertIsNotSelected().performClick()
         compose.waitForIdle()
         // wie "Laden": ueber mobile Daten erst D2
@@ -169,7 +185,7 @@ class TextModelUiTest {
     }
 
     @Test fun ohneGeladenesTextmodellWaehltDerTippDasLadendeSofort() {
-        screen(env(SystemStatus(totalRamBytes = 16L shl 30))) { ModelsScreen(it) }
+        screen(env(SystemStatus(totalRamBytes = 16L shl 30))) { OfflineTextScreen(it) }
         compose.onNode(isSelectable() and hasText("Gemma 4 E4B")).performClick()
         compose.waitForIdle()
         compose.onNodeWithText("Laden").performClick() // D2
@@ -182,26 +198,26 @@ class TextModelUiTest {
     @Test fun laeuftEinAndererDownloadSagtDieTextzeileWarumLadenGesperrtIst() {
         ModelDownloads.update("small", DownloadState.Running(1_000, ModelCatalog.SMALL.bytes, 500))
         try {
-            screen(env(SystemStatus(totalRamBytes = 16L shl 30))) { ModelsScreen(it) }
+            screen(env(SystemStatus(totalRamBytes = 16L shl 30))) { OfflineTextScreen(it) }
             compose.onNodeWithContentDescription("Gemma 4 E4B herunterladen").assertIsNotEnabled()
             compose.onNode(isSelectable() and hasText("Gemma 4 E4B")).assertIsNotEnabled()
-            // Je Textzeile (E2B, E4B) ein Hinweis; die whisper-Liste bleibt, wie sie war.
+            // Je Textzeile (E2B, E4B) ein Hinweis (die whisper-Liste steht seit dem Neuaufbau in der Spracherkennung).
             compose.onAllNodesWithText("Laden geht, sobald der laufende Download fertig ist.").assertCountEquals(2)
-            compose.onNode(isSelectable() and hasText("Base")).assertIsNotEnabled()
         } finally {
             ModelDownloads.clear("small")
         }
     }
 
     @Test fun whisperZeileWirdErstNachDemLadenWaehlbar() {
-        screen(env()) { ModelsScreen(it) }
+        prefs.engine = Engine.OFFLINE
+        screen(env()) { RecognitionScreen(it) }
         compose.onNode(isSelectable() and hasText("Base")).assertIsNotEnabled()
         compose.onNodeWithText("Laden geht, sobald der laufende Download fertig ist.").assertDoesNotExist()
     }
 
     @Test fun textmodellLoeschenSagtWasOfflineDannPassiert() {
         installSparse(ctx, TextModelCatalog.GEMMA4_E2B)
-        screen(env()) { ModelsScreen(it) }
+        screen(env()) { OfflineTextScreen(it) }
         compose.onNodeWithContentDescription("Gemma 4 E2B löschen").performClick()
         compose.waitForIdle()
         compose.onNodeWithText(
@@ -227,7 +243,7 @@ class TextModelUiTest {
         installSparse(ctx, TextModelCatalog.GEMMA4_E2B)
         installSparse(ctx, TextModelCatalog.GEMMA4_E4B)
         val store = ModelStore(ctx)
-        screen(AppEnv(PrefsState(prefs), statusAusDateien(store)) { statusAusDateien(store) }) { ModelsScreen(it) }
+        screen(AppEnv(PrefsState(prefs), statusAusDateien(store)) { statusAusDateien(store) }) { OfflineTextScreen(it) }
         compose.onNodeWithContentDescription("Gemma 4 E4B löschen").performClick()
         compose.waitForIdle()
         compose.onNodeWithText("Löschen").performClick()
@@ -243,7 +259,7 @@ class TextModelUiTest {
         // Den Zwischenspeicher legt LiteRT-LM beim ersten Laden an (gemessen 788 MB).
         val cache = File(ModelStore(ctx).cacheDir(e2b).apply { mkdirs() }, "gemma.xnnpack_cache")
         RandomAccessFile(cache, "rw").use { it.setLength(788_000_000) }
-        screen(env()) { ModelsScreen(it) }
+        screen(env()) { OfflineTextScreen(it) }
         compose.onNodeWithContentDescription("Gemma 4 E2B löschen").performClick()
         compose.waitForIdle()
         compose.onNodeWithText(
@@ -315,14 +331,14 @@ class TextModelUiTest {
         offlineOhneTextmodell()
         prefs.refineMode = RefineMode.OFF
         prefs.shareRefineMode = RefineMode.SUMMARIZE
-        screen(env(SystemStatus(installedModels = setOf("small")))) { ModelsScreen(it) }
+        screen(env(SystemStatus(installedModels = setOf("small")))) { OfflineTextScreen(it) }
         pflichtkarte.assertCountEquals(1)
     }
 
     /** Stehen die Textmodelle direkt darunter, laedt deren Zeile — die Pflichtkarte warnt nur. */
     @Test fun offlineModellePflichtkarteOhneEigenenLadenKnopf() {
         offlineOhneTextmodell()
-        screen(env(SystemStatus(installedModels = setOf("small")))) { ModelsScreen(it) }
+        screen(env(SystemStatus(installedModels = setOf("small")))) { OfflineTextScreen(it) }
         pflichtkarte.assertCountEquals(1)
         // Der Knopf der Pflichtkarte, nicht die gleichnamige Option der Regel darunter.
         compose.onNode(hasText("Überspringen") and !isSelectable()).assertIsEnabled()
@@ -386,7 +402,7 @@ class TextModelUiTest {
 
     @Test fun passtKeinTextmodellSindDieLokalenRegelnMitGrundGesperrt() {
         offlineOhneTextmodell()
-        screen(env(SystemStatus(installedModels = setOf("small"), totalRamBytes = vierGb))) { ModelsScreen(it) }
+        screen(env(SystemStatus(installedModels = setOf("small"), totalRamBytes = vierGb))) { OfflineTextScreen(it) }
         pflichtkarte.assertCountEquals(0)
         compose.onNodeWithText("Für ein lokales Textmodell braucht das Gerät mindestens 6 GB RAM.").assertExists()
         compose.onNodeWithContentDescription("Gemma 4 E2B herunterladen").assertIsNotEnabled()
@@ -405,9 +421,9 @@ class TextModelUiTest {
     // --- E4 Regel bei Offline-Erkennung (3.9.0 bei den Offline-Modellen) und KI-Zugang ------------
 
     @Test fun dieRegelStehtUnterDenTextmodellen() {
-        screen(env()) { ModelsScreen(it) }
+        screen(env()) { OfflineTextScreen(it) }
         val reihenfolge = listOf(
-            "TEXTVERBESSERUNG", "Gemma 4 E4B", "Quelle: huggingface.co/litert-community (Gemma 4, Apache 2.0)",
+            "Gemma 4 E2B", "Gemma 4 E4B", "Quelle: huggingface.co/litert-community (Gemma 4, Apache 2.0)",
             "Textverbesserung bei Offline-Erkennung",
         )
         val oben = reihenfolge.map { compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
@@ -415,7 +431,7 @@ class TextModelUiTest {
     }
 
     @Test fun regelStandardIstLokalUndDasRadioSchreibtDiePref() {
-        screen(env()) { ModelsScreen(it) }
+        screen(env()) { OfflineTextScreen(it) }
         compose.onNode(isSelectable() and hasText("Lokales Textmodell")).assertIsSelected()
         compose.onNode(isSelectable() and hasText("Online, ohne Netz lokal")).performClick()
         compose.waitForIdle()
@@ -428,7 +444,7 @@ class TextModelUiTest {
 
     @Test fun textKarteZeigtPflichtkarteUndBeideTextmodelle() {
         offlineOhneTextmodell()
-        screen(env(SystemStatus(installedModels = setOf("small")))) { ModelsScreen(it) }
+        screen(env(SystemStatus(installedModels = setOf("small")))) { OfflineTextScreen(it) }
         pflichtkarte.assertCountEquals(1)
         compose.onNode(isSelectable() and hasText("Gemma 4 E2B")).assertIsEnabled().assertIsSelected()
         compose.onNode(isSelectable() and hasText("Gemma 4 E4B")).assertIsEnabled()
@@ -441,7 +457,7 @@ class TextModelUiTest {
         offlineOhneTextmodell()
         ModelDownloads.update("gemma4_e2b", DownloadState.Running(1_294_073_856, TextModelCatalog.GEMMA4_E2B.bytes, 5_000_000))
         try {
-            screen(env(SystemStatus(installedModels = setOf("small")))) { ModelsScreen(it) }
+            screen(env(SystemStatus(installedModels = setOf("small")))) { OfflineTextScreen(it) }
             pflichtkarte.assertCountEquals(0)
             compose.onAllNodesWithText("50 %", substring = true).assertCountEquals(1)
         } finally {
@@ -451,7 +467,7 @@ class TextModelUiTest {
 
     @Test fun ohnePflichtLaedtDieModellzeileOhneDieRegelZuAendern() {
         offlineOhneTextmodell(OfflineRefineRule.SKIP)
-        screen(env(SystemStatus(installedModels = setOf("small")))) { ModelsScreen(it) }
+        screen(env(SystemStatus(installedModels = setOf("small")))) { OfflineTextScreen(it) }
         pflichtkarte.assertCountEquals(0)
         compose.onNodeWithContentDescription("Gemma 4 E2B herunterladen").performClick()
         compose.waitForIdle()
@@ -466,7 +482,7 @@ class TextModelUiTest {
         installSparse(ctx, TextModelCatalog.GEMMA4_E2B)
         installSparse(ctx, TextModelCatalog.GEMMA4_E4B)
         val status = SystemStatus(installedModels = setOf("small"), installedTextModels = setOf("gemma4_e2b", "gemma4_e4b"), totalRamBytes = 16L shl 30)
-        screen(env(status)) { ModelsScreen(it) }
+        screen(env(status)) { OfflineTextScreen(it) }
         compose.onNode(isSelectable() and hasText("Gemma 4 E2B")).assertIsSelected()
         compose.onNode(isSelectable() and hasText("Gemma 4 E4B")).assertIsEnabled().performClick()
         compose.waitForIdle()
@@ -478,7 +494,7 @@ class TextModelUiTest {
         prefs.engine = Engine.OFFLINE
         installSparse(ctx, TextModelCatalog.GEMMA4_E2B)
         val status = SystemStatus(installedModels = setOf("small"), installedTextModels = setOf("gemma4_e2b"), totalRamBytes = 16L shl 30)
-        screen(env(status)) { ModelsScreen(it) }
+        screen(env(status)) { OfflineTextScreen(it) }
         compose.onNode(isSelectable() and hasText("Gemma 4 E4B")).performClick()
         compose.waitForIdle()
         compose.onNodeWithText("Laden").performClick() // D2
@@ -523,9 +539,9 @@ class TextModelUiTest {
     }
 
     @Test fun dieRegelFehltWennOfflineAufDemGeraetNichtGeht() {
-        screen(env(SystemStatus(offlineSupported = false))) { ModelsScreen(it) }
+        screen(env(SystemStatus(offlineSupported = false))) { OfflineTextScreen(it) }
         compose.onNodeWithText("Textverbesserung bei Offline-Erkennung").assertDoesNotExist()
-        compose.onNodeWithText("TEXTVERBESSERUNG").assertExists()
+        compose.onNodeWithText("Gemma 4 E2B").assertExists()
     }
 
     // --- Assistent 2b ------------------------------------------------------------------------
@@ -741,7 +757,7 @@ class TextModelUiTest {
         compose.onNodeWithText("Beheben").performClick()
         compose.waitForIdle()
         // Zu den Offline-Modellen: Textmodelle und Regel stehen seit 3.9.0 dort.
-        assertEquals(Screen.Models, nav.current)
+        assertEquals(Screen.OfflineText, nav.current)
     }
 
     @Test fun homeNurMitShareStufeWarnenZeileUndBannerGemeinsam() {
@@ -834,10 +850,18 @@ class TextModelUiTest {
         compose.onNodeWithText("Diktat: Aus · Sprachnachrichten: Aus").assertExists()
     }
 
-    @Test fun hubZaehltWhisperUndTextmodelle() {
+    @Test fun hubNenntDasOfflineModellInDerSpracherkennung() {
+        // Neuaufbau: keine Zeile "Offline-Modelle" mehr — die Spracherkennung nennt das geladene Modell.
         prefs.engine = Engine.OFFLINE
         val status = SystemStatus(installedModels = setOf("small"), installedTextModels = setOf("gemma4_e2b"), modelsUsedBytes = 3_000_000_000)
         screen(env(status)) { SettingsHubScreen(it) }
-        compose.onNodeWithText("2 geladen · ${size(3_000_000_000)} belegt").assertExists()
+        compose.onNodeWithText("Offline · Small (${size(ModelCatalog.SMALL.bytes)})").assertExists()
+        compose.onNodeWithText("Offline-Modelle").assertDoesNotExist()
+    }
+
+    @Test fun hubSagtOfflineOhneGeladenesModell() {
+        prefs.engine = Engine.OFFLINE
+        screen(env(SystemStatus(totalRamBytes = 16L shl 30))) { SettingsHubScreen(it) }
+        compose.onNodeWithText("Offline · kein Modell geladen").assertExists()
     }
 }

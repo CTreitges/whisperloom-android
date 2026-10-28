@@ -19,7 +19,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chris.whisperloom.BuildConfig
-import com.chris.whisperloom.Engine
 import com.chris.whisperloom.ProFeature
 import com.chris.whisperloom.R
 import com.chris.whisperloom.agent.Tier
@@ -27,10 +26,6 @@ import com.chris.whisperloom.history.History
 import com.chris.whisperloom.ui.components.DetailScaffold
 import com.chris.whisperloom.ui.components.HubRow
 import com.chris.whisperloom.ui.components.SectionHeader
-import com.chris.whisperloom.ui.components.fileSize
-import com.chris.whisperloom.ui.components.modelLabel
-import com.chris.whisperloom.ui.components.offlineModelLabel
-import com.chris.whisperloom.ui.components.providerShortName
 import com.chris.whisperloom.ui.components.rememberSnack
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
@@ -40,8 +35,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * E — Einstellungen-Hub (UX-Spec §2.3), seit 3.9.0 nach Gegenstaenden: Text, Modelle & Zugaenge,
- * Bedienung, Verlauf, Pro, Info. Unterzeile = aktueller Wert, Zeilenname = Seitentitel.
+ * E — Einstellungen-Hub (UX-Spec §2.3, Neuaufbau §6.20): drei Gruppen nach dem, was der Nutzer tut.
+ * SPRACHE & TEXT (Spracherkennung, Textverbesserung, Woerterbuch & Regeln) · BEDIENUNG (Knopf & Tastatur,
+ * Widgets nur mit Pro Widgets) · WEITERES (Verlauf, Pro-Funktionen, Anleitung & Hilfe, Ueber).
+ * KI-Zugang und Offline-Textverbesserung sind Unterseiten der Textverbesserung, die Whisper-Modelle
+ * stehen in der Spracherkennung — bis 3.9.1 waren beides eigene Hub-Zeilen (KI-Zugang, Offline-Modelle).
+ * Unterzeile = aktueller Wert, Zeilenname = Seitentitel, kein Schalter auf Hub-Ebene.
  */
 @Composable
 fun SettingsHubScreen(nav: NavState) {
@@ -52,18 +51,14 @@ fun SettingsHubScreen(nav: NavState) {
     val snack = rememberSnack()
     var showAbout by rememberSaveable { mutableStateOf(false) }
 
-    val stt = prefs.sttAccess()
-    val recognition = when (prefs.engine) {
-        Engine.ONLINE -> stringResource(R.string.home_val_online, providerShortName(stt.provider), modelLabel(stt))
-        Engine.OFFLINE -> "Offline · ${offlineModelLabel(prefs.offlineModel)}"
-        null -> stringResource(R.string.setup_chip_open)
-    }
     val button = stringResource(if (status.bubbleRunning) R.string.settings_val_bubble_on else R.string.settings_val_bubble_off) +
         " · " + stringResource(if (status.imeEnabled) R.string.settings_val_kb_on else R.string.settings_val_kb_off)
-    // Kein Schalter auf Hub-Ebene (Spec §2.3) — nur die eingeschalteten Pro-Funktionen als Unterzeile.
+    // Nur die eingeschalteten Pro-Funktionen als Unterzeile (kein Schalter auf Hub-Ebene, Spec §2.3).
     val active = ProFeature.entries.filter { prefs.isEnabled(it) }.map { stringResource(it.hubLabel) }
     val advanced = if (active.isEmpty()) stringResource(R.string.settings_agent_off) else active.joinToString(" · ")
-    // Immer sichtbar (User-Entscheidung): ohne Pro Widgets zeigt das Untermenue den Platzhalter fuer normale Widgets.
+    // Widgets gibt es bislang nur als Pro Widgets: ohne sie keine Zeile statt eines Platzhalters
+    // ("Normale Widgets folgen bald" bis 3.9.1).
+    val proWidgets = prefs.proWidgetsEnabled
     val widgetState = remember { WidgetProfilesState(ctx) }
     LifecycleResumeEffect(widgetState) {
         widgetState.reload()
@@ -71,8 +66,7 @@ fun SettingsHubScreen(nav: NavState) {
     }
     val placed = widgetState.placed.size
     val proCount = widgetState.profiles(Tier.PRO).size
-    val widgets = if (!prefs.proWidgetsEnabled) stringResource(R.string.widgets_sub_normal_soon)
-    else pluralStringResource(R.plurals.widgets_sub_profiles, proCount, proCount) + " · " +
+    val widgets = pluralStringResource(R.plurals.widgets_sub_profiles, proCount, proCount) + " · " +
         if (placed == 0) stringResource(R.string.widgets_sub_none_placed)
         else pluralStringResource(R.plurals.widgets_sub_placed, placed, placed)
     // Verlauf: Zustand und Fuellstand ("An · 12 von 50"); gezaehlt wird im Hintergrund (Dateizugriff).
@@ -83,14 +77,16 @@ fun SettingsHubScreen(nav: NavState) {
         else -> historyCount?.let { stringResource(R.string.settings_history_on, it, prefs.historySize) }
             ?: stringResource(R.string.settings_history_on_plain)
     }
-    val n = status.installedCount
-    val models = if (n > 0) stringResource(R.string.home_val_models, n, fileSize(status.modelsUsedBytes))
-    else stringResource(R.string.settings_models_none)
 
     DetailScaffold(title = stringResource(R.string.settings_title), onBack = { nav.pop() }, snack = snack) { padding ->
-        // Gruppen mit Ueberschrift (User-Entscheidung U3); die letzte Zeile einer Gruppe ohne Trenner.
+        // Gruppen mit Ueberschrift; die letzte Zeile einer Gruppe ohne Trenner.
         LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(bottom = 24.dp)) {
-            item { SectionHeader(stringResource(R.string.settings_section_text)) }
+            item { SectionHeader(stringResource(R.string.settings_section_speech)) }
+            item {
+                HubRow(R.drawable.ic_graphic_eq, stringResource(R.string.settings_group_recognition), recognitionValue(prefs, status)) {
+                    nav.push(Screen.Recognition)
+                }
+            }
             item { HubRow(R.drawable.ic_auto_fix_high, stringResource(R.string.settings_group_refine), refineValue(prefs)) { nav.push(Screen.Refine) } }
             item {
                 HubRow(R.drawable.ic_checklist, stringResource(R.string.settings_group_dictionary), dictionaryValue(prefs), divider = false) {
@@ -98,22 +94,19 @@ fun SettingsHubScreen(nav: NavState) {
                 }
             }
 
-            item { SectionHeader(stringResource(R.string.settings_section_models)) }
-            item { HubRow(R.drawable.ic_graphic_eq, stringResource(R.string.settings_group_recognition), recognition) { nav.push(Screen.Recognition) } }
-            item { HubRow(R.drawable.ic_cloud, stringResource(R.string.settings_group_llm), accessValue(prefs)) { nav.push(Screen.LlmAccess) } }
-            item { HubRow(R.drawable.ic_download_for_offline, stringResource(R.string.settings_group_models), models, divider = false) { nav.push(Screen.Models) } }
-
             item { SectionHeader(stringResource(R.string.settings_section_controls)) }
-            item { HubRow(R.drawable.ic_touch_app, stringResource(R.string.settings_group_button), button) { nav.push(Screen.ButtonKeyboard) } }
-            item { HubRow(R.drawable.ic_layers, stringResource(R.string.settings_group_widgets), widgets, divider = false) { nav.push(Screen.Widgets()) } }
+            item {
+                HubRow(R.drawable.ic_touch_app, stringResource(R.string.settings_group_button), button, divider = proWidgets) {
+                    nav.push(Screen.ButtonKeyboard)
+                }
+            }
+            if (proWidgets) {
+                item { HubRow(R.drawable.ic_layers, stringResource(R.string.settings_group_widgets), widgets, divider = false) { nav.push(Screen.Widgets()) } }
+            }
 
-            item { SectionHeader(stringResource(R.string.settings_section_history)) }
-            item { HubRow(R.drawable.ic_history, stringResource(R.string.settings_group_history), history, divider = false) { nav.push(Screen.History) } }
-
-            item { SectionHeader(stringResource(R.string.settings_section_pro)) }
-            item { HubRow(R.drawable.ic_build, stringResource(R.string.settings_group_advanced), advanced, divider = false) { nav.push(Screen.Advanced) } }
-
-            item { SectionHeader(stringResource(R.string.settings_section_info)) }
+            item { SectionHeader(stringResource(R.string.settings_section_more)) }
+            item { HubRow(R.drawable.ic_history, stringResource(R.string.settings_group_history), history) { nav.push(Screen.History) } }
+            item { HubRow(R.drawable.ic_build, stringResource(R.string.settings_group_advanced), advanced) { nav.push(Screen.Advanced) } }
             item { HubRow(R.drawable.ic_help, stringResource(R.string.settings_group_help), stringResource(R.string.settings_help_sub)) { nav.push(Screen.Help(1)) } }
             item {
                 HubRow(

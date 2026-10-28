@@ -34,7 +34,7 @@ import com.chris.whisperloom.ui.settings.ButtonKeyboardScreen
 import com.chris.whisperloom.ui.settings.DictionaryScreen
 import com.chris.whisperloom.ui.settings.HelpScreen
 import com.chris.whisperloom.ui.settings.LlmAccessScreen
-import com.chris.whisperloom.ui.settings.ModelsScreen
+import com.chris.whisperloom.ui.settings.OfflineTextScreen
 import com.chris.whisperloom.ui.settings.RecognitionScreen
 import com.chris.whisperloom.ui.settings.RefineScreen
 import com.chris.whisperloom.ui.settings.SettingsHubScreen
@@ -100,7 +100,7 @@ fun WhisperLoomApp(env: AppEnv, route: RouteRequest? = null, onRouteConsumed: ()
                 Screen.Recognition -> RecognitionScreen(nav)
                 Screen.LlmAccess -> LlmAccessScreen(nav)
                 Screen.ButtonKeyboard -> ButtonKeyboardScreen(nav)
-                Screen.Models -> ModelsScreen(nav)
+                Screen.OfflineText -> OfflineTextScreen(nav)
                 Screen.Advanced -> AdvancedScreen(nav)
                 is Screen.Widgets -> WidgetsScreen(nav, tab = screen.tab, edit = screen.edit)
                 is Screen.Help -> HelpScreen(section = (nav.current as? Screen.Help)?.section ?: screen.section, nav = nav)
@@ -153,15 +153,16 @@ fun finishTutorial(nav: NavState, kind: TutorialKind) {
  * Deep-Link anwenden: `home` (Notification), `settings` (IME-Zahnrad), `models` (IME, Textmodell fehlt),
  * `llm-access` (IME, KI-Zugang fehlt), `refine` (Sprachnachrichten-Fenster), `setup[+step]` (IME/Overlay/Share),
  * `advanced` und `widgets[+profile]` (Widget-Tipp, der nicht aufnehmen kann; Aufnahme-Notification).
+ * KI-Zugang und Offline-Textverbesserung sind Unterseiten der Textverbesserung: Zurueck fuehrt dorthin.
  */
 fun applyRoute(nav: NavState, route: RouteRequest, facts: SetupFacts) {
     when (route.route) {
         AppNav.ROUTE_HOME -> nav.replaceAll(Screen.Home)
         AppNav.ROUTE_SETTINGS -> nav.replaceAll(startScreen(facts), Screen.SettingsHub)
         // Tastatur: offline ohne Textmodell.
-        AppNav.ROUTE_MODELS -> nav.replaceAll(startScreen(facts), Screen.SettingsHub, Screen.Models)
+        AppNav.ROUTE_MODELS -> nav.replaceAll(startScreen(facts), Screen.SettingsHub, Screen.Refine, Screen.OfflineText)
         // Tastatur: Zugang fehlt fuer die KI-Stufen.
-        AppNav.ROUTE_LLM_ACCESS -> nav.replaceAll(startScreen(facts), Screen.SettingsHub, Screen.LlmAccess)
+        AppNav.ROUTE_LLM_ACCESS -> nav.replaceAll(startScreen(facts), Screen.SettingsHub, Screen.Refine, Screen.LlmAccess)
         // Sprachnachrichten-Fenster: "aenderbar unter Einstellungen › Textverbesserung".
         AppNav.ROUTE_REFINE -> nav.replaceAll(startScreen(facts), Screen.SettingsHub, Screen.Refine)
         // Pro Widgets aus. "agent" kommt noch aus Intents von 3.7.0.

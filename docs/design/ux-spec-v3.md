@@ -1669,6 +1669,46 @@ Neuordnung, Verlauf“ (2026-10-08, außerhalb des Repos).
 
 ---
 
+### 6.20 Nachtrag 3.10 (Prototyp): Einstellungen in drei Gruppen, Unterseiten statt Hub-Zeilen
+
+Ergänzt §2.1 (H), §2.3 (E), §2.4 (E1), §2.5/§6.19 (E2), §2.7 (E4, entfällt), §6.15 (E7) und §1.2; wo sie widersprechen, gilt dieser Abschnitt.
+Nutzer-Sicht: `docs/ANLEITUNG.md` 3, 8, 9.3, 9.7, 14.2. Herleitung: Usability-Analyse 2026-10-28 am Stand 3.9.1 (Emulator-Screenshots):
+sechs Gruppen mit zwei Ein-Zeilen-Gruppen (VERLAUF, PRO) und einer Platzhalter-Zeile (Widgets); ein Thema auf drei bis vier Hub-Seiten
+verteilt (Textverbesserung = Textverbesserung + KI-Zugang + Offline-Modelle + Wörterbuch; Spracherkennung = Spracherkennung + Offline-Modelle
+mit doppeltem Engine-Umschalter); „KI-Zugang" als Hub-Zeile für Standardnutzer („wie Erkennung") eine fast leere Seite; Gruppierung nach
+Gegenständen („Modelle & Zugänge") verlangt Architekturwissen (STT- vs. LLM-Zugang vs. Offline-Modell).
+
+- **E (Hub):** drei Gruppen nach Tätigkeit: `settings_section_speech` SPRACHE & TEXT (Spracherkennung → E1, Textverbesserung → E2, Wörterbuch &
+  Regeln) · `settings_section_controls` BEDIENUNG (Knopf & Tastatur → E3; Widgets → E8 nur bei `proWidgetsEnabled`, sonst keine Zeile — Abweichung
+  von der Entscheidung 2026-09-30 „immer sichtbar", zur Bewertung am Prototyp) · `settings_section_more` WEITERES (Verlauf, Pro-Funktionen → E7,
+  Anleitung & Hilfe → E5, Über → E6). Keine Zeilen KI-Zugang und Offline-Modelle mehr. Unterzeile der Spracherkennung = `recognitionValue` (wie H:
+  „Online · … · …", „Offline · Small (190 MB)", `home_val_offline_missing`). Trenner: letzte Zeile je Gruppe ohne; Knopf & Tastatur nur mit
+  Widgets-Zeile darunter.
+- **E1 Spracherkennung:** `EngineSwitch` (einziger Umschalter, Offline auch ohne Modell), bei Offline statt der Karte Offline-Modell der Abschnitt
+  `rec_card_offline` als `SectionHeader` mit `models_intro`, `models_storage`, `ModelListSection` (Whisper, mit Leerzustand) und `models_source`,
+  `rec_offline_first_use`. Die Warnkarte „Kein Modell geladen" (`rec_no_model`, `rec_load_model`) entfällt — die Liste zeigt den Leerzustand.
+  Online unverändert (Transkription mit Fallback, Sprache, Datenschutz-Zeile).
+- **E2 Textverbesserung:** unter den beiden Stufen-Karten die Karte `refine_card_models` „Zugang & Modelle" mit `PageLinkRow` KI-Zugang
+  (`accessValue`) → `Screen.LlmAccess` und, bei `offlineSupported`, `refine_offline` „Bei Offline-Erkennung" (`offlineValue`) → `Screen.OfflineText`.
+  Die bisherige Einzelkarte „Bei Offline-Erkennung" entfällt.
+- **Offline-Textverbesserung** (`Screen.OfflineText`, Schlüssel `offline-text`, `OfflineTextScreen`, Titel `offline_text_title`): `models_llm_intro`,
+  `models_storage`, Pflichtkarte (compact), `ModelListSection(text = true)`, `models_llm_source`, Regel-Karte `text_rule_title` (bei `offlineSupported`).
+  Ersetzt E4 (`ModelsScreen`, `Screen.Models`). `decode("models")` → Recognition, `decode("text-page:offline")` → OfflineText.
+- **E7 Pro-Funktionen:** `settings_group_advanced` = „Pro-Funktionen" (Seitentitel und Hub-Zeile), Karte `advanced_card_features` = „Freischalten".
+  Alle Verweise (`help_widgets_unlock`, `help_widgets_models`, `widgets_pro_unlock`, `widget_config_pro_off`, `tutorial_pro_p1_body`) nennen
+  Pro-Funktionen; `AnleitungsTexteTest` verbietet „Erweitert" und „Offline-Modelle" in Strings.
+- **H Home:** Status-Karte mit vier Zeilen (`recognitionValue` für die Spracherkennung); die Zeile Offline-Modelle und `HomeStatus.showModelsRow`
+  entfallen. Banner MODEL → E1, TEXT_MODEL → OfflineText.
+- **Router (§1.2):** `models` → [Start, E, E2, OfflineText], `llm-access` → [Start, E, E2, LlmAccess] (Zurück in die Textverbesserung).
+- **Meldungen:** `OfflineNotAvailableException.MSG_NO_MODEL`/`MSG_LOAD_FAILED` „unter Spracherkennung …", `RefinePlan.MSG_LOCAL_MISSING`
+  „unter „Offline-Textverbesserung" laden …", `setup_s2b_skip_body` und `help_s5_body` entsprechend.
+- **Prototyp-Build:** `-Pwhisperloom.applicationId`, `-Pwhisperloom.appLabel` (Manifest-Platzhalter `${appLabel}` am `<application>`),
+  `-Pwhisperloom.versionSuffix` — installierbar neben der Release-App.
+- **Tests:** `SettingsHubTest` (Zeilen, Unterseiten, Widgets nur mit Pro, Route models), `MainFlowTest` (drei Gruppen, Trenner, Whisper-Liste in E1),
+  `TextModelUiTest` (E1 offline/online, OfflineTextScreen, Hub-Zeile), `ApplyRouteTest`, `RouteRequestTest`, `SettingsScreenshotTest` (vier neue PNGs).
+
+---
+
 ## 7. Akzeptanzkriterien (prüfbar, je Screen)
 
 **H Home**

@@ -80,7 +80,7 @@ class RouteRequestTest {
     @Test fun screenEncodingIstStabil() {
         val screens = listOf(
             Screen.Home, Screen.Setup(3), Screen.SettingsHub, Screen.Refine, Screen.Dictionary, Screen.Recognition,
-            Screen.LlmAccess, Screen.ButtonKeyboard, Screen.Models, Screen.Advanced, Screen.Widgets(), Screen.Widgets(WidgetTab.NORMAL),
+            Screen.LlmAccess, Screen.ButtonKeyboard, Screen.OfflineText, Screen.Advanced, Screen.Widgets(), Screen.Widgets(WidgetTab.NORMAL),
             Screen.Widgets(WidgetTab.PRO), Screen.Widgets(WidgetTab.PRO, "p1"), Screen.Widgets(edit = "default"),
             Screen.Help(4), Screen.Patchnotes, Screen.Tutorial(2),
             Screen.Tutorial(1, startBubbleAfter = true), Screen.Tutorial(0, kind = TutorialKind.PRO_WIDGETS),
@@ -143,6 +143,9 @@ class RouteRequestTest {
     @Test fun alteBackStacksBleibenLesbar() {
         // Gespeichert von 3.7.0: "agent" hiess der Screen "Erweitert", "widgets" hatte keine Argumente.
         assertEquals(Screen.Advanced, Screen.decode("agent"))
+        // Gespeichert bis 3.9.1: "models" war die Seite Offline-Modelle, die mit der Whisper-Liste begann.
+        assertEquals(Screen.Recognition, Screen.decode("models"))
+        assertEquals(Screen.OfflineText, Screen.decode("offline-text"))
         assertEquals(Screen.Widgets(), Screen.decode("widgets"))
         assertEquals("Unbekannter Tab: der Screen waehlt", Screen.Widgets(), Screen.decode("widgets:quer:"))
     }
@@ -153,7 +156,7 @@ class RouteRequestTest {
         assertEquals(Screen.Refine, Screen.decode("text-page:dictation"))
         assertEquals(Screen.Refine, Screen.decode("text-page:share"))
         assertEquals(Screen.LlmAccess, Screen.decode("text-page:access"))
-        assertEquals(Screen.Models, Screen.decode("text-page:offline"))
+        assertEquals(Screen.OfflineText, Screen.decode("text-page:offline"))
         assertEquals(Screen.Dictionary, Screen.decode("text-page:rules"))
         // Unbekannte oder fehlende Unterseite: die Nachfolgerin des Text-Hubs.
         assertEquals(Screen.Refine, Screen.decode("text-page:modelle"))
@@ -164,7 +167,7 @@ class RouteRequestTest {
         // Prozess-Tod unter 3.8.6 auf Text › Offline-Erkennung, Neustart mit 3.9.0.
         val alt = listOf("home", "settings", "text", "text-page:offline")
         assertEquals(
-            listOf(Screen.Home, Screen.SettingsHub, Screen.Refine, Screen.Models),
+            listOf(Screen.Home, Screen.SettingsHub, Screen.Refine, Screen.OfflineText),
             NavState.Saver.restore(alt)!!.snapshot(),
         )
     }

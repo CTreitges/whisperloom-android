@@ -232,7 +232,7 @@ class RefineScreenTest {
         val nav = page()
         compose.onNodeWithText("Lokales Textmodell · Textmodell fehlt").assertExists()
         click(compose.onNodeWithText("Bei Offline-Erkennung"))
-        assertEquals(Screen.Models, nav.current)
+        assertEquals(Screen.OfflineText, nav.current)
     }
 
     @Test fun beiOfflineErkennungMitGeladenemTextmodell() {
