@@ -121,6 +121,9 @@ eigene F-Droid-Repo läuft davon unberührt weiter.
       inkl. Android-16-Verhalten (erzwungenes edge-to-edge).
 - [x] **Accessibility-Service**: Weg A gewählt (behalten + deklarieren) — Disclosure-Flow eingebaut.
       Offen: Accessibility-Deklarationsformular + Demo-Video in der Play Console.
+      Für das Formular (CTR-274): Der Dienst **fügt nie in Passwortfelder ein** — der Knopf zeigt dann
+      nur einen Hinweis, nichts landet in Feld, Zwischenablage oder Verlauf. Das schränkt die Nutzung
+      ein; die Bedienungshilfe-Konfiguration (`accessibility_service_config.xml`) ist unverändert.
 
 ## 5. Der Accessibility-Service — zentrale Entscheidung
 
