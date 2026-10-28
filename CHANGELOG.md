@@ -12,8 +12,8 @@ Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](ht
 
 ### Geändert
 
-- **TalkBack am Knopf:** Der Knopf heißt jetzt „Mikrofon“, danach kommt, was gerade passiert („Aufnahme läuft, 0:07 …“, „Wird übertragen“, „Fehler …“). Angesagt wird nur ein echter Wechsel; während der Aufnahme liest TalkBack die Zeit nicht jede Sekunde vor.
-- **„Aufnahme läuft“ kommt vor dem Mikrofon.** Der Knopf zeigt und meldet die Aufnahme, bevor sich das Mikrofon öffnet. So landet die Ansage seltener im Diktat.
+- **TalkBack am Knopf:** Der Knopf heißt jetzt „Mikrofon“ (während der Aufnahme mit Zeit, z. B. „Mikrofon, 0:07“), danach kommt, was gerade passiert („Aufnahme läuft — antippen zum Beenden“, „Wird übertragen“, „Fehler …“). Angesagt wird nur ein echter Wechsel; während der Aufnahme liest TalkBack die Zeit nicht jede Sekunde vor.
+- **„Aufnahme läuft“ kommt vor dem Mikrofon.** Der Knopf zeigt und meldet die Aufnahme, bevor sich das Mikrofon öffnet.
 - **Große Schrift:** Die Beschriftung unter dem Knopf wird mit der Schrift höher und nicht mehr abgeschnitten.
 
 ## [3.9.1] — 2026-10-16

@@ -110,7 +110,7 @@ class FloatingMicService : Service() {
         if (state == BubbleState.IDLE && (copiedHint || insertedHint)) {
             copiedHint = false
             insertedHint = false
-            render()
+            render(quiet = true) // der Hinweis laeuft ab, kein neuer Zustand: nicht ansagen
         }
     }
 
@@ -315,11 +315,11 @@ class FloatingMicService : Service() {
 
     private fun elapsedMs() = SystemClock.elapsedRealtime() - recordingStartedAt
 
-    private fun render() {
+    private fun render(quiet: Boolean = false) {
         val visual = BubbleVisuals.visualFor(
             state, copiedHint, BubbleAnimators.reduceMotion(this), refining, insertedHint,
         )
-        renderer?.render(visual, elapsedMs())
+        renderer?.render(visual, elapsedMs(), quiet)
     }
 
     /**

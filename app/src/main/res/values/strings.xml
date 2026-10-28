@@ -692,8 +692,10 @@
     <string name="float_not_configured">Kein Zugang eingerichtet — in WhisperLoom einrichten</string>
     <!-- §6.20: fester Name; was passiert, steht in der stateDescription (cd_bubble_*) -->
     <string name="cd_bubble">Mikrofon</string>
+    <!-- Name während der Aufnahme: die Zeit steht hier, nicht in der stateDescription (§6.20) -->
+    <string name="cd_bubble_timer">Mikrofon, %1$s</string>
     <string name="cd_bubble_idle">Diktat starten</string>
-    <string name="cd_bubble_recording">Aufnahme läuft, %1$s — antippen zum Beenden</string>
+    <string name="cd_bubble_recording">Aufnahme läuft — antippen zum Beenden</string>
     <string name="cd_bubble_sending">Wird übertragen</string>
     <string name="cd_bubble_refining">Text wird verbessert. Antippen fügt ihn ohne KI ein</string>
     <string name="cd_bubble_error">Fehler — antippen für erneuten Versuch</string>

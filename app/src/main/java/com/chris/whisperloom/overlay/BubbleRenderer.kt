@@ -58,7 +58,8 @@ class BubbleRenderer(root: View, private val reduceMotion: () -> Boolean) {
         get() = rings.level
         set(value) { rings.level = value }
 
-    fun render(visual: BubbleVisual, elapsedMs: Long) {
+    /** [quiet]: der Wechsel wird nicht angesagt (z. B. ein Hinweis laeuft ab, der Zustand bleibt IDLE). */
+    fun render(visual: BubbleVisual, elapsedMs: Long, quiet: Boolean = false) {
         val previous = current
         current = visual
         if (previous?.fill != visual.fill) setFill(visual.fill, animate = previous != null)
@@ -70,12 +71,12 @@ class BubbleRenderer(root: View, private val reduceMotion: () -> Boolean) {
         if (previous?.ring != visual.ring) rings.show(visual.ring)
         renderLabel(visual, elapsedMs)
         // Erst die Live-Region, dann der Text: so wird der Wechsel noch angesagt.
-        announceAs(visual)
+        announceAs(visual, quiet)
         describe(visual, elapsedMs)
     }
 
     /**
-     * Sekundentakt waehrend der Aufnahme: Timer-Text, Blink-Punkt, stateDescription. Ab der ersten
+     * Sekundentakt waehrend der Aufnahme: Timer-Text, Blink-Punkt, Zeit im Namen. Ab der ersten
      * vollen Sekunde schweigt die Live-Region — sonst laese TalkBack jede Sekunde in das eigene
      * Diktat hinein (wie die Statuszeile der IME). Den Aufnahmestart hat sie davor noch gemeldet.
      */
@@ -178,22 +179,31 @@ class BubbleRenderer(root: View, private val reduceMotion: () -> Boolean) {
      * Live-Region, im Fehler `assertive`. Sie meldet nur echte Wechsel, denn die stateDescription
      * aendert sich nur dann — gleicher Text, kein Ereignis.
      */
-    private fun announceAs(visual: BubbleVisual) {
-        bubble.accessibilityLiveRegion = if (visual.description == BubbleVisual.Description.ERROR) {
-            View.ACCESSIBILITY_LIVE_REGION_ASSERTIVE
-        } else {
-            View.ACCESSIBILITY_LIVE_REGION_POLITE
+    private fun announceAs(visual: BubbleVisual, quiet: Boolean) {
+        bubble.accessibilityLiveRegion = when {
+            quiet -> View.ACCESSIBILITY_LIVE_REGION_NONE
+            visual.description == BubbleVisual.Description.ERROR -> View.ACCESSIBILITY_LIVE_REGION_ASSERTIVE
+            else -> View.ACCESSIBILITY_LIVE_REGION_POLITE
         }
     }
 
-    /** Der Name bleibt "Mikrofon"; was gerade passiert und was ein Tipp tut, sagt die stateDescription. */
+    /**
+     * Was gerade passiert und was ein Tipp tut, sagt die stateDescription; der Name ist "Mikrofon".
+     * Die laufende Zeit steht im Namen, nicht im Zustand: Aendert sich die stateDescription des
+     * fokussierten Elements, liest TalkBack sie vor (wie bei einem Schieberegler) — mit der Zeit darin
+     * waere das eine Ansage pro Sekunde, Live-Region hin oder her.
+     */
     private fun describe(visual: BubbleVisual, elapsedMs: Long) {
+        bubble.contentDescription = if (visual.description == BubbleVisual.Description.RECORDING) {
+            ctx.getString(R.string.cd_bubble_timer, BubbleUi.formatDuration(elapsedMs))
+        } else {
+            ctx.getString(R.string.cd_bubble)
+        }
         ViewCompat.setStateDescription(
             bubble,
             when (visual.description) {
                 BubbleVisual.Description.IDLE -> ctx.getString(R.string.cd_bubble_idle)
-                BubbleVisual.Description.RECORDING ->
-                    ctx.getString(R.string.cd_bubble_recording, BubbleUi.formatDuration(elapsedMs))
+                BubbleVisual.Description.RECORDING -> ctx.getString(R.string.cd_bubble_recording)
                 BubbleVisual.Description.SENDING -> ctx.getString(R.string.cd_bubble_sending)
                 BubbleVisual.Description.REFINING -> ctx.getString(R.string.cd_bubble_refining)
                 BubbleVisual.Description.ERROR -> ctx.getString(R.string.cd_bubble_error)

@@ -179,14 +179,20 @@ class FloatingMicA11yTest {
         assertEquals(app.getString(R.string.cd_bubble), bubble.contentDescription)
         assertEquals(app.getString(R.string.cd_bubble_idle), bubble.stateDescription?.toString())
         aufnehmen()
-        assertEquals(app.getString(R.string.cd_bubble), bubble.contentDescription)
-        assertEquals(app.getString(R.string.cd_bubble_recording, "0:00"), bubble.stateDescription?.toString())
+        assertEquals(app.getString(R.string.cd_bubble_timer, "0:00"), bubble.contentDescription)
+        assertEquals(app.getString(R.string.cd_bubble_recording), bubble.stateDescription?.toString())
         bubble.performClick()
         assertEquals(app.getString(R.string.cd_bubble_sending), bubble.stateDescription?.toString())
         // Ohne Bedienungshilfe landet der Text in der Zwischenablage — der Knopf sagt das.
         bisZustand(app.getString(R.string.cd_bubble_copied))
+        assertEquals(app.getString(R.string.cd_bubble), bubble.contentDescription)
         warten(BubbleMotion.COPIED_HINT_MS)
         assertEquals(app.getString(R.string.cd_bubble_idle), bubble.stateDescription?.toString())
+        assertEquals(
+            "Der Hinweis laeuft ab, ohne dass TalkBack ungefragt etwas ansagt",
+            View.ACCESSIBILITY_LIVE_REGION_NONE,
+            bubble.accessibilityLiveRegion,
+        )
     }
 
     @Test fun keineAnsageUeberAnnounceForAccessibility() {
@@ -215,6 +221,11 @@ class FloatingMicA11yTest {
         assertEquals("Der Aufnahmestart wird angesagt", View.ACCESSIBILITY_LIVE_REGION_POLITE, bubble.accessibilityLiveRegion)
         warten(1_500)
         assertEquals("Der Sekundentakt nicht", View.ACCESSIBILITY_LIVE_REGION_NONE, bubble.accessibilityLiveRegion)
+        // Die Zeit laeuft im Namen weiter; der Zustand bleibt gleich — sonst liest TalkBack ihn am
+        // fokussierten Knopf jede Sekunde vor, auch ohne Live-Region.
+        val name = bubble.contentDescription.toString()
+        assertTrue("Zeit laeuft im Namen: $name", name.matches(Regex("Mikrofon, 0:0[1-9]")))
+        assertEquals(app.getString(R.string.cd_bubble_recording), bubble.stateDescription?.toString())
         bubble.performAccessibilityAction(aktion(verwerfen)?.id ?: 0, null)
         assertEquals(View.ACCESSIBILITY_LIVE_REGION_POLITE, bubble.accessibilityLiveRegion)
     }
@@ -244,7 +255,7 @@ class FloatingMicA11yTest {
             if (System.currentTimeMillis() > until) fail("Mikrofon nie gelesen")
             Thread.sleep(5)
         }
-        assertEquals(app.getString(R.string.cd_bubble_recording, "0:00"), beimErstenLesen.get())
+        assertEquals(app.getString(R.string.cd_bubble_recording), beimErstenLesen.get())
     }
 
     // --- Label waechst mit der Schrift (O7) ------------------------------------

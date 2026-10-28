@@ -1672,17 +1672,21 @@ Neuordnung, Verlauf“ (2026-10-08, außerhalb des Repos).
 Ergänzt §5.1 (V1), §5.4 und §5.6; wo sie widersprechen, gilt dieser Abschnitt. Zweckbestimmung und Wortliste:
 `docs/ZWECKBESTIMMUNG.md`. Herleitung: Plan CTR-272, Paket B (Schritte B1, B5(1), B6; außerhalb des Repos).
 
-- **V1 Name und Zustand getrennt.** `contentDescription` des Knopfs ist fest `cd_bubble` „Mikrofon“. Was gerade
-  passiert und was ein Tipp tut, steht in der `stateDescription`: die bisherigen Texte `cd_bubble_idle|recording|
-  sending|refining|error`, neu `cd_bubble_inserted` „Eingefügt“ und `cd_bubble_copied` „Kopiert — einfügen“. In der
-  Textverbesserung nennt die `stateDescription` den Ausweg („Antippen fügt ihn ohne KI ein“).
+- **V1 Name und Zustand getrennt.** `contentDescription` des Knopfs ist `cd_bubble` „Mikrofon“, während der Aufnahme
+  mit Zeit `cd_bubble_timer` „Mikrofon, 0:07“. Was gerade passiert und was ein Tipp tut, steht in der
+  `stateDescription`: `cd_bubble_idle|sending|refining|error`, `cd_bubble_recording` jetzt **ohne Zeit** („Aufnahme
+  läuft — antippen zum Beenden“), neu `cd_bubble_inserted` „Eingefügt“ und `cd_bubble_copied` „Kopiert — jetzt
+  einfügen“. Die Zeit gehört nicht in den Zustand: Ändert sich die `stateDescription` des fokussierten Elements, liest
+  TalkBack sie vor — das wäre eine Ansage pro Sekunde. In der Textverbesserung nennt die `stateDescription` den Ausweg.
 - **V1 Ansagen ohne `announceForAccessibility`.** Der Aufruf ist seit API 36 abgekündigt und entfällt an beiden
   Stellen (Zustandswechsel, Textverbesserung). Stattdessen ist der Knopf eine Live-Region: `polite`, im Fehler
-  `assertive`. Sie meldet nur echte Wechsel, weil sich die `stateDescription` nur dann ändert. Während der Aufnahme
-  schreibt der Sekunden-Ticker die Zeit in die `stateDescription`; ab der ersten vollen Sekunde ist die Region deshalb
-  `none` (wie die Statuszeile der IME, §6.12 A11y), beim Verlassen der Aufnahme wieder wie oben.
-- **V1 „nimmt auf“ vor dem Mikrofon.** Der Knopf geht erst in RECORDING (Füllung, `stateDescription`, Ansage), dann
-  öffnet sich das Mikrofon. Schlägt das Öffnen fehl, geht er zurück nach IDLE mit Toast `kb_error`.
+  `assertive`. Während der Aufnahme ändert der Sekunden-Ticker den Namen; ab der ersten vollen Sekunde ist die Region
+  deshalb `none` (wie die Statuszeile der IME, §6.12 A11y), beim nächsten Zustand wieder wie oben. Läuft der Hinweis
+  „Eingefügt“/„Kopiert“ ab, bleibt es still (Region `none` bis zum nächsten Zustand).
+- **V1 „nimmt auf“ vor dem Mikrofon.** Der Knopf geht erst in RECORDING (Füllung, `stateDescription`, Live-Region),
+  dann öffnet sich das Mikrofon. Schlägt das Öffnen fehl, geht er zurück nach IDLE mit Toast `kb_error`. Das legt nur
+  die Reihenfolge fest: TalkBack spricht asynchron, die Ansage kann also noch laufen, wenn das Mikrofon schon offen
+  ist. Ob ein Vorlauf (Mikrofon erst nach der Ansage, nur mit aktivem TalkBack) nötig ist, klärt der Gerätetest G1.
 - **V1 Verwerfen ohne Ziehen (WCAG 2.5.7).** Bedienungshilfe-Aktionen am Knopf: in RECORDING `cd_kb_discard`
   „Aufnahme verwerfen“; in ERROR `cd_kb_retry` „Erneut senden“ und `cd_kb_discard`. Verwerfen wirkt wie das Ziehen
   aufs ✕ (Toast `float_discarded`, Haptik `REJECT`, IDLE). Das Ziehen bleibt unverändert.
