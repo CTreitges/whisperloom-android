@@ -24,6 +24,9 @@ class AudioRecorder {
 
     companion object {
         const val SAMPLE_RATE = 16_000 // == AudioUtils.SAMPLE_RATE
+
+        /** Ein Stueck fuer [onChunk]: 100 ms PCM16 mono bei 16 kHz = 1600 Samples = 3200 Byte. */
+        const val CHUNK_BYTES = SAMPLE_RATE / 10 * 2
         private const val TAG = "Loom-AudioRecorder"
         private val CHANNEL = AudioFormat.CHANNEL_IN_MONO
         private val ENCODING = AudioFormat.ENCODING_PCM_16BIT
@@ -41,6 +44,15 @@ class AudioRecorder {
 
     /** Optionaler Pegel-Callback (0..1) fuer eine simple Waveform-Anzeige. */
     var onAmplitude: ((Float) -> Unit)? = null
+
+    /**
+     * Optionaler Stueck-Callback (WhisperLoom Simple, Echtzeit): liefert das Audio waehrend der Aufnahme als
+     * PCM16-little-endian-Stuecke von [CHUNK_BYTES] (100 ms), auf dem Aufnahme-Thread. Der Puffer fuer [stop]
+     * fuellt sich unabhaengig davon weiter. Beim Ende der Aufnahme ([stop], [cancel], [pause]) kommt ein
+     * angefangenes letztes Stueck (kuerzer als 100 ms) noch, bevor der Aufnahme-Thread endet — sonst fehlte das
+     * Ende des letzten Worts, wenn direkt nach dem Sprechen getippt wird.
+     */
+    @Volatile var onChunk: ((ByteArray) -> Unit)? = null
 
     /** Nimmt gerade auf (nicht in der Pause). */
     val isRecording: Boolean get() = recording
@@ -110,6 +122,9 @@ class AudioRecorder {
         val reader = Thread {
             val buf = ShortArray(bufferSize / 2)
             val bytes = ByteArray(buf.size * 2)
+            // Sammelt fuer [onChunk] bis zu einem vollen 100-ms-Stueck; je Instanz neu (nach einer Pause
+            // faengt das Stueck von vorn an, ein Rest von vor der Pause wird nicht nachgereicht).
+            val chunk = ByteArrayOutputStream(CHUNK_BYTES)
             try {
                 while (recording && thread === Thread.currentThread()) {
                     val n = recorder.read(buf, 0, buf.size)
@@ -125,6 +140,7 @@ class AudioRecorder {
                     }
                     synchronized(lock) { pcm.write(bytes, 0, n * 2) }
                     onAmplitude?.invoke(peak / 32768f)
+                    onChunk?.let { emit -> emitChunks(chunk, bytes, n * 2, emit) }
                 }
             } catch (e: Throwable) {
                 // Auch ein Error (OutOfMemoryError beim Wachsen des Puffers): die Aufnahme endet wie
@@ -138,6 +154,8 @@ class AudioRecorder {
             } finally {
                 try { recorder.stop() } catch (_: Exception) {}
                 recorder.release()
+                // Rest unter 100 ms nachreichen, solange der Aufrufer noch zuhoert.
+                if (chunk.size() > 0) onChunk?.invoke(chunk.toByteArray())
             }
         }
         thread = reader
@@ -170,6 +188,20 @@ class AudioRecorder {
         paused = false
         awaitThread(1_000)
         synchronized(lock) { pcm = ByteArrayOutputStream() }
+    }
+
+    /** Haengt [len] Bytes an [chunk] und gibt jedes volle Stueck ([CHUNK_BYTES]) an [emit]. */
+    private fun emitChunks(chunk: ByteArrayOutputStream, bytes: ByteArray, len: Int, emit: (ByteArray) -> Unit) {
+        var offset = 0
+        while (offset < len) {
+            val take = minOf(len - offset, CHUNK_BYTES - chunk.size())
+            chunk.write(bytes, offset, take)
+            offset += take
+            if (chunk.size() == CHUNK_BYTES) {
+                emit(chunk.toByteArray())
+                chunk.reset()
+            }
+        }
     }
 
     private fun awaitThread(millis: Long) {

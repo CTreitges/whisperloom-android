@@ -30,4 +30,20 @@
         <ignore path="src/main/java/com/chris/whisperloom/whisper/ModelDownloader.kt" />
         <ignore path="src/main/java/com/chris/whisperloom/whisper/ModelStore.kt" />
     </issue>
+
+    <!-- Flavor simple (WhisperLoom Simple): src/simple/AndroidManifest.xml entfernt die Vordergrund-Dienste und
+         POST_NOTIFICATIONS der Haupt-App; der Code in src/main wird trotzdem mitkompiliert, ist dort aber
+         unerreichbar (keine Komponente im Manifest). Lint kennt den Schnitt nicht und meldet fuer diese drei
+         Dienste fehlende Rechte/foregroundServiceType. Im Flavor voll stehen beide im Manifest (lintVollDebug
+         vor dem Schnitt gruen); eine Pruefung je Flavor bietet Lint nicht. -->
+    <issue id="NotificationPermission">
+        <ignore path="src/main/java/com/chris/whisperloom/overlay/FloatingMicService.kt" />
+        <ignore path="src/main/java/com/chris/whisperloom/whisper/ModelDownloadService.kt" />
+        <ignore path="src/main/java/com/chris/whisperloom/agent/VoiceTaskService.kt" />
+    </issue>
+    <issue id="ForegroundServiceType">
+        <ignore path="src/main/java/com/chris/whisperloom/overlay/FloatingMicService.kt" />
+        <ignore path="src/main/java/com/chris/whisperloom/whisper/ModelDownloadService.kt" />
+        <ignore path="src/main/java/com/chris/whisperloom/agent/VoiceTaskService.kt" />
+    </issue>
 </lint>

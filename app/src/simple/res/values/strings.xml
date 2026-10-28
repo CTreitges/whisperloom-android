@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Texte der Simple-APK. Einfache Sprache, ein Satz je Knopf, eine Handlung je Fehler (Konzept §4.4).
+     Wortliste (Konzept §13 R1): allgemeines Diktat-Werkzeug, keine medizinischen Begriffe, keine Wirkversprechen.
+     app_name/ime_label ueberschreiben src/main (Flavor-Quellset hat Vorrang). -->
+<resources>
+    <string name="app_name">WhisperLoom Simple</string>
+    <string name="ime_label">WhisperLoom Simple</string>
+
+    <!-- Tastatur: Fenster und Knoepfe -->
+    <string name="simple_pane_title">WhisperLoom-Tastatur</string>
+    <string name="simple_btn_record">Aufnehmen</string>
+    <string name="simple_btn_done">Fertig</string>
+    <string name="simple_btn_wait">Moment …</string>
+    <string name="simple_btn_inserted">Eingefügt ✓</string>
+    <string name="simple_btn_delete">Löschen</string>
+    <string name="simple_btn_delete_confirm">Wirklich löschen?</string>
+    <string name="simple_btn_switch">Tastatur wechseln</string>
+
+    <!-- Zustand fuer TalkBack (stateDescription) -->
+    <string name="simple_state_ready">Bereit</string>
+    <string name="simple_state_connecting">Verbindet</string>
+    <string name="simple_state_recording">Aufnahme läuft</string>
+    <string name="simple_state_inserting">Fügt ein</string>
+    <string name="simple_state_inserted">Eingefügt</string>
+    <string name="simple_state_error">Fehler</string>
+
+    <!-- Fehler: ein Satz, eine Handlung -->
+    <string name="simple_err_no_connection">Gerade keine Verbindung. Nochmal tippen.</string>
+    <string name="simple_err_quota">Das Guthaben ist aufgebraucht. Bitte Bescheid sagen.</string>
+    <string name="simple_err_mic_busy">Das Mikrofon ist gerade belegt.</string>
+    <string name="simple_err_mic_permission">Bitte erst das Mikrofon erlauben. In der App tippen.</string>
+    <string name="simple_err_password">Hier bitte tippen.</string>
+    <string name="simple_err_no_field">Erst in ein Feld tippen.</string>
+    <string name="simple_err_nothing">Ich habe nichts verstanden. Nochmal tippen.</string>
+    <string name="simple_err_dropped">Die Verbindung ist weg. Nochmal tippen.</string>
+    <string name="simple_err_locked">Bitte erst das Handy entsperren.</string>
+    <string name="simple_hint_silence_stop">Lange nichts gehört. Aufnahme beendet.</string>
+
+    <!-- Platzhalter-Start (Etappe 1) -->
+    <string name="simple_start_title">WhisperLoom Simple</string>
+    <string name="simple_start_intro">Die Tastatur mit einem Knopf. Hier kannst du sie ausprobieren.</string>
+    <string name="simple_start_mic">Mikrofon erlauben</string>
+    <string name="simple_start_mic_ok">Mikrofon ist erlaubt.</string>
+    <string name="simple_start_enable">Tastatur einschalten</string>
+    <string name="simple_start_pick">Tastatur wählen</string>
+    <string name="simple_start_test_hint">Hier tippen und dann auf Aufnehmen.</string>
+</resources>

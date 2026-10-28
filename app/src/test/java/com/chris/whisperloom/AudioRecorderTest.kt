@@ -90,6 +90,31 @@ class AudioRecorderTest {
 
     private fun pegel(sample: Float) = Math.round(abs(sample) * 32768f)
 
+    /** WhisperLoom Simple (Echtzeit): [AudioRecorder.onChunk] liefert volle 100-ms-Stuecke, lueckenlos, in Reihenfolge. */
+    @Test fun stueckCallbackLiefertVolle100msStueckeInReihenfolge() {
+        // 4000 Samples = 8000 Byte = 2 volle Stuecke (3200) + Rest 1600, der nicht mehr kommt.
+        val teil = quelle(4_000, 1000)
+        val stuecke = mutableListOf<ByteArray>()
+        recorder.onChunk = { synchronized(stuecke) { stuecke += it } }
+        assertTrue(recorder.start())
+        teil.abwarten()
+        val samples = recorder.stop()
+
+        assertEquals(4_000, samples.size)
+        val got = synchronized(stuecke) { stuecke.toList() }
+        assertEquals("zwei volle Stuecke und der Rest beim Ende", 3, got.size)
+        assertTrue(got.take(2).all { it.size == AudioRecorder.CHUNK_BYTES })
+        assertEquals("Rest = 800 Samples", 1_600, got[2].size)
+        // Inhalt = alle 4000 Samples als PCM16 little-endian, in Reihenfolge (Quelle: +1000/-1000 im Wechsel).
+        val all = got[0] + got[1] + got[2]
+        for (i in 0 until all.size / 2) {
+            val lo = all[i * 2].toInt() and 0xFF
+            val hi = all[i * 2 + 1].toInt()
+            val s = (hi shl 8) or lo
+            assertEquals("Sample $i", if (i % 2 == 0) 1000 else -1000, s)
+        }
+    }
+
     @Test fun pauseNimmtNichtsAufUndWeiterHaengtLueckenlosAn() {
         val teilA = quelle(16_000, 1000)
         val teilB = quelle(8_000, 3000)

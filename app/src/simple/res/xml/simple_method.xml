@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ein-Knopf-Tastatur: keine Einstellungen-Activity (Konzept: keine Einstellungen sichtbar), ein Subtype. -->
+<input-method xmlns:android="http://schemas.android.com/apk/res/android">
+    <subtype
+        android:name="@string/subtype_de"
+        android:imeSubtypeLocale="de"
+        android:imeSubtypeMode="keyboard" />
+</input-method>

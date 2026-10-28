@@ -66,16 +66,34 @@ jobs:
         run: python3 tools/check_jni_symbols.py
 
       - name: Unit-Tests + Lint
-        run: ./gradlew --no-daemon testDebugUnitTest lintDebug
+        run: ./gradlew --no-daemon testVollDebugUnitTest testSimpleDebugUnitTest lintVollDebug lintSimpleDebug
 
-      - name: Debug-APK bauen
-        run: ./gradlew --no-daemon assembleDebug
+      # Beide Editionen (Konzept WhisperLoom Simple §11.1): voll = die bisherige App, simple = Ein-Knopf-Tastatur.
+      - name: Debug-APKs bauen (voll + simple)
+        run: ./gradlew --no-daemon assembleVollDebug assembleSimpleDebug
 
-      - name: Debug-APK als Artefakt hochladen
+      - name: Debug-APK (voll) als Artefakt hochladen
         uses: actions/upload-artifact@v7
         with:
           name: whisperloom-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/voll/debug/app-voll-debug.apk
+          if-no-files-found: error
+
+      # Simple-APK: feste Paket-ID (unabhaengig von whisperloom.applicationId), nur RECORD_AUDIO + INTERNET,
+      # keine Overlay-/Bedienungshilfe-/Widget-Komponenten, keine Native-Bibliotheken.
+      - name: Simple-Debug-APK pruefen (Paket-ID, Rechte, Komponenten, keine .so)
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/simple/debug/app-simple-debug.apk
+          AAPT2="$ANDROID_HOME/build-tools/${BUILD_TOOLS_VERSION}/aapt2"
+          AAPT2="$AAPT2" tools/check_package_id.sh "$APK" com.chris.whisperloom.simple
+          tools/check_simple_apk.sh "$APK" "$AAPT2"
+
+      - name: Simple-Debug-APK als Artefakt hochladen
+        uses: actions/upload-artifact@v7
+        with:
+          name: whisperloom-simple-debug-apk
+          path: app/build/outputs/apk/simple/debug/app-simple-debug.apk
           if-no-files-found: error
 
       - name: Release-Keystore aus Secret schreiben
@@ -83,17 +101,19 @@ jobs:
           KS_B64: ${{ secrets.WHISPERLOOM_KEYSTORE_B64 }}
         run: printf '%s' "$KS_B64" | base64 -d > "$RUNNER_TEMP/whisperloom-release.p12"
 
-      - name: Signiertes Release-APK bauen
+      # Nur voll: der Haupt-App-Schluessel signiert nie die Simple-APK (Konzept E4). Das Simple-Release baut unten
+      # unsigniert, bis SIMPLE_KEYSTORE als Secret vorliegt (Keystore legt Christof an).
+      - name: Signiertes Release-APK (voll) bauen
         env:
           WHISPERLOOM_KEYSTORE: ${{ runner.temp }}/whisperloom-release.p12
           WHISPERLOOM_KEYSTORE_PASSWORD: ${{ secrets.WHISPERLOOM_KEYSTORE_PASSWORD }}
           WHISPERLOOM_KEY_ALIAS: whisperloom
-        run: ./gradlew --no-daemon assembleRelease
+        run: ./gradlew --no-daemon assembleVollRelease
 
       - name: Release-APK pruefen (Native-Lib da, kein Modell im APK, 16-KB-Alignment)
         run: |
           set -euo pipefail
-          APK=app/build/outputs/apk/release/app-release.apk
+          APK=app/build/outputs/apk/voll/release/app-voll-release.apk
           unzip -l "$APK" | tee /tmp/apk-list.txt | grep -E ' (lib|assets)/' || true
           grep -qE ' lib/arm64-v8a/libwhisperloom\.so$' /tmp/apk-list.txt \
             || { echo "::error::lib/arm64-v8a/libwhisperloom.so fehlt im Release-APK"; exit 1; }
@@ -121,7 +141,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: whisperloom-release-apk
-          path: app/build/outputs/apk/release/app-release.apk
+          path: app/build/outputs/apk/voll/release/app-voll-release.apk
           if-no-files-found: error
 
       # R8-Mapping zum Entschluesseln von Stacktraces des signierten Builds
@@ -129,7 +149,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: whisperloom-release-mapping
-          path: app/build/outputs/mapping/release/mapping.txt
+          path: app/build/outputs/mapping/vollRelease/mapping.txt
           if-no-files-found: error
 
       # ---- Play Store: signiertes Android App Bundle (.aab) ----
@@ -142,7 +162,7 @@ jobs:
           WHISPERLOOM_KEYSTORE: ${{ runner.temp }}/whisperloom-release.p12
           WHISPERLOOM_KEYSTORE_PASSWORD: ${{ secrets.WHISPERLOOM_KEYSTORE_PASSWORD }}
           WHISPERLOOM_KEY_ALIAS: whisperloom
-        run: ./gradlew --no-daemon bundleRelease -Pwhisperloom.applicationId=com.whisperloom
+        run: ./gradlew --no-daemon bundleVollRelease -Pwhisperloom.applicationId=com.whisperloom
 
       - name: Release-AAB pruefen (Paket-ID, Native-Lib, kein Modell, nur arm64, Mapping + Symbole)
         env:
@@ -150,7 +170,7 @@ jobs:
           BUNDLETOOL_SHA256: a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29
         run: |
           set -euo pipefail
-          AAB=app/build/outputs/bundle/release/app-release.aab
+          AAB=app/build/outputs/bundle/vollRelease/app-voll-release.aab
           # Die erste hochgeladene Paket-ID gehoert der Play-App fuer immer — vor dem Artefakt pruefen.
           export BUNDLETOOL="$RUNNER_TEMP/bundletool-all-${BUNDLETOOL_VERSION}.jar"
           curl -fsSL -o "$BUNDLETOOL" \
@@ -176,7 +196,39 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: whisperloom-play-aab
-          path: app/build/outputs/bundle/release/app-release.aab
+          path: app/build/outputs/bundle/vollRelease/app-voll-release.aab
+          if-no-files-found: error
+
+      # ---- WhisperLoom Simple: Release-APK (R8), ohne Haupt-App-Schluessel ----
+      # Mit der Play-Property gebaut, um zu beweisen, dass die feste Simple-ID nicht an ihr haengt.
+      - name: Release-APK (simple) bauen
+        env:
+          WHISPERLOOM_KEYSTORE: ${{ runner.temp }}/whisperloom-release.p12
+          WHISPERLOOM_KEYSTORE_PASSWORD: ${{ secrets.WHISPERLOOM_KEYSTORE_PASSWORD }}
+          WHISPERLOOM_KEY_ALIAS: whisperloom
+        run: ./gradlew --no-daemon assembleSimpleRelease -Pwhisperloom.applicationId=com.whisperloom
+
+      - name: Simple-Release-APK pruefen (Paket-ID, Rechte, keine .so, nicht mit dem Haupt-App-Schluessel signiert)
+        run: |
+          set -euo pipefail
+          APK=$(ls app/build/outputs/apk/simple/release/app-simple-release*.apk | head -n 1)
+          AAPT2="$ANDROID_HOME/build-tools/${BUILD_TOOLS_VERSION}/aapt2"
+          AAPT2="$AAPT2" tools/check_package_id.sh "$APK" com.chris.whisperloom.simple
+          tools/check_simple_apk.sh "$APK" "$AAPT2"
+          APKSIGNER="$ANDROID_HOME/build-tools/${BUILD_TOOLS_VERSION}/apksigner"
+          MAIN_CERT=$("$APKSIGNER" verify --print-certs app/build/outputs/apk/voll/release/app-voll-release.apk | grep -m1 'SHA-256' || true)
+          SIMPLE_CERT=$("$APKSIGNER" verify --print-certs "$APK" 2>/dev/null | grep -m1 'SHA-256' || echo "unsigniert")
+          echo "voll:   $MAIN_CERT"
+          echo "simple: $SIMPLE_CERT"
+          if [ -n "$MAIN_CERT" ] && [ "$MAIN_CERT" = "$SIMPLE_CERT" ]; then
+            echo "::error::Simple-APK ist mit dem Schluessel der Haupt-App signiert (E4 verletzt)"; exit 1
+          fi
+
+      - name: Simple-Release-APK als Artefakt hochladen
+        uses: actions/upload-artifact@v7
+        with:
+          name: whisperloom-simple-release-apk
+          path: app/build/outputs/apk/simple/release/app-simple-release*.apk
           if-no-files-found: error
 
       - name: Testberichte hochladen

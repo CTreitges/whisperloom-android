@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- WhisperLoom Simple: kein Klartext (Konzept §8.7). Die Haupt-App erlaubt http fuer eigene LAN-Server; die
+     Simple-APK spricht nur mit dem Token-Dienst (https) und dem Anbieter (wss). Ueberschreibt src/main. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

@@ -92,9 +92,11 @@ Zielplattform: compileSdk 37, targetSdk 36 (Play-Vorgabe seit 31.08.2026), minSd
 ```bash
 git clone --recurse-submodules https://github.com/CTreitges/whisperloom-android.git     # whisper.cpp kommt als Submodul (v1.9.3)
 cd whisperloom-android
-./gradlew assembleDebug                        # Debug-APK: app/build/outputs/apk/debug/app-debug.apk
-./gradlew testDebugUnitTest lintDebug          # Tests + Lint
+./gradlew assembleVollDebug                    # Debug-APK: app/build/outputs/apk/voll/debug/app-voll-debug.apk
+./gradlew testVollDebugUnitTest lintVollDebug  # Tests + Lint
 ```
+
+Das Projekt hat zwei Editionen (Flavor-Dimension `edition`): `voll` ist die hier beschriebene App, `simple` ist **WhisperLoom Simple** (`com.chris.whisperloom.simple`, feste Paket-ID, eigene Signatur) — eine Tastatur mit einem großen Aufnehmen-Knopf und Echtzeit-Erkennung, ohne schwebenden Knopf, Bedienungshilfe, Widget und lokale Modelle (`src/simple/`, Manifest-Schnitt per `tools:node="remove"`). `assembleSimpleDebug`, `testSimpleDebugUnitTest`, `lintSimpleDebug`; `assembleDebug` baut beide.
 
 Fehlt das Submodul (Clone ohne `--recurse-submodules`): `git submodule update --init --recursive`.
 
@@ -131,15 +133,15 @@ zum `versionCode` die Highlight-Datei existieren.
 
 1. Checkout mit Submodulen, JDK 17, Gradle-Cache, Android-SDK; `sdkmanager` installiert NDK 28.2.13676358, CMake 3.22.1, Build-Tools 36.0.0 und Platform 37.
 2. CMake-Zwischenstand (`app/.cxx`) wird gecacht (Key: Submodul-Commit + `cpp/**` + `build.gradle.kts`).
-3. `tools/check_jni_symbols.py`, dann `testDebugUnitTest lintDebug`, `assembleDebug`.
-4. Signiertes `assembleRelease` mit dem Keystore aus den Secrets.
+3. `tools/check_jni_symbols.py`, dann Tests und Lint beider Editionen (`testVollDebugUnitTest testSimpleDebugUnitTest lintVollDebug lintSimpleDebug`), `assembleVollDebug assembleSimpleDebug`; `tools/check_simple_apk.sh` prüft die Simple-APK (Paket-ID `com.chris.whisperloom.simple`, nur `RECORD_AUDIO` + `INTERNET`, keine Komponenten der Haupt-App, keine `.so`).
+4. Signiertes `assembleVollRelease` mit dem Keystore aus den Secrets. Danach `assembleSimpleRelease` — unsigniert, solange kein `SIMPLE_KEYSTORE` vorliegt; der Haupt-App-Schlüssel signiert die Simple-APK nie (geprüft per `apksigner`).
 5. Prüfung des Release-APKs: `lib/arm64-v8a/libwhisperloom.so` vorhanden, **kein** `assets/*.bin` (Modelle kommen nur per Download), keine anderen ABIs, `zipalign -P 16` und `llvm-readelf` bestätigen 16-KB-Alignment aller `LOAD`-Segmente, `tools/check_package_id.sh` bestätigt die Paket-ID `com.chris.whisperloom`.
-6. Signiertes `bundleRelease -Pwhisperloom.applicationId=com.whisperloom` (Android App Bundle für den Play Store, gleicher Schlüssel als Upload-Key). Nur die Play-Version heißt `com.whisperloom`; GitHub- und F-Droid-APKs bleiben `com.chris.whisperloom`, damit installierte Apps weiter Updates bekommen. Geprüft werden Native-Lib, Modelle und ABIs, die Paket-ID (bundletool 1.18.3, Prüfsumme fest) sowie R8-Mapping und Native-Symbole in `BUNDLE-METADATA/`. Beides liest Play direkt aus dem Bundle.
-7. Artefakte: `whisperloom-debug-apk`, `whisperloom-release-apk`, `whisperloom-release-mapping` (R8-`mapping.txt` zum Entschlüsseln von Stacktraces des Release-APKs; für Play liegt das passende Mapping im AAB), `whisperloom-play-aab` (`com.whisperloom`), `unit-and-lint-reports`.
+6. Signiertes `bundleVollRelease -Pwhisperloom.applicationId=com.whisperloom` (Android App Bundle für den Play Store, gleicher Schlüssel als Upload-Key). Nur die Play-Version heißt `com.whisperloom`; GitHub- und F-Droid-APKs bleiben `com.chris.whisperloom`, damit installierte Apps weiter Updates bekommen. Geprüft werden Native-Lib, Modelle und ABIs, die Paket-ID (bundletool 1.18.3, Prüfsumme fest) sowie R8-Mapping und Native-Symbole in `BUNDLE-METADATA/`. Beides liest Play direkt aus dem Bundle.
+7. Artefakte: `whisperloom-debug-apk`, `whisperloom-simple-debug-apk`, `whisperloom-simple-release-apk`, `whisperloom-release-apk`, `whisperloom-release-mapping` (R8-`mapping.txt` zum Entschlüsseln von Stacktraces des Release-APKs; für Play liegt das passende Mapping im AAB), `whisperloom-play-aab` (`com.whisperloom`), `unit-and-lint-reports`.
 
 ### Release-Signierung
 
-Ein persistenter PKCS12-Keystore liegt als GitHub-Secrets `WHISPERLOOM_KEYSTORE_B64` (Base64) und `WHISPERLOOM_KEYSTORE_PASSWORD` (nicht im Repo). Die CI dekodiert ihn und signiert `assembleRelease` und `bundleRelease`; derselbe Schlüssel signiert jedes Release, damit Updates über die installierte Version gehen. Für lokale Release-Builds: Keystore unter `keystore/whisperloom-release.p12` ablegen (per `.gitignore` ausgeschlossen) und `WHISPERLOOM_KEYSTORE`, `WHISPERLOOM_KEYSTORE_PASSWORD`, `WHISPERLOOM_KEY_ALIAS` (Standard `whisperloom`) als Umgebungsvariablen setzen — fehlt der Keystore, bleibt das Release-APK unsigniert. Release-Builds laufen mit R8 (Full Mode) und Resource-Shrinking; Keep-Regeln: `com.chris.whisperloom.whisper.WhisperLib` (JNI-Symbole) und `com.google.ai.edge.litertlm.**` (das AAR bringt keine Consumer-Regeln mit, ohne die Regel stürzt die lokale Textverbesserung im Release ab, LiteRT-LM #3739).
+Ein persistenter PKCS12-Keystore liegt als GitHub-Secrets `WHISPERLOOM_KEYSTORE_B64` (Base64) und `WHISPERLOOM_KEYSTORE_PASSWORD` (nicht im Repo). Die CI dekodiert ihn und signiert `assembleVollRelease` und `bundleVollRelease`; derselbe Schlüssel signiert jedes Release, damit Updates über die installierte Version gehen. WhisperLoom Simple bekommt einen eigenen Keystore (`SIMPLE_KEYSTORE`, `SIMPLE_KEYSTORE_PASSWORD`, `SIMPLE_KEY_ALIAS`), nie diesen. Für lokale Release-Builds: Keystore unter `keystore/whisperloom-release.p12` ablegen (per `.gitignore` ausgeschlossen) und `WHISPERLOOM_KEYSTORE`, `WHISPERLOOM_KEYSTORE_PASSWORD`, `WHISPERLOOM_KEY_ALIAS` (Standard `whisperloom`) als Umgebungsvariablen setzen — fehlt der Keystore, bleibt das Release-APK unsigniert. Release-Builds laufen mit R8 (Full Mode) und Resource-Shrinking; Keep-Regeln: `com.chris.whisperloom.whisper.WhisperLib` (JNI-Symbole) und `com.google.ai.edge.litertlm.**` (das AAR bringt keine Consumer-Regeln mit, ohne die Regel stürzt die lokale Textverbesserung im Release ab, LiteRT-LM #3739).
 
 ## Tests
 

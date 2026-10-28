@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Manifest-Schnitt fuer den Flavor "simple" (Konzept §11.1; Entscheidung 2026-10-28: Schnitt per Manifest,
+     der Code der Haupt-App bleibt in src/main). Dieses Manifest hat Vorrang vor src/main und den Bibliotheken:
+     tools:node="remove" nimmt Rechte, Dienste, Activities und Widget der Haupt-App heraus. Uebrig bleiben
+     RECORD_AUDIO und INTERNET, die Ein-Knopf-Tastatur und ein Platzhalter-Start fuer den Mikrofon-Dialog.
+     Kein Overlay, keine Bedienungshilfe, kein Widget, keine Modelle, keine Benachrichtigungen. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Rechte der Haupt-App -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" tools:node="remove" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:node="remove" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" tools:node="remove" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" tools:node="remove" />
+    <!-- Rechte aus Bibliotheks-Manifesten (WorkManager); die Simple-APK plant keine Hintergrundarbeit. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" tools:node="remove" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" tools:node="remove" />
+
+    <!-- Eigene Application: nur die Vorbelegung (PresetSeed), keine Offline-Engines. -->
+    <application
+        android:name=".simple.SimpleApplication"
+        tools:replace="android:name">
+
+        <!-- Komponenten der Haupt-App -->
+        <activity android:name=".ui.MainActivity" tools:node="remove" />
+        <activity-alias android:name=".SetupActivity" tools:node="remove" />
+        <activity-alias android:name=".SettingsActivity" tools:node="remove" />
+        <activity android:name=".ShareTranscribeActivity" tools:node="remove" />
+        <service android:name=".ime.WhisperLoomInputMethodService" tools:node="remove" />
+        <service android:name=".overlay.FloatingMicService" tools:node="remove" />
+        <service android:name=".whisper.ModelDownloadService" tools:node="remove" />
+        <activity android:name=".agent.VoiceTaskTrampolineActivity" tools:node="remove" />
+        <service android:name=".agent.VoiceTaskService" tools:node="remove" />
+        <activity android:name=".agent.WidgetConfigActivity" tools:node="remove" />
+        <receiver android:name=".agent.VoiceTaskWidget" tools:node="remove" />
+        <service android:name=".a11y.TextInserterAccessibilityService" tools:node="remove" />
+
+        <!-- WorkManager (androidx.work, von der Haupt-App fuer die Pro-Widgets) wird in der Simple-APK nicht
+             gebraucht und haette ohne WAKE_LOCK keinen sicheren Start — seine Initialisierung entfaellt. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false">
+            <meta-data android:name="androidx.work.WorkManagerInitializer" tools:node="remove" />
+        </provider>
+
+        <!-- Platzhalter-Start (Etappe 1): Mikrofon-Dialog, Testfeld, Tastatur einschalten/waehlen.
+             Die richtige Start-App mit Einrichtung kommt in Etappe 3 (U5). -->
+        <activity
+            android:name=".simple.SimpleStartActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Ein-Knopf-Tastatur. directBootAware: kein Einrichtungsdialog, vor dem ersten Entsperren
+             zeigt sie nur "Bitte erst entsperren" (Konzept §11.1). -->
+        <service
+            android:name=".simple.SimpleInputMethodService"
+            android:directBootAware="true"
+            android:exported="true"
+            android:label="@string/ime_label"
+            android:permission="android.permission.BIND_INPUT_METHOD">
+            <intent-filter>
+                <action android:name="android.view.InputMethod" />
+            </intent-filter>
+            <meta-data
+                android:name="android.view.im"
+                android:resource="@xml/simple_method" />
+        </service>
+    </application>
+</manifest>
