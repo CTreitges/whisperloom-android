@@ -90,7 +90,6 @@
     <string name="home_row_refine">Textverbesserung</string>
     <string name="home_row_permissions">Berechtigungen</string>
     <string name="home_row_keyboard">Diktat-Tastatur</string>
-    <string name="home_row_models">Offline-Modelle</string>
     <string name="home_val_online">Online · %1$s · %2$s</string>
     <string name="home_val_offline">Offline · %1$s (%2$s)</string>
     <string name="home_val_offline_missing">Offline · kein Modell geladen</string>
@@ -110,8 +109,6 @@
     <string name="home_val_kb_active">Aktiv</string>
     <string name="home_val_kb_enabled">Aktiviert, nicht ausgewählt</string>
     <string name="home_val_kb_off">Nicht aktiviert (optional)</string>
-    <string name="home_val_models" tools:ignore="PluralsCandidate">%1$d geladen · %2$s belegt</string>
-    <string name="home_val_models_none">Keins geladen</string>
     <string name="home_share_hint">Sprachnachrichten abtippen: in WhatsApp lange drücken → Teilen → WhisperLoom.</string>
     <string name="home_rerun_setup">Einrichtung erneut öffnen</string>
     <string name="home_version">WhisperLoom %1$s</string>
@@ -166,7 +163,7 @@
     <string name="setup_s2b_local_body">%1$s verbessert den Text auf dem Gerät. Einmal laden: %2$s.</string>
     <string name="setup_s2b_local_body_polish">%1$s verbessert den Text auf dem Gerät und schaltet „Glätten“ ein. Einmal laden: %2$s.</string>
     <string name="setup_s2b_skip">Überspringen</string>
-    <string name="setup_s2b_skip_body">Nur die Erkennung — offline kommt der Text ohne KI. Ein Textmodell kannst du später unter Offline-Modelle laden.</string>
+    <string name="setup_s2b_skip_body">Nur die Erkennung — offline kommt der Text ohne KI. Ein Textmodell kannst du später unter Textverbesserung → Offline-Textverbesserung laden.</string>
     <string name="setup_s2b_text_open">Textmodell laden oder „Überspringen“ wählen.</string>
     <string name="setup_s2b_text_bg">Lädt im Hintergrund weiter — du kannst schon weitermachen.</string>
     <string name="setup_s3_title">Mikrofon erlauben</string>
@@ -239,17 +236,13 @@
     <string name="settings_group_recognition">Spracherkennung</string>
     <string name="settings_group_llm">KI-Zugang</string>
     <string name="settings_group_button">Knopf &amp; Tastatur</string>
-    <string name="settings_group_models">Offline-Modelle</string>
     <string name="settings_group_help">Anleitung &amp; Hilfe</string>
     <string name="settings_group_about">Über WhisperLoom</string>
     <!-- Gruppen im Hub (angezeigt in Großbuchstaben) -->
-    <string name="settings_section_text">Text</string>
-    <string name="settings_section_models">Modelle &amp; Zugänge</string>
     <string name="settings_section_controls">Bedienung</string>
-    <string name="settings_section_pro">Pro</string>
-    <string name="settings_section_info">Info</string>
+    <string name="settings_section_speech">Sprache &amp; Text</string>
+    <string name="settings_section_more">Weiteres</string>
     <string name="settings_help_sub">Anleitung, API-Keys, Datenschutz</string>
-    <string name="settings_models_none">Keins geladen</string>
     <string name="settings_val_bubble_on">Knopf läuft</string>
     <string name="settings_val_bubble_off">Knopf aus</string>
     <string name="settings_val_kb_on">Tastatur aktiv</string>
@@ -272,8 +265,6 @@
     <string name="rec_title">Spracherkennung</string>
     <string name="rec_engine_online">Online-Dienst</string>
     <string name="rec_engine_offline">Offline-Modell</string>
-    <string name="rec_no_model">Kein Modell geladen</string>
-    <string name="rec_load_model">Modell laden</string>
     <string name="rec_card_transcription">Transkription</string>
     <string name="rec_card_offline">Offline-Modell</string>
     <string name="rec_offline_first_use">Erste Nutzung lädt das Modell in den Speicher (2–5 s).</string>
@@ -351,6 +342,7 @@
     <string name="text_share_intro">Für Audios, die du per Teilen an WhisperLoom schickst (z. B. aus WhatsApp). Eigene Stufe, unabhängig vom Diktat; bei „Aus“ bleibt der Text wortgetreu.</string>
     <string name="text_share_off_sub">Wortgetreu, Füllwörter per Schalter ausblendbar. Keine zweite Anfrage.</string>
     <string name="refine_offline">Bei Offline-Erkennung</string>
+    <string name="refine_card_models">Zugang &amp; Modelle</string>
     <!-- Stufen-Zeile (3.9.0): der Text öffnet die Seite der Stufe (erkennbar am ›), die unsichtbare Zone um den Punkt wählt sie -->
     <string name="stage_open_settings">Einstellungen öffnen</string>
     <!-- %1$s = Stufe („Glätten“); TalkBack-Name der Auswahl-Zone -->
@@ -389,6 +381,7 @@
     <string name="stage_off_share_fillers">Füllwort-Liste fürs Ausblenden im Fenster</string>
     <string name="text_local_needs_ram">Für ein lokales Textmodell braucht das Gerät mindestens 6 GB RAM.</string>
     <string name="text_rule_title">Textverbesserung bei Offline-Erkennung</string>
+    <string name="offline_text_title">Offline-Textverbesserung</string>
     <string name="text_rule_local">Lokales Textmodell</string>
     <string name="text_rule_local_sub">Standard — offline erkannter Text wird auf dem Gerät verbessert, nie online.</string>
     <string name="text_rule_online_local">Online, ohne Netz lokal</string>
@@ -522,8 +515,8 @@
     <string name="help_dictate_4">Rot = Fehler, antippen = erneut</string>
 
     <!-- §6.8 Offline-Modelle (E4, Schritt 2b, D1, D2, Download-Notification) -->
-    <string name="models_title">Offline-Modelle</string>
     <string name="models_channel">Modell-Downloads</string>
+    <string name="models_notif_result_title">Modell-Download</string>
     <string name="models_intro">Modelle werden einmalig von huggingface.co geladen und bleiben auf dem Gerät. Kein Modell ist in der App enthalten.</string>
     <string name="models_storage">Belegt: %1$s · Frei: %2$s</string>
     <string name="models_need_download">Zuerst ein Modell für die Erkennung laden</string>
@@ -549,8 +542,6 @@
     <string name="models_empty_title">Noch kein Modell geladen</string>
     <string name="models_empty_body">Empfehlung: Small — gute Qualität für Deutsch bei 190 MB.</string>
     <string name="models_source">Quelle: huggingface.co/ggerganov/whisper.cpp</string>
-    <string name="models_section_stt">Spracherkennung</string>
-    <string name="models_section_llm">Textverbesserung</string>
     <string name="models_llm_intro">Verbessert offline erkannten Text auf dem Gerät — ohne Netz, der Text verlässt das Handy nicht. Wann es rechnet, stellst du darunter bei „Textverbesserung bei Offline-Erkennung“ ein.</string>
     <string name="models_gemma_e2b">Gemma 4 E2B</string>
     <string name="models_gemma_e2b_sub">%1$s · ~1,8 GB RAM · Gerät ab 6 GB RAM</string>
@@ -606,15 +597,15 @@
     <string name="help_s4_intro">Jeder OpenAI-kompatible Server geht, z. B. speaches, whisper.cpp-server oder LocalAI. Eintragen unter Spracherkennung → Anbieter „Eigener Server“.</string>
     <string name="help_s4_body">Base-URL eintragen, Key nur falls verlangt. Endpunkte: /v1/audio/transcriptions und /v1/chat/completions.\nTextverbesserung auch über Ollama: lokal ohne Key, Cloud mit Key.\nhttp:// nur im eigenen Netz oder per VPN.</string>
     <string name="help_s5_title">Offline-Modus</string>
-    <string name="help_s5_body">Ein Offline-Modell erkennt Sprache auf dem Gerät (Small: etwa 5–12 s). Einmal laden (32–574 MB), löschen unter Offline-Modelle. Für Deutsch empfohlen: Small.</string>
+    <string name="help_s5_body">Ein Offline-Modell erkennt Sprache auf dem Gerät (Small: etwa 5–12 s). Einmal laden (32–574 MB), löschen unter Spracherkennung. Für Deutsch empfohlen: Small.</string>
     <string name="help_widgets_title">Widgets &amp; Pro Widgets</string>
     <string name="help_widgets_intro">Normale Widgets für den Startbildschirm folgen mit einem Update. Pro Widgets gibt es schon: Sprach-Command und Claude Code, für Entwickler mit eigenem Server.</string>
-    <string name="help_widgets_unlock">Freischalten: Einstellungen → Erweitert → Pro Widgets.</string>
+    <string name="help_widgets_unlock">Freischalten: Einstellungen → Pro-Funktionen → Pro Widgets.</string>
     <string name="help_widgets_create">Anlegen: Widgets → Pro Widgets → Sprach-Command- oder Claude-Code-Widget. Jedes Widget braucht einen Namen; er steht unter dem Widget und lässt sich ausblenden.</string>
     <string name="help_widgets_server">Server je Widget: Adresse und Token trägst du im Widget ein, „Verbindung prüfen“ testet beides.</string>
     <string name="help_widgets_place">Platzieren: Startbildschirm lange drücken → Widgets → WhisperLoom → „Pro Widget“, dann das Widget-Profil wählen.</string>
     <string name="help_widgets_claude">Das Claude-Code-Widget startet per Sprache eine neue Claude-Code-Session und braucht dafür die claude-bridge auf dem eigenen Server: https://github.com/CTreitges/claude-bridge</string>
-    <string name="help_widgets_models">Auch unter Erweitert: „Modelle vom Server“ – das Modell wählst du dann aus der aktuellen Liste des Anbieters, nicht nur aus den Empfehlungen.</string>
+    <string name="help_widgets_models">Auch unter Pro-Funktionen: „Modelle vom Server“ – das Modell wählst du dann aus der aktuellen Liste des Anbieters, nicht nur aus den Empfehlungen.</string>
     <string name="help_widgets_open">Zu den Widgets</string>
     <string name="help_s6_title">Datenschutz</string>
     <string name="help_s6_intro">WhisperLoom speichert keine Aufnahmen (nur ein Pro-Widget-Auftrag wartet bis zum Senden), und dein Key bleibt auf dem Gerät.</string>
@@ -838,11 +829,10 @@
         <item quantity="other">%d auf dem Startbildschirm</item>
     </plurals>
     <string name="widgets_sub_none_placed">noch keins auf dem Startbildschirm</string>
-    <string name="widgets_sub_normal_soon">Normale Widgets folgen bald</string>
     <string name="widgets_tab_normal">Widgets</string>
     <string name="widgets_tab_pro">Pro Widgets</string>
     <string name="widgets_normal_soon">Normale Widgets für den Startbildschirm kommen mit einem späteren Update.</string>
-    <string name="widgets_pro_unlock">Für Entwickler: Pro Widgets lassen sich unter „Erweitert“ freischalten.</string>
+    <string name="widgets_pro_unlock">Für Entwickler: Pro Widgets lassen sich unter „Pro-Funktionen“ freischalten.</string>
     <string name="widgets_pro_intro">Pro Widgets nehmen auf und schicken den Auftrag an deinen eigenen Server — als Sprach-Command oder als neue Claude-Code-Session. Jedes Widget hat seinen eigenen Namen und Server.</string>
     <string name="widgets_card_new_pro">Neues Pro Widget</string>
     <string name="widgets_card_pro">Deine Pro Widgets</string>
@@ -857,7 +847,7 @@
     <string name="widgets_help_size">Größe ändern: Widget lange drücken und an den Rändern ziehen. Ganz klein zeigt es das Symbol, breit Symbol und Text, ab 2 × 2 beides untereinander. Ist der Name eingeschaltet, steht er darunter.</string>
     <string name="widgets_help_shared">Die Aufnahme zeigt nur das Widget, mit dem du gestartet hast. Auch Auto-Stopp und Server richten sich nach ihm.</string>
     <string name="widget_config_title">Welches Widget-Profil?</string>
-    <string name="widget_config_pro_off">Pro Widgets sind aus. In der App unter Einstellungen → Erweitert einschalten.</string>
+    <string name="widget_config_pro_off">Pro Widgets sind aus. In der App unter Einstellungen → Pro-Funktionen einschalten.</string>
     <string name="widget_mode_toggle">Tippen startet und stoppt</string>
     <!-- %1$s = Sprechpause (widget_pause_*) -->
     <string name="widget_mode_autostop">Stoppt nach Sprechpause · %1$s</string>
@@ -910,11 +900,11 @@
     <string name="widget_profile_delete_unused">Es liegt gerade nicht auf dem Startbildschirm.</string>
     <string name="widget_profile_delete_kind_change">Es arbeitet dann als %1$s und sendet an dessen Server.</string>
 
-    <!-- ==== „Erweitert“ (Pro-Funktionen) und Tutorial Pro Widgets ================== -->
-    <string name="settings_group_advanced">Erweitert</string>
+    <!-- ==== „Pro-Funktionen“ (bis 3.9.1 „Erweitert“) und Tutorial Pro Widgets ================== -->
+    <string name="settings_group_advanced">Pro-Funktionen</string>
     <string name="settings_agent_off">Aus</string>
     <string name="advanced_intro">Pro-Funktionen für Entwickler und Bastler. Für das normale Diktieren brauchst du hier nichts.</string>
-    <string name="advanced_card_features">Pro-Funktionen</string>
+    <string name="advanced_card_features">Freischalten</string>
     <string name="advanced_manage_widgets">Pro Widgets verwalten</string>
     <string name="advanced_tutorial">Anleitung Pro Widgets</string>
     <string name="agent_card_mic">Mikrofon</string>
@@ -936,7 +926,7 @@
     <string name="prompt_enable">Stufe „Prompt“ anbieten</string>
     <string name="prompt_enable_sub">Zusätzliche Stufe in Tastatur und Einstellungen → Textverbesserung: formt ein Diktat zu einem gegliederten Prompt für KI-Assistenten wie ChatGPT oder Claude.</string>
     <string name="tutorial_pro_p1_title">Pro Widgets freischalten</string>
-    <string name="tutorial_pro_p1_body">Unter Einstellungen → Erweitert schaltest du „Pro Widgets“ ein. Danach hat das Widget-Menü einen eigenen Tab dafür.</string>
+    <string name="tutorial_pro_p1_body">Unter Einstellungen → Pro-Funktionen schaltest du „Pro Widgets“ ein. Danach hat das Widget-Menü einen eigenen Tab dafür.</string>
     <string name="tutorial_pro_p2_title">Widget anlegen</string>
     <string name="tutorial_pro_p2_body">Einstellungen → Widgets → Pro Widgets → „Sprach-Command-Widget“ oder „Claude-Code-Widget“. Gib ihm einen Namen und wähle, ob er unter dem Widget steht.</string>
     <string name="tutorial_pro_p3_title">Server eintragen</string>
@@ -1019,7 +1009,6 @@
     <string name="patchnotes_unavailable_action">Auf GitHub ansehen</string>
     <!-- Verlauf (3.9.0, Plan §6): Liste, Eintrag, Andere Stufe, Bearbeiten, Verlauf-Einstellungen.
          Nie Diktat-Text in Benachrichtigungen oder Logs — hier stehen nur Bezeichnungen. -->
-    <string name="settings_section_history">Verlauf</string>
     <string name="settings_group_history">Verlauf</string>
     <string name="settings_history_on" tools:ignore="PluralsCandidate">An · %1$d von %2$d</string>
     <string name="settings_history_on_plain">An</string>

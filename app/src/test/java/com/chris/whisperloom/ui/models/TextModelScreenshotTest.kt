@@ -26,7 +26,7 @@ import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SetupRouter
 import com.chris.whisperloom.ui.nav.SystemStatus
 import com.chris.whisperloom.ui.settings.LlmAccessScreen
-import com.chris.whisperloom.ui.settings.ModelsScreen
+import com.chris.whisperloom.ui.settings.OfflineTextScreen
 import com.chris.whisperloom.ui.settings.RecognitionScreen
 import com.chris.whisperloom.ui.setup.SetupScreen
 import com.chris.whisperloom.ui.state.AppEnv
@@ -127,23 +127,23 @@ class TextModelScreenshotTest {
         installSparse(ctx, ModelCatalog.SMALL)
         installSparse(ctx, TextModelCatalog.GEMMA4_E2B)
         val status = ready.copy(installedTextModels = setOf("gemma4_e2b"), totalRamBytes = 6L shl 30)
-        screen(status) { ModelsScreen(it) }
+        screen(status) { OfflineTextScreen(it) }
         shot("textmodell-offline-modelle-oben")
-        nachOben(hasText("TEXTVERBESSERUNG"))
+        nachOben(hasText("Gemma 4 E2B"))
         shot("textmodell-offline-modelle-textverbesserung")
     }
 
     @Test fun offlineModelleMitPflichtkarte() {
         installSparse(ctx, ModelCatalog.SMALL)
-        screen(ready) { ModelsScreen(it) }
-        nachOben(hasText("TEXTVERBESSERUNG"))
+        screen(ready) { OfflineTextScreen(it) }
+        nachOben(hasText("Gemma 4 E2B"))
         shot("textmodell-offline-modelle-pflichtkarte")
     }
 
     @Test fun offlineModelleRegelBeiOfflineErkennung() {
         // 3.9.0: die Regel steht unter den Textmodellen (vorher Text › Offline-Erkennung).
         installSparse(ctx, ModelCatalog.SMALL)
-        screen(ready) { ModelsScreen(it) }
+        screen(ready) { OfflineTextScreen(it) }
         nachOben(hasText("Textverbesserung bei Offline-Erkennung"), abstandPx = 400f)
         shot("textmodell-offline-modelle-regel")
     }
@@ -158,8 +158,8 @@ class TextModelScreenshotTest {
         // E2B geladen und gewaehlt, E4B passt (16 GB): ein Tipp laedt es.
         installSparse(ctx, ModelCatalog.SMALL)
         installSparse(ctx, TextModelCatalog.GEMMA4_E2B)
-        screen(ready.copy(installedTextModels = setOf("gemma4_e2b"), totalRamBytes = 16L shl 30)) { ModelsScreen(it) }
-        nachOben(hasText("TEXTVERBESSERUNG"))
+        screen(ready.copy(installedTextModels = setOf("gemma4_e2b"), totalRamBytes = 16L shl 30)) { OfflineTextScreen(it) }
+        nachOben(hasText("Gemma 4 E2B"))
         shot("textmodell-offline-modelle-auswahl-16gb")
     }
 
@@ -202,7 +202,7 @@ class TextModelScreenshotTest {
     @Test fun offlineModelleOhnePassendesTextmodell() {
         // 4-GB-Geraet: offline ja, Gemma nein — die Regel wirkt wie "Ueberspringen", mit Grund.
         installSparse(ctx, ModelCatalog.SMALL)
-        screen(ready.copy(totalRamBytes = 4L shl 30)) { ModelsScreen(it) }
+        screen(ready.copy(totalRamBytes = 4L shl 30)) { OfflineTextScreen(it) }
         nachOben(hasText("Textverbesserung bei Offline-Erkennung"), abstandPx = 400f)
         shot("textmodell-offline-modelle-zu-wenig-ram")
     }

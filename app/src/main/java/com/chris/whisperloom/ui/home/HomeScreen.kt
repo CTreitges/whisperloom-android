@@ -67,7 +67,6 @@ import com.chris.whisperloom.ui.components.VersionWithPatchnotes
 import com.chris.whisperloom.ui.components.Tone
 import com.chris.whisperloom.ui.components.LoomIcon
 import com.chris.whisperloom.ui.components.LoomRow
-import com.chris.whisperloom.ui.components.fileSize
 import com.chris.whisperloom.ui.components.levelLabel
 import com.chris.whisperloom.ui.components.modelLabel
 import com.chris.whisperloom.ui.components.offlineModelLabel
@@ -78,9 +77,9 @@ import com.chris.whisperloom.ui.models.offlineRule
 import com.chris.whisperloom.ui.nav.NavState
 import com.chris.whisperloom.ui.nav.Screen
 import com.chris.whisperloom.ui.nav.SetupRouter
+import com.chris.whisperloom.ui.settings.recognitionValue
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.theme.loom
-import com.chris.whisperloom.whisper.ModelCatalog
 
 /** H — Home (UX-Spec §2.1): Hero-Karte, ReadinessBanner, Status-Karte, Teilen-Hinweis, Fusszeile. */
 @Composable
@@ -122,9 +121,10 @@ fun HomeScreen(nav: NavState) {
                 ReadinessBanner(banner, onlineFirst) {
                     when (banner) {
                         HomeStatus.Banner.A11Y -> nav.push(Screen.Setup(SetupRouter.STEP_A11Y))
-                        HomeStatus.Banner.MODEL -> nav.push(Screen.Models)
-                        // Textmodelle und die Regel bei Offline-Erkennung stehen seit 3.9.0 bei den Offline-Modellen.
-                        HomeStatus.Banner.TEXT_MODEL -> nav.push(Screen.Models)
+                        // Die Whisper-Modelle stehen in der Spracherkennung, die Textmodelle samt Regel auf
+                        // der Offline-Textverbesserung (bis 3.9.1 beides unter "Offline-Modelle").
+                        HomeStatus.Banner.MODEL -> nav.push(Screen.Recognition)
+                        HomeStatus.Banner.TEXT_MODEL -> nav.push(Screen.OfflineText)
                         HomeStatus.Banner.NOTIF -> nav.push(Screen.Setup(SetupRouter.STEP_NOTIF))
                         HomeStatus.Banner.NONE -> Unit
                     }
@@ -314,23 +314,18 @@ private fun ReadinessBanner(banner: HomeStatus.Banner, onlineFirst: Boolean, onF
     }
 }
 
-/** Status-Karte: 4–5 klickbare Zeilen mit Status-Icon, Wert als stateDescription. */
+/**
+ * Status-Karte: vier klickbare Zeilen mit Status-Icon, Wert als stateDescription — dieselben Seiten wie
+ * im Hub (Spracherkennung, Textverbesserung, Knopf & Tastatur). Die Zeile "Offline-Modelle" (bis 3.9.1)
+ * ist in der Spracherkennung aufgegangen: ihr Wert nennt das Modell bzw. "kein Modell geladen".
+ */
 @Composable
 private fun StatusCard(nav: NavState, modelInstalled: Boolean) {
     val env = LocalAppEnv.current
     val prefs = env.prefs
     val status = env.status
-    val stt = prefs.sttAccess()
 
-    val recognitionText = when (prefs.engine) {
-        Engine.ONLINE -> stringResource(R.string.home_val_online, providerShortName(stt.provider), modelLabel(stt))
-        Engine.OFFLINE -> if (modelInstalled) {
-            stringResource(R.string.home_val_offline, offlineModelLabel(prefs.offlineModel), fileSize(ModelCatalog.byId(prefs.offlineModel).bytes))
-        } else {
-            stringResource(R.string.home_val_offline_missing)
-        }
-        null -> stringResource(R.string.setup_chip_open)
-    }
+    val recognitionText = recognitionValue(prefs, status)
     // Das Modell, mit dem das naechste Diktat rechnet: das der Stufe (Modell je Stufe, gleich welche Bereinigung).
     val llm = prefs.llmAccess(prefs.refinementFor(RefineWay.DICTATION).mode)
     val level = levelLabel(prefs.refineMode)
@@ -379,7 +374,6 @@ private fun StatusCard(nav: NavState, modelInstalled: Boolean) {
             HomeStatus.Keyboard.OFF -> R.string.home_val_kb_off
         },
     )
-    val installedCount = status.installedCount
 
     OutlinedSection(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp), gap = 0.dp) {
         Text(
@@ -398,13 +392,6 @@ private fun StatusCard(nav: NavState, modelInstalled: Boolean) {
             stringResource(R.string.home_row_keyboard), keyboardText,
             if (keyboard == HomeStatus.Keyboard.ACTIVE) Tone.SUCCESS else Tone.NEUTRAL, R.drawable.ic_keyboard,
         ) { nav.push(Screen.ButtonKeyboard) }
-        if (HomeStatus.showModelsRow(installedCount, prefs.engine)) {
-            val text = if (installedCount > 0) stringResource(R.string.home_val_models, installedCount, fileSize(status.modelsUsedBytes))
-            else stringResource(R.string.home_val_models_none)
-            StatusRow(stringResource(R.string.home_row_models), text, if (installedCount > 0) Tone.SUCCESS else Tone.WARNING) {
-                nav.push(Screen.Models)
-            }
-        }
     }
 }
 

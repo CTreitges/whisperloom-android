@@ -8,6 +8,7 @@ import com.chris.whisperloom.OfflineRefineRule
 import com.chris.whisperloom.R
 import com.chris.whisperloom.Vocabulary
 import com.chris.whisperloom.ui.access.stageModels
+import com.chris.whisperloom.ui.components.fileSize
 import com.chris.whisperloom.ui.components.levelLabel
 import com.chris.whisperloom.ui.components.modelLabel
 import com.chris.whisperloom.ui.components.offlineModelLabel
@@ -15,10 +16,30 @@ import com.chris.whisperloom.ui.components.offlineRuleLabel
 import com.chris.whisperloom.ui.components.offlineRuleShort
 import com.chris.whisperloom.ui.components.providerShortName
 import com.chris.whisperloom.ui.models.offlineRule
+import com.chris.whisperloom.ui.nav.SystemStatus
 import com.chris.whisperloom.ui.state.LocalAppEnv
 import com.chris.whisperloom.ui.state.PrefsState
+import com.chris.whisperloom.whisper.ModelCatalog
 
 // Unterzeilen der Einstellungen (Hub und Verweis-Zeilen): immer der aktuelle Wert, nie ein Schalter.
+
+/**
+ * "Online · OpenAI · GPT Transcribe", "Offline · Small (190 MB)" oder — offline ohne geladenes Modell —
+ * "Offline · kein Modell geladen" (dieselbe Zeile in Hub und Home-Status).
+ */
+@Composable
+internal fun recognitionValue(prefs: PrefsState, status: SystemStatus): String {
+    val stt = prefs.sttAccess()
+    return when (prefs.engine) {
+        Engine.ONLINE -> stringResource(R.string.home_val_online, providerShortName(stt.provider), modelLabel(stt))
+        Engine.OFFLINE -> if (prefs.offlineModel in status.installedModels) {
+            stringResource(R.string.home_val_offline, offlineModelLabel(prefs.offlineModel), fileSize(ModelCatalog.byId(prefs.offlineModel).bytes))
+        } else {
+            stringResource(R.string.home_val_offline_missing)
+        }
+        null -> stringResource(R.string.setup_chip_open)
+    }
+}
 
 /**
  * "Diktat: Glätten · Sprachnachrichten: Aus"; offline erkannt mit einer KI-Stufe dazu die Regel als

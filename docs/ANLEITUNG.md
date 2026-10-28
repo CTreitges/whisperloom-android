@@ -1,6 +1,6 @@
 # WhisperLoom — Anleitung
 
-Version 3.9.0 · Stand 2026-10-08 · Für Android 8.0 (API 26) und neuer
+Version 3.9.5 · Stand 2026-10-29 · Für Android 8.0 (API 26) und neuer
 
 Diese Anleitung richtet sich an Anwender, die WhisperLoom installieren, einrichten und im Alltag nutzen wollen. Entwickler finden Bau- und Architektur-Hinweise in der [README](../README.md); was sich von Version zu Version geändert hat, steht im [CHANGELOG](../CHANGELOG.md).
 
@@ -77,7 +77,7 @@ WhisperLoom liegt in einem eigenen F-Droid-Repository. Damit bekommst du Updates
 
 ### 2.3 APK installieren
 
-1. Auf der [Releases-Seite](https://github.com/CTreitges/whisperloom-android/releases) des Projekts das neueste Release (aktuell **3.9.0**) öffnen und die APK-Datei auf das Telefon laden (direkt im Browser des Telefons ist am einfachsten).
+1. Auf der [Releases-Seite](https://github.com/CTreitges/whisperloom-android/releases) des Projekts das neueste Release (aktuell **3.9.5**) öffnen und die APK-Datei auf das Telefon laden (direkt im Browser des Telefons ist am einfachsten).
 2. Die heruntergeladene Datei antippen. Android fragt beim ersten Mal, ob der Browser (bzw. der Dateimanager) **unbekannte Apps installieren** darf — das Wording heißt je nach Hersteller „Unbekannte Apps installieren", „Aus dieser Quelle zulassen" oder „Unbekannte Quellen". Erlauben, zurück, erneut „Installieren" antippen.
 3. Google Play Protect prüft die App ggf. beim Installieren. Das ist normal für Apps außerhalb des Play Stores.
 4. Nach der Installation **WhisperLoom** öffnen — der Einrichtungs-Assistent startet ([Kapitel 3](#3-erste-einrichtung--der-assistent-schritt-für-schritt)).
@@ -130,7 +130,7 @@ Darunter steht der Datenschutz-Hinweis „Audio wird zur Erkennung an {Anbieter}
 Darunter unter **Textverbesserung ohne Netz** zwei Karten:
 
 - **Lokales Textmodell** — „Gemma 4 E2B verbessert den Text auf dem Gerät und schaltet „Glätten" ein. Einmal laden: 2,6 GB · +800 MB beim ersten Start." Ein Tipp startet den Download des Textmodells ([9.7](#97-lokales-textmodell-gemma-4)) und stellt die KI-Stufe fürs Diktat auf „Glätten" — ab Werk steht sie auf „Aus", und ohne Stufe bliebe das Textmodell ungenutzt. Ist schon eine Stufe gewählt (fürs Diktat oder für geteilte Sprachnachrichten), bleibt sie, und der Zusatz „und schaltet „Glätten" ein" fehlt. Passt auch Gemma 4 E4B ins Gerät (ab 8 GB RAM), lädt der Tipp noch nichts: Er stellt die Regel und „Glätten" ein, und darunter stehen beide Textmodelle wie in den Offline-Modellen, Gemma 4 E2B (empfohlen, vorgewählt) und Gemma 4 E4B, über ihnen die Warnkarte „Offline ohne Textmodell" mit **Überspringen**. Ein Tipp auf E2B oder E4B lädt dieses Modell und wählt es; ab dann ist „Lokales Textmodell" gewählt und **Weiter** frei. Passt nur E2B, startet der Tipp gleich dessen Download; die Zeile von E4B ist dann ausgegraut („Für dieses Gerät zu groß").
-- **Überspringen** — „Nur die Erkennung — offline kommt der Text ohne KI. Ein Textmodell kannst du später unter Offline-Modelle laden."
+- **Überspringen** — „Nur die Erkennung — offline kommt der Text ohne KI. Ein Textmodell kannst du später unter Textverbesserung → Offline-Textverbesserung laden."
 
 **Weiter** wird aktiv, sobald das Whisper-Modell geladen ist und du eine der beiden Karten gewählt hast. Das Textmodell muss dafür nicht fertig sein: „Lädt im Hintergrund weiter — du kannst schon weitermachen." Ist offline schon eine KI-Stufe eingeschaltet und lädt das Textmodell nicht gerade, steht an Stelle der beiden Karten die Karte **Offline ohne Textmodell** mit **Überspringen**, darunter die Textmodelle zum Laden ([9.7](#97-lokales-textmodell-gemma-4)). Scheitert der Download (z. B. „Nicht genug Speicherplatz" oder kein Netz), zeigt die Zeile des Modells den Grund („Fehlgeschlagen: …"); **Erneut** versucht es noch einmal, **Weiter** ist bis zu einer Wahl wieder gesperrt. Auf Geräten mit weniger als 6 GB Arbeitsspeicher ist „Lokales Textmodell" ausgegraut („Für dieses Gerät zu groß") und „Überspringen" schon gewählt: Dort passt kein Textmodell, die Regel wirkt wie „Überspringen" ([9.7](#97-lokales-textmodell-gemma-4)).
 
@@ -188,21 +188,20 @@ Das Tutorial ist erneut aufrufbar unter **Anleitung & Hilfe → Tutorial erneut 
 Danach zeigt WhisperLoom beim Öffnen den Startbildschirm:
 
 - Ganz oben die Karte **Schwebender Knopf** mit dem großen Button **Mikro-Knopf starten** bzw. **Mikro-Knopf beenden**. Fehlt eine Pflicht-Berechtigung, ist der Button gesperrt und ein Chip („Mikrofon fehlt — beheben" / „„Über anderen Apps anzeigen" fehlt — beheben") führt in den passenden Schritt.
-- Ein Banner **Noch nicht optimal** mit Button **Beheben**, wenn die Bedienungshilfe aus ist, Offline gewählt aber kein Modell geladen ist, offline eine KI-Stufe an ist, aber das Textmodell fehlt („Offline ohne Textmodell — der Text kommt ohne KI.", bei „Online, ohne Netz lokal" mit eigenem Zugang „… — ohne Netz kommt der Text ohne KI."; führt zu den Offline-Modellen), oder Benachrichtigungen verweigert sind.
-- Die Karte **Status** mit den Zeilen **Spracherkennung**, **Textverbesserung**, **Berechtigungen**, **Diktat-Tastatur** und (sobald relevant) **Offline-Modelle**. Jede Zeile führt in die passende Einstellung.
+- Ein Banner **Noch nicht optimal** mit Button **Beheben**, wenn die Bedienungshilfe aus ist, Offline gewählt aber kein Modell geladen ist, offline eine KI-Stufe an ist, aber das Textmodell fehlt („Offline ohne Textmodell — der Text kommt ohne KI.", bei „Online, ohne Netz lokal" mit eigenem Zugang „… — ohne Netz kommt der Text ohne KI."; führt zur Offline-Textverbesserung), oder Benachrichtigungen verweigert sind.
+- Die Karte **Status** mit den Zeilen **Spracherkennung**, **Textverbesserung**, **Berechtigungen** und **Diktat-Tastatur**. Jede Zeile führt in die passende Einstellung. Bei Offline-Erkennung nennt die Zeile Spracherkennung das geladene Modell („Offline · Small (190 MB)“) oder warnt „Offline · kein Modell geladen“ — ein Tipp führt zur Spracherkennung, wo die Modelle liegen.
 - Ein Hinweis auf das Abtippen von Sprachnachrichten und ganz unten die Fußzeile: die Versionsnummer mit **?** daneben und **Einrichtung erneut öffnen**. Das **?** öffnet die **Patchnotes**: oben die neueste Version mit dem Wichtigsten und „Alle … Änderungen im Detail“ zum Aufklappen, darunter **Frühere Versionen** und **Vor Version 3** zum Antippen, ganz unten das vollständige Changelog auf GitHub. Dasselbe **?** steht in **Anleitung & Hilfe** (unten) und unter **Über WhisperLoom**.
 - Oben rechts: das Verlauf-Symbol ([11](#11-verlauf)), **?** (Anleitung und Hilfe) und **⚙** (Einstellungen).
 
-Die **Einstellungen** sind nach Gegenständen in sechs Gruppen mit Überschrift geteilt. Jede Zeile zeigt darunter, was gerade eingestellt ist, und ihr Name ist der Titel der Seite, die sie öffnet:
+Die **Einstellungen** sind in drei Gruppen mit Überschrift geteilt — nach dem, was du tust: Sprache & Text, Bedienung, Weiteres. Jede Zeile zeigt darunter, was gerade eingestellt ist, und ihr Name ist der Titel der Seite, die sie öffnet:
 
 | Gruppe | Einträge |
 |---|---|
-| **TEXT** | **Textverbesserung** (Stufen fürs Diktat und für Sprachnachrichten, je Stufe eine Seite) · **Wörterbuch & Regeln** (Vokabular, feste Regeln) — [Kapitel 8](#8-textverbesserung) |
-| **MODELLE & ZUGÄNGE** | **Spracherkennung** (online oder offline, Anbieter, Key, Modell, Sprache) · **KI-Zugang** (Zugang für die Textverbesserung, [8.3](#83-ki-zugang)) · **Offline-Modelle** (Whisper- und Textmodelle, [9](#9-offline-modus)) |
-| **BEDIENUNG** | **Knopf & Tastatur** · **Widgets** |
-| **VERLAUF** | **Verlauf** ([11](#11-verlauf)) |
-| **PRO** | **Erweitert** — Pro-Funktionen für Entwickler und Bastler ([Pro Widgets](#14-pro-widgets-sprach-command-widgets), [Stufe „Prompt“](#81-diktat), [Modelle vom Server](#76-modelle-vom-server-pro-funktion)); für das normale Diktieren brauchst du hier nichts |
-| **INFO** | **Anleitung & Hilfe** · **Über WhisperLoom** |
+| **SPRACHE & TEXT** | **Spracherkennung** (online oder offline, Anbieter, Key, Modell, Sprache; bei „Offline-Modell“ die Whisper-Modelle zum Laden und Wählen, [9](#9-offline-modus)) · **Textverbesserung** (Stufen fürs Diktat und für Sprachnachrichten, je Stufe eine Seite; darunter die Karte **Zugang & Modelle** mit den Unterseiten **KI-Zugang** ([8.3](#83-ki-zugang)) und **Offline-Textverbesserung** ([8.5](#85-bei-offline-erkennung)) — [Kapitel 8](#8-textverbesserung)) · **Wörterbuch & Regeln** (Vokabular, feste Regeln) |
+| **BEDIENUNG** | **Knopf & Tastatur** · **Widgets** (nur, wenn Pro Widgets eingeschaltet sind, [14](#14-pro-widgets-sprach-command-widgets)) |
+| **WEITERES** | **Verlauf** ([11](#11-verlauf)) · **Pro-Funktionen** — für Entwickler und Bastler ([Pro Widgets](#14-pro-widgets-sprach-command-widgets), [Stufe „Prompt“](#81-diktat), [Modelle vom Server](#76-modelle-vom-server-pro-funktion)); für das normale Diktieren brauchst du hier nichts · **Anleitung & Hilfe** · **Über WhisperLoom** |
+
+**Wo ist was hin?** (für alle, die von 3.9.x kommen) Die Zeilen **KI-Zugang** und **Offline-Modelle** gibt es in den Einstellungen nicht mehr. Den KI-Zugang öffnest du unter **Textverbesserung** → Karte **Zugang & Modelle** → **KI-Zugang**; die Textmodelle und die Regel bei Offline-Erkennung stehen daneben unter **Bei Offline-Erkennung** (Seite **Offline-Textverbesserung**); die Whisper-Modelle stehen unter **Spracherkennung**, sobald oben „Offline-Modell“ gewählt ist ([9.3](#93-laden-auswählen-löschen)). **Erweitert** heißt **Pro-Funktionen** und steht unter Weiteres. Die Zeile **Widgets** erscheint erst, wenn Pro Widgets eingeschaltet sind; normale Widgets folgen mit einem späteren Update. Die Tastatur-Hinweise „KI-Zugang fehlt“ und „Offline ohne Textmodell“ führen weiterhin direkt auf die richtige Seite, Zurück landet dann in der Textverbesserung.
 
 Änderungen werden sofort gespeichert; es gibt keinen „Speichern"-Button.
 
@@ -307,7 +306,7 @@ Sobald du zu diktieren anfängst, verschwindet der Zauberstab — an seiner Stel
 
 Die drei oberen Stufen brauchen einen KI-Zugang. Hast du keinen eingerichtet, sind sie ausgegraut und die Statuszeile sagt „KI-Zugang fehlt — tippe zum Einrichten“ — ein Tipp darauf öffnet den KI-Zugang ([8.3](#83-ki-zugang)). Bei Offline-Erkennung entscheidet die Regel aus [9.7](#97-lokales-textmodell-gemma-4): Mit geladenem Textmodell sind die Stufen frei; fehlt es, steht dort „Offline ohne Textmodell — tippe zum Laden", und der Tipp führt zu den Offline-Modellen. **Aus** bleibt immer wählbar.
 
-Hast du unter Einstellungen → Erweitert die **Stufe „Prompt“** eingeschaltet, steht sie als fünfte Taste am Ende der Zeile ([Kapitel 8.1](#81-diktat)).
+Hast du unter Einstellungen → Pro-Funktionen die **Stufe „Prompt“** eingeschaltet, steht sie als fünfte Taste am Ende der Zeile ([Kapitel 8.1](#81-diktat)).
 
 ---
 
@@ -421,7 +420,7 @@ Dieselben Schritte zeigt WhisperLoom unter **Wo bekomme ich einen Key?** (im Ass
 
 ### 7.6 Modelle vom Server (Pro-Funktion)
 
-Die Modelle in WhisperLoom sind **Empfehlungen** mit Stand 09/2026 (Textmodelle 10/2026) — die Anbieter bringen laufend neue und schalten alte ab. Wer das aktuelle Angebot sehen will, schaltet unter Einstellungen → Gruppe PRO → **Erweitert** → Karte **Pro-Funktionen** den Schalter **Modelle vom Server** ein („Lädt bei jedem Anbieter die aktuelle Modell-Liste – für Erkennung und Textverbesserung."). Ab Werk ist er aus; dann bleibt alles wie in 7.1 beschrieben (Ollama lädt seine Liste trotzdem, siehe [8.3](#83-ki-zugang)).
+Die Modelle in WhisperLoom sind **Empfehlungen** mit Stand 09/2026 (Textmodelle 10/2026) — die Anbieter bringen laufend neue und schalten alte ab. Wer das aktuelle Angebot sehen will, schaltet unter Einstellungen → Gruppe WEITERES → **Pro-Funktionen** → Karte **Freischalten** den Schalter **Modelle vom Server** ein („Lädt bei jedem Anbieter die aktuelle Modell-Liste – für Erkennung und Textverbesserung."). Ab Werk ist er aus; dann bleibt alles wie in 7.1 beschrieben (Ollama lädt seine Liste trotzdem, siehe [8.3](#83-ki-zugang)).
 
 Eingeschaltet wird das Feld **Modell** unter Spracherkennung und unter KI-Zugang (auch bei „wie Erkennung", ebenso die Modell-Auswahl auf den Seiten der Stufen) zu einer Auswahl, bei jedem Anbieter einschließlich Eigener Server — nur bei Together AI und DeepInfra bleibt das Textmodell ein Freitext:
 
@@ -439,7 +438,7 @@ WhisperLoom zeigt nur, was passt: unter Spracherkennung Spracherkennungs-Modelle
 Fällt dein Anbieter aus, ist das Guthaben leer, der Key abgelaufen oder ein Modell abgeschaltet, kommt ohne Fallback ein Fehler (Erkennung) bzw. der Text ohne KI (Textverbesserung). Mit **Fallback** springt dann ein zweiter Anbieter ein. Es gibt ihn zweimal, unabhängig voneinander:
 
 - Einstellungen → **Spracherkennung**, unter dem Anbieter (nur bei Online-Erkennung)
-- Einstellungen → **KI-Zugang**, unter dem Zugang für die Textverbesserung (nur, wenn es einen Online-Zugang gibt: nicht bei Offline-Erkennung ohne eigenen Zugang und nicht bei ElevenLabs „wie Erkennung")
+- Einstellungen → Textverbesserung → Zugang & Modelle → **KI-Zugang**, unter dem Zugang für die Textverbesserung (nur, wenn es einen Online-Zugang gibt: nicht bei Offline-Erkennung ohne eigenen Zugang und nicht bei ElevenLabs „wie Erkennung")
 
 Der Schalter **Fallback verwenden** ist ab Werk aus („Ein zweiter Anbieter für den Fall, dass OpenAI scheitert."). Erst wenn er an ist, erscheinen die Felder:
 
@@ -464,16 +463,18 @@ Datenschutz: Mit Fallback gehen Audio bzw. Text im Fehlerfall zusätzlich an den
 
 Hier stellst du ein, was mit dem erkannten Text passiert, bevor er ins Feld kommt. Es gibt zwei Ebenen: die **KI-Textverbesserung** (eine zweite Anfrage an ein Sprachmodell — online oder, bei Offline-Erkennung, an das lokale Textmodell auf dem Gerät) und die **festen Regeln** (lokal, immer verfügbar, kostenlos).
 
-Seit 3.9.0 verteilt sich das auf vier Seiten der Einstellungen. Jede Zeile im Hub zeigt in der Unterzeile, was gerade eingestellt ist:
+Das verteilt sich auf zwei Zeilen der Einstellungen und zwei Unterseiten der Textverbesserung. Jede Zeile zeigt in der Unterzeile, was gerade eingestellt ist:
 
 | Gruppe | Seite | Unterzeile (Beispiel) | Was du dort einstellst |
 |---|---|---|---|
-| **TEXT** | **Textverbesserung** | „Diktat: Glätten · Sprachnachrichten: Aus“, offline mit KI-Stufe dazu die Regel („… · lokal bei Offline“) | die Stufe fürs Diktat ([8.1](#81-diktat)) und für geteilte Sprachnachrichten ([8.2](#82-sprachnachrichten)), je Stufe eine eigene Seite |
+| **SPRACHE & TEXT** | **Textverbesserung** | „Diktat: Glätten · Sprachnachrichten: Aus“, offline mit KI-Stufe dazu die Regel („… · lokal bei Offline“) | die Stufe fürs Diktat ([8.1](#81-diktat)) und für geteilte Sprachnachrichten ([8.2](#82-sprachnachrichten)), je Stufe eine eigene Seite; darunter die Karte **Zugang & Modelle** mit den beiden Unterseiten |
 | | **Wörterbuch & Regeln** | „3 Begriffe · Füllwörter · Groß-Schreibung“ | Vokabular ([8.7](#87-wörterbuch-und-sprache)) und feste Regeln ([8.6](#86-feste-regeln)) |
-| **MODELLE & ZUGÄNGE** | **KI-Zugang** | „Wie Erkennung · OpenAI · Empfehlung je Stufe“, „Anthropic · 1 Stufe mit eigenem Modell“, „Kein Online-Zugang“ | Anbieter, Key und Modell ([8.3](#83-ki-zugang)), darunter die Übersicht Modell je Stufe ([8.4](#84-modell-je-stufe)) |
-| | **Offline-Modelle** | „1 geladen · 190 MB belegt“ | Textmodelle und die Regel bei Offline-Erkennung ([8.5](#85-bei-offline-erkennung), [9.7](#97-lokales-textmodell-gemma-4)) |
+| Textverbesserung → **Zugang & Modelle** | **KI-Zugang** | „Wie Erkennung · OpenAI · Empfehlung je Stufe“, „Anthropic · 1 Stufe mit eigenem Modell“, „Kein Online-Zugang“ | Anbieter, Key und Modell ([8.3](#83-ki-zugang)), darunter die Übersicht Modell je Stufe ([8.4](#84-modell-je-stufe)) |
+| | **Bei Offline-Erkennung** → Seite **Offline-Textverbesserung** (nur auf Geräten, die offline erkennen können) | „Lokales Textmodell · Gemma 4 E2B“, „Lokales Textmodell · Textmodell fehlt“, „Überspringen“ | Textmodelle und die Regel bei Offline-Erkennung ([8.5](#85-bei-offline-erkennung), [9.7](#97-lokales-textmodell-gemma-4)) |
 
-**Wo ist was hin?** (für alle, die von 3.8.x kommen) Text → Diktat und Text → Sprachnachrichten sind jetzt die Seite **Textverbesserung**, Text → Online-Zugang & Modelle heißt **KI-Zugang**, Text → Offline-Erkennung steht in den **Offline-Modellen**, Text → Regeln ohne KI und das Vokabular (bisher Erkennung → Sprache & Kontext) stehen unter **Wörterbuch & Regeln**, und „Leerzeichen nach Diktat anhängen“ steht unter **Knopf & Tastatur** → Einfügen. Die Schalter „Lesbarer glätten“, „Füllwörter intelligent entfernen“ und „Automatische Absätze“ sind in den Seiten der Stufen aufgegangen (siehe „Update von 3.8.x“ in [8.1](#81-diktat)).
+**Wo ist was hin?** (für alle, die von 3.9.x kommen) Siehe [Kapitel 3, Der Startbildschirm](#der-startbildschirm): KI-Zugang und Offline-Textverbesserung sind Unterseiten der Textverbesserung (Karte **Zugang & Modelle**), die Whisper-Modelle stehen in der Spracherkennung.
+
+**Wo ist was hin?** (für alle, die von 3.8.x kommen) Text → Diktat und Text → Sprachnachrichten sind jetzt die Seite **Textverbesserung**, Text → Online-Zugang & Modelle heißt **KI-Zugang** (jetzt unter Textverbesserung → Zugang & Modelle), Text → Offline-Erkennung steht auf der **Offline-Textverbesserung** (ebenfalls dort), Text → Regeln ohne KI und das Vokabular (bisher Erkennung → Sprache & Kontext) stehen unter **Wörterbuch & Regeln**, und „Leerzeichen nach Diktat anhängen“ steht unter **Knopf & Tastatur** → Einfügen. Die Schalter „Lesbarer glätten“, „Füllwörter intelligent entfernen“ und „Automatische Absätze“ sind in den Seiten der Stufen aufgegangen (siehe „Update von 3.8.x“ in [8.1](#81-diktat)).
 
 ### 8.1 Diktat
 
@@ -506,7 +507,7 @@ Unter der Liste steht „Zweite Anfrage · ca. 1–2 s länger · geringe Zusatz
 
 **Fragen und Bitten im Diktat:** Alle Stufen schicken dein Diktat markiert als Text an die KI, mit der Anweisung, ihn nur zu bearbeiten. Diktierst du „Schreib mir eine Einladung für Samstag" oder „Wie spät ist es in New York?", kommt genau dieser Satz bearbeitet zurück, nicht die Einladung oder die Uhrzeit. Liefert ein Modell trotzdem eine Antwort, die weit länger ist als dein Diktat, fügt WhisperLoom den Rohtext mit Hinweis ein. Eine Einleitung wie „Hier ist der geglättete Text:" oder Anführungszeichen um den ganzen Text entfernt WhisperLoom automatisch. Liefert das Modell gar nichts (keine oder eine leere Antwort), kommt der Text ohne KI mit den festen Regeln und dem Hinweis „Textverbesserung übersprungen: Leere Antwort des Modells“.
 
-**Stufe „Prompt“ (Pro-Funktion):** Einstellungen → Erweitert → Karte **Pro-Funktionen** → **Stufe „Prompt“ anbieten** schaltet eine fünfte Stufe frei — in der Tastatur und hier in der Liste. Sie formt ein Diktat zu einem Prompt für einen KI-Assistenten (ChatGPT, Claude, Gemini …). Die Gliederung richtet sich nach dem Diktat:
+**Stufe „Prompt“ (Pro-Funktion):** Einstellungen → Pro-Funktionen → Karte **Freischalten** → **Stufe „Prompt“ anbieten** schaltet eine fünfte Stufe frei — in der Tastatur und hier in der Liste. Sie formt ein Diktat zu einem Prompt für einen KI-Assistenten (ChatGPT, Claude, Gemini …). Die Gliederung richtet sich nach dem Diktat:
 
 - eine Frage oder einfache Bitte (unter 15 Wörtern immer): ein bis drei Sätze, ohne Liste,
 - mehrere Vorgaben: ein Satz mit dem Auftrag, darunter die Vorgaben als „- “-Liste,
@@ -534,7 +535,7 @@ Jedes 5-Minuten-Stück ([6.3](#63-lange-nachrichten)) geht einzeln an die KI —
 
 ### 8.3 KI-Zugang
 
-Einstellungen → **KI-Zugang**: oben die Karte **Online-Zugang für die Textverbesserung**, darunter die Übersicht **Modell je Stufe** ([8.4](#84-modell-je-stufe)).
+Einstellungen → **Textverbesserung** → Karte **Zugang & Modelle** → Zeile **KI-Zugang** (die Unterzeile nennt den Stand, etwa „Wie Erkennung · OpenAI · Empfehlung je Stufe“): oben die Karte **Online-Zugang für die Textverbesserung**, darunter die Übersicht **Modell je Stufe** ([8.4](#84-modell-je-stufe)). Zurück führt in die Textverbesserung — auch dann, wenn dich der Tastatur-Hinweis „KI-Zugang fehlt“ direkt hierher gebracht hat.
 
 Standardmäßig nutzt die Textverbesserung **Anbieter und Key der Erkennung** (Schalter **Eigenen Zugang verwenden** aus). Das ist bei OpenAI, Groq, Mistral und OpenRouter der einfache Weg: ein Konto, ein Key. Ein Modell wählst du hier nicht: Jede Stufe rechnet ab Werk mit der **Empfehlung je Stufe** — Glätten mit einem schnellen Modell, Verschönern, Zusammenfassen und Prompt mit einem stärkeren, bei OpenAI „GPT-6 Luna" und „GPT-6 Sol", bei Groq „GPT-OSS 20B" und „GPT-OSS 120B" (alle Anbieter: [7.1](#71-übersicht)). Ein anderes Modell stellst du auf der Seite der Stufe ein ([8.4](#84-modell-je-stufe)).
 
@@ -578,7 +579,7 @@ Auch hier gibt es **Zugang prüfen** — WhisperLoom schickt dem Modell eine Min
 
 ### 8.4 Modell je Stufe
 
-Das Modell wählst du auf der Seite der Stufe beim Diktat (Zeile **Modell**, [8.1](#81-diktat)). Es gilt fürs Diktat (Knopf und Tastatur) und für geteilte Sprachnachrichten gemeinsam; deren Seiten zeigen es nur an („Wie beim Diktat · …“). Unter Einstellungen → **KI-Zugang** steht außerdem die Übersicht **Modell je Stufe**: „„Standard“ ist die Empfehlung des Anbieters: schnell zum Glätten, stärker zum Umformulieren; bei Ollama und eigenem Server das Modell des Zugangs. Gilt für Diktat und Sprachnachrichten.“ Die Zeilen **Glätten**, **Verschönern**, **Zusammenfassen** und — nur mit der Pro-Funktion „Prompt" ([8.1](#81-diktat)) — **Prompt** zeigen, womit die Stufe rechnet, etwa „Standard · Claude Haiku 5.5" oder ein eigenes Modell wie „Claude Opus 5.5"; ein Tipp führt auf die Seite der Stufe. Darunter: „Ein neuer Anbieter setzt alle Stufen auf „Standard“ zurück."
+Das Modell wählst du auf der Seite der Stufe beim Diktat (Zeile **Modell**, [8.1](#81-diktat)). Es gilt fürs Diktat (Knopf und Tastatur) und für geteilte Sprachnachrichten gemeinsam; deren Seiten zeigen es nur an („Wie beim Diktat · …“). Unter Einstellungen → Textverbesserung → Zugang & Modelle → **KI-Zugang** steht außerdem die Übersicht **Modell je Stufe**: „„Standard“ ist die Empfehlung des Anbieters: schnell zum Glätten, stärker zum Umformulieren; bei Ollama und eigenem Server das Modell des Zugangs. Gilt für Diktat und Sprachnachrichten.“ Die Zeilen **Glätten**, **Verschönern**, **Zusammenfassen** und — nur mit der Pro-Funktion „Prompt" ([8.1](#81-diktat)) — **Prompt** zeigen, womit die Stufe rechnet, etwa „Standard · Claude Haiku 5.5" oder ein eigenes Modell wie „Claude Opus 5.5"; ein Tipp führt auf die Seite der Stufe. Darunter: „Ein neuer Anbieter setzt alle Stufen auf „Standard“ zurück."
 
 **Was „Standard" heißt:**
 
@@ -600,7 +601,7 @@ Wechselst du die Stufe mit dem Zauberstab der Tastatur, kommt ihr Modell automat
 
 ### 8.5 Bei Offline-Erkennung
 
-Nur auf Geräten, die offline erkennen können, steht auf der Seite **Textverbesserung** ganz unten die Zeile **Bei Offline-Erkennung** mit Regel und Modell („Lokales Textmodell · Gemma 4 E2B“, „Lokales Textmodell · Textmodell fehlt“ oder „Überspringen“). Sie führt zu Einstellungen → **Offline-Modelle**: Dort stehen im Abschnitt **TEXTVERBESSERUNG** die beiden Textmodelle zum Laden und Wählen und darunter die Regel „Textverbesserung bei Offline-Erkennung" mit **Lokales Textmodell** (ab Werk), **Online, ohne Netz lokal** und **Überspringen**. Fehlt das gewählte Textmodell, steht über den Modellen die Warnkarte „Offline ohne Textmodell"; das Banner auf dem Startbildschirm führt direkt auf diese Seite. Alles Weitere zum lokalen Textmodell und zur Regel: [9.7](#97-lokales-textmodell-gemma-4).
+Nur auf Geräten, die offline erkennen können, steht auf der Seite **Textverbesserung** in der Karte **Zugang & Modelle** die Zeile **Bei Offline-Erkennung** mit Regel und Modell („Lokales Textmodell · Gemma 4 E2B“, „Lokales Textmodell · Textmodell fehlt“ oder „Überspringen“). Sie öffnet die Seite **Offline-Textverbesserung**: oben der Hinweis „Verbessert offline erkannten Text auf dem Gerät — ohne Netz, der Text verlässt das Handy nicht. …“ und die Speicherzeile „Belegt: … · Frei: …“, dann die beiden Textmodelle zum Laden und Wählen und darunter die Regel „Textverbesserung bei Offline-Erkennung" mit **Lokales Textmodell** (ab Werk), **Online, ohne Netz lokal** und **Überspringen**. Fehlt das gewählte Textmodell, steht über den Modellen die Warnkarte „Offline ohne Textmodell"; das Banner auf dem Startbildschirm und der Tastatur-Hinweis „Offline ohne Textmodell“ führen direkt auf diese Seite, Zurück landet in der Textverbesserung. Alles Weitere zum lokalen Textmodell und zur Regel: [9.7](#97-lokales-textmodell-gemma-4).
 
 ### 8.6 Feste Regeln
 
@@ -655,7 +656,7 @@ Im Offline-Modus erkennt WhisperLoom Sprache direkt auf dem Gerät — mit whisp
 
 ### 9.2 Die Modelle
 
-Einstellungen → **Offline-Modelle** (oder Schritt 2b im Assistenten). „Modelle werden einmalig von huggingface.co geladen und bleiben auf dem Gerät. Kein Modell ist in der App enthalten." Der Bildschirm hat zwei Abschnitte: **SPRACHERKENNUNG** mit der Umschaltung Online/Offline und den Whisper-Modellen (diese Tabelle) und **TEXTVERBESSERUNG** mit den Gemma-Modellen ([9.7](#97-lokales-textmodell-gemma-4)).
+Einstellungen → **Spracherkennung** → oben **Offline-Modell** wählen (oder Schritt 2b im Assistenten). Unter der Umschaltung steht dann der Abschnitt **OFFLINE-MODELL**: „Modelle werden einmalig von huggingface.co geladen und bleiben auf dem Gerät. Kein Modell ist in der App enthalten.", die Speicherzeile „Belegt: … · Frei: …" und die Whisper-Modelle (diese Tabelle); ohne geladenes Modell darüber „Noch kein Modell geladen — Empfehlung: Small“. Ist „Online-Dienst" gewählt, zeigt die Seite stattdessen den Online-Zugang — zum Laden oder Löschen eines Offline-Modells also kurz auf „Offline-Modell" umschalten (das geht auch ohne geladenes Modell; der Startbildschirm warnt dann „Offline gewählt, aber kein Modell geladen“, bis eins da ist). Die Gemma-Modelle für die Textverbesserung stehen auf der Seite **Offline-Textverbesserung** ([9.7](#97-lokales-textmodell-gemma-4)).
 
 | Modell | Download | Arbeitsspeicher | Einschätzung | Empfehlung |
 |---|---|---|---|---|
@@ -699,13 +700,13 @@ Was die Qualität offline am meisten verbessert, in dieser Reihenfolge: das grö
 
 ### 9.6 Online und offline kombinieren
 
-Die Umschaltung zwischen **Online-Dienst** und **Offline-Modell** steht unter Spracherkennung ganz oben (und in Offline-Modelle). Beide Zugänge bleiben gespeichert — du kannst also mit Offline im Flugzeug diktieren und zu Hause auf den Online-Dienst zurückwechseln. Wie der Text verbessert wird, hängt vom Erkennungsweg ab: Online erkannter Text geht wie bisher an den KI-Zugang ([8.3](#83-ki-zugang)); der Anbieter der Erkennung und der Anbieter der Textverbesserung dürfen verschieden sein. Offline erkannten Text verbessert ab Werk das lokale Textmodell auf dem Gerät — einen Online-Zugang brauchst du dafür nicht. Ob offline stattdessen online verbessert oder die KI übersprungen wird, stellst du unter Einstellungen → **Offline-Modelle** bei „Textverbesserung bei Offline-Erkennung“ ein ([9.7](#97-lokales-textmodell-gemma-4)).
+Die Umschaltung zwischen **Online-Dienst** und **Offline-Modell** steht unter Spracherkennung ganz oben. Beide Zugänge bleiben gespeichert — du kannst also mit Offline im Flugzeug diktieren und zu Hause auf den Online-Dienst zurückwechseln. Wie der Text verbessert wird, hängt vom Erkennungsweg ab: Online erkannter Text geht wie bisher an den KI-Zugang ([8.3](#83-ki-zugang)); der Anbieter der Erkennung und der Anbieter der Textverbesserung dürfen verschieden sein. Offline erkannten Text verbessert ab Werk das lokale Textmodell auf dem Gerät — einen Online-Zugang brauchst du dafür nicht. Ob offline stattdessen online verbessert oder die KI übersprungen wird, stellst du unter Einstellungen → Textverbesserung → Zugang & Modelle → **Bei Offline-Erkennung** bei „Textverbesserung bei Offline-Erkennung“ ein ([9.7](#97-lokales-textmodell-gemma-4)).
 
 ### 9.7 Lokales Textmodell (Gemma 4)
 
 Erkennst du offline und ist eine KI-Stufe an (fürs Diktat oder für geteilte Sprachnachrichten), verbessert ab Werk ein **lokales Textmodell** den erkannten Text direkt auf dem Gerät. Es gelten dieselben Stufen, Einstellungen der Stufen und Anweisungen wie online ([8.1](#81-diktat)) — nur ohne Netz, ohne Key und ohne Kosten. Der Text verlässt das Handy nicht. Online erkannter Text wird davon unberührt wie bisher online verbessert.
 
-**Die Modelle** stehen unter Einstellungen → **Offline-Modelle** im Abschnitt **TEXTVERBESSERUNG**: „Verbessert offline erkannten Text auf dem Gerät — ohne Netz, der Text verlässt das Handy nicht. Wann es rechnet, stellst du darunter bei „Textverbesserung bei Offline-Erkennung“ ein."
+**Die Modelle** stehen unter Einstellungen → **Textverbesserung** → Karte **Zugang & Modelle** → **Bei Offline-Erkennung**, Seite **Offline-Textverbesserung**: „Verbessert offline erkannten Text auf dem Gerät — ohne Netz, der Text verlässt das Handy nicht. Wann es rechnet, stellst du darunter bei „Textverbesserung bei Offline-Erkennung“ ein."
 
 | Modell | Download | dazu beim ersten Start | Arbeitsspeicher beim Rechnen (Google, nur Modell) | Gerät braucht | Einschätzung |
 |---|---|---|---|---|---|
@@ -721,7 +722,7 @@ Erkennst du offline und ist eine KI-Stufe an (fürs Diktat oder für geteilte Sp
 
 **Im Arbeitsspeicher:** Das Modell wird geladen, sobald es gebraucht wird. Damit das nicht erst nach der Erkennung beginnt, startet WhisperLoom das Laden schon mit der Aufnahme (Knopf, Tastatur, Pro Widget). Vorgewärmt bleibt es bis zur Verbesserung geladen, auch wenn Aufnahme und Erkennung länger dauern (höchstens 10 Minuten). Nach 2 Minuten ohne Diktat, bei knappem Speicher, beim Löschen und beim Wechsel des Modells gibt WhisperLoom es wieder frei.
 
-**Die Regel** steht unter Einstellungen → **Offline-Modelle** unter den Textmodellen (nur auf Geräten, die offline erkennen können), Karte „Textverbesserung bei Offline-Erkennung"; die Seite Textverbesserung führt mit der Zeile **Bei Offline-Erkennung** hin ([8.5](#85-bei-offline-erkennung)):
+**Die Regel** steht auf derselben Seite **Offline-Textverbesserung** unter den Textmodellen (nur auf Geräten, die offline erkennen können), Karte „Textverbesserung bei Offline-Erkennung"; die Seite Textverbesserung führt mit der Zeile **Bei Offline-Erkennung** hin ([8.5](#85-bei-offline-erkennung)):
 
 - **Lokales Textmodell** — „Standard — offline erkannter Text wird auf dem Gerät verbessert, nie online."
 - **Online, ohne Netz lokal** — „Mit eigenem Online-Zugang und Netz online. Ohne Netz, ohne eigenen Zugang oder bei einem Fehler lokal."
@@ -738,14 +739,14 @@ Ein Textmodell zu laden ändert die Regel nicht; die wählst du hier. Passt kein
 | Kein eigener Online-Zugang | lokal | lokal | ohne KI, ohne Hinweis (so gewählt) |
 | Textmodell nicht geladen | sofort ohne KI, Hinweis „Kein Textmodell geladen …" | mit Zugang und Netz online; sonst sofort ohne KI, Hinweis „Kein Textmodell geladen …" | wie oben, braucht kein Textmodell |
 
-„Ohne KI" heißt: der erkannte Text mit den festen Regeln ([8.6](#86-feste-regeln)). Der Hinweis erscheint am Knopf als kurze Meldung, in der Tastatur in der Statuszeile und bei geteilten Sprachnachrichten unter dem Text, z. B. „Textverbesserung übersprungen: Kein Textmodell geladen — unter „Offline-Modelle“ laden oder „Überspringen“ wählen“.
+„Ohne KI" heißt: der erkannte Text mit den festen Regeln ([8.6](#86-feste-regeln)). Der Hinweis erscheint am Knopf als kurze Meldung, in der Tastatur in der Statuszeile und bei geteilten Sprachnachrichten unter dem Text, z. B. „Textverbesserung übersprungen: Kein Textmodell geladen — unter „Offline-Textverbesserung“ laden oder „Überspringen“ wählen“.
 
-**Offline ohne Textmodell.** Erkennst du offline, ist eine KI-Stufe an, steht die Regel auf „Lokales Textmodell" oder „Online, ohne Netz lokal" und ist das gewählte Textmodell nicht geladen (oder zu groß fürs Gerät), zeigt WhisperLoom an drei Stellen dieselbe Warnkarte: unter **Spracherkennung**, in **Offline-Modelle** (Abschnitt Textverbesserung) und im Assistenten (Schritt 2b). Sie lautet „Offline ohne Textmodell — Die Textverbesserung braucht offline ein lokales Modell: Gemma 4 E2B (2,6 GB · +800 MB beim ersten Start). Lade es oder überspringe sie — dann kommt der Text ohne KI." Mit eigenem Online-Zugang sagt sie, was dann wirklich passiert: bei „Lokales Textmodell" „… Lade es oder überspringe sie — dann verbessert mit Netz dein Online-Zugang, sonst kommt der Text ohne KI.", bei „Online, ohne Netz lokal" „Mit Netz verbessert dein Online-Zugang, ohne Netz ein lokales Modell: … Lade es oder überspringe es — dann kommt der Text ohne Netz ohne KI." Zwei Knöpfe:
+**Offline ohne Textmodell.** Erkennst du offline, ist eine KI-Stufe an, steht die Regel auf „Lokales Textmodell" oder „Online, ohne Netz lokal" und ist das gewählte Textmodell nicht geladen (oder zu groß fürs Gerät), zeigt WhisperLoom an drei Stellen dieselbe Warnkarte: unter **Spracherkennung**, auf der **Offline-Textverbesserung** und im Assistenten (Schritt 2b). Sie lautet „Offline ohne Textmodell — Die Textverbesserung braucht offline ein lokales Modell: Gemma 4 E2B (2,6 GB · +800 MB beim ersten Start). Lade es oder überspringe sie — dann kommt der Text ohne KI." Mit eigenem Online-Zugang sagt sie, was dann wirklich passiert: bei „Lokales Textmodell" „… Lade es oder überspringe sie — dann verbessert mit Netz dein Online-Zugang, sonst kommt der Text ohne KI.", bei „Online, ohne Netz lokal" „Mit Netz verbessert dein Online-Zugang, ohne Netz ein lokales Modell: … Lade es oder überspringe es — dann kommt der Text ohne Netz ohne KI." Zwei Knöpfe:
 
 - **Textmodell laden (2,6 GB)** lädt das gewählte Modell (passt es nicht ins Gerät, Gemma 4 E2B) und wählt es aus. Die Karte zeigt dann den Fortschritt.
 - **Überspringen** stellt die Regel auf „Überspringen".
 
-Wo die Textmodelle direkt darunter stehen (Offline-Modelle, Assistent), hat die Karte nur **Überspringen**: Geladen wird an der Zeile des Modells, die auch Fortschritt und Fehler zeigt, und solange das gewählte Modell lädt, fehlt die Karte dort.
+Wo die Textmodelle direkt darunter stehen (Offline-Textverbesserung, Assistent), hat die Karte nur **Überspringen**: Geladen wird an der Zeile des Modells, die auch Fortschritt und Fehler zeigt, und solange das gewählte Modell lädt, fehlt die Karte dort.
 
 Bis dahin kommt der Text offline **sofort** ohne KI — WhisperLoom wartet nie auf ein fehlendes Modell. Ausnahme „Online, ohne Netz lokal" mit eigenem Online-Zugang: Mit Netz geht der Text weiter an diesen Zugang, nur ohne Netz kommt er ohne KI. Der Startbildschirm zeigt die Zeile Textverbesserung in Warnfarbe („Glätten · Textmodell fehlt — Text ohne KI", bei der Ausnahme „Glätten · GPT-6 Luna · ohne Netz ohne KI") und das Banner „Offline ohne Textmodell — der Text kommt ohne KI." (bei der Ausnahme „… — ohne Netz kommt der Text ohne KI.") mit **Beheben** (führt zu den Offline-Modellen). In der Tastatur sind die KI-Stufen ausgegraut („Offline ohne Textmodell — tippe zum Laden").
 
@@ -1017,7 +1018,7 @@ Beim Anbieter „Ollama (lokal / Homeserver)": Auf dem Server muss `OLLAMA_HOST=
 Ein kleineres Modell wählen (Base oder Small) oder auf den Online-Dienst wechseln. Auch andere gleichzeitig laufende Apps bremsen — die Erkennung nutzt alle Performance-Kerne.
 
 **„Offline ohne Textmodell" / „Textverbesserung übersprungen: Kein Textmodell geladen — …".**
-Offline ist eine KI-Stufe an, aber das lokale Textmodell fehlt. In der Warnkarte (oder unter Offline-Modelle) **Textmodell laden** antippen — oder **Überspringen**, wenn offline keine KI rechnen soll ([9.7](#97-lokales-textmodell-gemma-4)). Auf Geräten unter 6 GB RAM kommt beides nicht vor: Dort passt kein Textmodell, und die Regel wirkt wie „Überspringen".
+Offline ist eine KI-Stufe an, aber das lokale Textmodell fehlt. In der Warnkarte (oder unter Textverbesserung → Zugang & Modelle → Bei Offline-Erkennung) **Textmodell laden** antippen — oder **Überspringen**, wenn offline keine KI rechnen soll ([9.7](#97-lokales-textmodell-gemma-4)). Auf Geräten unter 6 GB RAM kommt beides nicht vor: Dort passt kein Textmodell, und die Regel wirkt wie „Überspringen".
 
 **„Textverbesserung übersprungen: Lokales Textmodell fehlgeschlagen".**
 Das Textmodell ließ sich nicht laden oder rechnen, meist weil gerade zu wenig Arbeitsspeicher frei ist. Andere Apps schließen und erneut diktieren; hilft das nicht, Gemma 4 E2B statt E4B wählen. Kommt der Fehler gleich beim ersten Diktat nach dem Download, das Textmodell unter Offline-Modelle löschen und neu laden.
@@ -1029,12 +1030,12 @@ Ein Tipp auf die Statuszeile, das Mikrofon oder den Knopf fügt den Text sofort 
 Das lokale Modell fasst Diktat und Antwort zusammen nur rund 4.000 Tokens. Ab etwa 800 Wörtern rechnet es deshalb gar nicht erst — sonst käme nur der Anfang des Texts zurück. Kürzer diktieren oder mit eigenem Online-Zugang „Online, ohne Netz lokal" wählen.
 
 **„Datei beschädigt — erneut laden" / „Offline-Modell konnte nicht geladen werden".**
-Modell unter Offline-Modelle löschen und neu laden. Tritt der Fehler direkt nach dem Download auf, war die Übertragung fehlerhaft; WhisperLoom lädt das Modell beim nächsten Versuch neu.
+Modell unter Spracherkennung (bei gewähltem „Offline-Modell“) löschen und neu laden. Tritt der Fehler direkt nach dem Download auf, war die Übertragung fehlerhaft; WhisperLoom lädt das Modell beim nächsten Versuch neu.
 
 **Der Modell-Download bricht ab.**
 „Netzwerkfehler beim Laden": WhisperLoom wiederholt bis zu dreimal automatisch und setzt dann mit **Erneut** an derselben Stelle fort (Teildatei bleibt erhalten). „Nicht genug Speicherplatz": Platz schaffen. „Zeitlimit für Hintergrund-Downloads erreicht — bitte erneut starten": Android begrenzt Hintergrund-Downloads dieser Art auf sechs Stunden pro Tag — erneut starten, der Download läuft weiter.
 
-**„Kein Zugang eingerichtet — in WhisperLoom einrichten" / „Kein Offline-Modell geladen — unter Offline-Modelle laden".**
+**„Kein Zugang eingerichtet — in WhisperLoom einrichten" / „Kein Offline-Modell geladen — unter Spracherkennung laden".**
 Die Erkennung ist nicht vollständig eingerichtet: online fehlt Key oder URL, offline das Modell. Der Startbildschirm zeigt den Grund in der Karte Status.
 
 **„Offline-Erkennung wird von diesem Gerät nicht unterstützt (CPU ohne FP16/DotProd)".**
@@ -1062,9 +1063,9 @@ Pro Widgets sind für Entwickler und Bastler gedacht: Ein **Sprach-Command-Widge
 
 ### 14.2 Pro Widgets freischalten
 
-Einstellungen → Gruppe PRO → **Erweitert** → Karte **Pro-Funktionen** → Schalter **Pro Widgets** einschalten („Blendet im Widget-Menü den Tab „Pro Widgets“ ein: Sprach-Command- und Claude-Code-Widgets mit eigenem Server.“). Darunter erscheinen zwei Zeilen: **Pro Widgets verwalten** öffnet den Tab „Pro Widgets“, **Anleitung Pro Widgets** ein bebildertes Tutorial mit sechs Seiten.
+Einstellungen → Gruppe WEITERES → **Pro-Funktionen** → Karte **Freischalten** → Schalter **Pro Widgets** einschalten („Blendet im Widget-Menü den Tab „Pro Widgets“ ein: Sprach-Command- und Claude-Code-Widgets mit eigenem Server.“). Darunter erscheinen zwei Zeilen: **Pro Widgets verwalten** öffnet den Tab „Pro Widgets“, **Anleitung Pro Widgets** ein bebildertes Tutorial mit sechs Seiten. Außerdem erscheint in den Einstellungen unter BEDIENUNG die Zeile **Widgets** („1 Widget · noch keins auf dem Startbildschirm“).
 
-Das Widget-Menü unter Einstellungen → **Widgets** hat danach zwei Tabs: **Widgets** (normale Widgets, noch ein Platzhalter) und **Pro Widgets** — geöffnet wird „Pro Widgets“. Ist der Schalter aus, gibt es keine Tabs, nur den Platzhalter mit dem Hinweis „Für Entwickler: Pro Widgets lassen sich unter „Erweitert“ freischalten.“ und dem Button **Erweitert**.
+Das Widget-Menü unter Einstellungen → **Widgets** hat danach zwei Tabs: **Widgets** (normale Widgets, noch ein Platzhalter) und **Pro Widgets** — geöffnet wird „Pro Widgets“. Ist der Schalter aus, gibt es in den Einstellungen keine Zeile Widgets; kommst du über Anleitung & Hilfe → Widgets & Pro Widgets → **Zu den Widgets** trotzdem ins Menü, zeigt es keine Tabs, nur den Platzhalter mit dem Hinweis „Für Entwickler: Pro Widgets lassen sich unter „Pro-Funktionen“ freischalten.“ und dem Button **Pro-Funktionen**.
 
 **Update von 3.7.0:** Hattest du den Sprachauftrag unter den früheren „Erweiterten Optionen“ eingeschaltet, sind Pro Widgets weiter an. Server-Adresse und Token von dort übernimmt WhisperLoom beim ersten Start einmalig in jedes Widget, das noch keinen eigenen Server hat — du musst nichts neu eintragen.
 
@@ -1102,7 +1103,7 @@ Drücke lange auf eine freie Stelle deines Startbildschirms → **Widgets** → 
 
 **Auf dem Startbildschirm** (Karte im Tab „Pro Widgets“, sobald ein Widget liegt) listet deine platzierten Widgets („Widget 1 · Einkauf“). Ein Tipp darauf wechselt das Widget-Profil. Ab Android 12 geht das auch direkt am Widget: lange drücken → **Neu konfigurieren**.
 
-Die bebilderte Anleitung dazu liegt unter Erweitert → **Anleitung Pro Widgets**, im Tab „Pro Widgets“ unter **Hilfe** → **Anleitung ansehen** und unter Anleitung & Hilfe → **Widgets & Pro Widgets**.
+Die bebilderte Anleitung dazu liegt unter Pro-Funktionen → **Anleitung Pro Widgets**, im Tab „Pro Widgets“ unter **Hilfe** → **Anleitung ansehen** und unter Anleitung & Hilfe → **Widgets & Pro Widgets**.
 
 ### 14.6 Auto-Stopp
 
@@ -1120,7 +1121,7 @@ Die Aufnahme zeigt nur das Widget, mit dem du gestartet hast; die anderen bleibe
 | grün, „Gesendet“ | der Auftrag ist draußen | startet eine neue Aufnahme |
 | rot mit Fehlergrund | etwas hat nicht geklappt | schickt **denselben** Auftrag noch einmal, ohne neu aufzunehmen. Kann er so nicht raus (Pro Widgets aus, seinem Widget fehlt der Server), öffnet der Tipp stattdessen die Stelle, an der du es behebst |
 | grau mit Server-Symbol, „Server fehlt — tippen“ | diesem Widget fehlen Adresse oder Token | öffnet **Widget bearbeiten** für genau dieses Widget |
-| grau mit durchgestrichenem Mikrofon, „Pro Widgets aus — tippen“ | der Schalter „Pro Widgets“ ist aus | öffnet **Erweitert** |
+| grau mit durchgestrichenem Mikrofon, „Pro Widgets aus — tippen“ | der Schalter „Pro Widgets“ ist aus | öffnet **Pro-Funktionen** |
 | rot, „Mikrofon nicht erlaubt — tippen“ | WhisperLoom darf das Mikrofon nicht nutzen | öffnet den Tab „Pro Widgets“ mit der Karte **Mikrofon** |
 
 „Bereit“ und „Server fehlt“ gelten je Widget: Ein Widget mit Server ist bereit, eines ohne zeigt „Server fehlt“. Aufnahme, Senden, „Gesendet“ und Fehler zeigt nur das Widget, mit dem du aufgenommen hast. Es gibt aber immer nur einen Auftrag: Tippst du ein anderes Widget an, während eines aufnimmt oder sendet, nimmt es nicht auf und meldet kurz „Ein anderes Widget nimmt gerade auf“ bzw. „Ein anderes Widget sendet gerade noch“; im zweiten Fall stößt der Tipp den Auftrag an wie ein Tipp auf „Wird gesendet …“. Nach einem Fehler darfst du mit einem anderen Widget neu aufnehmen; sobald die neue Aufnahme läuft, ist der gescheiterte Auftrag verworfen. Wird das Widget, mit dem du aufgenommen hast, entfernt, zeigen alle anderen den Auftrag.
@@ -1139,7 +1140,7 @@ Vergisst du das Beenden, macht das Widget nach fünf Minuten von allein Schluss 
 Der Tipp öffnet Einstellungen → Widgets → Tab „Pro Widgets“. Dort steht die Karte **Mikrofon** („Für Pro Widgets fehlt die Mikrofon-Berechtigung.“); ein Tipp darauf erklärt kurz, wofür, und fragt dann Android nach der Erlaubnis.
 
 **„Pro Widgets aus — tippen“**
-Der Schalter unter Erweitert ist aus. Der Tipp führt direkt dorthin.
+Der Schalter unter Pro-Funktionen ist aus. Der Tipp führt direkt dorthin.
 
 **„Server fehlt — tippen“**
 Diesem Widget fehlen Server-Adresse oder Token, oder die Adresse ist ungültig. Der Tipp öffnet **Widget bearbeiten** für genau dieses Widget; sobald Adresse und Token stimmen, ist es bereit.
@@ -1148,7 +1149,7 @@ Diesem Widget fehlen Server-Adresse oder Token, oder die Adresse ist ungültig. 
 Ein Auftrag wartet, aber sein Widget hat inzwischen keinen gültigen Server mehr. Der Auftrag bleibt gespeichert. Der Tipp auf das Widget, mit dem du aufgenommen hast, öffnet **Widget bearbeiten** für dessen Profil: Server eintragen, dann aufs Widget tippen — er geht los, ohne neu aufzunehmen.
 
 **„Pro Widgets sind aus — tippen für erneuten Versuch“**
-Du hast Pro Widgets ausgeschaltet, während ein Auftrag wartete. Er bleibt gespeichert. Der Tipp führt nach **Erweitert**: wieder einschalten, dann aufs Widget tippen — oder den Auftrag dort unter **Offener Auftrag** verwerfen.
+Du hast Pro Widgets ausgeschaltet, während ein Auftrag wartete. Er bleibt gespeichert. Der Tipp führt nach **Pro-Funktionen**: wieder einschalten, dann aufs Widget tippen — oder den Auftrag dort unter **Offener Auftrag** verwerfen.
 
 **„Widget gelöscht — Auftrag verworfen“**
 Das Widget, mit dem du aufgenommen hast, wurde gelöscht, bevor sein Auftrag draußen war. Der Auftrag ist weg — WhisperLoom schickt ihn nie an den Server eines anderen Widgets. Ein Tipp startet eine neue Aufnahme.
