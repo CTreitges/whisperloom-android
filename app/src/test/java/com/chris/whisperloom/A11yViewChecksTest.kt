@@ -120,23 +120,13 @@ class A11yViewChecksTest {
     }
 
     /**
-     * Bekannte Luecke, bis die Tastenreihe ueberarbeitet ist (Plan CTR-272 B3, PR 1b): die Tasten
-     * sind schmaler als 48 dp (T3), und die Statuszeile ist als Tippziel (Warnung -> Assistent)
-     * niedriger. B3 ersetzt diesen Test durch "keine Befunde". Alles andere waere neu und faellt auf.
+     * Seit B3 (Plan CTR-272, PR 1b) ohne Ausnahme: jede Taste ist mindestens 48 dp breit und hoch
+     * (T3), ebenso die Statuszeile, die in Warnungen ein Tippziel ist (Warnung -> Assistent).
      */
-    private val bekannteLuecke = setOf(
-        "status", "key_globe", "key_comma", "key_space", "key_period", "key_backspace", "key_enter", "key_settings",
-    )
-
-    @Test fun tastaturHatNurDieBekannteLuecke() {
+    @Test fun tastaturOhneBefunde() {
         for (scale in A11yViewChecks.FONT_SCALES) {
-            val neu = tastaturBefunde(scale).filterNot { it.substringBefore(':') in bekannteLuecke && it.endsWith("< 48 dp") }
-            assertEquals("fontScale $scale", emptyList<String>(), neu)
+            assertEquals("fontScale $scale", emptyList<String>(), tastaturBefunde(scale))
         }
-        // Der Helfer sieht die Luecke wirklich (Rot-Lauf ohne diese Ausnahme: siehe PR).
-        val heute = tastaturBefunde(1f)
-        assertTrue(heute.toString(), heute.contains("key_space: 36 × 48 dp < 48 dp"))
-        assertTrue(heute.toString(), heute.contains("key_comma: 44 × 48 dp < 48 dp"))
     }
 
     /** Das Widget in jeder Lage, platziert in seiner Startgroesse 110 × 110 dp. */

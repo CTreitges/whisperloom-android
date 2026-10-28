@@ -172,4 +172,32 @@ class DictationSessionTest {
         assertFalse("Schon pausiert: der Nutzer darf noch weiter", s.cap())
         assertFalse(s.capped)
     }
+
+    // --- Rueckgaengig nach dem Verwerfen (Plan CTR-272 B3) ---------------------
+
+    @Test fun verworfenesKommtAlsPauseZurueck() {
+        val s = festgestellt()
+        s.end()
+        assertTrue(s.restore(42_000, limited = true))
+        assertTrue(s.isPaused)
+        assertEquals(42_000, s.recordedMs)
+        assertFalse(s.capped)
+        assertTrue("Weiter geht", s.resume())
+    }
+
+    @Test fun zurueckgeholtUeberDerHoechstlaengeBleibtGedeckelt() {
+        val s = DictationSession()
+        assertTrue(s.restore(DictationSession.MAX_MS, limited = true))
+        assertTrue(s.capped)
+        assertFalse(s.resume())
+        val offline = DictationSession()
+        assertTrue(offline.restore(DictationSession.MAX_MS, limited = false))
+        assertFalse("Offline ohne Deckel", offline.capped)
+    }
+
+    @Test fun zurueckholenNurOhneOffenesDiktat() {
+        val s = festgestellt()
+        assertFalse(s.restore(1_000, limited = true))
+        assertTrue(s.isLocked)
+    }
 }

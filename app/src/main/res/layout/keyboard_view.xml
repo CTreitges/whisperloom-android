@@ -15,7 +15,7 @@
         android:id="@+id/status"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minHeight="24dp"
+        android:minHeight="48dp"
         android:gravity="center"
         android:accessibilityLiveRegion="polite"
         android:textColor="@color/loom_onSurfaceVariant"
@@ -93,10 +93,10 @@
             android:tint="@color/gesture_lock_tint"
             android:visibility="gone" />
 
-        <!-- Ausloeser des Schnellzugriffs. Bewusst NICHT in der Tastenreihe: die ist bei
-             360 dp Breite schon mit acht Kindern voll, eine neunte Taste draengt die
-             Leertaste auf 0 dp. Hier ist Platz — und weil der Knopf nur im Ruhezustand
-             sichtbar ist, kommt er den Wisch-Zielen nie in die Quere. -->
+        <!-- Ausloeser des Schnellzugriffs. Bewusst NICHT in der Tastenreihe: dort braucht jede
+             Taste 48 dp, bei 360 dp Breite passen nur fuenf feste Tasten neben die Leertaste.
+             Hier ist Platz — und weil der Knopf nur im Ruhezustand sichtbar ist, kommt er den
+             Wisch-Zielen nie in die Quere. -->
         <ImageButton
             android:id="@+id/key_refine"
             android:layout_width="48dp"
@@ -109,6 +109,22 @@
             android:scaleType="fitCenter"
             android:src="@drawable/ic_auto_fix_high"
             android:tint="@color/refine_toggle_tint" />
+
+        <!-- Gegenstueck zum Zauberstab, aus der Tastenreihe hierher umgezogen (Plan CTR-272 B3):
+             dort bleibt so jeder Taste ihre Mindestbreite von 48 dp. Sichtbar wie der Zauberstab
+             nur ausserhalb einer Aufnahme (setzt der Service). -->
+        <ImageButton
+            android:id="@+id/key_settings"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="top|start"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/key_bg"
+            android:contentDescription="@string/cd_kb_settings"
+            android:padding="13dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_settings"
+            android:tint="@color/loom_onSurface" />
 
         <!-- 88 dp, Icon 36 dp (Padding 26). Fuellung = Level-List, Level = BubbleVisual.Fill.ordinal. -->
         <ImageButton
@@ -185,6 +201,16 @@
             android:contentDescription="@string/cd_kb_comma"
             android:text="@string/kb_comma" />
 
+        <!-- Im Fehlerzustand statt des Kommas (setzt der Service): so bleibt die Reihe bei
+             fuenf festen Tasten, und die Leertaste behaelt bei 360 dp rund 70 dp. -->
+        <ImageButton
+            android:id="@+id/key_retry"
+            style="@style/KeyIcon"
+            android:contentDescription="@string/cd_kb_retry"
+            android:src="@drawable/ic_replay"
+            android:tint="@color/loom_error"
+            android:visibility="gone" />
+
         <Button
             android:id="@+id/key_space"
             style="@style/Key"
@@ -213,18 +239,5 @@
             android:contentDescription="@string/cd_kb_enter"
             android:src="@drawable/ic_keyboard_return" />
 
-        <ImageButton
-            android:id="@+id/key_retry"
-            style="@style/KeyIcon"
-            android:contentDescription="@string/cd_kb_retry"
-            android:src="@drawable/ic_replay"
-            android:tint="@color/loom_error"
-            android:visibility="gone" />
-
-        <ImageButton
-            android:id="@+id/key_settings"
-            style="@style/KeyIcon"
-            android:contentDescription="@string/cd_kb_settings"
-            android:src="@drawable/ic_settings" />
     </LinearLayout>
 </LinearLayout>

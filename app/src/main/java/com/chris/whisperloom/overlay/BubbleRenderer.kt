@@ -11,7 +11,10 @@ import android.view.ViewOutlineProvider
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.view.ViewCompat
+import com.chris.whisperloom.Formats
 import com.chris.whisperloom.R
+import com.chris.whisperloom.RecordingLimit
+import com.chris.whisperloom.ime.DictationSession
 import kotlin.math.roundToInt
 
 /**
@@ -62,6 +65,7 @@ class BubbleRenderer(root: View, private val reduceMotion: () -> Boolean) {
     fun render(visual: BubbleVisual, elapsedMs: Long, quiet: Boolean = false) {
         val previous = current
         current = visual
+        limitStage = RecordingLimit.Stage.OK
         if (previous?.fill != visual.fill) setFill(visual.fill, animate = previous != null)
         if (previous?.icon != visual.icon || previous.iconTint != visual.iconTint ||
             previous.iconAlpha != visual.iconAlpha
@@ -80,13 +84,28 @@ class BubbleRenderer(root: View, private val reduceMotion: () -> Boolean) {
      * vollen Sekunde schweigt die Live-Region — sonst laese TalkBack jede Sekunde in das eigene
      * Diktat hinein (wie die Statuszeile der IME). Den Aufnahmestart hat sie davor noch gemeldet.
      */
-    fun updateTimer(elapsedMs: Long) {
+    fun updateTimer(elapsedMs: Long, stage: RecordingLimit.Stage = RecordingLimit.Stage.OK) {
         val visual = current ?: return
         if (visual.label != BubbleVisual.Label.TIMER) return
-        if (elapsedMs >= 1_000) bubble.accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_NONE
+        // Hoechstdauer online (Plan CTR-272 B2): Hinweis und Warnung stehen im Zustand und werden
+        // je einmal angesagt — nur fuer diesen einen Takt ist die Region wieder an.
+        val announce = stage != limitStage && stage != RecordingLimit.Stage.OK
+        limitStage = stage
+        bubble.accessibilityLiveRegion = when {
+            announce -> View.ACCESSIBILITY_LIVE_REGION_POLITE
+            elapsedMs >= 1_000 -> View.ACCESSIBILITY_LIVE_REGION_NONE
+            else -> bubble.accessibilityLiveRegion
+        }
         label.text = timerSpan(elapsedMs)
+        label.setTextColor(
+            ctx.getColor(if (stage == RecordingLimit.Stage.WARN) R.color.loom_warning else R.color.loom_recordingText),
+        )
         describe(visual, elapsedMs)
     }
+
+    /** Zuletzt gezeigte Stufe der Hoechstdauer; ausserhalb der Aufnahme OK. */
+    var limitStage = RecordingLimit.Stage.OK
+        private set
 
     fun flashSuccess() = rings.flashSuccess()
 
@@ -167,7 +186,10 @@ class BubbleRenderer(root: View, private val reduceMotion: () -> Boolean) {
     /** "● m:ss" — der Punkt blinkt mit 1 Hz (Aus-Phase transparent), Text in recordingText. */
     private fun timerSpan(elapsedMs: Long): CharSequence {
         val dotColor = if (BubbleUi.dotVisible(elapsedMs)) ctx.getColor(R.color.loom_recording) else Color.TRANSPARENT
-        return SpannableString(BubbleUi.timerText(elapsedMs)).apply {
+        // Ab dem Hinweis steht die Grenze dabei: "● 10:03 / 12:00".
+        val text = BubbleUi.timerText(elapsedMs) +
+            if (limitStage == RecordingLimit.Stage.OK) "" else " / ${max()}"
+        return SpannableString(text).apply {
             setSpan(ForegroundColorSpan(dotColor), 0, BubbleUi.DOT.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
     }
@@ -203,7 +225,11 @@ class BubbleRenderer(root: View, private val reduceMotion: () -> Boolean) {
             bubble,
             when (visual.description) {
                 BubbleVisual.Description.IDLE -> ctx.getString(R.string.cd_bubble_idle)
-                BubbleVisual.Description.RECORDING -> ctx.getString(R.string.cd_bubble_recording)
+                BubbleVisual.Description.RECORDING -> when (limitStage) {
+                    RecordingLimit.Stage.HINT -> ctx.getString(R.string.cd_bubble_recording_long, max())
+                    RecordingLimit.Stage.WARN -> ctx.getString(R.string.cd_bubble_recording_ending, max())
+                    else -> ctx.getString(R.string.cd_bubble_recording)
+                }
                 BubbleVisual.Description.SENDING -> ctx.getString(R.string.cd_bubble_sending)
                 BubbleVisual.Description.REFINING -> ctx.getString(R.string.cd_bubble_refining)
                 BubbleVisual.Description.ERROR -> ctx.getString(R.string.cd_bubble_error)
@@ -212,6 +238,8 @@ class BubbleRenderer(root: View, private val reduceMotion: () -> Boolean) {
             },
         )
     }
+
+    private fun max() = Formats.duration(DictationSession.MAX_MS)
 
     companion object {
         /** 92 % von 255. */

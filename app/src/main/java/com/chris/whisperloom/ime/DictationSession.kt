@@ -71,6 +71,16 @@ class DictationSession {
         return true
     }
 
+    /**
+     * Rueckgaengig nach dem Verwerfen (Plan CTR-272 B3): das angehaltene Audio ([recordedMs]) kommt
+     * als Pause zurueck, gedeckelt wie [recheck]. Nur ohne offenes Diktat.
+     */
+    fun restore(recordedMs: Long, limited: Boolean): Boolean {
+        if (!move(Phase.NONE, Phase.PAUSED)) return false
+        capped = update(recordedMs, limited) == Length.MAX
+        return true
+    }
+
     /** Gesendet oder verworfen — aus jedem Zustand. */
     fun end() {
         phase = Phase.NONE

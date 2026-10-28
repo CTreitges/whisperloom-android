@@ -28,8 +28,10 @@ import android.widget.Toast
 import androidx.annotation.VisibleForTesting
 import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.AudioRecorder
+import com.chris.whisperloom.Engine
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
+import com.chris.whisperloom.RecordingLimit
 import com.chris.whisperloom.RefineSkip
 import com.chris.whisperloom.TranscriptionEngine
 import com.chris.whisperloom.a11y.TextInserterAccessibilityService
@@ -101,7 +103,17 @@ class FloatingMicService : Service() {
                 return
             }
             val elapsed = elapsedMs()
-            renderer?.updateTimer(elapsed)
+            // Hoechstdauer online (Plan CTR-272 B2): bei 12:00 senden wie ein Tipp — darueber lehnte
+            // der Anbieter die Datei ab, und das Audio waere weg.
+            val stage = RecordingLimit.stage(elapsed, prefs.engine == Engine.ONLINE)
+            if (stage == RecordingLimit.Stage.STOP) {
+                stopRec()
+                return
+            }
+            if (stage == RecordingLimit.Stage.WARN && renderer?.limitStage != RecordingLimit.Stage.WARN) {
+                renderer?.haptic(BubbleMotion.Haptic.REJECT)
+            }
+            renderer?.updateTimer(elapsed, stage)
             main.postDelayed(this, BubbleUi.DOT_PERIOD_MS - elapsed % BubbleUi.DOT_PERIOD_MS)
         }
     }

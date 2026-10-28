@@ -526,4 +526,138 @@ class ImePauseTest {
         assertEquals(laeuft(DictationSession.MAX_MS + 1_000), statusText)
         assertTrue(band.isActive)
     }
+
+    // --- Hoechstdauer der gehaltenen Aufnahme (Plan CTR-272 B2, T4) ------------
+
+    @Test fun gehaltenOnlineHinweisAbZehnMinuten() {
+        down()
+        mikro.sprechen(DictationSession.LONG_MS)
+        warten(1_000)
+        assertEquals(app.getString(R.string.kb_held_long, zeit(DictationSession.MAX_MS)), statusText)
+    }
+
+    @Test fun gehaltenOnlineWarntUndSendetBeiDerHoechstlaenge() {
+        down()
+        mikro.sprechen(DictationSession.MAX_MS - 20_000)
+        warten(1_000)
+        assertEquals(app.getString(R.string.kb_held_ending, zeit(DictationSession.MAX_MS)), statusText)
+        mikro.sprechen(20_000)
+        warten(1_000)
+        assertEquals("Bei 12:00 senden wie Loslassen", app.getString(R.string.kb_transcribing), statusText)
+        // Der Finger hebt erst danach ab: kein zweites Senden, kein Feststellen.
+        up()
+        assertEquals(app.getString(R.string.kb_transcribing), statusText)
+        assertEquals(View.GONE, send.visibility)
+    }
+
+    @Test fun gehaltenOfflineOhneGrenze() {
+        down()
+        Prefs(app).engine = Engine.OFFLINE
+        mikro.sprechen(DictationSession.MAX_MS + 1_000)
+        warten(1_000)
+        assertEquals(app.getString(R.string.kb_listening), statusText)
+    }
+
+    // --- Verwerfen mit Rueckgaengig (Plan CTR-272 B3, T2) -----------------------
+
+    @Test fun verworfenesLaesstSichUeberDieStatuszeileZurueckholen() {
+        feststellen()
+        mikro.sprechen(2_000)
+        discard.performClick()
+        assertEquals(app.getString(R.string.kb_discarded), statusText)
+        assertTrue("Statuszeile ist der Rueckgaengig-Knopf", status.isClickable)
+        status.performClick()
+        // Zurueck als Pause: senden, weitersprechen oder doch verwerfen.
+        assertEquals(pausiert(2_000), statusText)
+        assertTrue(send.isClickable)
+        assertFalse(band.isActive)
+    }
+
+    @Test fun nachLinksGewischtLaesstSichZurueckholen() {
+        // Ein Zittern nach links soll das gehaltene Diktat nicht endgueltig kosten.
+        down()
+        mikro.sprechen(1_000)
+        event(MotionEvent.ACTION_MOVE, -400f)
+        event(MotionEvent.ACTION_UP, -400f)
+        assertEquals(app.getString(R.string.kb_discarded), statusText)
+        status.performClick()
+        assertEquals(pausiert(1_000), statusText)
+        send.performClick()
+        assertEquals(app.getString(R.string.kb_transcribing), statusText)
+    }
+
+    @Test fun nachDerFristIstDasVerworfeneWeg() {
+        feststellen()
+        mikro.sprechen(1_000)
+        discard.performClick()
+        warten(3_000)
+        assertEquals(app.getString(R.string.kb_hint_hold), statusText)
+        assertFalse(status.isClickable)
+        down()
+        assertEquals("Neues Diktat startet", app.getString(R.string.kb_listening), statusText)
+    }
+
+    @Test fun einNeuesDiktatInDerFristVerwirftEndgueltig() {
+        feststellen()
+        mikro.sprechen(1_000)
+        discard.performClick()
+        down()
+        assertEquals(app.getString(R.string.kb_listening), statusText)
+        assertFalse("Kein Rueckgaengig mehr", status.isClickable)
+        up()
+        // Es geht nur das neue, leere Diktat raus (zu kurz: still zurueck in die Ruhe). Haengte das
+        // verworfene noch daran, scheiterte es am toten Zugang.
+        val bis = System.currentTimeMillis() + 10_000
+        while (statusText == app.getString(R.string.kb_transcribing)) {
+            if (System.currentTimeMillis() > bis) fail("Uebertragung endet nicht")
+            Thread.sleep(10)
+            idle()
+        }
+        assertEquals(app.getString(R.string.kb_hint_hold), statusText)
+    }
+
+    /** Mit "Zeit zum Reagieren" (Systemeinstellung) bleibt das Rueckgaengig so lange stehen (T6). */
+    @Test fun dieFristFolgtDerSystemeinstellungZeitZumReagieren() {
+        val am = app.getSystemService(android.view.accessibility.AccessibilityManager::class.java)
+        shadowOf(am).setInteractiveUiTimeout(10_000)
+        feststellen()
+        mikro.sprechen(1_000)
+        discard.performClick()
+        warten(3_000)
+        assertTrue("Nach 3 s noch zurueckholbar", status.isClickable)
+        warten(8_000)
+        assertFalse(status.isClickable)
+        assertEquals(app.getString(R.string.kb_hint_hold), statusText)
+    }
+
+    @Test fun ohneVerwerfenGibtEsKeinRueckgaengig() {
+        feststellen()
+        assertFalse(status.isClickable)
+    }
+
+    // --- Tastenreihe im Fehlerzustand (Plan CTR-272 B3) ------------------------
+
+    @Test fun imFehlerzustandErsetztWiederholenDasKomma() {
+        val comma = root.findViewById<View>(R.id.key_comma)
+        val retry = root.findViewById<View>(R.id.key_retry)
+        assertEquals(View.VISIBLE, comma.visibility)
+        down()
+        mikro.sprechen(1_000)
+        Prefs(app).apiBaseUrl = ""
+        up()
+        val bis = System.currentTimeMillis() + 10_000
+        while (statusText == app.getString(R.string.kb_transcribing)) {
+            if (System.currentTimeMillis() > bis) fail("Uebertragung endet nicht")
+            Thread.sleep(10)
+            idle()
+        }
+        assertEquals(View.VISIBLE, retry.visibility)
+        assertEquals("Komma macht Platz", View.GONE, comma.visibility)
+        assertTrue("Erneut senden als Aktion der Mikro-Taste", aktion(R.string.cd_kb_retry) != null)
+        // Erneut senden: Komma wieder da, Aktion weg.
+        aktionAusfuehren(R.string.cd_kb_retry)
+        assertEquals(app.getString(R.string.kb_transcribing), statusText)
+        assertEquals(View.VISIBLE, comma.visibility)
+        assertNull(aktion(R.string.cd_kb_retry))
+    }
 }

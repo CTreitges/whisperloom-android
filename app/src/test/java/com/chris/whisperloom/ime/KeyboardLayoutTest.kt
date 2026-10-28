@@ -82,7 +82,8 @@ class KeyboardLayoutTest {
                 assertTrue("Icon-Taste erwartet", key is ImageButton)
             }
         }
-        assertEquals(8, row.childCount)
+        // Zahnrad in der Mikro-Zone (B3): Globus, Komma, Leertaste, Punkt, Loeschen, Enter, Wiederholen.
+        assertEquals(7, row.childCount)
     }
 
     /** Misst die Tastatur so breit, wie sie auf einem Geraet mit [breiteDp] waere. */
@@ -101,40 +102,57 @@ class KeyboardLayoutTest {
         val v = inflate()
         val d = ctx.resources.displayMetrics.density
         messen(v, 360)
-        // 8 paddingTop + 41 status + 28 level + 112 mic_zone + 8 marginTop + 52 key_row
-        // + 12 paddingBottom. Die Spec nennt "rund 240 dp"; die Statuszeile ist hier
-        // zweizeilig, weil der Ruhe-Hinweis umbricht — ein kuerzerer Text macht die
-        // Tastatur entsprechend flacher (siehe PR-Hinweis).
-        assertEquals("Ruhehoehe der Tastatur", 261, (v.measuredHeight / d).toInt())
+        // 8 paddingTop + 48 status + 28 level + 112 mic_zone + 8 marginTop + 52 key_row
+        // + 12 paddingBottom. Die Spec nennt "rund 240 dp"; die Statuszeile ist mindestens
+        // 48 dp hoch, weil sie in Warnungen ein Tippziel ist (Plan CTR-272 B3; vorher 41 dp
+        // fuer den zweizeiligen Ruhe-Hinweis).
+        assertEquals("Ruhehoehe der Tastatur", 268, (v.measuredHeight / d).toInt())
 
         v.findViewById<View>(R.id.refine_row).visibility = View.VISIBLE
         messen(v, 360)
-        assertTrue("Ausgeklappt muss die Tastatur hoeher werden", (v.measuredHeight / d).toInt() > 261)
+        assertTrue("Ausgeklappt muss die Tastatur hoeher werden", (v.measuredHeight / d).toInt() > 268)
     }
 
     /**
      * Die Tastenreihe ist bei 360 dp — der haeufigsten Android-Breite — knapp. Die Leertaste
      * ist das einzige Kind mit Gewicht und bekommt, was uebrig bleibt: bei einer Taste zu viel
      * misst LinearLayout sie mit 0 dp, und das letzte Kind ragt aus der Reihe heraus.
+     *
+     * Jede Taste ist mindestens 48 dp breit (Spec §5.6, Plan CTR-272 B3) — auch im Fehlerzustand,
+     * wenn die Wiederholen-Taste den Platz des Kommas einnimmt (so schaltet es der Dienst).
      */
     @Test fun dieTastenreihePasstAufEinSchmalesGeraet() {
-        val v = inflate()
-        val d = ctx.resources.displayMetrics.density
-        messen(v, 360)
-        val row = v.findViewById<ViewGroup>(R.id.key_row)
-        val space = v.findViewById<View>(R.id.key_space)
+        for (fehler in listOf(false, true)) {
+            val v = inflate()
+            val d = ctx.resources.displayMetrics.density
+            if (fehler) {
+                v.findViewById<View>(R.id.key_retry).visibility = View.VISIBLE
+                v.findViewById<View>(R.id.key_comma).visibility = View.GONE
+            }
+            messen(v, 360)
+            val row = v.findViewById<ViewGroup>(R.id.key_row)
+            val space = v.findViewById<View>(R.id.key_space)
+            val sichtbar = (0 until row.childCount).map { row.getChildAt(it) }.filter { it.visibility != View.GONE }
 
-        assertTrue("Leertaste auf 0 dp gedrueckt — eine Taste zu viel in key_row", space.width > 0)
-        val letztes = (0 until row.childCount)
-            .map { row.getChildAt(it) }
-            .last { it.visibility != View.GONE }
-        assertTrue(
-            "Letzte Taste ragt aus der Reihe: ${letztes.right} > ${row.width}",
-            letztes.right <= row.width,
-        )
-        // Festgehalten, damit ein Wachsen der Reihe auffaellt: die Leertaste liegt hier schon
-        // unter dem 48-dp-Touchziel der Spec §5.6 — Altbestand, nicht durch den Schnellzugriff.
-        assertEquals("Leertaste bei 360 dp", 36, (space.width / d).toInt())
+            val letztes = sichtbar.last()
+            assertTrue(
+                "Fehlerzustand $fehler: letzte Taste ragt aus der Reihe: ${letztes.right} > ${row.width}",
+                letztes.right <= row.width,
+            )
+            for (key in sichtbar) {
+                val name = ctx.resources.getResourceEntryName(key.id)
+                assertTrue("Fehlerzustand $fehler: $name ${(key.width / d).toInt()} dp breit", key.width / d >= 48f)
+                assertTrue("Fehlerzustand $fehler: $name ${(key.height / d).toInt()} dp hoch", key.height / d >= 48f)
+            }
+            assertTrue("Fehlerzustand $fehler: Leertaste ${(space.width / d).toInt()} dp", space.width / d >= 48f)
+        }
+    }
+
+    /** Das Zahnrad sitzt in der Mikro-Zone wie der Zauberstab, nicht in der vollen Tastenreihe. */
+    @Test fun dasZahnradSitztInDerMikroZone() {
+        val v = inflate()
+        assertEquals(R.id.mic_zone, (v.findViewById<View>(R.id.key_settings).parent as View).id)
+        assertEquals(R.id.mic_zone, (v.findViewById<View>(R.id.key_refine).parent as View).id)
     }
 
     @Test fun masseNachSpec() {

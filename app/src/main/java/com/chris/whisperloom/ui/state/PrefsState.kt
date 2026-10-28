@@ -82,6 +82,7 @@ class PrefsState(val prefs: Prefs) {
     var removeFillers: Boolean by pref({ prefs.removeFillers }) { prefs.removeFillers = it }
     var autoCapitalize: Boolean by pref({ prefs.autoCapitalize }) { prefs.autoCapitalize = it }
     var trailingSpace: Boolean by pref({ prefs.trailingSpace }) { prefs.trailingSpace = it }
+    var micTapToggle: Boolean by pref({ prefs.micTapToggle }) { prefs.micTapToggle = it }
     var customFillers: Set<String> by pref({ prefs.customFillers }) { prefs.customFillers = it }
     var disabledFillers: Set<String> by pref({ prefs.disabledFillers }) { prefs.disabledFillers = it }
 

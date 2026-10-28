@@ -16,7 +16,7 @@
     </style>
 
     <!-- Diktier-Tastatur, Tastenreihe (UX-Spec §5.3): Hoehe 48 dp (56 ab fontScale 1,3 — im Code),
-         minWidth 44, Radius 12, Fuellung loom_surfaceContainerHigh, gedrueckt loom_surfaceContainerHighest.
+         minWidth 48 (Touch-Ziel, Plan CTR-272 B3), Radius 12, Fuellung loom_surfaceContainerHigh, gedrueckt loom_surfaceContainerHighest.
          Kein stateListAnimator: die Material-Button-Anhebung wirft auf dem dunklen Grund Schatten. -->
     <style name="Key">
         <item name="android:layout_width">wrap_content</item>
@@ -25,7 +25,7 @@
         <item name="android:layout_marginHorizontal">2dp</item>
         <item name="android:background">@drawable/key_bg</item>
         <item name="android:stateListAnimator">@null</item>
-        <item name="android:minWidth">44dp</item>
+        <item name="android:minWidth">48dp</item>
         <item name="android:minHeight">0dp</item>
         <item name="android:paddingHorizontal">10dp</item>
         <item name="android:paddingVertical">0dp</item>

@@ -461,6 +461,8 @@
     <string name="text_fillers_edit">Liste bearbeiten</string>
     <string name="pref_auto_cap">Automatisch groß schreiben</string>
     <string name="pref_trailing_space">Leerzeichen nach Diktat anhängen</string>
+    <string name="pref_mic_tap_toggle">Tippen statt Halten</string>
+    <string name="pref_mic_tap_toggle_sub">Tastatur: Ein Tipp startet das Diktat, der nächste Tipp sendet. Du musst nichts gedrückt halten.</string>
     <!-- Unterzeilen (aktueller Wert) von KI-Zugang und „Bei Offline-Erkennung“ -->
     <!-- %1$s = Anbieter der Erkennung -->
     <string name="text_hub_val_access_same">Wie Erkennung · %1$s</string>
@@ -700,11 +702,16 @@
     <string name="cd_bubble_refining">Text wird verbessert. Antippen fügt ihn ohne KI ein</string>
     <string name="cd_bubble_error">Fehler — antippen für erneuten Versuch</string>
     <string name="cd_bubble_inserted">Eingefügt</string>
+    <!-- Online-Aufnahme am Knopf (Plan CTR-272 B2): ab 10 min Hinweis, 20 s vor dem Ende Warnung. -->
+    <string name="cd_bubble_recording_long">Lange Aufnahme — höchstens %1$s, antippen zum Beenden</string>
+    <string name="cd_bubble_recording_ending">Gleich %1$s — dann wird von selbst gesendet</string>
     <string name="cd_bubble_copied">Kopiert — jetzt einfügen</string>
     <string name="cd_cancel">Diktat verwerfen</string>
 
     <!-- §6.12 IME-Tastatur (V2) -->
     <string name="kb_hint_hold">Halte das Mikrofon gedrückt und sprich</string>
+    <!-- Einstellung „Tippen statt Halten“ (Plan CTR-272 B3): ein Tipp startet, der nächste sendet. -->
+    <string name="kb_hint_tap">Tippe auf das Mikrofon und sprich</string>
     <string name="kb_listening">Höre zu … rechts wischen stellt fest</string>
     <string name="kb_transcribing">Wird übertragen …</string>
     <string name="kb_refining">Text wird verbessert … antippen = ohne KI einfügen</string>
@@ -717,15 +724,21 @@
          etwa so lang wie früher, sonst springt die Höhe der Statuszeile. -->
     <string name="kb_locked">Aufnahme %1$s — Pause, senden, verwerfen</string>
     <string name="kb_paused">Pausiert bei %1$s — weiter, senden, verwerfen</string>
+    <string name="kb_locked_tap">Aufnahme %1$s — tippen zum Senden</string>
     <!-- Nur Online-Erkennung: OpenAI nimmt höchstens rund 13 min, danach wäre das Audio weg. -->
     <string name="kb_long">Aufnahme %1$s — bald senden, höchstens %2$s</string>
     <string name="kb_capped">Höchstlänge erreicht — senden oder verwerfen</string>
+    <!-- Gehaltene Aufnahme online (Plan CTR-272 B2): bei der Höchstlänge wird gesendet wie beim Loslassen.
+         Feste Texte ohne laufende Zeit: die Statuszeile ist eine Live-Region und sagt jede Änderung an. -->
+    <string name="kb_held_long">Lange Aufnahme — höchstens %1$s, dann wird gesendet</string>
+    <string name="kb_held_ending">Gleich %1$s — dann wird von selbst gesendet</string>
     <!-- Offline über die Höchstlänge aufgenommen, in der Pause auf Online umgestellt: der Anbieter
          lehnte die Datei ab, und das Audio wäre weg. -->
     <string name="kb_too_long">Zu lang für Online-Erkennung — offline senden oder verwerfen</string>
     <!-- Ein Tastaturwechsel beendet die Tastatur; ein offenes Diktat käme dann nur noch in den Verlauf (DictationRescue). -->
     <string name="kb_finish_first">Erst senden oder verwerfen</string>
-    <string name="kb_discarded">Aufnahme verworfen</string>
+    <!-- Die Zeile ist danach kurz ein Knopf: Tippen holt die Aufnahme zurück (als Pause). -->
+    <string name="kb_discarded">Aufnahme verworfen — hier tippen holt sie zurück</string>
     <!-- Das Feld war beim Einfügen weg (App gewechselt, Tastatur zu): der fertige Text ging
          nirgends hin, liegt aber im Verlauf. Steht bis zum nächsten Diktat. -->
     <string name="kb_only_in_history">Feld nicht mehr da — Text liegt im Verlauf</string>
@@ -762,8 +775,10 @@
     <string name="cd_kb_discard">Aufnahme verwerfen</string>
     <string name="cd_kb_send">Aufnahme senden</string>
     <string name="cd_kb_lock">Aufnahme feststellen</string>
+    <string name="cd_kb_pause">Aufnahme pausieren</string>
     <string name="cd_mic_recording">Aufnahme läuft, %1$s — antippen zum Senden</string>
     <string name="cd_mic_locked">Aufnahme festgestellt, %1$s — antippen zum Pausieren</string>
+    <string name="cd_mic_locked_tap">Aufnahme läuft, %1$s — antippen zum Senden</string>
     <string name="cd_mic_paused">Aufnahme pausiert, %1$s — antippen zum Weitersprechen</string>
     <string name="cd_mic_capped">Aufnahme pausiert, Höchstlänge erreicht — senden oder verwerfen</string>
     <string name="cd_mic_sending">Wird übertragen</string>
@@ -795,6 +810,9 @@
     <string name="widget_error_retry">%1$s — tippen für erneuten Versuch</string>
     <string name="cd_widget_ready">Auftrag aufnehmen</string>
     <string name="cd_widget_recording">Nimmt auf, %1$s — antippen zum Senden</string>
+    <!-- Notbremse nach 5 min (Plan CTR-272 B2): 20 s vorher die Warnung. -->
+    <string name="widget_recording_ending">%1$s · sendet gleich</string>
+    <string name="cd_widget_recording_ending">Nimmt auf, %1$s — wird gleich von selbst gesendet</string>
     <string name="cd_widget_working">Auftrag wird gesendet. Hängt es länger als drei Minuten: antippen, um erneut zu senden</string>
     <string name="cd_widget_working_retry">Senden gescheitert: %1$s. Ein neuer Versuch folgt automatisch — antippen, um sofort erneut zu senden</string>
     <string name="cd_widget_sent">Auftrag gesendet</string>

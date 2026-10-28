@@ -295,6 +295,14 @@ class Prefs(context: Context) {
         get() = sp.getBoolean(KEY_TRAILING_SPACE, true)
         set(v) = sp.edit { putBoolean(KEY_TRAILING_SPACE, v) }
 
+    /**
+     * Tastatur: Tippen statt Halten (Plan CTR-272 B3). Ein Tipp startet und stellt fest, der naechste
+     * sendet. Ungesetzt aus — Bestandsnutzer behalten Push-to-talk (Getter-Default-Muster).
+     */
+    var micTapToggle: Boolean
+        get() = sp.getBoolean(KEY_MIC_TAP_TOGGLE, false)
+        set(v) = sp.edit { putBoolean(KEY_MIC_TAP_TOGGLE, v) }
+
     /** Eigene Fuellwoerter zusaetzlich zur Sprachliste — klein geschrieben, ohne Duplikate. */
     var customFillers: Set<String>
         get() = sp.getStringSet(KEY_CUSTOM_FILLERS, null)?.toSet().orEmpty()
@@ -532,6 +540,7 @@ class Prefs(context: Context) {
         private const val KEY_REMOVE_FILLERS = "remove_fillers"
         private const val KEY_AUTO_CAP = "auto_capitalize"
         private const val KEY_TRAILING_SPACE = "trailing_space"
+        private const val KEY_MIC_TAP_TOGGLE = "mic_tap_toggle"
         private const val KEY_CUSTOM_FILLERS = "custom_fillers"
         private const val KEY_DISABLED_FILLERS = "disabled_fillers"
         private const val KEY_WELCOME_SEEN = "welcome_seen"
