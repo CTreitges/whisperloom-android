@@ -123,6 +123,12 @@ fun ButtonKeyboardScreen(nav: NavState) {
             SectionCard(title = stringResource(R.string.button_card_keyboard), gap = 8.dp) {
                 Text(stringResource(R.string.button_keyboard_intro), style = MaterialTheme.typography.bodyMedium)
                 KeyboardRows(tryFieldMinLines = 3, snack = snack)
+                SwitchRow(
+                    headline = stringResource(R.string.pref_mic_tap_toggle),
+                    supporting = stringResource(R.string.pref_mic_tap_toggle_sub),
+                    checked = prefs.micTapToggle,
+                    onCheckedChange = { prefs.micTapToggle = it },
+                )
             }
 
             // Einfuege-Verhalten von Tastatur und Knopf (bis 3.8.6 unter Text › Regeln ohne KI).

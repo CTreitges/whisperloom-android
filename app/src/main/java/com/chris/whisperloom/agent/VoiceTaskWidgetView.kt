@@ -15,6 +15,7 @@ import android.widget.RemoteViews
 import android.widget.Toast
 import androidx.annotation.VisibleForTesting
 import com.chris.whisperloom.R
+import com.chris.whisperloom.RecordingLimit
 
 /**
  * Zeichnet das Widget. Das Widget haelt keinen Zustand — hier wird aus [VoiceTaskState] und
@@ -171,7 +172,10 @@ object VoiceTaskWidgetView {
 
     fun status(ctx: Context, state: VoiceTaskState, elapsedMs: Long, message: String): String = when (state) {
         VoiceTaskState.READY -> ctx.getString(R.string.widget_ready)
-        VoiceTaskState.RECORDING -> VoiceTaskUi.timerText(elapsedMs)
+        // 20 s vor der Notbremse die Warnung (Plan CTR-272 B2).
+        VoiceTaskState.RECORDING ->
+            if (ending(elapsedMs)) ctx.getString(R.string.widget_recording_ending, VoiceTaskUi.timerText(elapsedMs))
+            else VoiceTaskUi.timerText(elapsedMs)
         // Mit Grund: ein Versuch ist gescheitert, der naechste folgt — und ein Tipp sendet sofort.
         VoiceTaskState.WORKING ->
             if (message.isBlank()) ctx.getString(R.string.widget_working)
@@ -187,7 +191,10 @@ object VoiceTaskWidgetView {
 
     fun contentDescription(ctx: Context, state: VoiceTaskState, elapsedMs: Long, message: String): String = when (state) {
         VoiceTaskState.READY -> ctx.getString(R.string.cd_widget_ready)
-        VoiceTaskState.RECORDING -> ctx.getString(R.string.cd_widget_recording, VoiceTaskUi.timerText(elapsedMs))
+        VoiceTaskState.RECORDING -> ctx.getString(
+            if (ending(elapsedMs)) R.string.cd_widget_recording_ending else R.string.cd_widget_recording,
+            VoiceTaskUi.timerText(elapsedMs),
+        )
         VoiceTaskState.WORKING ->
             if (message.isBlank()) ctx.getString(R.string.cd_widget_working)
             else ctx.getString(R.string.cd_widget_working_retry, reason(ctx, message))
@@ -214,6 +221,11 @@ object VoiceTaskWidgetView {
         val text = contentDescription(ctx, state, elapsedMs, message)
         return if (profile.name.isEmpty()) text else ctx.getString(R.string.cd_widget_named, profile.name, text)
     }
+
+    /** Die Notbremse ([VoiceTaskService.MAX_DURATION_MS]) kommt gleich; online wie offline, ohne Hinweis vorab. */
+    private fun ending(elapsedMs: Long): Boolean = RecordingLimit.stage(
+        elapsedMs, limited = true, stopMs = VoiceTaskService.MAX_DURATION_MS, hintMs = null,
+    ) == RecordingLimit.Stage.WARN
 
     /** Ohne eigene Meldung bleibt es bei einem allgemeinen Hinweis statt einer leeren Zeile. */
     private fun reason(ctx: Context, message: String): String =

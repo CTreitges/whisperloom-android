@@ -479,4 +479,80 @@ class ImeGestureTest {
         mic.performClick()
         assertEquals(festgestellt, statusText)
     }
+
+    // --- Tippen statt Halten (Plan CTR-272 B3) --------------------------------
+
+    private fun tippModus() {
+        Prefs(app).micTapToggle = true
+        // Wie ein neues Oeffnen der Tastatur: der Ruhe-Hinweis liest den Schalter.
+        service.onStartInputView(null, false)
+    }
+
+    @Test fun ohneSchalterIstTippenStattHaltenAus() {
+        assertFalse(Prefs(app).micTapToggle)
+        assertEquals(app.getString(R.string.kb_hint_hold), statusText)
+    }
+
+    @Test fun mitSchalterStartetEinTippUndStelltFest() {
+        tippModus()
+        assertEquals(app.getString(R.string.kb_hint_tap), statusText)
+        down()
+        up()
+        assertEquals(app.getString(R.string.kb_locked_tap, "0:00"), statusText)
+        assertTrue("Verwerfen muss bedienbar sein", discard.isClickable)
+        assertEquals(app.getString(R.string.cd_mic_locked_tap, "0:00"), mic.contentDescription)
+    }
+
+    @Test fun mitSchalterSendetDerZweiteTipp() {
+        tippModus()
+        down()
+        up()
+        assertEquals("Erster Tipp sendet nicht", app.getString(R.string.kb_locked_tap, "0:00"), statusText)
+        down()
+        up()
+        assertEquals(app.getString(R.string.kb_transcribing), statusText)
+        assertEquals(View.GONE, discard.visibility)
+    }
+
+    @Test fun mitSchalterSendetAuchDerZweiteKlickMitTalkBack() {
+        tippModus()
+        mic.performClick()
+        assertEquals(app.getString(R.string.kb_locked_tap, "0:00"), statusText)
+        mic.performClick()
+        assertEquals(app.getString(R.string.kb_transcribing), statusText)
+    }
+
+    @Test fun mitSchalterBleibtDiePauseUeberDieAktionErreichbar() {
+        tippModus()
+        down()
+        up()
+        val pause = mic.createAccessibilityNodeInfo().actionList
+            .firstOrNull { it.label?.toString() == app.getString(R.string.cd_kb_pause) }
+        assertNotNull("Aktion Pausieren fehlt", pause)
+        assertTrue(mic.performAccessibilityAction(pause!!.id, null))
+        assertEquals(pausiert, statusText)
+        // Aus der Pause setzt ein Tipp fort, wie ohne Schalter; der naechste sendet.
+        down()
+        up()
+        assertEquals(app.getString(R.string.kb_locked_tap, "0:00"), statusText)
+        down()
+        up()
+        assertEquals(app.getString(R.string.kb_transcribing), statusText)
+    }
+
+    @Test fun mitSchalterVerwirftNachLinksWischenWeiterhin() {
+        tippModus()
+        down()
+        move(dx = -weit)
+        up(dx = -weit)
+        assertEquals(app.getString(R.string.kb_discarded), statusText)
+    }
+
+    @Test fun ohneSchalterGibtEsKeineAktionPausieren() {
+        down()
+        move(dx = weit)
+        up(dx = weit)
+        val labels = mic.createAccessibilityNodeInfo().actionList.map { it.label?.toString() }
+        assertFalse(labels.toString(), app.getString(R.string.cd_kb_pause) in labels)
+    }
 }

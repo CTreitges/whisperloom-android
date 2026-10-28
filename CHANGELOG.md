@@ -9,12 +9,16 @@ Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](ht
 - **Schwebender Knopf ohne Ziehen.** Mit TalkBack, Switch Access oder Voice Access gibt es am Knopf die Aktionen **Aufnahme verwerfen** (während der Aufnahme und nach einem Fehler) und **Erneut senden** (nach einem Fehler). Verwerfen ging bisher nur durch Ziehen auf das ✕.
 - **„Eingefügt“ am Knopf.** Nach dem Einfügen steht 2 Sekunden „Eingefügt“ unter dem Knopf, und TalkBack sagt es an.
 - **Spürbarer Erfolg.** Ist der Text eingefügt, vibriert das Handy kurz anders als beim Start und beim Senden: auf neueren Geräten als eigenes Muster, sonst als doppeltes Tippen. Das gilt für den Knopf und die Diktat-Tastatur.
+- **Tastatur: Tippen statt Halten.** Unter Knopf & Tastatur gibt es den Schalter **Tippen statt Halten**. Ist er an, startet ein Tipp auf das Mikrofon das Diktat, und der nächste Tipp sendet. Du musst nichts gedrückt halten und nicht wischen. Pausieren geht dann über TalkBack bzw. die Bedienungshilfe-Aktion **Aufnahme pausieren**. Ab Werk ist der Schalter aus.
+- **Verwerfen rückgängig machen.** Hast du in der Tastatur eine Aufnahme verworfen (Wischen nach links oder ✕), steht kurz „Aufnahme verworfen — hier tippen holt sie zurück“. Ein Tipp auf die Zeile holt die Aufnahme als Pause zurück. Mit der Systemeinstellung „Zeit zum Reagieren“ bleibt die Zeile entsprechend länger stehen.
+- **Höchstdauer mit Warnung.** Mit Online-Erkennung endet eine Aufnahme am Knopf und eine gehaltene Aufnahme in der Tastatur nach 12 Minuten von selbst und wird gesendet. Ab 10 Minuten steht die Grenze dabei, 20 Sekunden vorher warnen Text, TalkBack und Vibration. Bisher scheiterte eine zu lange Aufnahme am Anbieter, und das Audio war weg. Offline gibt es keine Grenze. Das Widget warnt 20 Sekunden vor seiner Grenze von 5 Minuten.
 
 ### Geändert
 
 - **TalkBack am Knopf:** Der Knopf heißt jetzt „Mikrofon“ (während der Aufnahme mit Zeit, z. B. „Mikrofon, 0:07“), danach kommt, was gerade passiert („Aufnahme läuft — antippen zum Beenden“, „Wird übertragen“, „Fehler …“). Angesagt wird nur ein echter Wechsel; während der Aufnahme liest TalkBack die Zeit nicht jede Sekunde vor.
 - **„Aufnahme läuft“ kommt vor dem Mikrofon.** Der Knopf zeigt und meldet die Aufnahme, bevor sich das Mikrofon öffnet.
 - **Große Schrift:** Die Beschriftung unter dem Knopf wird mit der Schrift höher und nicht mehr abgeschnitten.
+- **Größere Tasten in der Tastatur.** Jede Taste ist mindestens 48 dp breit, die Leertaste deutlich breiter. Dafür sitzt das Zahnrad jetzt oben links neben dem Mikrofon. Nach einem Fehler steht **Erneut senden** an der Stelle des Kommas und ist auch über TalkBack erreichbar. Die Statuszeile ist als Tippfläche 48 dp hoch.
 
 ## [3.9.1] — 2026-10-16
 

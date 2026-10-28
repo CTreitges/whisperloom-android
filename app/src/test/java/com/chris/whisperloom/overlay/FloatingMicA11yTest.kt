@@ -269,4 +269,48 @@ class FloatingMicA11yTest {
             assertTrue("Label ${label.height} px hoch, Text braucht $noetig px", label.height >= noetig)
         }
     }
+
+    // --- Hoechstdauer online (Plan CTR-272 B2, O4) -----------------------------
+
+    private val minute = 60_000L
+    private val hoechstens get() = com.chris.whisperloom.Formats.duration(com.chris.whisperloom.ime.DictationSession.MAX_MS)
+
+    /** Online-Aufnahme: die Grenze gilt nur fuer die Online-Erkennung (Fixture rechnet offline). */
+    private fun onlineAufnehmen() {
+        starten()
+        aufnehmen()
+        com.chris.whisperloom.Prefs(app).engine = com.chris.whisperloom.Engine.ONLINE
+    }
+
+    @Test fun onlineHinweisAbZehnMinuten() {
+        onlineAufnehmen()
+        warten(10 * minute + 500)
+        assertEquals(app.getString(R.string.cd_bubble_recording_long, hoechstens), bubble.stateDescription?.toString())
+        assertTrue(label.text.toString(), label.text.endsWith("/ $hoechstens"))
+    }
+
+    @Test fun onlineWarnungBei1140UndSendenBei1200() {
+        onlineAufnehmen()
+        warten(11 * minute + 40_000 + 500)
+        assertEquals(app.getString(R.string.cd_bubble_recording_ending, hoechstens), bubble.stateDescription?.toString())
+        // Die Warnung wird angesagt (einmal), danach schweigt die Region wieder.
+        assertEquals(View.ACCESSIBILITY_LIVE_REGION_POLITE, bubble.accessibilityLiveRegion)
+        assertEquals(app.getColor(R.color.loom_warning), label.currentTextColor)
+        warten(1_000)
+        assertEquals(View.ACCESSIBILITY_LIVE_REGION_NONE, bubble.accessibilityLiveRegion)
+        warten(20_000)
+        val zustand = bubble.stateDescription?.toString()
+        assertTrue(
+            "Bei 12:00 nicht gesendet: $zustand",
+            zustand != app.getString(R.string.cd_bubble_recording_ending, hoechstens) &&
+                zustand != app.getString(R.string.cd_bubble_recording),
+        )
+    }
+
+    @Test fun offlineKeineHoechstdauer() {
+        starten()
+        aufnehmen()
+        warten(13 * minute)
+        assertEquals(app.getString(R.string.cd_bubble_recording), bubble.stateDescription?.toString())
+    }
 }

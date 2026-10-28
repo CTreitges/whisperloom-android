@@ -340,4 +340,19 @@ class VoiceTaskWidgetViewTest {
         assertEquals(ctx.getString(R.string.widget_off), zeile(mit))
         assertEquals(ctx.getString(R.string.widget_off), zeile(leer))
     }
+
+    /** Notbremse mit Warnung (Plan CTR-272 B2): 20 s vor dem automatischen Senden. */
+    @Test fun dieNotbremseWarntAb440() {
+        val kurz = 4 * 60_000L + 39_000
+        val warn = 4 * 60_000L + 40_000
+        assertEquals(VoiceTaskUi.timerText(kurz), VoiceTaskWidgetView.status(ctx, VoiceTaskState.RECORDING, kurz, ""))
+        assertEquals(
+            ctx.getString(R.string.widget_recording_ending, VoiceTaskUi.timerText(warn)),
+            VoiceTaskWidgetView.status(ctx, VoiceTaskState.RECORDING, warn, ""),
+        )
+        assertEquals(
+            ctx.getString(R.string.cd_widget_recording_ending, VoiceTaskUi.timerText(warn)),
+            VoiceTaskWidgetView.contentDescription(ctx, VoiceTaskState.RECORDING, warn, ""),
+        )
+    }
 }

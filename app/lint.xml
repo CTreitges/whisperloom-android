@@ -30,4 +30,13 @@
         <ignore path="src/main/java/com/chris/whisperloom/whisper/ModelDownloader.kt" />
         <ignore path="src/main/java/com/chris/whisperloom/whisper/ModelStore.kt" />
     </issue>
+
+    <!-- Barrierefreiheit (Plan CTR-272 B5, UX-Spec §5.6): diese Funde brechen den Build, statt als
+         Warnung unterzugehen. Ausnahmen nur per @SuppressLint mit Begruendung am Ort (heute zwei
+         ClickableViewAccessibility: FloatingMicService und WhisperLoomInputMethodService). -->
+    <issue id="ContentDescription" severity="error" />
+    <issue id="ClickableViewAccessibility" severity="error" />
+    <issue id="KeyboardInaccessibleWidget" severity="error" />
+    <issue id="LabelFor" severity="error" />
+    <issue id="SmallSp" severity="error" />
 </lint>
