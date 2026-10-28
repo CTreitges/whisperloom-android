@@ -99,6 +99,12 @@ fun ButtonKeyboardScreen(nav: NavState) {
                         }
                     },
                 )
+                SwitchRow(
+                    headline = stringResource(R.string.button_hold_to_talk),
+                    supporting = stringResource(R.string.button_hold_to_talk_sub),
+                    checked = prefs.holdToTalk,
+                    onCheckedChange = { prefs.holdToTalk = it },
+                )
                 LoomRow(
                     headline = stringResource(R.string.button_reset_pos),
                     supporting = stringResource(R.string.button_reset_pos_sub),
