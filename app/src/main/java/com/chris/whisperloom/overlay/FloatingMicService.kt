@@ -32,6 +32,7 @@ import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineSkip
 import com.chris.whisperloom.TranscriptionEngine
+import com.chris.whisperloom.a11y.InsertResult
 import com.chris.whisperloom.a11y.TextInserterAccessibilityService
 import com.chris.whisperloom.api.ApiNotConfiguredException
 import com.chris.whisperloom.api.isRetryable
@@ -487,18 +488,26 @@ class FloatingMicService : Service() {
             val text = dictation.text
             val out = if (prefs.trailingSpace && text.isNotEmpty()) "$text " else text
             // Vor dem Einfuegen, nie aus einem Passwortfeld (Ziel = Fokusfeld der Bedienungshilfe).
-            if (!targetIsPassword()) History.record(applicationContext, HistorySource.BUBBLE, dictation)
+            val password = targetIsPassword()
+            if (!password) History.record(applicationContext, HistorySource.BUBBLE, dictation)
             pendingSamples = null
             main.post {
-                var copied = false
-                var inserted = false
-                if (out.isNotBlank()) {
-                    inserted = TextInserterAccessibilityService.tryInsert(out)
-                    if (!inserted) {
-                        fallbackClipboard(out)
-                        copied = true
-                    }
+                // Passwortfeld: weder einfuegen noch in die Zwischenablage (UX-Spec §6.21). Die
+                // Bedienungshilfe prueft beim Einfuegen selbst noch einmal (Fokus kann wechseln).
+                val result = when {
+                    out.isBlank() -> null
+                    password -> InsertResult.BLOCKED
+                    else -> TextInserterAccessibilityService.tryInsert(out)
                 }
+                if (result == InsertResult.BLOCKED) {
+                    applyState(BubbleState.IDLE)
+                    renderer?.haptic(BubbleMotion.Haptic.REJECT)
+                    toast(getString(R.string.float_password_blocked))
+                    return@post
+                }
+                val inserted = result == InsertResult.INSERTED
+                val copied = result == InsertResult.FAILED
+                if (copied) fallbackClipboard(out)
                 applyState(BubbleState.IDLE, copied = copied, inserted = inserted)
                 renderer?.flashSuccess()
                 renderer?.haptic(BubbleMotion.Haptic.SUCCESS)

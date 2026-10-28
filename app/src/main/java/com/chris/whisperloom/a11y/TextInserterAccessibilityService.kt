@@ -29,50 +29,12 @@ class TextInserterAccessibilityService : AccessibilityService() {
         super.onDestroy()
     }
 
-    /** Fuegt [text] an der Cursor-Position ein. Gibt true bei Erfolg. */
-    fun insert(text: String): Boolean {
-        if (text.isEmpty()) return true
-        val node = focusedField() ?: return false
-
-        val old = currentText(node)
-        val result = TextInsertion.compute(old, node.textSelectionStart, node.textSelectionEnd, text)
-
-        val setArgs = Bundle().apply {
-            putCharSequence(
-                AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, result.text,
-            )
-        }
-        if (!node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, setArgs)) return false
-
-        val cursor = result.cursor
-        val selArgs = Bundle().apply {
-            putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT, cursor)
-            putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT, cursor)
-        }
-        node.performAction(AccessibilityNodeInfo.ACTION_SET_SELECTION, selArgs)
-        return true
-    }
+    /** Fuegt [text] an der Cursor-Position des Fokusfelds ein. */
+    fun insert(text: String): InsertResult = insertInto(focusedField(), text)
 
     /** Das fokussierte, editierbare Feld; null ohne Fenster oder Fokus. */
     private fun focusedField(): AccessibilityNodeInfo? =
         rootInActiveWindow?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)?.takeIf { it.isEditable }
-
-    /**
-     * Aktueller Feldinhalt — leer, wenn das Feld nur seinen Platzhalter zeigt.
-     *
-     * WICHTIG: `AccessibilityNodeInfo.getText()` liefert bei einem LEEREN Feld den
-     * Hint-Text (TextView.getTextForAccessibility faellt auf den Hint zurueck). Ohne
-     * diese Pruefung landet der Platzhalter als "vorhandener Text" im Feld und das
-     * Diktat wird daran angehaengt — genau die Symptome "Nachricht ..." (WhatsApp)
-     * oder "Google ..." (Suchleiste) vor dem eigentlichen Text.
-     */
-    private fun currentText(node: AccessibilityNodeInfo): String {
-        val text = node.text?.toString() ?: return ""
-        // isShowingHintText ist der offizielle Weg (API 26+); der Hint-Vergleich faengt
-        // Felder ab, die das Flag nicht setzen, aber trotzdem den Hint als Text melden.
-        if (node.isShowingHintText || text == node.hintText?.toString()) return ""
-        return text
-    }
 
     companion object {
         @Volatile
@@ -80,8 +42,50 @@ class TextInserterAccessibilityService : AccessibilityService() {
 
         fun isRunning(): Boolean = instance != null
 
-        /** Versucht den Text einzufuegen; false, wenn Dienst aus oder kein Fokusfeld. */
-        fun tryInsert(text: String): Boolean = instance?.insert(text) ?: false
+        /** Versucht den Text einzufuegen; [InsertResult.FAILED], wenn Dienst aus oder kein Fokusfeld. */
+        fun tryInsert(text: String): InsertResult = instance?.insert(text) ?: InsertResult.FAILED
+
+        /** Fuegt [text] an der Cursor-Position von [node] ein — nie in ein Passwortfeld (UX-Spec §6.21). */
+        internal fun insertInto(node: AccessibilityNodeInfo?, text: String): InsertResult {
+            if (text.isEmpty()) return InsertResult.INSERTED
+            if (node == null) return InsertResult.FAILED
+            if (isPassword(node)) return InsertResult.BLOCKED
+
+            val old = currentText(node)
+            val result = TextInsertion.compute(old, node.textSelectionStart, node.textSelectionEnd, text)
+
+            val setArgs = Bundle().apply {
+                putCharSequence(
+                    AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, result.text,
+                )
+            }
+            if (!node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, setArgs)) return InsertResult.FAILED
+
+            val cursor = result.cursor
+            val selArgs = Bundle().apply {
+                putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT, cursor)
+                putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT, cursor)
+            }
+            node.performAction(AccessibilityNodeInfo.ACTION_SET_SELECTION, selArgs)
+            return InsertResult.INSERTED
+        }
+
+        /**
+         * Aktueller Feldinhalt — leer, wenn das Feld nur seinen Platzhalter zeigt.
+         *
+         * WICHTIG: `AccessibilityNodeInfo.getText()` liefert bei einem LEEREN Feld den
+         * Hint-Text (TextView.getTextForAccessibility faellt auf den Hint zurueck). Ohne
+         * diese Pruefung landet der Platzhalter als "vorhandener Text" im Feld und das
+         * Diktat wird daran angehaengt — genau die Symptome "Nachricht ..." (WhatsApp)
+         * oder "Google ..." (Suchleiste) vor dem eigentlichen Text.
+         */
+        private fun currentText(node: AccessibilityNodeInfo): String {
+            val text = node.text?.toString() ?: return ""
+            // isShowingHintText ist der offizielle Weg (API 26+); der Hint-Vergleich faengt
+            // Felder ab, die das Flag nicht setzen, aber trotzdem den Hint als Text melden.
+            if (node.isShowingHintText || text == node.hintText?.toString()) return ""
+            return text
+        }
 
         /**
          * Ist das fokussierte Feld ein Passwortfeld? Dann kommt das Diktat nicht in den Verlauf.
