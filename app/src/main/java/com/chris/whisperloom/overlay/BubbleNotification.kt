@@ -7,13 +7,16 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.drawable.Icon
+import android.text.format.DateFormat
 import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.R
+import java.util.Date
 
 /**
  * Foreground-Notification des schwebenden Knopfs (UX-Spec §5.5, N1): weisse Silhouette als
  * Small-Icon, Akzentfarbe loom_primary (waehrend RECORDING loom_recording), Aktion "Beenden",
- * Tipp oeffnet Home. Als eigenes Objekt, damit der Builder ohne laufenden Service testbar ist.
+ * Tipp oeffnet Home. Ausgeblendet zusaetzlich "Einblenden" (§6.22). Als eigenes Objekt, damit der
+ * Builder ohne laufenden Service testbar ist.
  */
 object BubbleNotification {
 
@@ -27,7 +30,11 @@ object BubbleNotification {
         )
     }
 
-    fun build(ctx: Context, state: BubbleState): Notification {
+    /**
+     * [snoozedUntil] > 0: der Knopf ist bis zu dieser Uhrzeit (Wanduhr, ms) ausgeblendet — Text mit
+     * Uhrzeit und Aktion "Einblenden" vor "Beenden" (UX-Spec §6.22).
+     */
+    fun build(ctx: Context, state: BubbleState, snoozedUntil: Long = 0L): Notification {
         val flags = PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         val stop = PendingIntent.getService(
             ctx, 1,
@@ -39,12 +46,32 @@ object BubbleNotification {
         val stopAction = Notification.Action.Builder(
             Icon.createWithResource(ctx, R.drawable.ic_stop), ctx.getString(R.string.float_stop), stop,
         ).build()
-        return Notification.Builder(ctx, CHANNEL_ID)
+        val snoozed = snoozedUntil > 0L
+        val text = if (snoozed) {
+            ctx.getString(R.string.float_snoozed_text, DateFormat.getTimeFormat(ctx).format(Date(snoozedUntil)))
+        } else {
+            ctx.getString(R.string.float_running_text)
+        }
+        val builder = Notification.Builder(ctx, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_whisperloom)
             .setColor(color)
             .setContentTitle(ctx.getString(R.string.float_running))
-            .setContentText(ctx.getString(R.string.float_running_text))
+            .setContentText(text)
             .setContentIntent(open)
+        if (snoozed) {
+            // Ein Tipp auf eine Notification-Aktion ist ein zulaessiger Ausloeser fuer den Mikrofon-FGS.
+            val show = PendingIntent.getService(
+                ctx, 3,
+                Intent(ctx, FloatingMicService::class.java).setAction(FloatingMicService.ACTION_SNOOZE_END),
+                flags,
+            )
+            builder.addAction(
+                Notification.Action.Builder(
+                    Icon.createWithResource(ctx, R.drawable.ic_visibility), ctx.getString(R.string.float_snooze_end), show,
+                ).build(),
+            )
+        }
+        return builder
             .addAction(stopAction)
             .setOngoing(true)
             .build()

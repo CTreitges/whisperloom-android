@@ -204,13 +204,13 @@
     <string name="setup_done_home">Zum Start</string>
     <string name="a11y_label">WhisperLoom Text-Einfügen</string>
     <!-- Zeigt Android beim Aktivieren. Gelesen wird nur das Zielfeld: Text und Cursor zum Einfügen, isPassword für den Verlauf. -->
-    <string name="a11y_description">Fügt Diktate vom Knopf ins fokussierte Feld ein. Liest nur dieses Feld und prüft, ob es ein Passwortfeld ist. Die Diktate kommen in den Verlauf, wenn er an ist.</string>
+    <string name="a11y_description">Fügt Diktate vom Knopf ins fokussierte Feld ein, nie in Passwortfelder. Liest nur dieses Feld und ob es eins ist. Diktate kommen in den Verlauf, wenn er an ist.</string>
 
     <!-- Prominent Disclosure (Google-Play-Pflicht: eigener Consent-Hinweis vor Mikrofon-/Bedienungshilfe-Zugriff) -->
     <string name="disclosure_mic_title">Mikrofon &amp; Diktat</string>
     <string name="disclosure_mic_body">WhisperLoom nimmt beim Diktieren Ton auf, um ihn in Text umzuwandeln. Im Online-Modus wird die Aufnahme zur Erkennung an den von dir gewählten Anbieter gesendet (z. B. OpenAI oder Groq); im Offline-Modus verlässt die Aufnahme das Gerät nicht. WhisperLoom speichert keine Aufnahmen; nur der Auftrag eines Pro Widgets bleibt auf dem Gerät, bis er gesendet ist.</string>
     <string name="disclosure_a11y_title">Bedienungshilfe: Text einfügen</string>
-    <string name="disclosure_a11y_body">Die Bedienungshilfe „WhisperLoom Text-Einfügen“ fügt den diktierten Text in das gerade aktive Eingabefeld ein. Dafür liest sie nur dieses Feld: Text und Cursor, um an der richtigen Stelle einzufügen, und ob es ein Passwortfeld ist. Andere Bildschirminhalte liest sie nicht, den Feldinhalt speichert sie nicht, und sie wird nur aktiv, wenn du den Knopf antippst. Diktate vom Knopf hebt WhisperLoom im Verlauf auf dem Gerät auf, solange er eingeschaltet ist, nicht aus Passwortfeldern.</string>
+    <string name="disclosure_a11y_body">Die Bedienungshilfe „WhisperLoom Text-Einfügen“ fügt den diktierten Text in das gerade aktive Eingabefeld ein. Dafür liest sie nur dieses Feld: Text und Cursor, um an der richtigen Stelle einzufügen, und ob es ein Passwortfeld ist. In ein Passwortfeld fügt sie nie ein. Andere Bildschirminhalte liest sie nicht, den Feldinhalt speichert sie nicht, und sie wird nur aktiv, wenn du mit dem Knopf diktierst. Diktate vom Knopf hebt WhisperLoom im Verlauf auf dem Gerät auf, solange er eingeschaltet ist, nicht aus Passwortfeldern.</string>
     <string name="disclosure_continue">Fortfahren</string>
 
     <!-- Tutorial (T): einmal nach der Einrichtung, sonst Home „Mehr“ (Seite 3) und Hilfe „Tutorial erneut ansehen“ -->
@@ -500,6 +500,8 @@
     <string name="button_card_bubble">Schwebender Knopf</string>
     <string name="button_reset_pos">Position zurücksetzen</string>
     <string name="button_reset_pos_sub">Setzt den Knopf an die Startposition</string>
+    <string name="button_hold_to_talk">Halten zum Sprechen</string>
+    <string name="button_hold_to_talk_sub">Knopf gedrückt halten und sprechen. Loslassen sendet. Antippen geht weiter.</string>
     <string name="button_pos_reset_done">Position zurückgesetzt</string>
     <string name="button_text_output">Textausgabe</string>
     <string name="button_text_output_a11y">Bedienungshilfe: fügt direkt ins Feld ein</string>
@@ -702,6 +704,16 @@
     <string name="cd_bubble_inserted">Eingefügt</string>
     <string name="cd_bubble_copied">Kopiert — jetzt einfügen</string>
     <string name="cd_cancel">Diktat verwerfen</string>
+    <!-- §6.22 Diktat-Knopf: Passwortfelder, Höchstdauer, Ausblenden -->
+    <string name="float_password_blocked">Nicht eingefügt: Das ist ein Passwortfeld</string>
+    <string name="float_too_long_soon">Noch 2 Minuten — dann sendet der Knopf von selbst</string>
+    <string name="float_too_long_sent">12 Minuten erreicht — Diktat wird gesendet</string>
+    <string name="float_snooze_label">Ausblenden</string>
+    <string name="float_snooze_release">Loslassen zum Ausblenden</string>
+    <string name="float_snoozed_text">Ausgeblendet bis %1$s</string>
+    <string name="float_snooze_end">Einblenden</string>
+    <string name="cd_bubble_snooze">15 Minuten ausblenden</string>
+    <string name="cd_snooze">Knopf ausblenden</string>
 
     <!-- §6.12 IME-Tastatur (V2) -->
     <string name="kb_hint_hold">Halte das Mikrofon gedrückt und sprich</string>

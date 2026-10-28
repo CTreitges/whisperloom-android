@@ -17,6 +17,7 @@ import com.chris.whisperloom.llm.OfflineRefineFixture
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
@@ -29,6 +30,7 @@ import org.robolectric.android.controller.ServiceController
 import org.robolectric.annotation.Config
 import org.robolectric.shadow.api.Shadow
 import org.robolectric.shadows.ShadowSettings
+import org.robolectric.shadows.ShadowToast
 import org.robolectric.shadows.ShadowWindowManagerImpl
 import java.time.Duration
 
@@ -97,11 +99,20 @@ class FloatingMicHistoryTest {
         assertEquals("also ähm hallo welt", History.list(app).single().raw)
     }
 
+    /**
+     * Passwortfeld (UX-Spec §6.22): nicht einfuegen, nicht in die Zwischenablage, nicht in den
+     * Verlauf — nur ein Hinweis. Bis CTR-274 wurde hier trotzdem eingefuegt.
+     */
     @Test fun ausDemPasswortfeldNicht() {
         FloatingMicService.targetIsPassword = { true }
-        diktieren()
-        assertEquals("eingefuegt wird trotzdem", "Lokal verbessert.", clip())
+        val blocked = app.getString(R.string.float_password_blocked)
+        bubble.performClick()
+        fixture.awaitRecorded()
+        bubble.performClick()
+        fixture.waitFor("Kein Hinweis aufs Passwortfeld") { ShadowToast.getTextOfLatestToast() == blocked }
+        assertNull("nichts in der Zwischenablage", clip())
         assertEquals(0, History.count(app))
+        assertEquals(app.getString(R.string.cd_bubble_idle), bubble.stateDescription?.toString())
     }
 
     @Test fun verlaufAusSchreibtNichts() {
