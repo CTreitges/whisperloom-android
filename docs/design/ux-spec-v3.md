@@ -656,10 +656,10 @@ LinearLayout vertical, background @color/loom_background, oben 1 dp @color/loom_
 │                SENDING   loom_primaryContainer + ProgressBar-Bogen loom_primary, ic_mic loom_onPrimaryContainer @ 50 %
 │                ERROR     loom_errorContainer + 2 dp Ring loom_error, ic_replay loom_onErrorContainer
 │                contentDescription cd_mic (bestehend); Halten-zum-Sprechen bleibt (ACTION_DOWN/UP)
-└─ Tastenreihe   LinearLayout 52 dp, marginTop 8, Abstand 4 dp; Tasten: Höhe 48, minWidth 44, Radius 12, Füllung loom_surfaceContainerHigh, gedrückt loom_surfaceContainerHighest,
+└─ Tastenreihe   LinearLayout 52 dp, marginTop 8, Abstand 4 dp; Tasten: Höhe 48, minWidth 48 (§6.21), Radius 12, Füllung loom_surfaceContainerHigh, gedrückt loom_surfaceContainerHighest,
                  Ripple loom_onSurface @ 12 %; Icons 22 dp loom_onSurface, Text 18 sp loom_onSurface
-                 [ic_language cd_kb_switch] [ "," cd_kb_comma ] [ Leertaste weight 1, Label kb_space "Leer" 15 sp onSurfaceVariant, cd_kb_space ] [ "." cd_kb_period ] [ic_backspace cd_kb_backspace] [ic_keyboard_return cd_kb_enter]
-                 [ic_replay cd_kb_retry, Farbe loom_error — nur ERROR sichtbar] [ic_settings cd_kb_settings → MainActivity route=settings]
+                 [ic_language cd_kb_switch] [ "," cd_kb_comma — in ERROR ersetzt durch ic_replay cd_kb_retry, Farbe loom_error ] [ Leertaste weight 1, Label kb_space "Leer" 15 sp onSurfaceVariant, cd_kb_space ] [ "." cd_kb_period ] [ic_backspace cd_kb_backspace] [ic_keyboard_return cd_kb_enter]
+                 Zahnrad ic_settings cd_kb_settings → MainActivity route=settings sitzt seit §6.21 in der Mikro-Zone (top|start)
 ```
 
 Subtypes de/en (`method.xml`) bleiben. Tastenhöhe wächst ab `fontScale ≥ 1,3` auf 56 dp. Alle Drawables referenzieren ausschließlich `@color/loom_*`.
@@ -1220,10 +1220,10 @@ Einstellungs-Screens (`RefineMode.SETTINGS`, ohne `paragraphs`), die Tasten die 
 **Schnellzugriff (§5.3):** Ein 48-dp-Knopf mit `ic_auto_fix_high` klappt eine zweite Reihe
 über `key_row` auf — eingeklappt `GONE`, damit die Ruhehöhe steht.
 
-Der Knopf sitzt **in der Mikro-Zone** (`top|end`), nicht in `key_row`: die Reihe ist bei
-360 dp Breite mit acht Kindern voll (7 × `minWidth` 44 dp + 8 × 4 dp Margin = 340 dp bei
-336 dp verfügbar), eine neunte Taste drückt die Leertaste auf 0 dp und schneidet das Zahnrad
-ab. Weil der Knopf nur außerhalb von `RECORDING`/`SENDING` sichtbar ist, kommt er den
+Der Knopf sitzt **in der Mikro-Zone** (`top|end`), nicht in `key_row`: dort braucht jede
+Taste 48 dp (§6.21), bei 360 dp Breite passen neben die Leertaste nur fünf feste Tasten
+(5 × 48 dp + 6 × 4 dp Margin = 264 dp von 336 dp, die Leertaste behält 72 dp). Das Zahnrad
+sitzt deshalb gegenüber (`top|start`). Weil der Knopf nur außerhalb von `RECORDING`/`SENDING` sichtbar ist, kommt er den
 Wisch-Zielen nie in die Quere; eine offene Leiste schließt beim Aufnahmestart.
 
 Die vier Stufen tragen eigene **Kurz-Labels** (`kb_level_*`: Aus · Glätten · Schöner ·
@@ -1701,7 +1701,43 @@ Ergänzt §5.1 (V1), §5.4 und §5.6; wo sie widersprechen, gilt dieser Abschnit
 - **§5.6 Prüfung.** Ein Test-Helfer (`A11yViewChecks`, Test-Quellsatz) prüft Knopf, IME und Widget bei 360 dp und
   Schriftgröße 1 / 1,3 / 2: jedes sichtbare klickbare Element hat Text oder Beschreibung und ist mindestens
   48 × 48 dp groß; ein `OnTouchListener` hat einen Klickpfad; Gesten-Funktionen gibt es auch als Bedienungshilfe-Aktion.
-  Die zu schmalen IME-Tasten (§5.3) sind als bekannte Lücke festgehalten, bis die Tastenreihe überarbeitet ist.
+  Seit §6.21 ohne Ausnahme, auch für die IME-Tasten.
+
+### 6.21 Nachtrag 3.10.0: Zugang Basis — Tastatur ohne Halten, 48-dp-Tasten, Höchstdauer
+
+Ergänzt §5.3, §6.12 und §6.13; wo sie widersprechen, gilt dieser Abschnitt. Herleitung: Plan CTR-272, Paket B
+(Schritte B3 und B2; außerhalb des Repos). Die Gesten des schwebenden Knopfs bleiben unverändert (CTR-274 offen).
+
+- **V2 „Tippen statt Halten“.** Neue Einstellung `mic_tap_toggle` unter Knopf & Tastatur › Tastatur
+  (`pref_mic_tap_toggle`), ungesetzt **aus** (Getter-Default). Ist sie an: Ein Tipp startet und stellt fest
+  (Loslassen ohne Wischen = Feststellen statt Senden), der **nächste Tipp sendet** (statt zu pausieren), auch über
+  TalkBack. Die Pause bleibt als Bedienungshilfe-Aktion `cd_kb_pause` „Aufnahme pausieren“ der Mikro-Taste; aus der
+  Pause setzt ein Tipp fort wie bisher. Wischen nach links verwirft weiterhin. Texte: Ruhe `kb_hint_tap`,
+  festgestellt `kb_locked_tap`, Beschreibung `cd_mic_locked_tap`. Ohne Schalter bleibt alles wie in §6.12.
+- **V2 Tastenreihe.** Jede Taste ist mindestens 48 × 48 dp (`minWidth` 48 im Stil `Key`). Das Zahnrad zieht in die
+  Mikro-Zone (`top|start`, 48 dp, sichtbar wie der Zauberstab nur außerhalb von RECORDING/SENDING; in der Pause
+  erreicht man die Einstellungen über die App). In ERROR ersetzt `key_retry` das Komma, „Erneut senden“ gibt es
+  zusätzlich als Aktion der Mikro-Taste. Die Leertaste behält bei 360 dp 72 dp, auch in ERROR.
+- **V2 Statuszeile 48 dp.** `minHeight` 48 statt 24: In Warnungen ist sie ein Tippziel. Die Ruhehöhe der Tastatur
+  wächst dadurch von 261 auf 268 dp.
+- **V2 Verwerfen mit Rückgängig.** Nach jedem Verwerfen von Hand (Wischen, ✕-Taste, Aktion) hält der Recorder das
+  Audio noch kurz. Die Statuszeile zeigt `kb_discarded` „Aufnahme verworfen — hier tippen holt sie zurück“ und ist
+  so lange ein Knopf; ein Tipp holt die Aufnahme als **Pause** zurück (senden, weiter, verwerfen). Frist: 2 s bzw.
+  `AccessibilityManager.getRecommendedTimeoutMillis` (Systemeinstellung „Zeit zum Reagieren“). Ein neues Diktat,
+  das Schließen der Tastatur oder ein Tastaturwechsel beenden die Frist. Kein Rückgängig beim Schließen des Felds.
+- **V2 Quittungsdauer.** Alle Quittungen der Statuszeile (Stufe gewählt, „Erst senden oder verwerfen“) folgen
+  ebenfalls `getRecommendedTimeoutMillis`, mindestens 2 s.
+- **Höchstdauer online (WCAG 2.2.1, Ausnahme „essential“).** Die Anbieter nehmen höchstens 25 MB, bei 16 kHz Mono
+  PCM16 gut 13 min; ein 413 ist nicht wiederholbar, das Audio wäre verloren. Darum endet eine Online-Aufnahme bei
+  12:00 von selbst. Kein neuer Zustand, kein „Weiter“; Live-Stückelung für längere Diktate kommt später.
+  - **V1 Knopf:** ab 10:00 Label „● 10:03 / 12:00“ und `stateDescription` `cd_bubble_recording_long`; ab 11:40
+    zusätzlich Label in `loom_warning`, `cd_bubble_recording_ending`, Haptik `REJECT`. Hinweis und Warnung werden je
+    einmal angesagt (Live-Region `polite` nur in diesem Takt). Bei 12:00 sendet der Knopf wie ein Tipp.
+  - **V2 gehaltene Aufnahme:** ab 10:00 `kb_held_long`, ab 11:40 `kb_held_ending` (Haptik `REJECT`), feste Texte
+    ohne laufende Zeit; bei 12:00 senden wie Loslassen. Der festgestellten Aufnahme bleibt der Deckel aus §6.19.
+  - **W1w Widget:** die Notbremse bei 5:00 bleibt; ab 4:40 Status `widget_recording_ending` und Beschreibung
+    `cd_widget_recording_ending`.
+  - **Offline:** unbegrenzt.
 
 ---
 
