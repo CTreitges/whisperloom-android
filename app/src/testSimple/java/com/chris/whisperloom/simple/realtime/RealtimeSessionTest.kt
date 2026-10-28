@@ -169,11 +169,14 @@ class RealtimeSessionTest {
             override fun fetch(): SessionToken { Thread.sleep(300); return token() }
         }
         val s = session(TokenCache(langsam))
-        val t = Thread { assertFalse("nach cancel() kein Start", s.start()) }
+        // Ergebnis aus dem Neben-Thread einsammeln: ein assert dort saehe JUnit nicht.
+        var started: Boolean? = null
+        val t = Thread { started = s.start() }
         t.start()
         Thread.sleep(50)
         s.cancel()
         t.join(5_000)
+        assertEquals("nach cancel() kein Start", false, started)
         assertEquals("kein Verbindungsaufbau", null, server.takeRequest(500, TimeUnit.MILLISECONDS))
         assertEquals("onOpen kam nie", 1L, spy.opened.count)
     }

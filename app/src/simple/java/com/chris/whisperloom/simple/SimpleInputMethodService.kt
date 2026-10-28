@@ -341,14 +341,17 @@ class SimpleInputMethodService : InputMethodService() {
         writer = null
         prefetchToken()
         val n = w?.inserted ?: 0
+        // Ursache nennen (§4.4): Anbieterfehler (z. B. Guthaben) vor dem allgemeinen "Verbindung weg".
+        val reason = errorText ?: R.string.simple_err_dropped
+        errorText = null
         if (n == 0) {
-            fail(R.string.simple_err_nothing)
+            fail(if (regular) R.string.simple_err_nothing else reason)
             return
         }
         state.inserted(n)
         haptic(1, long = true)
         tone(ToneGenerator.TONE_PROP_ACK)
-        if (!regular) hintText = R.string.simple_err_dropped
+        if (!regular) hintText = reason
         render()
         main.postDelayed({ if (state.phase == SimpleKeyboardState.Phase.INSERTED) { state.ready(); render() } }, recommendedTimeout(INSERTED_MS))
     }
