@@ -44,12 +44,12 @@ class TokenCache(
         return source.fetch().also { cached = it }
     }
 
-    /** Vorab holen; ein Fehler bleibt still — beim Start wird erneut versucht. */
+    /** Vorab holen; ein Fehler bleibt still — beim Start wird erneut versucht. Faengt alles, laeuft auf dem io-Thread. */
     @Synchronized
     fun prefetch() {
         try {
             current()
-        } catch (_: IOException) {
+        } catch (_: Exception) {
         }
     }
 

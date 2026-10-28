@@ -95,8 +95,9 @@ class RealtimeSessionTest {
         }
     }
 
+    // 127.0.0.1 statt server.url(): der Hostname des Rechners gilt nicht als lokaler Fake-Server (RealtimeSession.secure).
     private fun token(name: String = "tok", expiresInMs: Long = 600_000) =
-        SessionToken(name, server.url("/").toString().trimEnd('/'), System.currentTimeMillis() + expiresInMs)
+        SessionToken(name, "http://127.0.0.1:${server.port}", System.currentTimeMillis() + expiresInMs)
 
     private fun session(tokens: TokenCache = TokenCache(FakeTokens(token())), finishTimeoutMs: Long = 3_000) =
         RealtimeSession(client, ElevenLabsRealtime, tokens, RealtimeOptions(), spy, finishTimeoutMs = finishTimeoutMs)
@@ -153,12 +154,40 @@ class RealtimeSessionTest {
         assertEquals("nach dem festen Text ist der Puffer leer", 0, spy.pending!!.size)
     }
 
-    @Test fun ohneFestenTextNachDemStoppSchliesstDieZeitgrenze() {
+    @Test fun ohneFestenTextNachDemStoppSchliesstDieZeitgrenzeAlsNichtRegulaer() {
+        // Review K2: die Zeitgrenze ist kein regulaeres Ende — der offene Text ist dann nur als Partial bekannt.
         val s = session(finishTimeoutMs = 300)
         verbunden(s)
         s.finish()
         spy.awaitClosed()
-        assertEquals(true, spy.finished)
+        assertEquals(false, spy.finished)
+    }
+
+    @Test fun abbruchWaehrendDesTokenAbrufsVerbindetNichtMehr() {
+        // Review K3: Loeschen waehrend des (langsamen) Token-Abrufs — start() darf danach keinen Socket oeffnen.
+        val langsam = object : TokenSource {
+            override fun fetch(): SessionToken { Thread.sleep(300); return token() }
+        }
+        val s = session(TokenCache(langsam))
+        val t = Thread { assertFalse("nach cancel() kein Start", s.start()) }
+        t.start()
+        Thread.sleep(50)
+        s.cancel()
+        t.join(5_000)
+        assertEquals("kein Verbindungsaufbau", null, server.takeRequest(500, TimeUnit.MILLISECONDS))
+        assertEquals("onOpen kam nie", 1L, spy.opened.count)
+    }
+
+    @Test fun unverschluesselteAdresseWirdAbgelehnt() {
+        // Review W7: Audio und Token nur per wss; Klartext nur zum lokalen Fake-Server.
+        assertTrue(RealtimeSession.secure("wss://api.elevenlabs.io"))
+        assertTrue(RealtimeSession.secure("http://127.0.0.1:8080"))
+        assertFalse(RealtimeSession.secure("ws://api.elevenlabs.io"))
+        assertFalse(RealtimeSession.secure("http://evil.example"))
+        val s = session(TokenCache(FakeTokens(SessionToken("t", "ws://api.example", System.currentTimeMillis() + 600_000))))
+        assertFalse(s.start())
+        assertEquals(listOf(RealtimeSession.ERROR_INSECURE), spy.errors)
+        spy.awaitClosed()
     }
 
     @Test fun verbindungsabbruchFesterTextBleibtRestImPuffer() {

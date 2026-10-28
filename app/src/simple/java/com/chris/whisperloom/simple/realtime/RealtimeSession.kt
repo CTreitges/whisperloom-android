@@ -6,7 +6,6 @@ import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import java.io.ByteArrayOutputStream
-import java.io.IOException
 import java.util.Timer
 import java.util.TimerTask
 
@@ -35,65 +34,94 @@ class RealtimeSession(
         fun onOpen()
         fun onPartial(text: String)
         fun onCommitted(text: String)
-        /** Anbieter-Fehlercode ([ElevenLabsRealtime.ERROR_TYPES]) oder [ERROR_NO_TOKEN]; danach folgt [onClosed]. */
+        /** Anbieter-Fehlercode ([ElevenLabsRealtime.ERROR_TYPES]), [ERROR_NO_TOKEN] oder [ERROR_INSECURE]; danach folgt [onClosed]. */
         fun onError(code: String)
         /**
-         * Verbindung zu. [finished] = regulaer nach dem Fertig-Commit; sonst Abbruch (Netz, Fehler, Zeitlimit).
+         * Verbindung zu. [finished] = nach dem Fertig-Commit kam der feste Text (regulaer); sonst Abbruch, Fehler
+         * oder Zeitgrenze — der offene Abschnitt ist dann nur noch als vorlaeufiger Text bekannt.
          * [pending] = Audio seit dem letzten festen Text — der Puffer fuer den Batch-Rueckfall (Konzept §6.4).
          */
         fun onClosed(finished: Boolean, pending: ByteArray)
     }
 
-    private var ws: WebSocket? = null
+    @Volatile private var ws: WebSocket? = null
     private val pending = ByteArrayOutputStream()
     private val timer = Timer("loom-simple-finish", true)
 
-    @Volatile private var finishing = false
-    @Volatile private var done = false
+    /** Schuetzt [done], [finishing], [completed] und den Timer (main, io und OkHttp-Threads). */
+    private val lock = Any()
+    private var done = false
+    private var finishing = false
+
+    /** Nach dem Fertig-Commit kam der feste Text. */
+    private var completed = false
 
     override fun start(): Boolean {
         val token = try {
             tokens.current()
-        } catch (e: IOException) {
+        } catch (e: Exception) {
             // Kein Token = keine Verbindung: Fehler melden UND schliessen, damit die Tastatur nicht im
             // Verbinden haengen bleibt (Emulator-Test 2026-10-28: "Moment …" blieb stehen).
             listener.onError(ERROR_NO_TOKEN)
             deliverClosed(finished = false)
             return false
         }
+        // Inzwischen abgebrochen (Loeschen waehrend des Token-Abrufs): nicht mehr verbinden.
+        synchronized(lock) { if (done) return false }
         // Einmal-Token: mit dem Verbinden verbraucht; die naechste Sitzung holt ein neues.
         tokens.invalidate()
-        val request = Request.Builder().url(adapter.url(token.wsBase, token.token, options)).build()
+        if (!secure(token.wsBase)) {
+            // Audio und Token gehen nur verschluesselt (Konzept §8.7); Klartext nur zum lokalen Fake-Server der Tests.
+            listener.onError(ERROR_INSECURE)
+            deliverClosed(finished = false)
+            return false
+        }
+        val request = try {
+            Request.Builder().url(adapter.url(token.wsBase, token.token, options)).build()
+        } catch (e: IllegalArgumentException) {
+            listener.onError(ERROR_NO_TOKEN)
+            deliverClosed(finished = false)
+            return false
+        }
         ws = client.newWebSocket(request, socketListener)
         return true
     }
 
     override fun sendAudio(pcm: ByteArray) {
         val socket = ws ?: return
-        if (finishing || done) return
+        synchronized(lock) { if (finishing || done) return }
         synchronized(pending) { pending.write(pcm) }
         socket.send(adapter.audioMessage(pcm, sampleRate, commit = false))
     }
 
     override fun finish() {
         val socket = ws ?: return
-        if (finishing || done) return
-        finishing = true
+        synchronized(lock) {
+            if (finishing || done) return
+            finishing = true
+            timer.schedule(object : TimerTask() {
+                override fun run() { socket.close(CLOSE_NORMAL, "timeout") }
+            }, finishTimeoutMs)
+        }
         socket.send(adapter.audioMessage(ByteArray(0), sampleRate, commit = true))
-        timer.schedule(object : TimerTask() {
-            override fun run() { socket.close(CLOSE_NORMAL, "timeout") }
-        }, finishTimeoutMs)
     }
 
     override fun cancel() {
-        if (done) return
-        done = true
-        timer.cancel()
+        synchronized(lock) {
+            if (done) return
+            done = true
+            timer.cancel()
+        }
         ws?.cancel()
     }
 
     private val socketListener = object : WebSocketListener() {
         override fun onOpen(webSocket: WebSocket, response: Response) {
+            val cancelled = synchronized(lock) { done }
+            if (cancelled) {
+                webSocket.cancel()
+                return
+            }
             listener.onOpen()
         }
 
@@ -103,7 +131,11 @@ class RealtimeSession(
                 is RealtimeEvent.Committed -> {
                     synchronized(pending) { pending.reset() }
                     listener.onCommitted(event.text)
-                    if (finishing) webSocket.close(CLOSE_NORMAL, "done")
+                    val closeNow = synchronized(lock) {
+                        if (finishing) completed = true
+                        finishing
+                    }
+                    if (closeNow) webSocket.close(CLOSE_NORMAL, "done")
                 }
                 is RealtimeEvent.Error -> {
                     listener.onError(event.code)
@@ -118,7 +150,7 @@ class RealtimeSession(
         }
 
         override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-            deliverClosed(finished = finishing)
+            deliverClosed(finished = synchronized(lock) { completed })
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
@@ -127,14 +159,25 @@ class RealtimeSession(
     }
 
     private fun deliverClosed(finished: Boolean) {
-        if (done) return
-        done = true
-        timer.cancel()
+        synchronized(lock) {
+            if (done) return
+            done = true
+            timer.cancel()
+        }
         listener.onClosed(finished, synchronized(pending) { pending.toByteArray() })
     }
 
     companion object {
         const val ERROR_NO_TOKEN = "no_token"
+        const val ERROR_INSECURE = "insecure_url"
         private const val CLOSE_NORMAL = 1000
+
+        /** wss/https immer; ws/http nur zu einem lokalen Fake-Server (Tests). */
+        fun secure(wsBase: String): Boolean {
+            val base = wsBase.lowercase()
+            if (base.startsWith("wss://") || base.startsWith("https://")) return true
+            return base.startsWith("ws://127.0.0.1") || base.startsWith("http://127.0.0.1") ||
+                base.startsWith("ws://localhost") || base.startsWith("http://localhost")
+        }
     }
 }

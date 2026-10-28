@@ -22,8 +22,10 @@ if [ "$hits" != "0" ]; then
   echo "::error::Simple-APK enthaelt Komponenten der Haupt-App ($hits Treffer im Manifest)"; exit 1
 fi
 
-if unzip -l "$apk" | grep -qE '\.so$'; then
-  echo "::error::Simple-APK enthaelt Native-Bibliotheken:"; unzip -l "$apk" | grep -E '\.so$'; exit 1
+# Zaehlen statt grep -q: unter pipefail wuerde ein frueh beendetes grep -q die Pipeline als Fehler werten.
+so=$(unzip -Z1 "$apk" | grep -c -E '\.so$' || true)
+if [ "$so" != "0" ]; then
+  echo "::error::Simple-APK enthaelt $so Native-Bibliotheken:"; unzip -Z1 "$apk" | grep -E '\.so$'; exit 1
 fi
 
 echo "$apk: Rechte, Komponenten und Bibliotheken wie vorgesehen"

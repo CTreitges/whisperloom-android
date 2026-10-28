@@ -37,6 +37,15 @@
         <receiver android:name=".agent.VoiceTaskWidget" tools:node="remove" />
         <service android:name=".a11y.TextInserterAccessibilityService" tools:node="remove" />
 
+        <!-- WorkManager (androidx.work, von der Haupt-App fuer die Pro-Widgets) wird in der Simple-APK nicht
+             gebraucht und haette ohne WAKE_LOCK keinen sicheren Start — seine Initialisierung entfaellt. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false">
+            <meta-data android:name="androidx.work.WorkManagerInitializer" tools:node="remove" />
+        </provider>
+
         <!-- Platzhalter-Start (Etappe 1): Mikrofon-Dialog, Testfeld, Tastatur einschalten/waehlen.
              Die richtige Start-App mit Einrichtung kommt in Etappe 3 (U5). -->
         <activity

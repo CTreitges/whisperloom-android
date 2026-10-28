@@ -102,10 +102,11 @@ class AudioRecorderTest {
 
         assertEquals(4_000, samples.size)
         val got = synchronized(stuecke) { stuecke.toList() }
-        assertEquals("zwei volle Stuecke, kein angefangenes", 2, got.size)
-        assertTrue(got.all { it.size == AudioRecorder.CHUNK_BYTES })
-        // Inhalt = die ersten 3200 Samples als PCM16 little-endian, in Reihenfolge (Quelle: +1000/-1000 im Wechsel).
-        val all = got[0] + got[1]
+        assertEquals("zwei volle Stuecke und der Rest beim Ende", 3, got.size)
+        assertTrue(got.take(2).all { it.size == AudioRecorder.CHUNK_BYTES })
+        assertEquals("Rest = 800 Samples", 1_600, got[2].size)
+        // Inhalt = alle 4000 Samples als PCM16 little-endian, in Reihenfolge (Quelle: +1000/-1000 im Wechsel).
+        val all = got[0] + got[1] + got[2]
         for (i in 0 until all.size / 2) {
             val lo = all[i * 2].toInt() and 0xFF
             val hi = all[i * 2 + 1].toInt()

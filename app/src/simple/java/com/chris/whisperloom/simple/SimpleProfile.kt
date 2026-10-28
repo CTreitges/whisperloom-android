@@ -29,34 +29,45 @@ class SimpleProfile(sp: SharedPreferences) {
         }
     }
 
-    val preview: Preview = Preview.of(sp.getString(KEY_PREVIEW, null))
+    val preview: Preview = Preview.of(string(sp, KEY_PREVIEW))
 
     /** Knopf "sehr gross": ganze Flaeche ausser Loeschen (sonst "gross", ca. 3/4). */
-    val buttonHuge: Boolean = sp.getBoolean(KEY_BUTTON_HUGE, false)
+    val buttonHuge: Boolean = bool(sp, KEY_BUTTON_HUGE, false)
 
     /** Doppeltreffer-Sperre nach einem Zustandswechsel (0 / 500 / 1000 ms). */
-    val lockMs: Long = sp.getInt(KEY_LOCK_MS, 500).coerceIn(0, 1000).toLong()
+    val lockMs: Long = int(sp, KEY_LOCK_MS, 500).coerceIn(0, 1000).toLong()
 
     /** Loeschen nach dem Diktat erst mit zweitem Tipp. */
-    val deleteConfirm: Boolean = sp.getBoolean(KEY_DELETE_CONFIRM, true)
+    val deleteConfirm: Boolean = bool(sp, KEY_DELETE_CONFIRM, true)
 
-    val tones: Boolean = sp.getBoolean(KEY_TONES, true)
+    val tones: Boolean = bool(sp, KEY_TONES, true)
 
-    val haptics: Boolean = sp.getBoolean(KEY_HAPTICS, true)
+    val haptics: Boolean = bool(sp, KEY_HAPTICS, true)
 
-    val commit: Commit = Commit.of(sp.getString(KEY_COMMIT, null))
+    val commit: Commit = Commit.of(string(sp, KEY_COMMIT))
 
     /** Eigene Woerter (Realtime: hoechstens 50 à 20 Zeichen, Konzept §7.1). */
-    val keyterms: List<String> = keyterms(sp.getString(KEY_KEYTERMS, null))
+    val keyterms: List<String> = keyterms(string(sp, KEY_KEYTERMS))
 
     /** Fuellwoerter und Stocken entfernen (`no_verbatim`). */
-    val noVerbatim: Boolean = sp.getBoolean(KEY_NO_VERBATIM, false)
+    val noVerbatim: Boolean = bool(sp, KEY_NO_VERBATIM, false)
 
     /** Sicherheits-Stopp ohne erkannte Sprache, Minuten; 0 = aus (WCAG 2.2.1: abschaltbar). */
-    val safetyStopMin: Int = sp.getInt(KEY_SAFETY_STOP_MIN, 10).coerceAtLeast(0)
+    val safetyStopMin: Int = int(sp, KEY_SAFETY_STOP_MIN, 10).coerceAtLeast(0)
 
     /** "Fertig per Stille" nach Sekunden ohne Textaenderung; 0 = aus (Standard). */
-    val doneBySilenceSec: Int = sp.getInt(KEY_DONE_BY_SILENCE_SEC, 0).coerceAtLeast(0)
+    val doneBySilenceSec: Int = int(sp, KEY_DONE_BY_SILENCE_SEC, 0).coerceAtLeast(0)
+
+    // Ein falsch getippter Wert im Preset (z. B. "500" statt 500) darf die Tastatur nicht bei jedem Start abstuerzen
+    // lassen (ClassCastException aus SharedPreferences) — dann gilt der Standard.
+    private fun string(sp: SharedPreferences, key: String): String? =
+        try { sp.getString(key, null) } catch (_: ClassCastException) { null }
+
+    private fun bool(sp: SharedPreferences, key: String, default: Boolean): Boolean =
+        try { sp.getBoolean(key, default) } catch (_: ClassCastException) { default }
+
+    private fun int(sp: SharedPreferences, key: String, default: Int): Int =
+        try { sp.getInt(key, default) } catch (_: ClassCastException) { default }
 
     companion object {
         const val KEY_PREVIEW = "simple_preview"

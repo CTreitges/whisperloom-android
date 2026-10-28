@@ -10,6 +10,7 @@ import android.media.ToneGenerator
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.os.UserManager
 import android.text.InputType
 import android.util.Log
@@ -40,7 +41,8 @@ import java.util.concurrent.Executors
  *
  * Ablauf: Tipp → Verbinden (Token + WebSocket) → Start-Ton → Mikrofon an, 100-ms-Stuecke zum Anbieter →
  * vorlaeufiger Text per Composing (oder nur in der Vorschauzeile), fester Text per commitText → Tipp "Fertig" →
- * `commit: true`, letzten festen Text einfuegen, Verbindung zu → "Eingefuegt" → Bereit.
+ * `commit: true`, letzten festen Text einfuegen, Verbindung zu → "Eingefuegt" → Bereit. Endet eine Sitzung ohne
+ * festen Text (Abbruch, Fehler, Zeitgrenze), wird der offene vorlaeufige Text festgeschrieben — nichts geht verloren.
  *
  * Context7: Android Developer Reference — InputMethodService (onStartInput/onFinishInput/onUpdateSelection),
  * InputConnection (setComposingText/commitText/finishComposingText), View.setStateDescription,
@@ -58,11 +60,19 @@ class SimpleInputMethodService : InputMethodService() {
 
     private var profile: SimpleProfile? = null
     private var state = SimpleKeyboardState(DEFAULT_LOCK_MS)
+
+    /** Die laufende Sitzung; Rueckrufe fremder (abgebrochener) Sitzungen werden verworfen. */
     private var link: RealtimeLink? = null
     private var writer: ComposingWriter? = null
 
+    /** Schreiber des letzten Diktats — fuer "Loeschen = letztes Diktat entfernen". */
+    private var lastWriter: ComposingWriter? = null
+
     /** Fehlertext fuer die Statuszeile, solange der Zustand ERROR ist. */
     private var errorText: Int? = null
+
+    /** Hinweis in der Statuszeile ausserhalb des Fehlerzustands (Sicherheits-Stopp), bis zum naechsten Start. */
+    private var hintText: Int? = null
 
     /** Audio seit dem letzten festen Text nach einem Abbruch — fuer den Batch-Rueckfall (Etappe 2). */
     private var pendingAudio: ByteArray? = null
@@ -70,9 +80,9 @@ class SimpleInputMethodService : InputMethodService() {
     private var passwordField = false
     private var composingSupported = true
 
-    /** Letzte Textaenderung bzw. Aufnahmestart — fuer "Fertig per Stille" und den Sicherheits-Stopp. */
+    /** Letzte Textaenderung bzw. Aufnahmestart (elapsedRealtime) — fuer "Fertig per Stille" und den Sicherheits-Stopp. */
     private var lastTextAt = 0L
-    private var committedChars = 0
+    private var lastPartial = ""
 
     private var root: View? = null
     private var recordButton: Button? = null
@@ -93,14 +103,16 @@ class SimpleInputMethodService : InputMethodService() {
         override fun run() {
             val p = profile ?: return
             if (state.phase != SimpleKeyboardState.Phase.RECORDING) return
-            val quiet = System.currentTimeMillis() - lastTextAt
+            val quiet = SystemClock.elapsedRealtime() - lastTextAt
+            val hasText = (writer?.inserted ?: 0) + (writer?.composing?.length ?: 0) > 0
             when {
                 p.safetyStopMin > 0 && quiet >= p.safetyStopMin * 60_000L -> {
+                    hintText = R.string.simple_hint_silence_stop
+                    haptic(3)
+                    tone(ToneGenerator.TONE_PROP_NACK)
                     finishRecording()
-                    showStatus(R.string.simple_hint_silence_stop)
                 }
-                p.doneBySilenceSec > 0 && committedChars + (writer?.composing?.length ?: 0) > 0 &&
-                    quiet >= p.doneBySilenceSec * 1_000L -> finishRecording()
+                p.doneBySilenceSec > 0 && hasText && quiet >= p.doneBySilenceSec * 1_000L -> finishRecording()
                 else -> main.postDelayed(this, TICK_MS)
             }
         }
@@ -117,7 +129,7 @@ class SimpleInputMethodService : InputMethodService() {
         try {
             PresetSeed.applyFromAssets(this)
         } catch (e: Exception) {
-            Log.e(TAG, "Vorbelegung nicht uebernommen", e)
+            Log.e(TAG, "Vorbelegung nicht uebernommen: ${e.javaClass.simpleName}")
         }
         val p = SimpleProfile.load(this)
         profile = p
@@ -149,6 +161,11 @@ class SimpleInputMethodService : InputMethodService() {
         val type = info?.inputType ?: InputType.TYPE_NULL
         passwordField = isPassword(type)
         composingSupported = type != InputType.TYPE_NULL
+        if (!restarting) {
+            // Neues Feld: das letzte Diktat gehoert zum alten Feld und ist hier nichts mehr zum Entfernen.
+            lastWriter = null
+            state.lastInserted = 0
+        }
         render()
     }
 
@@ -194,7 +211,7 @@ class SimpleInputMethodService : InputMethodService() {
     private fun onRecordTap() {
         val p = profile
         if (p == null) {
-            showStatus(R.string.simple_err_locked)
+            render()
             return
         }
         when (state.tapRecord()) {
@@ -219,7 +236,9 @@ class SimpleInputMethodService : InputMethodService() {
                 errorText = null
             }
             SimpleKeyboardState.DeleteAction.REMOVE_LAST -> {
-                editor()?.deleteBefore(state.lastInserted)
+                // Nur, wenn der Text dieses Diktats noch genau vor dem Cursor steht (Konzept §4.2: "dieser Tastatur").
+                lastWriter?.removeInserted()
+                lastWriter = null
                 state.lastInserted = 0
             }
         }
@@ -236,6 +255,7 @@ class SimpleInputMethodService : InputMethodService() {
 
     private fun startRecording(p: SimpleProfile) {
         errorText = null
+        hintText = null
         if (passwordField) {
             fail(R.string.simple_err_password)
             return
@@ -246,13 +266,15 @@ class SimpleInputMethodService : InputMethodService() {
         }
         val editor = editorFactory?.invoke() ?: currentInputConnection?.let { InputConnectionEditor(it) }
         if (editor == null) {
-            fail(R.string.simple_err_password)
+            fail(R.string.simple_err_no_field)
             return
         }
-        val inField = ComposingWriter.inField(p.preview, composingSupported, talkBackActive())
-        writer = ComposingWriter(editor, inField)
-        committedChars = 0
-        lastTextAt = System.currentTimeMillis()
+        val mode = ComposingWriter.modeFor(p.preview, composingSupported, talkBackActive())
+        val w = ComposingWriter(editor, mode)
+        writer = w
+        lastWriter = w
+        lastPartial = ""
+        lastTextAt = SystemClock.elapsedRealtime()
         haptic(1)
         render()
         val options = RealtimeOptions(
@@ -260,21 +282,34 @@ class SimpleInputMethodService : InputMethodService() {
             keyterms = p.keyterms,
             noVerbatim = p.noVerbatim,
         )
-        val l = linkFactory?.invoke(sessionListener)
-            ?: RealtimeSession(client, ElevenLabsRealtime, tokens, options, sessionListener)
+        val listener = SessionListener()
+        val l = linkFactory?.invoke(listener)
+            ?: RealtimeSession(client, ElevenLabsRealtime, tokens, options, listener)
+        listener.own = l
         link = l
-        io.execute { l.start() }
+        io.execute {
+            try {
+                l.start()
+            } catch (e: Exception) {
+                // Alles, was der Token-Weg oder OkHttp sonst wirft: nie den Tastatur-Prozess beenden.
+                Log.e(TAG, "Sitzung nicht gestartet: ${e.javaClass.simpleName}")
+                ui { if (link === l) closedAbnormally(ByteArray(0)) }
+            }
+        }
     }
 
     /** Fertig-Tipp: Mikrofon aus, letzten Abschnitt festschreiben lassen; "Eingefuegt" kommt mit onClosed. */
     private fun finishRecording() {
         state.finish()
         main.removeCallbacks(silenceTick)
+        // cancel statt stop: das Audio liegt schon beim Anbieter bzw. im Sitzungs-Puffer; stop() wandelte die ganze
+        // Aufnahme auf main in ein FloatArray um (bei langen Diktaten Speicher und Zeit). Der angefangene letzte
+        // Rest unter 100 ms geht vor dem Ende des Aufnahme-Threads noch an onChunk — deshalb erst danach abhaengen.
+        recorder.cancel()
         recorder.onChunk = null
-        recorder.stop()
         val l = link
         if (l == null) {
-            inserted()
+            finishedSession(regular = true)
         } else {
             l.finish()
         }
@@ -290,12 +325,22 @@ class SimpleInputMethodService : InputMethodService() {
         link = null
         writer = null
         if (isActive()) state.ready()
+        prefetchToken()
         render()
     }
 
-    private fun inserted() {
-        val n = writer?.inserted ?: 0
+    /**
+     * Sitzung zu Ende (Phase EINFUEGEN). [regular] = der feste Text nach dem Fertig-Commit kam; sonst wird der offene
+     * vorlaeufige Text selbst festgeschrieben, damit er nicht beim naechsten Diktat ueberschrieben wird (Konzept §6.4).
+     */
+    private fun finishedSession(regular: Boolean) {
+        val w = writer
+        w?.flush()
+        preview?.text = ""
         link = null
+        writer = null
+        prefetchToken()
+        val n = w?.inserted ?: 0
         if (n == 0) {
             fail(R.string.simple_err_nothing)
             return
@@ -303,8 +348,24 @@ class SimpleInputMethodService : InputMethodService() {
         state.inserted(n)
         haptic(1, long = true)
         tone(ToneGenerator.TONE_PROP_ACK)
+        if (!regular) hintText = R.string.simple_err_dropped
         render()
         main.postDelayed({ if (state.phase == SimpleKeyboardState.Phase.INSERTED) { state.ready(); render() } }, recommendedTimeout(INSERTED_MS))
+    }
+
+    /** Verbindung weg waehrend Verbinden/Aufnahme: fester Text bleibt, offener Text wird festgeschrieben, Rest im Puffer. */
+    private fun closedAbnormally(pending: ByteArray) {
+        main.removeCallbacks(silenceTick)
+        recorder.onChunk = null
+        recorder.cancel()
+        writer?.flush()
+        preview?.text = ""
+        pendingAudio = pending.takeIf { it.isNotEmpty() }
+        val text = errorText ?: if (state.phase == SimpleKeyboardState.Phase.CONNECTING) R.string.simple_err_no_connection else R.string.simple_err_dropped
+        link = null
+        writer = null
+        prefetchToken()
+        fail(text)
     }
 
     private fun fail(text: Int) {
@@ -316,53 +377,67 @@ class SimpleInputMethodService : InputMethodService() {
         render()
     }
 
-    private val sessionListener = object : RealtimeSession.Listener {
+    private fun prefetchToken() {
+        if (profile != null) io.execute { tokens.prefetch() }
+    }
+
+    /**
+     * Rueckrufe genau einer Sitzung. Eine abgebrochene Sitzung kann sich noch melden (Token-Abruf war langsam):
+     * dann gehoert ihr Rueckruf nicht mehr zur Tastatur und ihr Socket wird geschlossen.
+     */
+    private inner class SessionListener : RealtimeSession.Listener {
+        lateinit var own: RealtimeLink
+
+        private fun current(): Boolean = link === own
+
         override fun onOpen() = ui {
-            val l = link ?: return@ui
-            if (state.phase != SimpleKeyboardState.Phase.CONNECTING) {
-                l.cancel()
+            if (!current() || state.phase != SimpleKeyboardState.Phase.CONNECTING) {
+                own.cancel()
                 return@ui
             }
             // Start-Ton endet, bevor das Mikrofon oeffnet (Konzept §4.3) — sonst landet er in der Aufnahme.
             tone(ToneGenerator.TONE_PROP_BEEP)
-            main.postDelayed({ openMic(l) }, if (profile?.tones == true) START_TONE_MS else 0L)
+            main.postDelayed({ openMic(own) }, if (profile?.tones == true) START_TONE_MS else 0L)
         }
 
         override fun onPartial(text: String) = ui {
-            if (state.phase != SimpleKeyboardState.Phase.RECORDING) return@ui
-            lastTextAt = System.currentTimeMillis()
+            if (!current() || state.phase != SimpleKeyboardState.Phase.RECORDING) return@ui
+            // Nur eine echte Textaenderung zaehlt fuer die Stille-Erkennung: in Pausen wiederholt der Anbieter dasselbe Partial.
+            if (text != lastPartial) {
+                lastPartial = text
+                lastTextAt = SystemClock.elapsedRealtime()
+            }
             preview?.text = writer?.partial(text).orEmpty()
             render()
         }
 
         override fun onCommitted(text: String) = ui {
-            lastTextAt = System.currentTimeMillis()
+            if (!current()) return@ui
+            lastPartial = ""
+            lastTextAt = SystemClock.elapsedRealtime()
             writer?.committed(text)
-            committedChars += text.length
             preview?.text = ""
             render()
         }
 
         override fun onError(code: String) = ui {
+            if (!current()) return@ui
             errorText = when (code) {
                 "quota_exceeded" -> R.string.simple_err_quota
-                RealtimeSession.ERROR_NO_TOKEN -> R.string.simple_err_no_connection
+                RealtimeSession.ERROR_NO_TOKEN, RealtimeSession.ERROR_INSECURE -> R.string.simple_err_no_connection
                 else -> R.string.simple_err_dropped
             }
         }
 
         override fun onClosed(finished: Boolean, pending: ByteArray) = ui {
+            if (!current()) return@ui
             when (state.phase) {
-                SimpleKeyboardState.Phase.INSERTING -> inserted()
-                SimpleKeyboardState.Phase.CONNECTING, SimpleKeyboardState.Phase.RECORDING -> {
-                    // Abbruch: fester Text bleibt im Feld, vorlaeufiger in der Vorschau, Rest im Puffer (§6.4).
-                    main.removeCallbacks(silenceTick)
-                    recorder.onChunk = null
-                    recorder.cancel()
-                    pendingAudio = pending.takeIf { it.isNotEmpty() }
-                    fail(errorText ?: if (state.phase == SimpleKeyboardState.Phase.CONNECTING) R.string.simple_err_no_connection else R.string.simple_err_dropped)
+                SimpleKeyboardState.Phase.INSERTING -> {
+                    if (!finished && pending.isNotEmpty()) pendingAudio = pending
+                    finishedSession(regular = finished)
                 }
-                else -> Unit
+                SimpleKeyboardState.Phase.CONNECTING, SimpleKeyboardState.Phase.RECORDING -> closedAbnormally(pending)
+                else -> link = null
             }
         }
     }
@@ -373,16 +448,20 @@ class SimpleInputMethodService : InputMethodService() {
     }
 
     private fun openMic(l: RealtimeLink) {
-        if (state.phase != SimpleKeyboardState.Phase.CONNECTING) return
+        if (link !== l || state.phase != SimpleKeyboardState.Phase.CONNECTING) {
+            l.cancel()
+            return
+        }
         recorder.onChunk = { l.sendAudio(it) }
         if (!recorder.start()) {
             recorder.onChunk = null
             l.cancel()
+            link = null
             fail(R.string.simple_err_mic_busy)
             return
         }
         state.connected()
-        lastTextAt = System.currentTimeMillis()
+        lastTextAt = SystemClock.elapsedRealtime()
         haptic(2)
         main.postDelayed(silenceTick, TICK_MS)
         render()
@@ -392,6 +471,7 @@ class SimpleInputMethodService : InputMethodService() {
 
     private fun render() {
         val b = recordButton ?: return
+        val locked = profile == null
         val (text, color, stateText) = when (state.phase) {
             SimpleKeyboardState.Phase.READY -> Triple(R.string.simple_btn_record, R.color.simple_ready, R.string.simple_state_ready)
             SimpleKeyboardState.Phase.CONNECTING -> Triple(R.string.simple_btn_wait, R.color.simple_wait, R.string.simple_state_connecting)
@@ -401,31 +481,28 @@ class SimpleInputMethodService : InputMethodService() {
             SimpleKeyboardState.Phase.ERROR -> Triple(R.string.simple_btn_record, R.color.simple_error, R.string.simple_state_error)
         }
         b.setText(text)
-        b.backgroundTintList = ColorStateList.valueOf(getColor(color))
+        b.backgroundTintList = ColorStateList.valueOf(getColor(if (locked) R.color.simple_wait else color))
         ViewCompat.setStateDescription(b, getString(stateText))
-        b.isEnabled = !passwordField
+        b.isEnabled = !passwordField && !locked
         deleteButton?.apply {
             setText(if (state.confirmPending) R.string.simple_btn_delete_confirm else R.string.simple_btn_delete)
-            isEnabled = state.phase != SimpleKeyboardState.Phase.INSERTING
+            isEnabled = state.phase != SimpleKeyboardState.Phase.INSERTING && !locked
         }
         switchButton?.isEnabled = !isActive()
         preview?.let { it.visibility = if (it.text.isNullOrEmpty()) View.GONE else View.VISIBLE }
         status?.let { s ->
             val error = state.phase == SimpleKeyboardState.Phase.ERROR
             s.accessibilityLiveRegion = if (error) View.ACCESSIBILITY_LIVE_REGION_ASSERTIVE else View.ACCESSIBILITY_LIVE_REGION_POLITE
+            val hint = hintText
             when {
+                locked -> s.setText(R.string.simple_err_locked)
                 passwordField -> s.setText(R.string.simple_err_password)
                 error && errorText != null -> s.setText(errorText!!)
-                else -> if (!error) s.text = ""
+                !error && hint != null -> s.setText(hint)
+                else -> s.text = ""
             }
         }
     }
-
-    private fun showStatus(text: Int) {
-        status?.setText(text)
-    }
-
-    private fun editor(): Editor? = editorFactory?.invoke() ?: currentInputConnection?.let { InputConnectionEditor(it) }
 
     private fun hasMicPermission(): Boolean =
         checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
@@ -461,7 +538,7 @@ class SimpleInputMethodService : InputMethodService() {
             gen.startTone(kind, TONE_MS)
             main.postDelayed({ gen.release() }, TONE_MS + 50L)
         } catch (e: RuntimeException) {
-            Log.w(TAG, "Kein Ton", e)
+            Log.w(TAG, "Kein Ton: ${e.javaClass.simpleName}")
         }
     }
 

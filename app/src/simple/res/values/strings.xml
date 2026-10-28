@@ -15,7 +15,6 @@
     <string name="simple_btn_delete">Löschen</string>
     <string name="simple_btn_delete_confirm">Wirklich löschen?</string>
     <string name="simple_btn_switch">Tastatur wechseln</string>
-    <string name="simple_cd_preview">Vorläufiger Text</string>
 
     <!-- Zustand fuer TalkBack (stateDescription) -->
     <string name="simple_state_ready">Bereit</string>
@@ -31,6 +30,7 @@
     <string name="simple_err_mic_busy">Das Mikrofon ist gerade belegt.</string>
     <string name="simple_err_mic_permission">Bitte erst das Mikrofon erlauben. In der App tippen.</string>
     <string name="simple_err_password">Hier bitte tippen.</string>
+    <string name="simple_err_no_field">Erst in ein Feld tippen.</string>
     <string name="simple_err_nothing">Ich habe nichts verstanden. Nochmal tippen.</string>
     <string name="simple_err_dropped">Die Verbindung ist weg. Nochmal tippen.</string>
     <string name="simple_err_locked">Bitte erst das Handy entsperren.</string>

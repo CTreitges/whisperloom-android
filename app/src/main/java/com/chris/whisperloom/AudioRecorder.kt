@@ -47,11 +47,12 @@ class AudioRecorder {
 
     /**
      * Optionaler Stueck-Callback (WhisperLoom Simple, Echtzeit): liefert das Audio waehrend der Aufnahme als
-     * PCM16-little-endian-Stuecke von genau [CHUNK_BYTES] (100 ms), auf dem Aufnahme-Thread. Der Puffer fuer
-     * [stop] fuellt sich unabhaengig davon weiter. Ein angefangenes letztes Stueck kommt beim Ende der
-     * Aufnahme nicht mehr — es ist kuerzer als 100 ms und steckt ohnehin im Gesamtpuffer.
+     * PCM16-little-endian-Stuecke von [CHUNK_BYTES] (100 ms), auf dem Aufnahme-Thread. Der Puffer fuer [stop]
+     * fuellt sich unabhaengig davon weiter. Beim Ende der Aufnahme ([stop], [cancel], [pause]) kommt ein
+     * angefangenes letztes Stueck (kuerzer als 100 ms) noch, bevor der Aufnahme-Thread endet — sonst fehlte das
+     * Ende des letzten Worts, wenn direkt nach dem Sprechen getippt wird.
      */
-    var onChunk: ((ByteArray) -> Unit)? = null
+    @Volatile var onChunk: ((ByteArray) -> Unit)? = null
 
     /** Nimmt gerade auf (nicht in der Pause). */
     val isRecording: Boolean get() = recording
@@ -153,6 +154,8 @@ class AudioRecorder {
             } finally {
                 try { recorder.stop() } catch (_: Exception) {}
                 recorder.release()
+                // Rest unter 100 ms nachreichen, solange der Aufrufer noch zuhoert.
+                if (chunk.size() > 0) onChunk?.invoke(chunk.toByteArray())
             }
         }
         thread = reader

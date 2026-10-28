@@ -28,56 +28,72 @@ class InputConnectionEditor(private val ic: InputConnection) : Editor {
  * ersetzt den ganzen offenen Abschnitt, Korrekturen frueherer Woerter kommen so von selbst), `committed_transcript`
  * → fester Text per commitText.
  *
- * [inField] = false (TalkBack-Regel §6.3, Profil "nur Vorschau", Feld ohne Composing / TYPE_NULL): vorlaeufiger
- * Text geht nur in die Vorschauzeile der Tastatur; ins Feld kommt je Abschnitt genau ein commitText.
+ * [mode] (Konzept §10, §6.3): [SimpleProfile.Preview.FIELD] = vorlaeufiger Text im Feld; [SimpleProfile.Preview.LINE]
+ * = nur in der Vorschauzeile (TalkBack-Regel, TYPE_NULL); [SimpleProfile.Preview.OFF] = gar nicht. Ins Feld kommt
+ * ausserhalb von FIELD je Abschnitt genau ein commitText. Liefert das Feld fuer Composing `false`, faellt der
+ * Schreiber von selbst auf LINE zurueck (§6.5).
  *
- * Cursor bewegt ([cursorMoved]) oder Feld zu ([fieldFinished]): den offenen Text festschreiben; das naechste
- * `committed_transcript` desselben Abschnitts bringt dann nur noch den Rest, nicht den Anfang doppelt.
+ * Cursor bewegt ([cursorMoved]) oder Feld zu ([fieldFinished]): den offenen Text festschreiben; weitere Partials
+ * und der feste Text desselben Abschnitts bringen dann nur noch den Rest, nichts doppelt.
+ *
+ * Der eingefuegte Text dieser Aufnahme bleibt als Zeichenkette bekannt ([insertedText]): "Loeschen = letztes Diktat
+ * entfernen" loescht nur, wenn genau dieser Text noch vor dem Cursor steht (Konzept §4.2, "dieser Tastatur").
  */
-class ComposingWriter(private val editor: Editor, val inField: Boolean) {
+class ComposingWriter(private val editor: Editor, mode: SimpleProfile.Preview) {
 
-    /** Zuletzt gezeigter vorlaeufiger Text (im Feld als Composing bzw. nur in der Vorschau). */
+    var mode: SimpleProfile.Preview = mode
+        private set
+
+    val inField: Boolean get() = mode == SimpleProfile.Preview.FIELD
+
+    /** Zuletzt gezeigter vorlaeufiger Rest (im Feld als Composing bzw. in der Vorschau). */
     var composing = ""
         private set
 
-    /** Fest eingefuegte Zeichen dieser Aufnahme — fuer "Loeschen = letztes Diktat entfernen". */
-    var inserted = 0
-        private set
+    /** Fest eingefuegter Text dieser Aufnahme, in Reihenfolge. */
+    private val insertedText = StringBuilder()
 
-    /** Vom Cursor-Sprung/Feldende festgeschriebener vorlaeufiger Text, vom naechsten festen Text abzuziehen. */
-    private var fixed: String? = null
+    /** Fest eingefuegte Zeichen dieser Aufnahme. */
+    val inserted: Int get() = insertedText.length
 
-    /** Leerzeichen vor dem Abschnitt, wenn direkt an ein Wort angefuegt wird; je offenem Abschnitt einmal bestimmt. */
+    /** Der ganze offene Abschnitt laut Anbieter (letztes Partial), unabhaengig davon, was davon schon fest ist. */
+    private var lastFull = ""
+
+    /** Anfang des offenen Abschnitts, der durch Cursor-Sprung/Feldende schon fest im Feld steht. */
+    private var fixed = ""
+
+    /** Leerzeichen vor dem Abschnitt, wenn direkt an ein Wort angefuegt wird; je offenem Stueck einmal bestimmt. */
     private var lead = ""
 
     /** @return Text fuer die Vorschauzeile (leer = ausblenden). */
     fun partial(text: String): String {
-        if (composing.isEmpty()) lead = leadFor()
-        composing = text
-        if (inField && text.isNotEmpty()) editor.setComposing(lead + text)
-        return if (inField) "" else text
+        lastFull = text
+        val rest = remainder(text)
+        if (composing.isEmpty() && rest.isNotEmpty()) lead = leadFor(rest)
+        composing = rest
+        if (inField && rest.isNotEmpty() && !editor.setComposing(lead + rest)) {
+            // Feld kann kein Composing (§6.5): ab jetzt nur fertige Saetze, Rest in die Vorschau.
+            mode = SimpleProfile.Preview.LINE
+        }
+        return when (mode) {
+            SimpleProfile.Preview.FIELD, SimpleProfile.Preview.OFF -> ""
+            SimpleProfile.Preview.LINE -> rest
+        }
     }
 
     fun committed(text: String) {
-        val fixedPart = fixed
-        fixed = null
-        var out = text.trim()
-        if (fixedPart != null) {
-            // Der Anfang steht schon fest im Feld — nur den Rest einfuegen.
-            out = out.removePrefix(fixedPart.trim()).trimStart()
-            if (out.isEmpty()) { composing = ""; return }
-            lead = leadFor()
-        } else if (composing.isEmpty()) {
-            lead = leadFor()
-        }
-        if (out.isEmpty()) {
+        val rest = remainder(text)
+        fixed = ""
+        lastFull = ""
+        if (rest.isEmpty()) {
             discard()
             return
         }
-        val chunk = "$lead$out "
-        // Ersetzt im Feld den Composing-Bereich (inField) bzw. fuegt an der Cursorstelle ein (Vorschau-Modus).
+        if (composing.isEmpty()) lead = leadFor(rest)
+        val chunk = "$lead$rest "
+        // Ersetzt im Feld den Composing-Bereich (FIELD) bzw. fuegt an der Cursorstelle ein.
         editor.commit(chunk)
-        inserted += chunk.length
+        insertedText.append(chunk)
         composing = ""
     }
 
@@ -92,14 +108,15 @@ class ComposingWriter(private val editor: Editor, val inField: Boolean) {
     }
 
     /** Feld geht zu ([android.inputmethodservice.InputMethodService.onFinishInput]): offenen Text festschreiben. */
-    fun fieldFinished() {
+    fun fieldFinished() = flush()
+
+    /**
+     * Offenen Text festschreiben, damit nichts verloren geht (Feldende, Abbruch, Fertig ohne festen Text vom
+     * Anbieter): im Feld wird das Composing fest, in der Vorschau wird der Satz eingefuegt (bei OFF gibt es nichts).
+     */
+    fun flush() {
         if (composing.isEmpty()) return
-        if (inField) {
-            fix()
-        } else {
-            // Nur in der Vorschau: als fertigen Satz einfuegen, sonst waere er weg.
-            committed(composing)
-        }
+        if (inField) fix() else committed(lastFull)
     }
 
     /** Composing-Text im Feld entfernen (Aufnahme verworfen). */
@@ -111,21 +128,48 @@ class ComposingWriter(private val editor: Editor, val inField: Boolean) {
         composing = ""
     }
 
+    /**
+     * "Loeschen = letztes Diktat entfernen": nur, wenn der eingefuegte Text dieser Aufnahme noch genau vor dem
+     * Cursor steht — nach Feldwechsel oder Cursor-Sprung bleibt fremder Text unberuehrt.
+     * @return true = entfernt.
+     */
+    fun removeInserted(): Boolean {
+        val text = insertedText.toString()
+        if (text.isEmpty()) return false
+        if (editor.textBeforeCursor(text.length)?.toString() != text) return false
+        editor.deleteBefore(text.length)
+        insertedText.clear()
+        return true
+    }
+
+    /** Was von [full] noch nicht fest im Feld steht. */
+    private fun remainder(full: String): String {
+        val f = fixed.trim()
+        val t = full.trim()
+        return if (f.isNotEmpty() && t.startsWith(f)) t.removePrefix(f).trimStart() else t
+    }
+
     private fun fix() {
         editor.finishComposing()
-        inserted += (lead + composing).length
-        fixed = composing
+        insertedText.append(lead).append(composing)
+        fixed = lastFull
         composing = ""
     }
 
-    private fun leadFor(): String {
+    /** Leerzeichen nur zwischen zwei Woertern: vor Satzzeichen (Rest eines festgeschriebenen Abschnitts) keins. */
+    private fun leadFor(rest: String): String {
+        if (rest.isEmpty() || !rest[0].isLetterOrDigit()) return ""
         val before = editor.textBeforeCursor(1)
         return if (before.isNullOrEmpty() || before[0].isWhitespace()) "" else " "
     }
 
     companion object {
-        /** Vorlaeufiger Text im Feld nur, wenn Profil, Feld und TalkBack es zulassen (Konzept §6.3, §4.4). */
-        fun inField(preview: SimpleProfile.Preview, composingSupported: Boolean, talkBack: Boolean): Boolean =
-            preview == SimpleProfile.Preview.FIELD && composingSupported && !talkBack
+        /** Modus je Feld (Konzept §6.3, §4.4): TalkBack und Felder ohne Composing (TYPE_NULL) erzwingen die Vorschau. */
+        fun modeFor(preview: SimpleProfile.Preview, composingSupported: Boolean, talkBack: Boolean): SimpleProfile.Preview =
+            when {
+                preview == SimpleProfile.Preview.OFF -> SimpleProfile.Preview.OFF
+                !composingSupported || talkBack -> SimpleProfile.Preview.LINE
+                else -> preview
+            }
     }
 }

@@ -13,7 +13,8 @@
     android:paddingTop="8dp"
     android:paddingBottom="12dp">
 
-    <!-- Vorlaeufiger Text bei TalkBack bzw. Profil "nur Vorschau" (Konzept §6.3): bewusst KEINE Live-Region. -->
+    <!-- Vorlaeufiger Text bei TalkBack bzw. Profil "nur Vorschau" (Konzept §6.3): bewusst KEINE Live-Region und
+         keine contentDescription (sie wuerde den Text fuer TalkBack verdecken). -->
     <TextView
         android:id="@+id/simple_preview"
         android:layout_width="match_parent"
@@ -25,7 +26,6 @@
         android:textSize="18sp"
         android:maxLines="2"
         android:ellipsize="start"
-        android:contentDescription="@string/simple_cd_preview"
         android:visibility="gone" />
 
     <LinearLayout

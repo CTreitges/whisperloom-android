@@ -18,7 +18,8 @@ class SimpleApplication : Application() {
         try {
             PresetSeed.applyFromAssets(this)
         } catch (e: Exception) {
-            Log.e(TAG, "Vorbelegung nicht uebernommen", e)
+            // Nur die Art des Fehlers: eine JSONException truege den Inhalt des Presets (ab Etappe 2 den Anmelde-Code) ins Log.
+            Log.e(TAG, "Vorbelegung nicht uebernommen: ${e.javaClass.simpleName}")
         }
     }
 
