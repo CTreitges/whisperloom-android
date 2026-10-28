@@ -107,6 +107,7 @@ class FloatingMicService : Service() {
             // der Anbieter die Datei ab, und das Audio waere weg.
             val stage = RecordingLimit.stage(elapsed, prefs.engine == Engine.ONLINE)
             if (stage == RecordingLimit.Stage.STOP) {
+                cancelTarget.hide() // wer gerade zieht, kann nicht mehr verwerfen, was schon gesendet wird
                 stopRec()
                 return
             }
@@ -288,7 +289,8 @@ class FloatingMicService : Service() {
                 MotionEvent.ACTION_UP -> {
                     if (!moved) {
                         onTap()
-                    } else if (cancelTarget.isHit) {
+                    } else if (cancelTarget.isHit && canDiscard()) {
+                        // canDiscard: die Hoechstdauer (B2) kann waehrend des Ziehens schon gesendet haben.
                         renderer?.haptic(BubbleMotion.Haptic.REJECT)
                         cancelTarget.hide()
                         // Der Knopf soll nach dem Verwerfen nicht ueber dem Ziel liegen

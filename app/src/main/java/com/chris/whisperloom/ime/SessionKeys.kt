@@ -23,15 +23,17 @@ class SessionKeys(
     private val onDiscard: () -> Unit,
     private val onPause: () -> Unit = {},
     private val onRetry: () -> Unit = {},
+    private val onUndo: () -> Unit = {},
 ) {
     private var actionIds = emptyList<Int>()
 
     /**
      * [open] = es gibt ein Diktat; [withoutFinger] = festgestellt oder pausiert; [pause] = die
      * Aktion "Pausieren" anbieten (Tippen statt Halten, festgestellt); [retry] = Fehlerzustand mit
-     * gepuffertem Audio.
+     * gepuffertem Audio; [undo] = die Frist nach dem Verwerfen laeuft (die Statuszeile erst anzusteuern,
+     * schafft man mit TalkBack in 2 s kaum).
      */
-    fun show(open: Boolean, withoutFinger: Boolean, pause: Boolean = false, retry: Boolean = false) {
+    fun show(open: Boolean, withoutFinger: Boolean, pause: Boolean = false, retry: Boolean = false, undo: Boolean = false) {
         for (id in actionIds) ViewCompat.removeAccessibilityAction(mic, id)
         val next = mutableListOf<Int>()
         if (withoutFinger) {
@@ -40,6 +42,7 @@ class SessionKeys(
             next += action(R.string.cd_kb_discard, onDiscard)
         }
         if (retry) next += action(R.string.cd_kb_retry, onRetry)
+        if (undo) next += action(R.string.history_undo, onUndo)
         actionIds = next
         globe.alpha = if (open) BLOCKED_ALPHA else 1f
         globe.contentDescription = globe.context.getString(

@@ -630,6 +630,36 @@ class ImePauseTest {
         assertEquals(app.getString(R.string.kb_hint_hold), statusText)
     }
 
+    /** Review: die Statuszeile in 2 s mit TalkBack anzusteuern, schafft kaum jemand — also auch als Aktion. */
+    @Test fun rueckgaengigGibtEsAuchAlsAktionDerMikroTaste() {
+        feststellen()
+        mikro.sprechen(1_000)
+        discard.performClick()
+        aktionAusfuehren(R.string.history_undo)
+        assertEquals(pausiert(1_000), statusText)
+        assertNull(aktion(R.string.history_undo))
+    }
+
+    @Test fun dieAktionRueckgaengigVerschwindetMitDerFrist() {
+        feststellen()
+        mikro.sprechen(1_000)
+        discard.performClick()
+        warten(3_000)
+        assertNull(aktion(R.string.history_undo))
+    }
+
+    /** Review: Drehen oder Dunkelmodus in der Frist — der Rueckgaengig-Knopf bleibt. */
+    @Test fun rueckgaengigUeberstehtDenNeuaufbau() {
+        feststellen()
+        mikro.sprechen(1_000)
+        discard.performClick()
+        aufbauen()
+        assertEquals(app.getString(R.string.kb_discarded), statusText)
+        assertTrue(status.isClickable)
+        status.performClick()
+        assertEquals(pausiert(1_000), statusText)
+    }
+
     @Test fun ohneVerwerfenGibtEsKeinRueckgaengig() {
         feststellen()
         assertFalse(status.isClickable)

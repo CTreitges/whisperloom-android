@@ -263,6 +263,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
         globe.setOnClickListener { switchKeyboard() }
         sessionKeys = SessionKeys(
             root.findViewById(R.id.mic), globe, ::stopDictation, { discardDictation() }, ::pauseDictation, ::retry,
+            ::undoDiscard,
         )
         commaKey = root.findViewById<View>(R.id.key_comma).also { it.setOnClickListener { commitRaw(", ") } }
         root.findViewById<View>(R.id.key_period).setOnClickListener { commitRaw(". ") }
@@ -595,8 +596,8 @@ class WhisperLoomInputMethodService : InputMethodService() {
         if (!recorder.hasSession || undoable) return
         endSession()
         pendingSamples = null
+        undoable = undo // vor applyState: dort kommt die TalkBack-Aktion "Rueckgaengig" an die Mikro-Taste
         applyState(BubbleState.IDLE)
-        undoable = undo
         showStatus(Status.DISCARDED)
         haptic(BubbleMotion.Haptic.REJECT)
         if (undo) {
@@ -620,7 +621,12 @@ class WhisperLoomInputMethodService : InputMethodService() {
         if (!undoable) return
         main.removeCallbacks(dropDiscarded)
         undoable = false
-        if (!session.restore(recorder.recordedMs, lengthLimited())) return
+        if (!session.restore(recorder.recordedMs, lengthLimited())) {
+            // Nicht erwartet (es ist kein Diktat offen); dann wenigstens das Mikrofon-Audio freigeben.
+            recorder.cancel()
+            showIdleStatus()
+            return
+        }
         haptic(BubbleMotion.Haptic.CONFIRM)
         applyState(BubbleState.RECORDING)
         enterLockedUi()
@@ -632,6 +638,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
         undoable = false
         main.removeCallbacks(dropDiscarded)
         recorder.cancel()
+        showSessionKeys()
     }
 
     /**
@@ -695,7 +702,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
         // Die naechste Transkription liest die Prefs frisch — die Wahl wirkt sofort.
         if (state == BubbleState.IDLE) {
             showStatus(Status.HINT, getString(R.string.kb_refine_set, refineLabel(mode)))
-            main.postDelayed({ if (state == BubbleState.IDLE) showIdleStatus() }, hintMs())
+            main.postDelayed({ if (state == BubbleState.IDLE && !undoable) showIdleStatus() }, hintMs())
         }
     }
 
@@ -934,13 +941,19 @@ class WhisperLoomInputMethodService : InputMethodService() {
         val zoneKeys = if (next == BubbleState.RECORDING || next == BubbleState.SENDING) View.GONE else View.VISIBLE
         refineKey?.visibility = zoneKeys
         settingsKey?.visibility = zoneKeys
+        showSessionKeys()
+        updateMicDescription()
+    }
+
+    /** Bedienungshilfe-Aktionen der Mikro-Taste und Sperre des Globus zum aktuellen Stand. */
+    private fun showSessionKeys() {
         sessionKeys?.show(
             open = session.isOpen,
             withoutFinger = session.withoutFinger,
             pause = tapToggle() && session.isLocked,
-            retry = next == BubbleState.ERROR,
+            retry = state == BubbleState.ERROR,
+            undo = undoable,
         )
-        updateMicDescription()
     }
 
     /**
@@ -983,6 +996,8 @@ class WhisperLoomInputMethodService : InputMethodService() {
      * oder Uebertragung weiterlaufen.
      */
     private fun restoreStatus() = when {
+        // Die Rueckgaengig-Frist uebersteht den Neuaufbau (Drehen, Dunkelmodus) samt Knopf.
+        undoable -> showStatus(Status.DISCARDED)
         session.withoutFinger -> showSessionStatus()
         state == BubbleState.SENDING -> showStatus(if (refining) Status.REFINING else Status.TRANSCRIBING)
         state == BubbleState.RECORDING -> showStatus(Status.LISTENING)
