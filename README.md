@@ -223,7 +223,7 @@ Nicht durch Tests abgedeckt und nur auf dem Gerät prüfbar: Overlay-/IME-Darste
 
 ## Versionen
 
-Aktuell **3.10.0** (2026-10-28). Alle Änderungen seit 1.0 im [CHANGELOG.md](CHANGELOG.md). Der letzte Stand der ersten Offline-Generation (Modell im APK) liegt als Tag `offline-v1` im Repo.
+Aktuell **3.9.5** (2026-10-29). Alle Änderungen seit 1.0 im [CHANGELOG.md](CHANGELOG.md). Der letzte Stand der ersten Offline-Generation (Modell im APK) liegt als Tag `offline-v1` im Repo.
 
 ## Lizenz / Credits
 

@@ -1,4 +1,4 @@
-WhisperLoom 3.10.0
+WhisperLoom 3.9.5
 • Geändert: drei Gruppen statt sechs – Sprache & Text, Bedienung, Weiteres
 • Geändert: KI-Zugang und Offline-Textverbesserung sind Unterseiten der Textverbesserung (Karte „Zugang & Modelle“)
 • Geändert: die Offline-Modelle stehen in der Spracherkennung, sobald „Offline-Modell“ gewählt ist

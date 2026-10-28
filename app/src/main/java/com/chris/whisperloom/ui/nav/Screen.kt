@@ -54,7 +54,7 @@ sealed class Screen(val key: String) {
     data object ButtonKeyboard : Screen("button")
 
     /**
-     * "Offline-Textverbesserung" (Neuaufbau 3.10): Textmodelle und die Regel bei Offline-Erkennung, eine
+     * "Offline-Textverbesserung" (Neuaufbau 3.9.5): Textmodelle und die Regel bei Offline-Erkennung, eine
      * Unterseite der Textverbesserung. Bis 3.9.1 Teil der Seite "Offline-Modelle" ("models"), deren
      * Whisper-Liste jetzt in der Spracherkennung steht — siehe [decode].
      */

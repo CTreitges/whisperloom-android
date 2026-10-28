@@ -18,7 +18,7 @@ val appId = providers.gradleProperty("whisperloom.applicationId").orNull ?: "com
 // eigener Launcher-Name (-Pwhisperloom.appLabel="WhisperLoom Proto") und Versions-Zusatz
 // (-Pwhisperloom.versionSuffix=-proto). Ohne die Properties bleibt alles wie bisher.
 // Nur fuer assembleDebug/assembleRelease gedacht: die Patchnotes-Tests vergleichen BuildConfig.VERSION_NAME
-// exakt mit CHANGELOG-Kopf und Highlights, mit Suffix waeren sie rot (Review 3.10.0).
+// exakt mit CHANGELOG-Kopf und Highlights, mit Suffix waeren sie rot (Review 3.9.5).
 val appLabel = providers.gradleProperty("whisperloom.appLabel").orNull ?: "@string/app_name"
 val versionSuffix = providers.gradleProperty("whisperloom.versionSuffix").orNull ?: ""
 
@@ -41,7 +41,7 @@ android {
         // (erzwungenes edge-to-edge — App nutzt enableEdgeToEdge — u.a.) am Geraet gegenpruefen.
         targetSdk = 36
         versionCode = 21
-        versionName = "3.10.0$versionSuffix"
+        versionName = "3.9.5$versionSuffix"
         manifestPlaceholders["appLabel"] = appLabel
 
         if (!skipNative) {

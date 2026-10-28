@@ -1,4 +1,4 @@
-WhisperLoom 3.10.0
+WhisperLoom 3.9.5
 • Changed: three groups instead of six – Speech & Text, Controls, More
 • Changed: AI access and offline text refinement are sub-pages of Text refinement (card “Access & Models”)
 • Changed: offline models live in Speech recognition as soon as “Offline model” is selected

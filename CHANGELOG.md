@@ -4,7 +4,7 @@ Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](ht
 
 ## [Unreleased]
 
-## [3.10.0] — 2026-10-28
+## [3.9.5] — 2026-10-29
 
 ### Geändert
 

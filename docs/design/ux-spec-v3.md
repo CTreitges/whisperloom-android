@@ -1669,7 +1669,7 @@ Neuordnung, Verlauf“ (2026-10-08, außerhalb des Repos).
 
 ---
 
-### 6.20 Nachtrag 3.10.0: Einstellungen in drei Gruppen, Unterseiten statt Hub-Zeilen
+### 6.20 Nachtrag 3.9.5: Einstellungen in drei Gruppen, Unterseiten statt Hub-Zeilen
 
 Ergänzt §2.1 (H), §2.3 (E), §2.4 (E1), §2.5/§6.19 (E2), §2.7 (E4, entfällt), §6.15 (E7) und §1.2; wo sie widersprechen, gilt dieser Abschnitt.
 Nutzer-Sicht: `docs/ANLEITUNG.md` 3, 8, 9.3, 9.7, 14.2. Herleitung: Usability-Analyse 2026-10-28 am Stand 3.9.1 (Emulator-Screenshots):
