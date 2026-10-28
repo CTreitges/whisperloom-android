@@ -102,6 +102,13 @@ fun RecognitionScreen(nav: NavState) {
                     optionLabel = { it.second },
                     onSelect = { prefs.language = it.first },
                 )
+                if (prefs.language == Prefs.LANG_DE_EN) {
+                    Text(
+                        stringResource(if (offline) R.string.rec_language_de_en_offline else R.string.rec_language_de_en_info),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
 
             PrivacyLine(

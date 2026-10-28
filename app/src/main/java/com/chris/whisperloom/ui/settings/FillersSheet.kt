@@ -43,7 +43,8 @@ import com.chris.whisperloom.ui.state.LocalAppEnv
 @Composable
 fun FillersSheet(onDismiss: () -> Unit) {
     val prefs = LocalAppEnv.current.prefs
-    val languages = Prefs.LANGUAGES.map { it.first }.filter { it != "auto" }
+    // Fuellwoerter gibt es je Einzelsprache; "Deutsch + Englisch" nutzt die erkannte.
+    val languages = Prefs.LANGUAGES.map { it.first }.filter { it != "auto" && it != Prefs.LANG_DE_EN }
     var lang by rememberSaveable { mutableStateOf(if (prefs.language in languages) prefs.language else "de") }
     var input by rememberSaveable { mutableStateOf("") }
 

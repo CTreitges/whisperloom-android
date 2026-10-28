@@ -121,6 +121,37 @@ object Vocabulary {
         return Prompt(kept.joinToString(", "), kept.size, ordered.size)
     }
 
+    /**
+     * Endet ein Stueck auf ein Satzzeichen, ist es ein Satz(teil) aus altem Freitext, kein Begriff.
+     * Das [CUT_MARK] setzt [prompt] ans Ende eines angeschnittenen Eintrags.
+     */
+    private val SENTENCE_END = Regex("[.!?:;…]$")
+
+    /**
+     * Einzelbegriffe fuer Anbieter mit Wortlisten-Feld (ElevenLabs `keyterms`, gpt-transcribe
+     * `keywords[]`, Mistral `context_bias`): [prompt] ist die kommagetrennte Liste aus
+     * [Vocabulary.prompt] ([Prompt.text]).
+     * Satzstuecke (Satzzeichen am Ende) und das bei der Kappung angeschnittene Stueck fallen weg,
+     * ebenso alles, was [accept] ablehnt — ein unzulaessiger Begriff wuerde sonst die ganze Anfrage
+     * kippen. Danach passt [transform] einen Begriff an das Format des Anbieters an. Von mehr als
+     * [limit] bleiben die letzten: dort stehen die eigenen Begriffe.
+     *
+     * Bekannte Grenze: ein Begriff mit Punkt am Ende ("Dr.", "GmbH & Co.") zaehlt als Satzstueck.
+     */
+    fun terms(
+        prompt: String,
+        limit: Int,
+        transform: (String) -> String = { it },
+        accept: (String) -> Boolean = { true },
+    ): List<String> =
+        prompt.split(',')
+            .map { it.trim() }
+            .filter { it.isNotEmpty() && !SENTENCE_END.containsMatchIn(it) }
+            .filter(accept)
+            .map(transform)
+            .distinct()
+            .takeLast(limit)
+
     private fun dedupe(terms: List<String>): List<String> {
         val seen = HashSet<String>()
         return terms.filter { seen.add(it.lowercase()) }

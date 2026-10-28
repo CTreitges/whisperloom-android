@@ -278,6 +278,8 @@
     <string name="rec_card_offline">Offline-Modell</string>
     <string name="rec_offline_first_use">Erste Nutzung lädt das Modell in den Speicher (2–5 s).</string>
     <string name="rec_language">Sprache</string>
+    <string name="rec_language_de_en_info">Für deutsche Diktate mit englischen Wörtern. GPT Transcribe bekommt beide Sprachen als Hinweis, alle anderen Dienste erkennen die Sprache selbst.</string>
+    <string name="rec_language_de_en_offline">Das Offline-Modell erkennt nur eine Sprache je Diktat. Englische Wörter in einem deutschen Diktat können falsch geschrieben werden.</string>
     <string name="rec_provider">Anbieter</string>
     <string name="rec_base_url">Base-URL</string>
     <string name="rec_base_url_hint">Muss auf /v1 enden. http:// nur im eigenen Netz (LAN/VPN).</string>
@@ -294,6 +296,7 @@
     <string name="rec_privacy_online">Audio wird zur Erkennung an %1$s gesendet.</string>
     <string name="rec_privacy_offline">Die Aufnahme bleibt auf dem Gerät.</string>
     <string name="rec_context_keyterms" formatted="false">Geht als Schlüsselbegriffe an ElevenLabs und hilft bei Eigennamen und Fachwörtern. Vokabular kostet bei ElevenLabs etwa 20 % Aufpreis.</string>
+    <string name="rec_context_bias">Geht als Wortliste an Mistral, höchstens 100 Wörter. Begriffe aus mehreren Wörtern werden mit _ verbunden. Für Deutsch ist das bei Mistral noch im Test.</string>
     <string name="rec_context_unsupported">Dieser Anbieter nimmt kein Vokabular entgegen — es wirkt nur bei anderen Anbietern und offline.</string>
     <string name="pref_api_prompt_info">Wird als Prompt mitgeschickt und hilft der Erkennung bei Eigennamen und Fachwörtern. Kostet nichts extra.</string>
     <string name="vocab_title">Vokabular</string>
@@ -607,6 +610,7 @@
     <string name="help_s4_body">Base-URL eintragen, Key nur falls verlangt. Endpunkte: /v1/audio/transcriptions und /v1/chat/completions.\nTextverbesserung auch über Ollama: lokal ohne Key, Cloud mit Key.\nhttp:// nur im eigenen Netz oder per VPN.</string>
     <string name="help_s5_title">Offline-Modus</string>
     <string name="help_s5_body">Ein Offline-Modell erkennt Sprache auf dem Gerät (Small: etwa 5–12 s). Einmal laden (32–574 MB), löschen unter Offline-Modelle. Für Deutsch empfohlen: Small.</string>
+    <string name="help_s5_mixed">Mit der Sprache „Deutsch + Englisch“ erkennt das Offline-Modell nur eine Sprache je Diktat.</string>
     <string name="help_widgets_title">Widgets &amp; Pro Widgets</string>
     <string name="help_widgets_intro">Normale Widgets für den Startbildschirm folgen mit einem Update. Pro Widgets gibt es schon: Sprach-Command und Claude Code, für Entwickler mit eigenem Server.</string>
     <string name="help_widgets_unlock">Freischalten: Einstellungen → Erweitert → Pro Widgets.</string>
@@ -877,6 +881,8 @@
     <string name="widget_profile_autostop">Automatisch senden nach Sprechpause</string>
     <string name="widget_profile_autostop_sub">Nach einer Sprechpause endet die Aufnahme und wird gesendet. Ein Tipp beendet jederzeit. Hört das Widget 8 Sekunden lang nichts, wird nichts gesendet.</string>
     <string name="widget_profile_pause">Sprechpause</string>
+    <string name="widget_profile_language">Sprache</string>
+    <string name="widget_profile_language_app">Wie in der App (%1$s)</string>
     <string name="widget_pause_short">Kurz</string>
     <string name="widget_pause_normal">Normal</string>
     <string name="widget_pause_long">Lang</string>

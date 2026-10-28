@@ -108,6 +108,16 @@ class ProviderCatalogTest {
         assertNull(ProviderCatalog.openai.sttPathOverride)
     }
 
+    /** CTR-273 (F5/F6): Vokabular-Wortlisten nur dort, wo die Anbieter-Doku sie nennt. */
+    @Test fun vokabularFelderNurBeiGptTranscribeUndMistral() {
+        val keywords = ProviderCatalog.providers.flatMap { p -> p.sttModels.filter { it.keywordsField != null }.map { "${p.id}/${it.id}" } }
+        assertEquals(listOf("openai/gpt-transcribe"), keywords)
+        assertEquals("keywords[]", ProviderCatalog.openai.sttModel("gpt-transcribe")!!.keywordsField)
+        val bias = ProviderCatalog.providers.filter { it.sttBiasField != null }.map { it.id }
+        assertEquals(listOf("mistral"), bias)
+        assertEquals("context_bias[]", ProviderCatalog.byId("mistral").sttBiasField)
+    }
+
     @Test fun anzeigeReihenfolgeDerDropdowns() {
         assertEquals(
             listOf("openai", "groq", "mistral", "elevenlabs", "together", "deepinfra", "openrouter", "custom"),

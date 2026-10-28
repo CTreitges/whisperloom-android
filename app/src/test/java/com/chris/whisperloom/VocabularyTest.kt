@@ -133,4 +133,31 @@ class VocabularyTest {
         assertEquals("", p.text)
         assertEquals(0, p.total)
     }
+
+    // --- terms: gemeinsamer Filter fuer keyterms, keywords[], context_bias (CTR-273) ------
+
+    @Test fun termsTrenntAmKommaUndVerwirftLeeresUndSatzstuecke() {
+        assertEquals(listOf("Anna", "Bernd"), Vocabulary.terms(" Anna ,, Bernd, Bitte so schreiben.", 10))
+        assertEquals(emptyList<String>(), Vocabulary.terms("", 10))
+    }
+
+    @Test fun termsVerwirftDasAngeschnitteneStueck() {
+        val p = Vocabulary.prompt(listOf("x".repeat(900)))
+        assertTrue(p.text.endsWith(Vocabulary.CUT_MARK))
+        assertEquals(emptyList<String>(), Vocabulary.terms(p.text, 10))
+    }
+
+    @Test fun termsKapptVonVornUndEntferntDoppelte() {
+        // Die eigenen Begriffe stehen hinten (Vocabulary.prompt) — sie bleiben bei der Kappung.
+        assertEquals(listOf("b", "c"), Vocabulary.terms("a, b, c", 2))
+        assertEquals(listOf("a", "b"), Vocabulary.terms("a, b, a", 5))
+    }
+
+    @Test fun termsPrueftDenBegriffUndWandeltDannUm() {
+        // accept sieht den Begriff, wie er im Vokabular steht (mit Leerzeichen), transform kommt danach.
+        val out = Vocabulary.terms("Claude Code, a<b, Chris", 10, transform = { it.replace(' ', '_') }) {
+            !it.contains('<') && it.split(' ').size <= 2
+        }
+        assertEquals(listOf("Claude_Code", "Chris"), out)
+    }
 }

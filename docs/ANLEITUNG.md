@@ -614,7 +614,9 @@ Einstellungen → **Wörterbuch & Regeln** → Karte **Feste Regeln**. Lokal, ko
 
 ### 8.7 Wörterbuch und Sprache
 
-Die **Sprache** stellst du unter Einstellungen → **Spracherkennung** ein: Automatisch erkennen · Deutsch (Voreinstellung) · Englisch · Spanisch · Französisch · Italienisch. Eine feste Sprache ist schneller und genauer als „Automatisch erkennen" — vor allem bei kurzen Diktaten; sie bestimmt auch, welche Füllwort-Liste gilt. Bei „Automatisch erkennen" nimmt WhisperLoom die vom Modell erkannte Sprache für die Nachbearbeitung.
+Die **Sprache** stellst du unter Einstellungen → **Spracherkennung** ein: Automatisch erkennen · Deutsch (Voreinstellung) · Englisch · Deutsch + Englisch · Spanisch · Französisch · Italienisch. Eine feste Sprache ist schneller und genauer als „Automatisch erkennen" — vor allem bei kurzen Diktaten; sie bestimmt auch, welche Füllwort-Liste gilt. Bei „Automatisch erkennen" nimmt WhisperLoom die vom Modell erkannte Sprache für die Nachbearbeitung.
+
+**Deutsch + Englisch** ist für deutsche Diktate mit englischen Wörtern. GPT Transcribe (OpenAI) bekommt beide Sprachen als Hinweis, alle anderen Dienste erkennen die Sprache selbst; für Füllwörter und Textverbesserung gilt die erkannte Sprache, sonst Deutsch. Das Offline-Modell erkennt nur eine Sprache je Diktat. Pro Widgets können eine eigene Sprache haben (Editor des Widgets → **Sprache**, ab Werk „Wie in der App").
 
 Das **Vokabular** steht unter Einstellungen → **Wörterbuch & Regeln** → Karte **Wörterbuch** (bis 3.8.6 unter Erkennung → Sprache & Kontext): Namen, Fachbegriffe und Schreibweisen, die die Erkennung kennen soll. Die Zeile zeigt, was hinterlegt ist (z. B. „3 Begriffe · Datei: namen.md"); **Bearbeiten** öffnet das Blatt **Vokabular**. Die Begriffe gehen als Prompt an den Anbieter und helfen bei Eigennamen und Fachwörtern. Kostet nichts extra — außer bei ElevenLabs (etwa 20 % Aufpreis, siehe unten). Das Vokabular wirkt online **und** offline (dort als Start-Prompt des Modells).
 
@@ -1210,7 +1212,7 @@ Nein. Der schwebende Knopf arbeitet mit jeder Tastatur zusammen (Gboard, SwiftKe
 Ja. Beide Zugänge bleiben gespeichert; unter Spracherkennung schaltest du mit einem Tipp um.
 
 **Welche Sprachen?**
-Deutsch (Voreinstellung), Englisch, Spanisch, Französisch, Italienisch oder „Automatisch erkennen". Die Erkennungsmodelle selbst beherrschen deutlich mehr Sprachen; die Auswahl in WhisperLoom umfasst die fünf Sprachen, für die eingebaute Füllwort-Listen mitkommen. Für andere Sprachen „Automatisch erkennen" wählen.
+Deutsch (Voreinstellung), Englisch, Deutsch + Englisch, Spanisch, Französisch, Italienisch oder „Automatisch erkennen". Die Erkennungsmodelle selbst beherrschen deutlich mehr Sprachen; die Auswahl in WhisperLoom umfasst die fünf Sprachen, für die eingebaute Füllwort-Listen mitkommen. Für andere Sprachen „Automatisch erkennen" wählen.
 
 **Wie lang darf ein Diktat sein?**
 Ein Diktat per Knopf oder Tastatur wird am Stück an die Erkennung geschickt; die Online-Anbieter nehmen höchstens 25 MB pro Anfrage (etwa 13 Minuten bei WhisperLooms Audioformat). Für die Praxis: einzelne Sätze bis wenige Minuten. Die Diktat-Tastatur warnt bei Online-Erkennung ab 10 Minuten und pausiert bei 12 Minuten von selbst ([5.3](#53-ohne-halten-diktieren-wisch-geste-und-pause)). Geteilte Sprachnachrichten dürfen beliebig lang sein — sie werden in 5-Minuten-Stücke geteilt.

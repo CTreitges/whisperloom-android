@@ -55,6 +55,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.chris.whisperloom.Engine
+import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import com.chris.whisperloom.agent.AgentBridge
 import com.chris.whisperloom.agent.AgentUrlCheck
@@ -71,9 +73,11 @@ import com.chris.whisperloom.ui.access.PrivacyLine
 import com.chris.whisperloom.ui.access.TestAccessRow
 import com.chris.whisperloom.ui.access.urlProblemText
 import com.chris.whisperloom.ui.components.ApiKeyField
+import com.chris.whisperloom.ui.components.LoomDropdown
 import com.chris.whisperloom.ui.components.LoomIcon
 import com.chris.whisperloom.ui.components.LoomSheet
 import com.chris.whisperloom.ui.components.SwitchRow
+import com.chris.whisperloom.ui.components.languageLabel
 import com.chris.whisperloom.ui.state.WidgetProfilesState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -83,7 +87,7 @@ import kotlinx.coroutines.withContext
 /**
  * Ein Widget (Profil) bearbeiten: Name (Pflicht) und ob er unter dem Widget steht, Server
  * (Adresse, Token, Pruefen), beim Claude-Code-Widget Modell, Effort und Ultracode
- * ([ClaudeOptionsSection]), Symbol (eingebaut oder aus der Galerie), Auto-Stopp mit
+ * ([ClaudeOptionsSection]), Erkennungssprache, Symbol (eingebaut oder aus der Galerie), Auto-Stopp mit
  * Sprechpause, Loeschen. Jede Aenderung wird sofort gespeichert, einen Speichern-Knopf gibt es
  * nicht. Das Standardprofil laesst sich bearbeiten, aber nicht loeschen.
  */
@@ -194,6 +198,27 @@ fun WidgetProfileSheet(widgets: WidgetProfilesState, profileId: String, onDismis
         }
 
         if (profile.kind == WidgetKind.CLAUDE_CODE) ClaudeOptionsSection(profile) { widgets.save(it) }
+
+        // Eigene Erkennungssprache, z. B. ein Widget fuer englische Auftraege; "" = wie in der App.
+        // Prefs direkt statt LocalAppEnv: das Sheet laeuft auch in der WidgetConfigActivity.
+        val appLanguage = stringResource(R.string.widget_profile_language_app, languageLabel(Prefs(ctx).language))
+        val languages = listOf("" to appLanguage) + Prefs.LANGUAGES
+        LoomDropdown(
+            label = stringResource(R.string.widget_profile_language),
+            value = languages.firstOrNull { it.first == profile.language }?.second ?: languageLabel(profile.language),
+            options = languages,
+            optionLabel = { it.second },
+            onSelect = { widgets.save(profile.copy(language = it.first)) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        if (profile.language == Prefs.LANG_DE_EN) {
+            val offline = Prefs(ctx).engine == Engine.OFFLINE
+            Text(
+                stringResource(if (offline) R.string.rec_language_de_en_offline else R.string.rec_language_de_en_info),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
         Text(stringResource(R.string.widget_profile_icon), style = MaterialTheme.typography.labelLarge)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

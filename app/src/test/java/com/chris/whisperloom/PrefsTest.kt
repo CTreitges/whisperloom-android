@@ -962,4 +962,14 @@ class PrefsTest {
         assertEquals(100, state.historySize)
         state.dispose()
     }
+
+    /** CTR-273 (F3): nur "Deutsch + Englisch" kommt dazu, der Rest und der Default bleiben. */
+    @Test fun sprachlisteMitDeutschUndEnglisch() {
+        assertEquals(listOf("auto", "de", "en", "de+en", "es", "fr", "it"), Prefs.LANGUAGES.map { it.first })
+        assertEquals("Deutsch + Englisch", Prefs.LANGUAGES.first { it.first == Prefs.LANG_DE_EN }.second)
+        val p = Prefs(ctx)
+        assertEquals("de", p.language)
+        p.language = Prefs.LANG_DE_EN
+        assertEquals("de+en", Prefs(ctx).language)
+    }
 }

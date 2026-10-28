@@ -216,8 +216,9 @@ object ModelLists {
         val temperature = server?.temperatureSupported ?: base?.temperatureSupported
             ?: if (chat && noTemperature(provider, name)) false else null
         val effort = server?.reasoningEffort ?: base?.reasoningEffort ?: if (chat) heuristicEffort(provider, name) else null
-        val languageField = base?.languageField
-            ?: if (!chat && provider.id == OPENAI && GPT_TRANSCRIBE.containsMatchIn(name)) "languages[]" else null
+        val gptTranscribe = !chat && provider.id == OPENAI && GPT_TRANSCRIBE.containsMatchIn(name)
+        val languageField = base?.languageField ?: if (gptTranscribe) "languages[]" else null
+        val keywordsField = if (base != null) base.keywordsField else if (gptTranscribe) "keywords[]" else null
         if (server == null && base == null && temperature == null && effort == null && languageField == null) return null
         return ModelOption(
             id = id,
@@ -227,6 +228,7 @@ object ModelLists {
             reasoningEffort = effort,
             languageField = languageField ?: "language",
             thinkingType = base?.thinkingType,
+            keywordsField = keywordsField,
         )
     }
 

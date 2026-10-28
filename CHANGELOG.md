@@ -4,6 +4,26 @@ Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](ht
 
 ## [Unreleased]
 
+### Hinzugefügt
+
+- **Sprache „Deutsch + Englisch“.** Unter Einstellungen › **Spracherkennung** › Sprache gibt es die neue Wahl **Deutsch + Englisch**, gedacht für deutsche Diktate mit englischen Wörtern. GPT Transcribe (OpenAI) bekommt beide Sprachen als Hinweis, alle anderen Dienste erkennen die Sprache selbst. Für Füllwörter und Textverbesserung gilt die erkannte Sprache, sonst Deutsch. Das Offline-Modell erkennt nur eine Sprache je Diktat; das steht auch unter der Auswahl.
+- **Sprache je Widget.** Im Editor eines Pro Widgets wählst du unter **Sprache**, in welcher Sprache dieses Widget erkennt, z. B. ein Widget für englische Aufträge. Ab Werk steht dort **Wie in der App**, es bleibt also alles wie bisher.
+
+### Geändert
+
+- **Vokabular kommt bei mehr Anbietern an.** GPT Transcribe bekommt dein Vokabular zusätzlich als einzelne Schlüsselwörter. Mistral (Voxtral) bekommt es jetzt als Wortliste, bisher kam dort gar nichts an: höchstens 100 Wörter, Begriffe aus mehreren Wörtern werden mit _ verbunden, für Deutsch ist das bei Mistral noch im Test. Begriffe, die ein Anbieter ablehnen würde, lässt WhisperLoom weg, statt das Diktat scheitern zu lassen.
+
+### Behoben
+
+- **Erkannte Sprache bei GPT Transcribe.** Mit OpenAI GPT Transcribe und der Sprache „Automatisch erkennen“ blieb die Sprache bisher „automatisch“: Die Textverbesserung bekam die englische Anweisung, und es galt die gemischte Füllwortliste. Jetzt zählt die Sprache, die GPT Transcribe erkannt hat.
+
+### Technik
+
+- `TranscriptionRequest.detectedLanguage` liest `languages[0].code` (gpt-transcribe), sonst `language`. Neue Sprache `Prefs.LANG_DE_EN` (`"de+en"`): `languages[]=de` und `languages[]=en` nur bei `ModelOption.languageField == "languages[]"`, sonst kein Sprachfeld; ElevenLabs ohne `language_code`, whisper.cpp mit `"auto"` (`OfflineBackend.whisperLanguage`); `TranscriptionEngine.effectiveLanguage` nimmt die erkannte, sonst `"de"`.
+- Vokabular-Filter `Vocabulary.terms` (gemeinsam für ElevenLabs `keyterms`, gpt-transcribe `keywords[]`, Mistral `context_bias`). Neue Katalog-Felder `ModelOption.keywordsField` (nur gpt-transcribe, auch für vom Server geladene gpt-transcribe-Varianten) und `Provider.sttBiasField` (nur Mistral). `keywords[]` ohne `<`, `>`, Zeilenumbruch; `context_bias` höchstens 100, je Begriff ohne Leerzeichen/Komma (`^[^,\s]+$`, Leerzeichen → `_`).
+- `WidgetProfile.language` (JSON-Feld `language`, `""` = wie App), `TranscriptionEngine.transcribe(language = …)`, `VoiceTaskWorker` gibt sie weiter.
+- ElevenLabs bewusst weiterhin ohne `no_verbatim`, `temperature`, `seed`, `transcript_edit`, `entity_*`, `detect_speaker_roles`, `use_multi_channel`, `webhook` (Entscheidungen CTR-273).
+
 ## [3.9.1] — 2026-10-16
 
 ### Hinzugefügt
