@@ -28,6 +28,7 @@ import android.widget.Toast
 import androidx.annotation.VisibleForTesting
 import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.AudioRecorder
+import com.chris.whisperloom.Engine
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineSkip
@@ -38,6 +39,7 @@ import com.chris.whisperloom.api.ApiNotConfiguredException
 import com.chris.whisperloom.api.isRetryable
 import com.chris.whisperloom.history.History
 import com.chris.whisperloom.history.HistorySource
+import com.chris.whisperloom.ime.DictationSession
 import java.util.concurrent.Executors
 import kotlin.math.abs
 
@@ -102,10 +104,33 @@ class FloatingMicService : Service() {
                 return
             }
             val elapsed = elapsedMs()
+            // Grenzen der IME (UX-Spec §6.21): online ab 10 min ein Hinweis, bei 12 min senden.
+            when (DictationSession.length(elapsed, lengthLimited)) {
+                DictationSession.Length.MAX -> {
+                    toast(getString(R.string.float_too_long_sent))
+                    stopRec()
+                    return
+                }
+                DictationSession.Length.LONG -> if (!longWarned) {
+                    longWarned = true
+                    renderer?.haptic(BubbleMotion.Haptic.REJECT)
+                    toast(getString(R.string.float_too_long_soon))
+                }
+                DictationSession.Length.OK -> Unit
+            }
             renderer?.updateTimer(elapsed)
             main.postDelayed(this, BubbleUi.DOT_PERIOD_MS - elapsed % BubbleUi.DOT_PERIOD_MS)
         }
     }
+
+    /**
+     * Die laufende Aufnahme geht an die Online-Erkennung und hat damit eine Hoechstdauer. Gemessen
+     * wird die Zeit seit offenem Mikrofon — der Knopf kennt keine Pause, sie ist also die Tonlaenge.
+     */
+    private var lengthLimited = false
+
+    /** Der Hinweis "noch 2 Minuten" kam schon. */
+    private var longWarned = false
 
     /** Touch-Geste am Knopf: Tipp, Halten zum Sprechen, Ziehen ([BubbleGesture]). */
     private val gesture = BubbleGesture()
@@ -385,6 +410,8 @@ class FloatingMicService : Service() {
         // bei Lautsprecher-Ausgabe im Diktat (UX-Spec §6.20). Der Ticker laeuft erst danach an.
         recordingStartedAt = SystemClock.elapsedRealtime() // Anzeige "0:00"
         pendingSamples = null
+        lengthLimited = prefs.engine == Engine.ONLINE
+        longWarned = false
         applyState(BubbleState.RECORDING)
         if (!recorder.start()) {
             applyState(BubbleState.IDLE)
