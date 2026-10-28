@@ -124,7 +124,9 @@ object ProviderCatalog {
             keyUrl = "https://console.mistral.ai/api-keys",
             sttSendsPrompt = false,
             sttSendsResponseFormat = false,
-            sttBiasField = "context_bias",
+            // Array-Feld mit Klammern wie languages[] bei OpenAI: so schickt es auch das OpenAI-SDK
+            // (extra_body={"context_bias": [...]}, in der Mistral-Doku als kompatibel genannt). Live testen.
+            sttBiasField = "context_bias[]",
             sttModels = listOf(
                 ModelOption(
                     "voxtral-mini-latest", "Voxtral Mini Transcribe 2",

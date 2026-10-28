@@ -23,6 +23,12 @@ class TranscriptionResponseTest {
         assertEquals("de", detected("""{"text":"Hallo Welt","languages":[{"code":"de"}]}"""))
     }
 
+    /** OpenAI nimmt auch ISO-639-3 an; kommt es so zurueck, rechnet die App mit ISO-639-1. */
+    @Test fun dreistelligerCodeWirdZweistellig() {
+        assertEquals("de", detected("""{"text":"Hallo","languages":[{"code":"deu"}]}"""))
+        assertEquals("en", detected("""{"text":"Hi","languages":[{"code":"EN"}]}"""))
+    }
+
     @Test fun beiMehrerenSprachenZaehltDieErste() {
         assertEquals("en", detected("""{"text":"Meeting um zehn","languages":[{"code":"en"},{"code":"de"}]}"""))
     }

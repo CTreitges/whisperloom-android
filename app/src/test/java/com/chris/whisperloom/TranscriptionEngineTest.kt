@@ -717,6 +717,18 @@ class TranscriptionEngineTest {
         }
     }
 
+    /** "Deutsch + Englisch" am eigenen Server (ein Code je Anfrage): kein Sprachfeld, wirksam Deutsch. */
+    @Test fun deutschUndEnglischOhneErkannteSpracheGiltAlsDeutsch() {
+        useLocalServer()
+        prefs.language = "de+en"
+        sttResponse = """{"text":"ähm hallo welt"}"""
+        val dictation = TranscriptionEngine.transcribe(ctx, speech)
+        assertFalse(sttBody.contains("name=\"language"))
+        assertEquals("de", dictation.language)
+        // Deutsche Fuellwortliste: das "ähm" ist weg.
+        assertFalse(dictation.text, dictation.text.contains("ähm", ignoreCase = true))
+    }
+
     /** gpt-transcribe meldet `languages: [{code}]` (CTR-273, 273-1) — sonst bliebe die Sprache "auto". */
     @Test fun autoSpracheAusDerListeVonGptTranscribe() {
         useLocalServer()

@@ -836,15 +836,25 @@ class MainFlowTest {
         }
     }
 
-    @Test fun kontextFeldSagtBeiMistralDassNichtsMitgeschicktWird() {
-        // Review API-2: kein context_bias umgesetzt — kein Wortlisten-Versprechen in der Oberflaeche.
+    @Test fun kontextFeldSagtBeiOpenRouterDassNichtsMitgeschicktWird() {
+        // OpenRouter kennt weder prompt noch context_bias — kein Wortlisten-Versprechen in der Oberflaeche.
         prefs.engine = Engine.ONLINE
-        prefs.sttProviderId = "mistral"
+        prefs.sttProviderId = "openrouter"
         prefs.apiKey = "k"
         screen(env()) { DictionaryScreen(it) }
         compose.onNodeWithText("Dieser Anbieter nimmt kein Vokabular entgegen — es wirkt nur bei anderen Anbietern und offline.")
             .assertExists()
         compose.onNodeWithText("Kontext-Wörter (kommagetrennt)").assertDoesNotExist()
+    }
+
+    @Test fun kontextFeldNenntBeiMistralDieWortliste() {
+        // CTR-273 (F6): Mistral bekommt das Vokabular als context_bias.
+        prefs.engine = Engine.ONLINE
+        prefs.sttProviderId = "mistral"
+        prefs.apiKey = "k"
+        screen(env()) { DictionaryScreen(it) }
+        compose.onNodeWithText("Geht als Wortliste an Mistral", substring = true).assertExists()
+        compose.onNodeWithText("Dieser Anbieter nimmt kein Vokabular entgegen", substring = true).assertDoesNotExist()
     }
 
     @Test fun kontextFeldNenntBeiElevenLabsKeytermsUndAufpreis() {

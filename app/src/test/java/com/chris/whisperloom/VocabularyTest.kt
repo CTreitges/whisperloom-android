@@ -153,8 +153,11 @@ class VocabularyTest {
         assertEquals(listOf("a", "b"), Vocabulary.terms("a, b, a", 5))
     }
 
-    @Test fun termsWendetTransformVorAcceptAn() {
-        val out = Vocabulary.terms("Claude Code, a<b, Chris", 10, transform = { it.replace(' ', '_') }) { !it.contains('<') }
+    @Test fun termsPrueftDenBegriffUndWandeltDannUm() {
+        // accept sieht den Begriff, wie er im Vokabular steht (mit Leerzeichen), transform kommt danach.
+        val out = Vocabulary.terms("Claude Code, a<b, Chris", 10, transform = { it.replace(' ', '_') }) {
+            !it.contains('<') && it.split(' ').size <= 2
+        }
         assertEquals(listOf("Claude_Code", "Chris"), out)
     }
 }

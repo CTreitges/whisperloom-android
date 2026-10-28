@@ -119,6 +119,7 @@ fun HelpScreen(section: Int, nav: NavState) {
             item {
                 ExpandableCard(stringResource(R.string.help_s5_title), isOpen(5), { toggle(5) }, icon = R.drawable.ic_offline_bolt) {
                     GuideHeader(R.drawable.ill_help_offline, R.string.img_help_offline, text = stringResource(R.string.help_s5_body))
+                    Text(stringResource(R.string.help_s5_mixed), style = MaterialTheme.typography.bodyMedium)
                 }
             }
             item {

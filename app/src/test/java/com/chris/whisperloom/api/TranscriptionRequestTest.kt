@@ -60,7 +60,7 @@ class TranscriptionRequestTest {
     @Test fun mistralBekommtVokabularAlsContextBiasOhnePrompt() {
         val f = TranscriptionRequest.fields(stt("mistral"), "de", "Treitges, WhisperLoom")
         assertEquals(
-            listOf("model" to "voxtral-mini-latest", "language" to "de", "context_bias" to "Treitges", "context_bias" to "WhisperLoom"),
+            listOf("model" to "voxtral-mini-latest", "language" to "de", "context_bias[]" to "Treitges", "context_bias[]" to "WhisperLoom"),
             f,
         )
     }
@@ -73,6 +73,22 @@ class TranscriptionRequestTest {
         assertTrue(bias.all { pattern.matches(it) })
     }
 
+    /** Geschuetztes Leerzeichen (U+00A0, U+202F) aus kopiertem Text: auch das wird zu _. */
+    @Test fun contextBiasAuchOhneUnicodeLeerraum() {
+        val bias = TranscriptionRequest.contextBias("Dr Müller, 10 km")
+        assertEquals(listOf("Dr_Müller", "10_km"), bias)
+        val unicodePattern = Regex("(?U)^[^,\\s]+$")
+        assertTrue(bias.all { unicodePattern.matches(it) })
+    }
+
+    /** Freitext ist kein Schlagwort: mehr als 5 Woerter oder 49 Zeichen fallen weg (wie bei ElevenLabs). */
+    @Test fun wortlistenOhneFreitext() {
+        val prompt = "Bitte WhisperLoom immer zusammen schreiben und so, ${"x".repeat(50)}, Chris"
+        assertEquals(listOf("Chris"), TranscriptionRequest.contextBias(prompt))
+        assertEquals(listOf("Chris"), TranscriptionRequest.keywords(prompt))
+        assertEquals(listOf("a b c d e"), TranscriptionRequest.keywords("a b c d e, a b c d e f"))
+    }
+
     @Test fun contextBiasHoechstensHundertUndDieLetztenGewinnen() {
         val prompt = (1..130).joinToString(", ") { "w$it" }
         val bias = TranscriptionRequest.contextBias(prompt)
@@ -82,10 +98,10 @@ class TranscriptionRequestTest {
     }
 
     @Test fun ohneVokabularKeineWortlisten() {
-        assertFalse(names(TranscriptionRequest.fields(stt("mistral"), "de", "  ")).contains("context_bias"))
+        assertFalse(names(TranscriptionRequest.fields(stt("mistral"), "de", "  ")).contains("context_bias[]"))
         assertFalse(names(TranscriptionRequest.fields(stt("openai", "gpt-transcribe"), "de", "")).contains("keywords[]"))
         // OpenRouter (auch Voxtral) kennt context_bias nicht.
-        assertFalse(names(TranscriptionRequest.fields(stt("openrouter"), "de", "Chris")).contains("context_bias"))
+        assertFalse(names(TranscriptionRequest.fields(stt("openrouter"), "de", "Chris")).contains("context_bias[]"))
     }
 
     @Test fun altesOpenAiModellSendetLanguage() {
@@ -102,7 +118,7 @@ class TranscriptionRequestTest {
     @Test fun mistralBekommtWederPromptNochResponseFormat() {
         val f = TranscriptionRequest.fields(stt("mistral"), "de", "ctx")
         // CTR-273: das Vokabular kommt als context_bias statt als prompt an.
-        assertEquals(listOf("model" to "voxtral-mini-latest", "language" to "de", "context_bias" to "ctx"), f)
+        assertEquals(listOf("model" to "voxtral-mini-latest", "language" to "de", "context_bias[]" to "ctx"), f)
     }
 
     @Test fun openRouterBekommtKeinenPrompt() {

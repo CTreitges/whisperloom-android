@@ -115,7 +115,7 @@ class ProviderCatalogTest {
         assertEquals("keywords[]", ProviderCatalog.openai.sttModel("gpt-transcribe")!!.keywordsField)
         val bias = ProviderCatalog.providers.filter { it.sttBiasField != null }.map { it.id }
         assertEquals(listOf("mistral"), bias)
-        assertEquals("context_bias", ProviderCatalog.byId("mistral").sttBiasField)
+        assertEquals("context_bias[]", ProviderCatalog.byId("mistral").sttBiasField)
     }
 
     @Test fun anzeigeReihenfolgeDerDropdowns() {

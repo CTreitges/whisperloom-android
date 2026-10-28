@@ -133,8 +133,10 @@ object Vocabulary {
      * [Vocabulary.prompt] ([Prompt.text]).
      * Satzstuecke (Satzzeichen am Ende) und das bei der Kappung angeschnittene Stueck fallen weg,
      * ebenso alles, was [accept] ablehnt — ein unzulaessiger Begriff wuerde sonst die ganze Anfrage
-     * kippen. [transform] passt einen Begriff vorher an das Format des Anbieters an. Von mehr als
+     * kippen. Danach passt [transform] einen Begriff an das Format des Anbieters an. Von mehr als
      * [limit] bleiben die letzten: dort stehen die eigenen Begriffe.
+     *
+     * Bekannte Grenze: ein Begriff mit Punkt am Ende ("Dr.", "GmbH & Co.") zaehlt als Satzstueck.
      */
     fun terms(
         prompt: String,
@@ -145,8 +147,8 @@ object Vocabulary {
         prompt.split(',')
             .map { it.trim() }
             .filter { it.isNotEmpty() && !SENTENCE_END.containsMatchIn(it) }
-            .map(transform)
             .filter(accept)
+            .map(transform)
             .distinct()
             .takeLast(limit)
 
