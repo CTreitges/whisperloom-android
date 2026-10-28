@@ -682,6 +682,7 @@
     <string name="float_no_overlay">Bitte „Über anderen Apps anzeigen" erlauben</string>
     <string name="float_clipboard_fallback">Text kopiert — Bedienungshilfe aktivieren zum automatischen Einfügen</string>
     <string name="float_copied_short">Kopiert — einfügen</string>
+    <string name="float_inserted_short">Eingefügt</string>
     <string name="float_sending">sendet …</string>
     <string name="float_refining">verbessert … tippen = ohne KI</string>
     <string name="float_retry_hint">tippen = erneut</string>
@@ -689,11 +690,15 @@
     <string name="float_cancel_label">Verwerfen</string>
     <string name="float_cancel_release">Loslassen zum Verwerfen</string>
     <string name="float_not_configured">Kein Zugang eingerichtet — in WhisperLoom einrichten</string>
+    <!-- §6.20: fester Name; was passiert, steht in der stateDescription (cd_bubble_*) -->
+    <string name="cd_bubble">Mikrofon</string>
     <string name="cd_bubble_idle">Diktat starten</string>
     <string name="cd_bubble_recording">Aufnahme läuft, %1$s — antippen zum Beenden</string>
     <string name="cd_bubble_sending">Wird übertragen</string>
     <string name="cd_bubble_refining">Text wird verbessert. Antippen fügt ihn ohne KI ein</string>
     <string name="cd_bubble_error">Fehler — antippen für erneuten Versuch</string>
+    <string name="cd_bubble_inserted">Eingefügt</string>
+    <string name="cd_bubble_copied">Kopiert — jetzt einfügen</string>
     <string name="cd_cancel">Diktat verwerfen</string>
 
     <!-- §6.12 IME-Tastatur (V2) -->

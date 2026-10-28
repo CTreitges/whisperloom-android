@@ -49,9 +49,18 @@ object BubbleMotion {
     /** Reduce-Motion = Settings.Global.ANIMATOR_DURATION_SCALE ist 0 (Bedienungshilfe/Entwickleroptionen). */
     fun isReduceMotion(animatorDurationScale: Float): Boolean = animatorDurationScale <= 0f
 
-    enum class Haptic { CONFIRM, CONTEXT_CLICK, REJECT }
+    /** Start CONFIRM, Senden CONTEXT_CLICK, Fehler/Verwerfen REJECT, eingefuegt SUCCESS (UX-Spec §6.20). */
+    enum class Haptic { CONFIRM, CONTEXT_CLICK, REJECT, SUCCESS }
 
-    /** CONFIRM/REJECT gibt es erst ab API 30 — davor KEYBOARD_TAP bzw. LONG_PRESS. */
+    /** Abstand der zwei Impulse des Erfolgs unter API 34. */
+    const val SUCCESS_PULSE_GAP_MS = 80L
+
+    /**
+     * CONFIRM/REJECT gibt es erst ab API 30 — davor KEYBOARD_TAP bzw. LONG_PRESS. SUCCESS ist ab
+     * API 34 TOGGLE_OFF, darunter KEYBOARD_TAP, das [hapticPulses] doppelt — so fuehlt sich der
+     * Erfolg anders an als Start und Senden, ganz ohne VIBRATE-Berechtigung.
+     */
+    // Context7 nicht verfuegbar; TOGGLE_OFF (API 34) per Android-SDK-Referenz der HapticFeedbackConstants.
     @SuppressLint("InlinedApi") // Konstanten werden inline uebernommen und per [sdk] geschuetzt.
     fun hapticConstant(kind: Haptic, sdk: Int): Int = when (kind) {
         Haptic.CONFIRM ->
@@ -59,5 +68,10 @@ object BubbleMotion {
         Haptic.CONTEXT_CLICK -> HapticFeedbackConstants.CONTEXT_CLICK
         Haptic.REJECT ->
             if (sdk >= 30) HapticFeedbackConstants.REJECT else HapticFeedbackConstants.LONG_PRESS
+        Haptic.SUCCESS ->
+            if (sdk >= 34) HapticFeedbackConstants.TOGGLE_OFF else HapticFeedbackConstants.KEYBOARD_TAP
     }
+
+    /** Wie oft [hapticConstant] gespielt wird: 2 nur beim Erfolg unter API 34, sonst 1. */
+    fun hapticPulses(kind: Haptic, sdk: Int): Int = if (kind == Haptic.SUCCESS && sdk < 34) 2 else 1
 }

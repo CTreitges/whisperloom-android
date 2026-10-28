@@ -5,6 +5,7 @@ import android.animation.AnimatorListenerAdapter
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.content.Context
+import android.os.Build
 import android.provider.Settings
 import android.view.View
 import android.view.animation.LinearInterpolator
@@ -21,6 +22,19 @@ object BubbleAnimators {
     fun reduceMotion(ctx: Context): Boolean = BubbleMotion.isReduceMotion(
         Settings.Global.getFloat(ctx.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f),
     )
+
+    /**
+     * Haptik an [view] — fuer Knopf und IME-Taste gleich. Der Erfolg ist unter API 34 ein
+     * Doppelimpuls: der zweite folgt nach [BubbleMotion.SUCCESS_PULSE_GAP_MS] (UX-Spec §6.20).
+     */
+    fun haptic(view: View, kind: BubbleMotion.Haptic) {
+        val sdk = Build.VERSION.SDK_INT
+        val constant = BubbleMotion.hapticConstant(kind, sdk)
+        view.performHapticFeedback(constant)
+        for (i in 1 until BubbleMotion.hapticPulses(kind, sdk)) {
+            view.postDelayed({ view.performHapticFeedback(constant) }, i * BubbleMotion.SUCCESS_PULSE_GAP_MS)
+        }
+    }
 
     /** Material "LinearOutSlowIn" = cubic-bezier(0, 0, 0.2, 1). */
     fun linearOutSlowIn() = PathInterpolator(0f, 0f, 0.2f, 1f)

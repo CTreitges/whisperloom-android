@@ -27,13 +27,13 @@ data class BubbleVisual(
     enum class IconTint { PRIMARY, ON_RECORDING, ON_PRIMARY_CONTAINER, ON_ERROR_CONTAINER }
 
     /** TIMER = "● m:ss" (Text kommt aus BubbleUi.timerText), Rest sind feste Strings. */
-    enum class Label { NONE, TIMER, SENDING, REFINING, RETRY_HINT, COPIED }
+    enum class Label { NONE, TIMER, SENDING, REFINING, RETRY_HINT, COPIED, INSERTED }
 
     /** Pillen-Grund + Textfarbe des Labels. */
     enum class LabelStyle { NEUTRAL, RECORDING, ERROR }
 
-    /** contentDescription (cd_bubble_*). */
-    enum class Description { IDLE, RECORDING, SENDING, REFINING, ERROR }
+    /** stateDescription (cd_bubble_*); der Name des Knopfs bleibt fest (UX-Spec §6.20). */
+    enum class Description { IDLE, RECORDING, SENDING, REFINING, ERROR, COPIED, INSERTED }
 }
 
 object BubbleVisuals {
@@ -48,12 +48,14 @@ object BubbleVisuals {
      * @param copiedHint IDLE-Hinweis "Kopiert — einfuegen" (nur ohne Bedienungshilfe, 2 s nach dem Senden)
      * @param reduceMotion Animator-Dauer-Skalierung 0: statischer Ring statt Puls
      * @param refining SENDING in der Textverbesserung: das Label nennt den Ausweg (Tippen = ohne KI)
+     * @param insertedHint IDLE-Hinweis "Eingefuegt" (2 s nach dem Einfuegen per Bedienungshilfe)
      */
     fun visualFor(
         state: BubbleState,
         copiedHint: Boolean = false,
         reduceMotion: Boolean = false,
         refining: Boolean = false,
+        insertedHint: Boolean = false,
     ): BubbleVisual = when (state) {
         BubbleState.IDLE -> BubbleVisual(
             fill = BubbleVisual.Fill.SURFACE,
@@ -61,9 +63,17 @@ object BubbleVisuals {
             icon = if (copiedHint) BubbleVisual.Icon.CONTENT_COPY else BubbleVisual.Icon.MIC,
             iconTint = BubbleVisual.IconTint.PRIMARY,
             iconAlpha = 1f,
-            label = if (copiedHint) BubbleVisual.Label.COPIED else BubbleVisual.Label.NONE,
+            label = when {
+                copiedHint -> BubbleVisual.Label.COPIED
+                insertedHint -> BubbleVisual.Label.INSERTED
+                else -> BubbleVisual.Label.NONE
+            },
             labelStyle = BubbleVisual.LabelStyle.NEUTRAL,
-            description = BubbleVisual.Description.IDLE,
+            description = when {
+                copiedHint -> BubbleVisual.Description.COPIED
+                insertedHint -> BubbleVisual.Description.INSERTED
+                else -> BubbleVisual.Description.IDLE
+            },
         )
         BubbleState.RECORDING -> BubbleVisual(
             fill = BubbleVisual.Fill.RECORDING,

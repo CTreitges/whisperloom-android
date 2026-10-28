@@ -73,14 +73,14 @@ class FloatingMicRefineTest {
 
     @Test fun tippInDerVerbesserungFuegtDenTextOhneKiEin() {
         diktierenBisZurVerbesserung()
-        assertEquals(app.getString(R.string.cd_bubble_refining), bubble.contentDescription)
+        assertEquals(app.getString(R.string.cd_bubble_refining), bubble.stateDescription?.toString())
         assertNull("noch nichts eingefuegt", clip())
 
         bubble.performClick()
         fixture.waitFor("Text ohne KI nicht eingefuegt") { clip() != null }
 
         assertEquals("Also hallo welt", clip())
-        assertEquals(app.getString(R.string.cd_bubble_idle), bubble.contentDescription)
+        assertEquals("Ohne Bedienungshilfe: kopiert", app.getString(R.string.cd_bubble_copied), bubble.stateDescription?.toString())
         fixture.waitFor("lokale Rechnung nicht abgebrochen") { fixture.made.single().cancels == 1 }
         assertEquals("cancelProcess, nie close mitten in der Rechnung", 0, fixture.made.single().closes)
     }

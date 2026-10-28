@@ -3,7 +3,6 @@ package com.chris.whisperloom.overlay
 import android.graphics.Color
 import android.graphics.Outline
 import android.graphics.Rect
-import android.os.Build
 import android.text.Spannable
 import android.text.SpannableString
 import android.text.style.ForegroundColorSpan
@@ -11,20 +10,21 @@ import android.view.View
 import android.view.ViewOutlineProvider
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.view.ViewCompat
 import com.chris.whisperloom.R
 import kotlin.math.roundToInt
 
 /**
  * Zeichnet eine [BubbleVisual] auf das Layout `floating_mic.xml` (UX-Spec §5.1/§5.4):
  * Fuellung (mit 200-ms-Crossfade), Ringe ([MicRings]), Icon ([MicIcon]), Label-Pille,
- * contentDescription. Kennt keine Zustandslogik — die bleibt im [FloatingMicService].
+ * stateDescription und Live-Region. Kennt keine Zustandslogik — die bleibt im [FloatingMicService].
  */
 class BubbleRenderer(root: View, private val reduceMotion: () -> Boolean) {
 
     /** 96-dp-Container (Puls-Ring, Zustandsring, Bogen, Knopf) — Bezugsrahmen fuer das Abbrechen-Ziel. */
     val frame: View = root.findViewById(R.id.bubble_frame)
 
-    /** Der 68-dp-Knopf: Touch-Ziel und einziges TalkBack-Element. */
+    /** Der 68-dp-Knopf: Touch-Ziel und einziges TalkBack-Element (Name fest `cd_bubble`, Layout). */
     val bubble: View = root.findViewById(R.id.bubble)
 
     private val ctx = root.context
@@ -69,20 +69,22 @@ class BubbleRenderer(root: View, private val reduceMotion: () -> Boolean) {
         }
         if (previous?.ring != visual.ring) rings.show(visual.ring)
         renderLabel(visual, elapsedMs)
+        // Erst die Live-Region, dann der Text: so wird der Wechsel noch angesagt.
+        announceAs(visual)
         describe(visual, elapsedMs)
     }
 
-    /** Sekundentakt waehrend der Aufnahme: Timer-Text, Blink-Punkt, contentDescription. */
+    /**
+     * Sekundentakt waehrend der Aufnahme: Timer-Text, Blink-Punkt, stateDescription. Ab der ersten
+     * vollen Sekunde schweigt die Live-Region — sonst laese TalkBack jede Sekunde in das eigene
+     * Diktat hinein (wie die Statuszeile der IME). Den Aufnahmestart hat sie davor noch gemeldet.
+     */
     fun updateTimer(elapsedMs: Long) {
         val visual = current ?: return
         if (visual.label != BubbleVisual.Label.TIMER) return
+        if (elapsedMs >= 1_000) bubble.accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_NONE
         label.text = timerSpan(elapsedMs)
         describe(visual, elapsedMs)
-    }
-
-    /** TalkBack: aktuellen Zustand ansagen (nur bei echtem Zustandswechsel aufrufen). */
-    fun announce() {
-        bubble.announceForAccessibility(bubble.contentDescription ?: return)
     }
 
     fun flashSuccess() = rings.flashSuccess()
@@ -91,9 +93,7 @@ class BubbleRenderer(root: View, private val reduceMotion: () -> Boolean) {
         if (!reduceMotion()) BubbleAnimators.shake(frame).start()
     }
 
-    fun haptic(kind: BubbleMotion.Haptic) {
-        bubble.performHapticFeedback(BubbleMotion.hapticConstant(kind, Build.VERSION.SDK_INT))
-    }
+    fun haptic(kind: BubbleMotion.Haptic) = BubbleAnimators.haptic(bubble, kind)
 
     /** Lage des 96-dp-Containers relativ zum Overlay-Fenster. */
     fun frameRect(): Rect = Rect(frame.left, frame.top, frame.right, frame.bottom)
@@ -145,6 +145,7 @@ class BubbleRenderer(root: View, private val reduceMotion: () -> Boolean) {
             BubbleVisual.Label.REFINING -> label.setText(R.string.float_refining)
             BubbleVisual.Label.RETRY_HINT -> label.setText(R.string.float_retry_hint)
             BubbleVisual.Label.COPIED -> label.setText(R.string.float_copied_short)
+            BubbleVisual.Label.INSERTED -> label.setText(R.string.float_inserted_short)
         }
         val error = visual.labelStyle == BubbleVisual.LabelStyle.ERROR
         label.setBackgroundResource(if (error) R.drawable.label_bg_error else R.drawable.label_bg)
@@ -172,15 +173,34 @@ class BubbleRenderer(root: View, private val reduceMotion: () -> Boolean) {
 
     // --- Barrierefreiheit -----------------------------------------------------
 
-    private fun describe(visual: BubbleVisual, elapsedMs: Long) {
-        bubble.contentDescription = when (visual.description) {
-            BubbleVisual.Description.IDLE -> ctx.getString(R.string.cd_bubble_idle)
-            BubbleVisual.Description.RECORDING ->
-                ctx.getString(R.string.cd_bubble_recording, BubbleUi.formatDuration(elapsedMs))
-            BubbleVisual.Description.SENDING -> ctx.getString(R.string.cd_bubble_sending)
-            BubbleVisual.Description.REFINING -> ctx.getString(R.string.cd_bubble_refining)
-            BubbleVisual.Description.ERROR -> ctx.getString(R.string.cd_bubble_error)
+    /**
+     * Ansage ohne das abgekuendigte `announceForAccessibility` (UX-Spec §6.20): Der Knopf ist eine
+     * Live-Region, im Fehler `assertive`. Sie meldet nur echte Wechsel, denn die stateDescription
+     * aendert sich nur dann — gleicher Text, kein Ereignis.
+     */
+    private fun announceAs(visual: BubbleVisual) {
+        bubble.accessibilityLiveRegion = if (visual.description == BubbleVisual.Description.ERROR) {
+            View.ACCESSIBILITY_LIVE_REGION_ASSERTIVE
+        } else {
+            View.ACCESSIBILITY_LIVE_REGION_POLITE
         }
+    }
+
+    /** Der Name bleibt "Mikrofon"; was gerade passiert und was ein Tipp tut, sagt die stateDescription. */
+    private fun describe(visual: BubbleVisual, elapsedMs: Long) {
+        ViewCompat.setStateDescription(
+            bubble,
+            when (visual.description) {
+                BubbleVisual.Description.IDLE -> ctx.getString(R.string.cd_bubble_idle)
+                BubbleVisual.Description.RECORDING ->
+                    ctx.getString(R.string.cd_bubble_recording, BubbleUi.formatDuration(elapsedMs))
+                BubbleVisual.Description.SENDING -> ctx.getString(R.string.cd_bubble_sending)
+                BubbleVisual.Description.REFINING -> ctx.getString(R.string.cd_bubble_refining)
+                BubbleVisual.Description.ERROR -> ctx.getString(R.string.cd_bubble_error)
+                BubbleVisual.Description.COPIED -> ctx.getString(R.string.cd_bubble_copied)
+                BubbleVisual.Description.INSERTED -> ctx.getString(R.string.cd_bubble_inserted)
+            },
+        )
     }
 
     companion object {

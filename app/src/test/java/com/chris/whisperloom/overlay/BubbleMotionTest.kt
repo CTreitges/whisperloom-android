@@ -4,6 +4,7 @@ import android.view.HapticFeedbackConstants
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -59,6 +60,37 @@ class BubbleMotionTest {
             HapticFeedbackConstants.CONTEXT_CLICK,
             BubbleMotion.hapticConstant(BubbleMotion.Haptic.CONTEXT_CLICK, 30),
         )
+    }
+
+    @Test fun erfolgAbApi34IstToggleOffEinmal() {
+        assertEquals(HapticFeedbackConstants.TOGGLE_OFF, BubbleMotion.hapticConstant(BubbleMotion.Haptic.SUCCESS, 34))
+        assertEquals(HapticFeedbackConstants.TOGGLE_OFF, BubbleMotion.hapticConstant(BubbleMotion.Haptic.SUCCESS, 36))
+        assertEquals(1, BubbleMotion.hapticPulses(BubbleMotion.Haptic.SUCCESS, 34))
+    }
+
+    @Test fun erfolgDarunterIstEinDoppelimpulsMit80Ms() {
+        assertEquals(HapticFeedbackConstants.KEYBOARD_TAP, BubbleMotion.hapticConstant(BubbleMotion.Haptic.SUCCESS, 33))
+        assertEquals(HapticFeedbackConstants.KEYBOARD_TAP, BubbleMotion.hapticConstant(BubbleMotion.Haptic.SUCCESS, 26))
+        assertEquals(2, BubbleMotion.hapticPulses(BubbleMotion.Haptic.SUCCESS, 33))
+        assertEquals(80L, BubbleMotion.SUCCESS_PULSE_GAP_MS)
+    }
+
+    @Test fun nurDerErfolgWirdGedoppelt() {
+        for (kind in listOf(BubbleMotion.Haptic.CONFIRM, BubbleMotion.Haptic.CONTEXT_CLICK, BubbleMotion.Haptic.REJECT)) {
+            for (sdk in listOf(26, 29, 30, 33, 34, 36)) assertEquals("$kind/$sdk", 1, BubbleMotion.hapticPulses(kind, sdk))
+        }
+    }
+
+    /** Der Erfolg muss sich von Start und Senden unterscheiden — als Konstante oder als Doppelimpuls. */
+    @Test fun erfolgFuehltSichAndersAnAlsStartUndSenden() {
+        for (sdk in listOf(26, 29, 30, 33, 34, 36)) {
+            val erfolg = BubbleMotion.hapticConstant(BubbleMotion.Haptic.SUCCESS, sdk) to
+                BubbleMotion.hapticPulses(BubbleMotion.Haptic.SUCCESS, sdk)
+            for (andere in listOf(BubbleMotion.Haptic.CONFIRM, BubbleMotion.Haptic.CONTEXT_CLICK)) {
+                val v = BubbleMotion.hapticConstant(andere, sdk) to BubbleMotion.hapticPulses(andere, sdk)
+                assertNotEquals("SUCCESS wie $andere bei API $sdk", v, erfolg)
+            }
+        }
     }
 
     @Test fun haptikFallbackVorApi30() {
