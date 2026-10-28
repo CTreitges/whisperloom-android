@@ -29,8 +29,9 @@ object ProviderCatalog {
             sttModels = listOf(
                 ModelOption(
                     "gpt-transcribe", "GPT Transcribe (empfohlen)",
-                    "\$0.0045/min. Nutzt languages[] statt language, kennt keywords[] + prompt.",
+                    "\$0.0045/min. Nutzt languages[] statt language (bei Deutsch + Englisch beide). Vokabular als prompt und keywords[].",
                     languageField = "languages[]",
+                    keywordsField = "keywords[]",
                 ),
                 ModelOption(
                     "gpt-4o-transcribe", "GPT-4o Transcribe (Auslauf 02/2027)",
@@ -123,10 +124,12 @@ object ProviderCatalog {
             keyUrl = "https://console.mistral.ai/api-keys",
             sttSendsPrompt = false,
             sttSendsResponseFormat = false,
+            sttBiasField = "context_bias",
             sttModels = listOf(
                 ModelOption(
                     "voxtral-mini-latest", "Voxtral Mini Transcribe 2",
-                    "\$0.003/min. 13 Sprachen inkl. Deutsch, bis 3 h. prompt/response_format nicht dokumentiert -> nicht senden.",
+                    "\$0.003/min. 13 Sprachen inkl. Deutsch, bis 3 h. prompt/response_format nicht dokumentiert -> nicht senden. " +
+                        "Vokabular als context_bias (bis 100 Wörter, für Deutsch experimentell).",
                 ),
             ),
             llmModels = listOf(
@@ -148,7 +151,10 @@ object ProviderCatalog {
                 ModelOption("scribe_v2", "Scribe v2", "\$0.22/h, 90+ Sprachen."),
                 ModelOption("scribe_v2_medical", "Scribe v2 Medical", "\$0.22/h. Für medizinische Diktate."),
             ),
-            notes = "Eigenes Protokoll (xi-api-key, model_id), nur Erkennung. Vokabular geht als keyterms (ca. +20 % Kosten).",
+            // Bewusst nicht gesendet (CTR-273): no_verbatim (Rohtext bleibt wortgetreu), temperature, seed,
+            // transcript_edit (+30 %), entity_*, detect_speaker_roles, use_multi_channel, webhook.
+            notes = "Eigenes Protokoll (xi-api-key, model_id), nur Erkennung. Vokabular geht als keyterms (ca. +20 % Kosten). " +
+                "Ohne Geräusch-Marken, Wort-Zeiten und Füllwort-Filter: der Rohtext bleibt wortgetreu.",
         ),
         Provider(
             id = "together",

@@ -52,8 +52,7 @@ class ApiTranscriber(
         val json = JSONObject(body)
         return TranscriptResult(
             text = json.optString("text", "").trim(),
-            // Nur verbose_json/eigene Server liefern die erkannte Sprache; sonst null.
-            detectedLanguage = json.optString("language", "").takeIf { it.isNotBlank() },
+            detectedLanguage = TranscriptionRequest.detectedLanguage(json),
         )
     }
 

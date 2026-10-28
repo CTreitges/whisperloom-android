@@ -703,6 +703,16 @@ class TranscriptionEngineTest {
         assertFalse(sttBody.contains("name=\"language\""))
     }
 
+    /** gpt-transcribe meldet `languages: [{code}]` (CTR-273, 273-1) — sonst bliebe die Sprache "auto". */
+    @Test fun autoSpracheAusDerListeVonGptTranscribe() {
+        useLocalServer()
+        prefs.language = "auto"
+        sttResponse = """{"text":"i um think so","languages":[{"code":"en"}]}"""
+        val dictation = TranscriptionEngine.transcribe(ctx, speech)
+        assertEquals("en", dictation.language)
+        assertEquals("I think so", dictation.text)
+    }
+
     @Test fun leereAntwortBleibtLeer() {
         useLocalServer()
         sttResponse = """{"text":"   "}"""
@@ -714,6 +724,20 @@ class TranscriptionEngineTest {
         assertEquals("en", TranscriptionEngine.effectiveLanguage("auto", "en"))
         assertEquals("auto", TranscriptionEngine.effectiveLanguage("auto", null))
         assertEquals("auto", TranscriptionEngine.effectiveLanguage("auto", " "))
+    }
+
+    /** "Deutsch + Englisch" (CTR-273): wie auto, ohne erkannte Sprache aber Deutsch statt "de+en". */
+    @Test fun effektiveSpracheBeiDeutschUndEnglisch() {
+        assertEquals("de", TranscriptionEngine.effectiveLanguage("de+en", null))
+        assertEquals("de", TranscriptionEngine.effectiveLanguage("de+en", ""))
+        assertEquals("en", TranscriptionEngine.effectiveLanguage("de+en", "en"))
+        assertEquals("de", TranscriptionEngine.effectiveLanguage("de+en", "de"))
+    }
+
+    @Test fun offlineErkenntDeutschUndEnglischSelbst() {
+        assertEquals("auto", OfflineBackend.whisperLanguage("de+en"))
+        assertEquals("de", OfflineBackend.whisperLanguage("de"))
+        assertEquals("auto", OfflineBackend.whisperLanguage("auto"))
     }
 
     // --- "wie Erkennung" bei Together/DeepInfra (Review 3.8.0) -----------------------------

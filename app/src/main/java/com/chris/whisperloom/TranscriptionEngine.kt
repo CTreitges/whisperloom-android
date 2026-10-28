@@ -97,9 +97,17 @@ object TranscriptionEngine {
         }
     }
 
-    /** Bei "auto" die vom Erkenner gemeldete Sprache nehmen — sonst bleibt "auto". */
-    internal fun effectiveLanguage(configured: String, detected: String?): String =
-        if (configured == "auto" && !detected.isNullOrBlank()) detected else configured
+    /**
+     * Bei "auto" die vom Erkenner gemeldete Sprache nehmen — sonst bleibt "auto". Bei "Deutsch +
+     * Englisch" ebenso, ohne gemeldete Sprache aber Deutsch: Fuellwoerter und Prompt der
+     * Textverbesserung kennen nur einen Code.
+     */
+    internal fun effectiveLanguage(configured: String, detected: String?): String = when {
+        configured != "auto" && configured != Prefs.LANG_DE_EN -> configured
+        !detected.isNullOrBlank() -> detected
+        configured == Prefs.LANG_DE_EN -> "de"
+        else -> configured
+    }
 
     /**
      * @param skip Ausweg waehrend der Textverbesserung: [RefineSkip.skip] liefert sofort den Text

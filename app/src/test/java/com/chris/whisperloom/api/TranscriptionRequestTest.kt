@@ -18,10 +18,74 @@ class TranscriptionRequestTest {
 
     @Test fun gptTranscribeSendetLanguagesArray() {
         val f = TranscriptionRequest.fields(stt("openai", "gpt-transcribe"), "de", "Namen: Chris")
-        assertEquals(listOf("model", "response_format", "languages[]", "prompt"), names(f))
+        // CTR-273: das Vokabular geht zusaetzlich als keywords[] raus.
+        assertEquals(listOf("model", "response_format", "languages[]", "prompt", "keywords[]"), names(f))
         assertTrue(f.contains("languages[]" to "de"))
         assertTrue(f.contains("prompt" to "Namen: Chris"))
+        assertTrue(f.contains("keywords[]" to "Namen: Chris"))
         assertFalse(names(f).contains("language"))
+    }
+
+    // --- Vokabular als Wortliste (CTR-273, F5/F6) ----------------------------------------
+
+    @Test fun gptTranscribeBekommtPromptUndKeywords() {
+        val f = TranscriptionRequest.fields(stt("openai", "gpt-transcribe"), "auto", "Treitges, WhisperLoom, Voice Command")
+        assertEquals(
+            listOf(
+                "model" to "gpt-transcribe",
+                "response_format" to "json",
+                "prompt" to "Treitges, WhisperLoom, Voice Command",
+                "keywords[]" to "Treitges",
+                "keywords[]" to "WhisperLoom",
+                "keywords[]" to "Voice Command",
+            ),
+            f,
+        )
+    }
+
+    /** Ein Begriff mit < oder > liesse OpenAI die ganze Anfrage ablehnen — er faellt weg, prompt bleibt. */
+    @Test fun keywordMitSpitzerKlammerFaelltWeg() {
+        val f = TranscriptionRequest.fields(stt("openai", "gpt-transcribe"), "de", "<b>Chris</b>, Anna, a>b, Satz am Ende.")
+        assertEquals(listOf("Anna"), f.filter { it.first == "keywords[]" }.map { it.second })
+        assertTrue(f.contains("prompt" to "<b>Chris</b>, Anna, a>b, Satz am Ende."))
+    }
+
+    @Test fun andereOpenAiModelleOhneKeywords() {
+        for (model in listOf("gpt-4o-transcribe", "gpt-4o-mini-transcribe", "whisper-1")) {
+            assertFalse(model, names(TranscriptionRequest.fields(stt("openai", model), "de", "Chris")).contains("keywords[]"))
+        }
+        assertFalse(names(TranscriptionRequest.fields(stt("groq"), "de", "Chris")).contains("keywords[]"))
+    }
+
+    @Test fun mistralBekommtVokabularAlsContextBiasOhnePrompt() {
+        val f = TranscriptionRequest.fields(stt("mistral"), "de", "Treitges, WhisperLoom")
+        assertEquals(
+            listOf("model" to "voxtral-mini-latest", "language" to "de", "context_bias" to "Treitges", "context_bias" to "WhisperLoom"),
+            f,
+        )
+    }
+
+    /** Mistral-Pattern `^[^,\s]+$`: mehrteilige Begriffe werden mit _ verbunden (Doku: affordable_health_care). */
+    @Test fun contextBiasOhneLeerzeichen() {
+        val bias = TranscriptionRequest.contextBias("Christof  Treitges, Claude Code, Pro\tWidget")
+        assertEquals(listOf("Christof_Treitges", "Claude_Code", "Pro_Widget"), bias)
+        val pattern = Regex("^[^,\\s]+$")
+        assertTrue(bias.all { pattern.matches(it) })
+    }
+
+    @Test fun contextBiasHoechstensHundertUndDieLetztenGewinnen() {
+        val prompt = (1..130).joinToString(", ") { "w$it" }
+        val bias = TranscriptionRequest.contextBias(prompt)
+        assertEquals(100, bias.size)
+        assertEquals("w31", bias.first())
+        assertEquals("w130", bias.last())
+    }
+
+    @Test fun ohneVokabularKeineWortlisten() {
+        assertFalse(names(TranscriptionRequest.fields(stt("mistral"), "de", "  ")).contains("context_bias"))
+        assertFalse(names(TranscriptionRequest.fields(stt("openai", "gpt-transcribe"), "de", "")).contains("keywords[]"))
+        // OpenRouter (auch Voxtral) kennt context_bias nicht.
+        assertFalse(names(TranscriptionRequest.fields(stt("openrouter"), "de", "Chris")).contains("context_bias"))
     }
 
     @Test fun altesOpenAiModellSendetLanguage() {
@@ -37,7 +101,8 @@ class TranscriptionRequestTest {
 
     @Test fun mistralBekommtWederPromptNochResponseFormat() {
         val f = TranscriptionRequest.fields(stt("mistral"), "de", "ctx")
-        assertEquals(listOf("model" to "voxtral-mini-latest", "language" to "de"), f)
+        // CTR-273: das Vokabular kommt als context_bias statt als prompt an.
+        assertEquals(listOf("model" to "voxtral-mini-latest", "language" to "de", "context_bias" to "ctx"), f)
     }
 
     @Test fun openRouterBekommtKeinenPrompt() {
@@ -48,6 +113,24 @@ class TranscriptionRequestTest {
     @Test fun autoLaesstDieSpracheWeg() {
         assertFalse(names(TranscriptionRequest.fields(stt("openai", "gpt-transcribe"), "auto", "")).any { it.startsWith("language") })
         assertFalse(names(TranscriptionRequest.fields(stt("groq"), "", "")).contains("language"))
+    }
+
+    // --- "Deutsch + Englisch" (CTR-273, F3) -----------------------------------------------
+
+    @Test fun deutschUndEnglischGehtAnGptTranscribeAlsZweiSprachen() {
+        val f = TranscriptionRequest.fields(stt("openai", "gpt-transcribe"), "de+en", "")
+        assertEquals(
+            listOf("model" to "gpt-transcribe", "response_format" to "json", "languages[]" to "de", "languages[]" to "en"),
+            f,
+        )
+    }
+
+    @Test fun deutschUndEnglischOhneSprachfeldBeiEinemCode() {
+        // whisper-1, Groq, Mistral, eigener Server kennen nur einen Code -> der Anbieter erkennt selbst.
+        for (access in listOf(stt("openai", "whisper-1"), stt("groq"), stt("mistral"), stt("custom", "m", "http://s:8000/v1"))) {
+            val f = names(TranscriptionRequest.fields(access, "de+en", ""))
+            assertFalse("${access.provider.id}: $f", f.any { it.startsWith("language") })
+        }
     }
 
     @Test fun leererPromptWirdNichtGesendet() {
