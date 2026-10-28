@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Eigenes Symbol fuer WhisperLoom Simple (Konzept §11.1, R2): gleiches Mikrofon-Motiv, aber blauer
+     Hintergrund statt des Petrol der Haupt-App, damit beide Apps nebeneinander unterscheidbar sind. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#1F4E8C"
+        android:pathData="M0,0 H108 V108 H0 Z" />
+    <path android:pathData="M0,0 H108 V108 H0 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="54"
+                android:centerY="48"
+                android:gradientRadius="64">
+                <item android:offset="0" android:color="#2A63AD" />
+                <item android:offset="1" android:color="#1F4E8C" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>

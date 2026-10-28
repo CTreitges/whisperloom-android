@@ -14,6 +14,10 @@ val skipNative = providers.gradleProperty("whisperloom.skipNative").isPresent
 // beim bundleRelease. namespace (R-/BuildConfig-Paket, Kotlin-Pakete) bleibt unveraendert.
 val appId = providers.gradleProperty("whisperloom.applicationId").orNull ?: "com.chris.whisperloom"
 
+// Flavor "simple" (WhisperLoom Simple, Konzept §11.1/§11.6): eigener Keystore, NIE der Release-Schluessel der
+// Haupt-App. Fehlt er, bleibt das Simple-Release unsigniert — auch in der CI, solange das Secret fehlt.
+val simpleKeystore: File = file(System.getenv("SIMPLE_KEYSTORE") ?: "keystore/whisperloom-simple.p12")
+
 android {
     namespace = "com.chris.whisperloom"
     // Compose 1.12 (BOM 2026.08.00) verlangt compileSdk 37 + AGP >= 9.2.0:
@@ -95,6 +99,41 @@ android {
                     ?: System.getenv("WHISPERLOOM_KEYSTORE_PASSWORD") ?: ""
             }
         }
+        create("simple") {
+            if (simpleKeystore.exists()) {
+                storeFile = simpleKeystore
+                storeType = "PKCS12"
+                storePassword = System.getenv("SIMPLE_KEYSTORE_PASSWORD") ?: ""
+                keyAlias = System.getenv("SIMPLE_KEY_ALIAS") ?: "simple"
+                keyPassword = System.getenv("SIMPLE_KEY_PASSWORD")
+                    ?: System.getenv("SIMPLE_KEYSTORE_PASSWORD") ?: ""
+            }
+        }
+    }
+
+    // Zwei Editionen (Konzept §11.1): "voll" = die bisherige App, unveraendert (Paket-ID aus der Property);
+    // "simple" = WhisperLoom Simple mit FESTER Paket-ID, unabhaengig von whisperloom.applicationId, denn der
+    // Paketname wird registriert und ist nach der ersten Installation nicht mehr aenderbar. Eigene
+    // versionCode-Folge (eigenes Paket, eigene Signatur). Der Schnitt passiert in src/simple/AndroidManifest.xml.
+    // Context7: Android Gradle Plugin (developer.android.com/build) — Product Flavors, Manifest-Merge.
+    // Signatur je Flavor statt am Release-buildType: der buildType wuerde fuer beide Flavors gelten, simple braucht
+    // aber einen eigenen Schluessel (E4) und bleibt ohne ihn unsigniert. Debug ist davon unberuehrt — der
+    // debug-buildType hat seinen eigenen Debug-Schluessel, und der buildType geht vor dem Flavor.
+    flavorDimensions += "edition"
+    productFlavors {
+        create("voll") {
+            dimension = "edition"
+            if (file(System.getenv("WHISPERLOOM_KEYSTORE") ?: "keystore/whisperloom-release.p12").exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
+        create("simple") {
+            dimension = "edition"
+            applicationId = "com.chris.whisperloom.simple"
+            versionCode = 1
+            versionName = "0.1.0"
+            if (simpleKeystore.exists()) signingConfig = signingConfigs.getByName("simple")
+        }
     }
 
     buildTypes {
@@ -115,8 +154,7 @@ android {
             // https://developer.android.com/build/shrink-code
             isMinifyEnabled = true
             isShrinkResources = true
-            val ks = file(System.getenv("WHISPERLOOM_KEYSTORE") ?: "keystore/whisperloom-release.p12")
-            if (ks.exists()) signingConfig = signingConfigs.getByName("release")
+            // signingConfig steht am Flavor (siehe productFlavors), nicht hier.
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -141,6 +179,19 @@ android {
         unitTests {
             // Pflicht fuer Robolectric (Themes, Strings, ui-test-manifest-Activity).
             isIncludeAndroidResources = true
+        }
+    }
+}
+
+// src/test sind die Tests der Haupt-App (voll): sie setzen deren Manifest, Application, Versionsnummer und
+// Patchnotes voraus und laufen unter testVollDebugUnitTest. Unter simple laufen die Tests der Simple-APK
+// (Paket com.chris.whisperloom.simple, src/testSimple) und der Paket-ID-Test. Der geteilte Code in src/main ist
+// fuer beide Flavors derselbe Bytecode — seine Tests einmal (voll) zu fahren reicht.
+tasks.withType<Test>().configureEach {
+    if (name.startsWith("testSimple")) {
+        filter {
+            includeTestsMatching("com.chris.whisperloom.simple.*")
+            includeTestsMatching("com.chris.whisperloom.ApplicationIdTest")
         }
     }
 }
@@ -206,6 +257,12 @@ abstract class CopyPresetAsset : DefaultTask() {
 
 androidComponents {
     onVariants { variant ->
+        if (variant.flavorName == "simple") {
+            // Keine Native-Bibliotheken in der Simple-APK (Konzept §11.1): weder whisper.cpp noch die .so aus
+            // LiteRT-LM/Compose-Graphics — die Simple-Oberflaeche nutzt beides nicht. Der CMake-Build laeuft in der
+            // CI zwar mit (AGP kennt kein Abschalten je Flavor), das Ergebnis landet aber nicht im Paket.
+            variant.packaging.jniLibs.excludes.add("**/*.so")
+        }
         if (presetFile != null) {
             val copyPreset = tasks.register<CopyPresetAsset>(
                 "copy${variant.name.replaceFirstChar { it.uppercase() }}PresetAsset",
@@ -257,6 +314,12 @@ dependencies {
     // bewusst nicht doppelt deklariert.
     // Bewusst NICHT: material-icons-core/-extended (35,7 MB AAR, von Google nicht mehr empfohlen),
     // navigation-compose (State-Navigation reicht fuer ~6 Screens). Icons als eigene res/drawable/ic_*.xml.
+
+    // Nur Simple: WebSocket fuer die Echtzeit-Erkennung (Konzept §6, §7.1). Die Haupt-App bleibt ohne
+    // HTTP-Bibliothek (api/Http.kt). Context7: OkHttp (square.github.io/okhttp) — newWebSocket/WebSocketListener,
+    // MockWebServer mit WebSocket-Upgrade fuer die Tests. 4.12.0 = letzte 4.x (stabile API, minSdk 21).
+    "simpleImplementation"("com.squareup.okhttp3:okhttp:4.12.0")
+    "testSimpleImplementation"("com.squareup.okhttp3:mockwebserver:4.12.0")
 
     // Tests
     testImplementation("junit:junit:4.13.2")
