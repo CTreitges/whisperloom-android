@@ -4,9 +4,11 @@ Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](ht
 
 ## [Unreleased]
 
+## [3.10.0] — 2026-10-28
+
 ### Geändert
 
-- **Einstellungen neu geordnet (Prototyp UI-Neuaufbau).** Der Hub hat drei Gruppen statt sechs: **Sprache & Text** (Spracherkennung, Textverbesserung, Wörterbuch & Regeln), **Bedienung** (Knopf & Tastatur, Widgets) und **Weiteres** (Verlauf, Pro-Funktionen, Anleitung & Hilfe, Über WhisperLoom). Die Ein-Zeilen-Gruppen Verlauf und Pro entfallen. Was wohin umgezogen ist:
+- **Einstellungen neu geordnet.** Der Hub hat drei Gruppen statt sechs: **Sprache & Text** (Spracherkennung, Textverbesserung, Wörterbuch & Regeln), **Bedienung** (Knopf & Tastatur, Widgets) und **Weiteres** (Verlauf, Pro-Funktionen, Anleitung & Hilfe, Über WhisperLoom). Die Ein-Zeilen-Gruppen Verlauf und Pro entfallen. Was wohin umgezogen ist:
   - **KI-Zugang** ist keine Zeile der Einstellungen mehr, sondern steht in der **Textverbesserung** in der neuen Karte **Zugang & Modelle** (Unterzeile wie bisher, etwa „Wie Erkennung · OpenAI · Empfehlung je Stufe“). Die Seite selbst ist unverändert; der Tastatur-Hinweis „KI-Zugang fehlt“ führt weiter direkt hin, Zurück landet in der Textverbesserung.
   - **Offline-Modelle** gibt es als Seite nicht mehr. Die Whisper-Modelle stehen unter **Spracherkennung**, sobald oben „Offline-Modell“ gewählt ist (Laden, Auswahl, Löschen, Speicherzeile, Leerzustand „Noch kein Modell geladen“); der zweite Umschalter Online/Offline und die Warnkarte „Kein Modell geladen“ entfallen. Die Textmodelle und die Regel „Textverbesserung bei Offline-Erkennung“ stehen auf der neuen Unterseite **Offline-Textverbesserung** (Textverbesserung → Zugang & Modelle → **Bei Offline-Erkennung**); das Home-Banner und der Tastatur-Hinweis „Offline ohne Textmodell“ führen dorthin.
   - **Erweitert** heißt **Pro-Funktionen** (Karte **Freischalten** mit den drei Schaltern) und steht unter Weiteres; alle Hinweise in der App und im Pro-Widgets-Tutorial nennen den neuen Namen.

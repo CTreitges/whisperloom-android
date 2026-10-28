@@ -1,0 +1,6 @@
+WhisperLoom 3.10.0
+• Changed: three groups instead of six – Speech & Text, Controls, More
+• Changed: AI access and offline text refinement are sub-pages of Text refinement (card “Access & Models”)
+• Changed: offline models live in Speech recognition as soon as “Offline model” is selected
+• Changed: “Advanced” is now Pro features; the Widgets row appears only with Pro Widgets
+• Changed: home screen with four status rows, speech recognition names the loaded offline model
