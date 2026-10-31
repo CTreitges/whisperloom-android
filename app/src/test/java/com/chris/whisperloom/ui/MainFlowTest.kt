@@ -1039,14 +1039,14 @@ class MainFlowTest {
         assertEquals(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS, shadowOf(ctx as Application).nextStartedActivity?.action)
     }
 
-    @Test fun hubZeigtAchtZeilenInDreiGruppen() {
+    @Test fun hubZeigtNeunZeilenInDreiGruppen() {
         // Neuaufbau: Sprache & Text, Bedienung, Weiteres — in genau dieser Reihenfolge, ohne Ein-Zeilen-Gruppen.
         prefs.engine = Engine.ONLINE
         screen(env()) { SettingsHubScreen(it) }
         val reihenfolge = listOf(
             "SPRACHE & TEXT", "Spracherkennung", "Textverbesserung", "Wörterbuch & Regeln",
             "BEDIENUNG", "Knopf & Tastatur",
-            "WEITERES", "Verlauf", "Pro-Funktionen", "Anleitung & Hilfe", "Über WhisperLoom",
+            "WEITERES", "Verlauf", "Einstellungen übertragen", "Pro-Funktionen", "Anleitung & Hilfe", "Über WhisperLoom",
         )
         val oben = reihenfolge.map { compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
         assertEquals("Von oben nach unten: $reihenfolge", oben.sorted(), oben)
@@ -1072,13 +1072,16 @@ class MainFlowTest {
         screen(env()) { SettingsHubScreen(it) }
         val zeilen = listOf(
             "Spracherkennung", "Textverbesserung", "Wörterbuch & Regeln", "Knopf & Tastatur",
-            "Verlauf", "Pro-Funktionen", "Anleitung & Hilfe", "Über WhisperLoom",
+            "Verlauf", "Einstellungen übertragen", "Pro-Funktionen", "Anleitung & Hilfe", "Über WhisperLoom",
         ).map { it to compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
         // Jeder Trenner gehoert zur naechsthoeheren Zeile ueber ihm.
         val mitTrenner = compose.onAllNodesWithTag(HUB_DIVIDER_TAG).fetchSemanticsNodes().map { trenner ->
             zeilen.filter { it.second < trenner.boundsInRoot.top }.maxBy { it.second }.first
         }
-        assertEquals(listOf("Spracherkennung", "Textverbesserung", "Verlauf", "Pro-Funktionen", "Anleitung & Hilfe"), mitTrenner)
+        assertEquals(
+            listOf("Spracherkennung", "Textverbesserung", "Verlauf", "Einstellungen übertragen", "Pro-Funktionen", "Anleitung & Hilfe"),
+            mitTrenner,
+        )
     }
 
     @Test fun mitProWidgetsBekommtKnopfUndTastaturEinenTrenner() {

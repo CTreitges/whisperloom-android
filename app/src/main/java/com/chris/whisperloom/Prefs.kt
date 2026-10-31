@@ -402,6 +402,16 @@ class Prefs(context: Context) {
             sp.edit { putInt(KEY_HISTORY_SIZE, v) }
         }
 
+    // --- Einstellungs-Sync (Format v1 mit WhisperLoom Desktop) ----------------
+
+    /**
+     * Was der letzte Import mitbrachte, Android aber nicht selbst fuehrt (Abschnitt `desktop`, unbekannte
+     * Felder), als JSON-Objekt fuer den Re-Export; "" = nichts. Siehe [com.chris.whisperloom.sync.SyncTree].
+     */
+    var syncCarry: String
+        get() = sp.getString(KEY_SYNC_CARRY, "") ?: ""
+        set(v) = sp.edit { putString(KEY_SYNC_CARRY, v) }
+
     // --- Pro-Funktionen ("Erweitert") ----------------------------------------
 
     /** Default aus: wer eine Pro-Funktion nicht nutzt, soll sie nirgends bemerken. */
@@ -554,6 +564,7 @@ class Prefs(context: Context) {
         private const val KEY_FLOAT_Y = "float_y"
         private const val KEY_HISTORY_ENABLED = "history_enabled"
         private const val KEY_HISTORY_SIZE = "history_size"
+        private const val KEY_SYNC_CARRY = "sync_carry"
 
         /** Datei der Einstellungen (`shared_prefs/whisperloom.xml`). */
         const val FILE = "whisperloom"
