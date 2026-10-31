@@ -39,7 +39,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
-import java.io.IOException
 
 /**
  * Einstellungen uebertragen (WLD-P5c): Export und Import im Format v1 von WhisperLoom Desktop ueber das
@@ -153,18 +152,17 @@ private fun readText(ctx: Context, uri: Uri): String? = try {
         }
         if (out.size() > SettingsSync.MAX_FILE_BYTES) null else out.toString(Charsets.UTF_8.name())
     }
-} catch (_: IOException) {
-    null
-} catch (_: SecurityException) {
+} catch (_: Exception) {
+    // IOException, SecurityException, aber auch IllegalArgumentException/UnsupportedOperationException
+    // mancher DocumentsProvider: Meldung statt Absturz.
     null
 }
 
 private fun writeText(ctx: Context, uri: Uri, text: String): Boolean = try {
     // "wt": eine vorhandene Datei wird ersetzt, nicht nur ueberschrieben (Rest der alten bliebe sonst stehen).
     ctx.contentResolver.openOutputStream(uri, "wt")?.use { it.write(text.toByteArray(Charsets.UTF_8)) } != null
-} catch (_: IOException) {
-    false
-} catch (_: SecurityException) {
+} catch (_: Exception) {
+    // wie readText: auch "wt" nicht unterstuetzt (IllegalArgumentException) wird zur Meldung.
     false
 }
 

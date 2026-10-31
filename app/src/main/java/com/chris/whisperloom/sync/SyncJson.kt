@@ -18,12 +18,35 @@ internal object SyncJson {
     fun parseObject(text: String): JSONObject {
         val value = try {
             val tokener = JSONTokener(stripCommentsAndTrailingCommas(text))
-            tokener.nextValue().also { if (tokener.nextClean() != '\u0000') throw JSONException("Text nach dem Ende") }
+            tokener.nextValue().also {
+                if (tokener.nextClean() != '\u0000') throw JSONException("Text nach dem Ende")
+                checkTree(it, 0)
+            }
         } catch (_: JSONException) {
             // Nicht die Meldung von org.json: sie enthaelt den ganzen Text, also womoeglich Keys.
             throw SyncFormatException("Kein gültiges JSON.")
+        } catch (_: StackOverflowError) {
+            // org.json liest rekursiv: "[[[[…" ueber viele tausend Ebenen.
+            throw SyncFormatException("Kein gültiges JSON.")
         }
         return value as? JSONObject ?: throw SyncFormatException("Die Datei muss ein JSON-Objekt sein.")
+    }
+
+    /** Tiefe wie System.Text.Json auf dem Desktop (MaxDepth 64). */
+    private const val MAX_DEPTH = 64
+
+    /**
+     * org.json auf Android macht aus `[1,,2]` ein Java-null im Array, an dem spaeter jedes `get` scheitert —
+     * also schon hier ablehnen, ebenso zu tiefe Verschachtelung (rekursives Kopieren und Schreiben).
+     */
+    private fun checkTree(value: Any?, depth: Int) {
+        if (depth > MAX_DEPTH) throw JSONException("zu tief")
+        when (value) {
+            is JSONObject -> value.keys().forEach { checkTree(value.opt(it), depth + 1) }
+            is JSONArray -> for (i in 0 until value.length()) {
+                checkTree(value.opt(i) ?: throw JSONException("Lücke in Liste"), depth + 1)
+            }
+        }
     }
 
     /**

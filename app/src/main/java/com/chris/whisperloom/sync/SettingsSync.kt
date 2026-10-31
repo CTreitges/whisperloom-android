@@ -39,6 +39,7 @@ object SettingsSync {
         } catch (e: SyncFormatException) {
             return ImportPreview(listOf(e.message.orEmpty()), emptyList(), emptyList(), null)
         }
+        provisioningError(incoming)?.let { return ImportPreview(listOf(it), emptyList(), emptyList(), null) }
         val warnings = mutableListOf<String>()
         if (incoming.has(SyncTree.SECRETS) || incoming.has(SyncTree.POLICY)) {
             warnings += "Keys und Richtlinie (secrets, policy) gelten nur für WhisperLoom Desktop und werden hier ignoriert."
@@ -73,7 +74,7 @@ object SettingsSync {
      */
     private fun migrate(root: JSONObject) {
         val version = when (val v = root.opt(SyncTree.SCHEMA_VERSION)) {
-            null -> 0
+            null, JSONObject.NULL -> 0
             is Int -> v.takeIf { it >= 0 }
             else -> null
         } ?: throw SyncFormatException("schemaVersion muss eine ganze Zahl ≥ 0 sein.")
@@ -88,6 +89,23 @@ object SettingsSync {
                 root.optJSONObject(section)?.let { if (it.opt("stage") == "paragraphs") it.put("stage", "polish") }
             }
         }
+    }
+
+    /**
+     * Android uebernimmt `secrets`/`policy` nicht, prueft ihre Form aber wie `SyncDocument` auf dem Desktop: eine
+     * Datei ist auf beiden Seiten gueltig oder auf beiden ungueltig. Meldungen ohne Werte (Keys!).
+     */
+    private fun provisioningError(root: JSONObject): String? {
+        root.opt(SyncTree.SECRETS)?.let { secrets ->
+            if (secrets !is JSONObject) return "secrets muss ein Objekt sein (Anbieter → Key)."
+            for (name in secrets.keys()) {
+                val key = secrets.get(name) as? String
+                if (key.isNullOrBlank()) return "secrets.$name muss ein nicht leerer Text sein."
+                if (key.trim().any { it.isWhitespace() }) return "secrets.$name enthält Leerraum."
+            }
+        }
+        root.opt(SyncTree.POLICY)?.let { if (it !is JSONObject) return "policy muss ein Objekt sein." }
+        return null
     }
 
     private fun changes(before: JSONObject, after: JSONObject): List<String> {

@@ -101,7 +101,9 @@ internal data class SyncSettings(
      */
     fun writeTo(context: Context, prefs: Prefs) {
         prefs.language = language
-        prefs.engine = Engine.fromKey(engine)
+        // null = "noch nicht gewaehlt": steht in jedem Desktop-Export, der die Erkennung nie umgestellt hat. Es
+        // setzt eine getroffene Wahl nicht zurueck — sonst stuende auf dem Telefon wieder die Einrichtung an.
+        Engine.fromKey(engine)?.let { prefs.engine = it }
         prefs.sttProviderId = stt.providerId
         prefs.apiBaseUrl = stt.baseUrl
         prefs.apiModel = stt.model
@@ -214,10 +216,12 @@ internal data class SyncSettings(
         }
 
         private fun url(errors: MutableList<String>, path: String, url: String) {
-            if (url.isEmpty()) return
+            // Gekuerzt und Schema ohne Gross-/Kleinschreibung wie zur Laufzeit (ServerUrlCheck) und auf dem Desktop
+            // (System.Uri) — sonst liesse sich der eigene Export mit "https://x/v1 " nicht wieder importieren.
+            if (url.isBlank()) return
             val ok = try {
-                val u = URI(url)
-                u.isAbsolute && u.scheme in setOf("http", "https") && !u.host.isNullOrEmpty()
+                val u = URI(url.trim())
+                u.isAbsolute && u.scheme.lowercase() in setOf("http", "https") && !u.host.isNullOrEmpty()
             } catch (_: URISyntaxException) {
                 false
             }

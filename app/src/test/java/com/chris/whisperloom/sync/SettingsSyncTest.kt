@@ -265,6 +265,61 @@ class SettingsSyncTest {
         assertEquals(PolishCleanup.READABLE, prefs.polishCleanupFor(RefineWay.DICTATION))
     }
 
+    // --- Review-Befunde --------------------------------------------------------------------------
+
+    @Test fun luekenInListenUndTiefeVerschachtelungSindFehlerKeinAbsturz() {
+        val prefs = Prefs(ctx)
+        val before = SettingsSync.export(prefs)
+        listOf(
+            """{"polish": {"customFillers": ["a",,"b"]}}""",
+            """{"futureField": [,"a"]}""",
+            """{"desktop": {"x": [1,,]}}""",
+            "{\"x\": " + "[".repeat(5000) + "]".repeat(5000) + "}",
+            "{\"x\": " + "[".repeat(100) + "]".repeat(100) + "}",
+        ).forEach { json ->
+            val preview = SettingsSync.preview(prefs, json)
+            assertFalse(json.take(40), preview.canApply)
+            assertTrue(preview.errors.toString(), preview.errors.single().startsWith("Kein gültiges JSON"))
+        }
+        assertEquals(before, SettingsSync.export(prefs))
+    }
+
+    @Test fun engineNullAusDemDesktopLaesstDieWahlDesGeraetsStehen() {
+        val prefs = Prefs(ctx)
+        prefs.engine = Engine.OFFLINE
+        importOk(prefs, """{"schemaVersion": 1, "engine": null, "language": "en"}""")
+        assertEquals(Engine.OFFLINE, prefs.engine)
+        assertEquals("en", prefs.language)
+    }
+
+    @Test fun urlMitLeerraumOderGrossemSchemaIstGueltigWieZurLaufzeit() {
+        val prefs = Prefs(ctx)
+        prefs.sttProviderId = "custom"
+        prefs.apiBaseUrl = "https://whisper.example.org/v1 "
+        prefs.llmUrl = "HTTPS://llm.example.org/v1"
+        val preview = SettingsSync.preview(Prefs(ctx), SettingsSync.export(prefs))
+        assertEquals(emptyList<String>(), preview.errors)
+    }
+
+    @Test fun schemaVersionNullGiltAlsSchemaNullWieAufDemDesktop() {
+        val prefs = Prefs(ctx)
+        importOk(prefs, """{"schemaVersion": null, "refine": {"stage": "paragraphs"}}""")
+        assertEquals(RefineMode.POLISH, prefs.refineMode)
+    }
+
+    @Test fun kaputteSecretsOderPolicyLehntAndroidAbWieDerDesktop() {
+        mapOf(
+            """{"secrets": 5}""" to "secrets muss ein Objekt sein",
+            """{"secrets": {"groq": 1}}""" to "secrets.groq muss ein nicht leerer Text sein",
+            """{"secrets": {"groq": "  "}}""" to "secrets.groq muss ein nicht leerer Text sein",
+            """{"policy": []}""" to "policy muss ein Objekt sein",
+        ).forEach { (json, message) ->
+            val preview = SettingsSync.preview(Prefs(ctx), json)
+            assertFalse(json, preview.canApply)
+            assertTrue("$json -> ${preview.errors}", preview.errors.single().startsWith(message))
+        }
+    }
+
     // --- Hilfen ---------------------------------------------------------------------------------
 
     /** Vergleichbarer Text: Schluessel sortiert, die Fuellwort-Listen als Menge. */
