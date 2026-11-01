@@ -34,13 +34,18 @@ internal class RefinePlan(
      * rechnet er — vor der lokalen Ausweichloesung. null = keiner.
      */
     @Volatile private var fallback: ApiAccess? = null,
+    /**
+     * Kein Netz fuer [access], aber fuer den [fallback] (CTR-248: kein Internet, Fallback im eigenen
+     * Netz): der erste Zugang wird gar nicht erst versucht, die Anfrage geht gleich an den Fallback.
+     */
+    primaryUnreachable: Boolean = false,
 ) {
 
     /** Einmal online gescheitert: weitere Stuecke (geteilte Audios) gleich lokal statt wieder in den Timeout. */
     @Volatile private var onlineFailed = false
 
-    /** Der erste Zugang ist gescheitert: weitere Stuecke gehen gleich an den [fallback]. */
-    @Volatile private var primaryFailed = false
+    /** Der erste Zugang ist gescheitert (oder ohne Netz): weitere Stuecke gehen gleich an den [fallback]. */
+    @Volatile private var primaryFailed = primaryUnreachable && fallback != null
 
     /**
      * Bearbeiteter Text auf der [route]. [RefineRoute.Raw] rechnet nie — der Aufrufer fragt die Route
@@ -158,7 +163,7 @@ internal class RefinePlan(
         const val MSG_NO_NET = "Kein Netz für den Online-Zugang"
 
         /** Regel "lokal", aber das Textmodell fehlt oder passt nicht in den RAM (refine_local_missing). */
-        const val MSG_LOCAL_MISSING = "Kein Textmodell geladen — unter „Offline-Modelle“ laden oder „Überspringen“ wählen"
+        const val MSG_LOCAL_MISSING = "Kein Textmodell geladen — unter „Offline-Textverbesserung“ laden oder „Überspringen“ wählen"
 
         /** Die lokale Rechnung ist gescheitert: Init, Speicher, nativer Fehler (refine_local_failed). */
         const val MSG_LOCAL_FAILED = "Lokales Textmodell fehlgeschlagen"
@@ -202,16 +207,21 @@ internal class RefinePlan(
             // Bei Offline-Erkennung zaehlt "wie Erkennung" nie (RefineBlock.OFFLINE): bereit ist dann
             // nur ein eigener, vollstaendiger Zugang.
             val ownOnlineReady = SetupState.llmReady(access)
-            val network = stageActive && (engine != Engine.OFFLINE || ownOnlineReady) &&
-                networkCheck(context).availableFor(access.baseUrl, proven = networkProven)
+            // Ein unvollstaendiger Fallback (Key, Adresse oder Modell fehlt) springt gar nicht erst ein.
+            val fallback = prefs.llmFallbackAccess(mode)?.takeIf(SetupState::llmReady)
+            val check = if (stageActive && (engine != Engine.OFFLINE || ownOnlineReady)) networkCheck(context) else null
+            val primaryNet = check?.availableFor(access.baseUrl, proven = networkProven) == true
+            // CTR-248: ohne Netz fuer den ersten Zugang (kein Internet) kann der Fallback im eigenen
+            // Netz (Ollama im LAN) erreichbar sein. Gefragt wird er nur dann — mit Netz wie bisher.
+            val fallbackOnly = !primaryNet && fallback != null &&
+                check?.availableFor(fallback.baseUrl, proven = networkProven) == true
+            val network = primaryNet || fallbackOnly
             val localModelId = prefs.localLlmModel
             val localReady = stageActive && engine == Engine.OFFLINE && LocalTextEngine.isReady(context, localModelId)
             // Passt kein Textmodell ins Geraet, wirkt jede Regel wie "Ueberspringen".
             val rule = prefs.offlineRefine.effective(OfflineSupport.textModelFits(context))
             val route = RefineDecision.route(engine, rule, stageActive, ownOnlineReady, network, localReady)
-            // Ein unvollstaendiger Fallback (Key, Adresse oder Modell fehlt) springt gar nicht erst ein.
-            val fallback = prefs.llmFallbackAccess(mode)?.takeIf(SetupState::llmReady)
-            return RefinePlan(route, access, localModelId, prefs.modelCache::rememberNoTemperature, fallback)
+            return RefinePlan(route, access, localModelId, prefs.modelCache::rememberNoTemperature, fallback, fallbackOnly)
         }
 
         fun message(hint: RefineHint): String = when (hint) {

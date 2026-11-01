@@ -183,7 +183,7 @@ class ModelDownloadService : Service() {
     private fun showResult(text: String) {
         val notif = Notification.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_whisperloom)
-            .setContentTitle(getString(R.string.models_title))
+            .setContentTitle(getString(R.string.models_notif_result_title))
             .setContentText(text)
             .setAutoCancel(true)
             .build()

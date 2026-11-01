@@ -22,7 +22,6 @@ import com.chris.whisperloom.ui.components.DetailScaffold
 import com.chris.whisperloom.ui.components.LoomRow
 import com.chris.whisperloom.ui.components.ScrollColumn
 import com.chris.whisperloom.ui.components.SectionCard
-import com.chris.whisperloom.ui.components.SectionHeader
 import com.chris.whisperloom.ui.components.fileSize
 import com.chris.whisperloom.ui.components.offlineRuleDetails
 import com.chris.whisperloom.ui.components.offlineRuleLabel
@@ -37,14 +36,14 @@ import com.chris.whisperloom.whisper.ModelDownloads
 import com.chris.whisperloom.whisper.ModelStore
 
 /**
- * E4 — Offline-Modelle (UX-Spec §2.7): Intro, Speicher (beide Arten), Abschnitt Spracherkennung
- * (Engine-Umschalter, whisper-Modelle, Quelle) und Abschnitt Textverbesserung (Pflichtkarte, wenn
- * offline das Textmodell fehlt; Textmodelle, Quelle; wo das Geraet offline erkennen kann, die Regel
- * "Textverbesserung bei Offline-Erkennung" — bis 3.8.6 eine eigene Seite unter Text).
- * Ziel des Home-Banners und des Tastatur-Hinweises "Offline ohne Textmodell".
+ * Offline-Textverbesserung (Neuaufbau §6.20; bis 3.9.1 der Abschnitt Textverbesserung der Offline-Modelle):
+ * Intro, Speicher, die Pflichtkarte, wenn offline das Textmodell fehlt, die Textmodelle mit Quelle und —
+ * wo das Geraet offline erkennen kann — die Regel "Textverbesserung bei Offline-Erkennung".
+ * Unterseite der Textverbesserung (Karte "Zugang & Modelle"), Ziel des Home-Banners und des
+ * Tastatur-Hinweises "Offline ohne Textmodell".
  */
 @Composable
-fun ModelsScreen(nav: NavState) {
+fun OfflineTextScreen(nav: NavState) {
     val ctx = LocalContext.current
     val env = LocalAppEnv.current
     val snack = rememberSnack()
@@ -54,32 +53,16 @@ fun ModelsScreen(nav: NavState) {
     val used = remember(states, env.status) { store.usedBytes() }
     val free = remember(states, env.status) { store.freeBytes() }
 
-    DetailScaffold(title = stringResource(R.string.models_title), onBack = { nav.pop() }, snack = snack) { padding ->
+    DetailScaffold(title = stringResource(R.string.offline_text_title), onBack = { nav.pop() }, snack = snack) { padding ->
         ScrollColumn(padding) {
             Text(
-                stringResource(R.string.models_intro),
+                stringResource(R.string.models_llm_intro),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
                 stringResource(R.string.models_storage, fileSize(used), fileSize(free)),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            SectionHeader(stringResource(R.string.models_section_stt), inset = 0.dp)
-            EngineSwitch(snack, requireModelForOffline = true)
-            ModelListSection(snack)
-            Text(
-                stringResource(R.string.models_source),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.outline,
-            )
-
-            SectionHeader(stringResource(R.string.models_section_llm), inset = 0.dp)
-            Text(
-                stringResource(R.string.models_llm_intro),
-                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (localModelMissing(env.prefs, env.status)) LocalModelRequiredCard(compact = true)

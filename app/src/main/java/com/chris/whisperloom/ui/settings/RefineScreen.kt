@@ -1,7 +1,6 @@
 package com.chris.whisperloom.ui.settings
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,8 +30,9 @@ const val SHARE_REFINE_TAG = "share-refine"
 /**
  * Textverbesserung (3.9.0, vorher Text-Hub mit den Seiten Diktat und Sprachnachrichten): die Stufen
  * fuer Diktat und Sprachnachrichten, jede mit eigener Seite ([StageRow]), auch "Aus". Unter dem
- * Diktat der Weg zu Woerterbuch & Regeln; wo das Geraet offline erkennen kann, die Regel bei
- * Offline-Erkennung (zweiter Einstieg, die Regel selbst steht bei den Offline-Modellen).
+ * Diktat der Weg zu Woerterbuch & Regeln. Darunter die Karte "Zugang & Modelle" (Neuaufbau §6.20):
+ * der KI-Zugang (bis 3.9.1 eine Hub-Zeile) und, wo das Geraet offline erkennen kann, die
+ * Offline-Textverbesserung mit Textmodell und Regel (bis 3.9.1 bei den Offline-Modellen).
  */
 @Composable
 fun RefineScreen(nav: NavState) {
@@ -71,10 +71,14 @@ fun RefineScreen(nav: NavState) {
             )
             StageList(prefs, RefineWay.SHARE, RefineMode.SETTINGS, nav)
         }
-        if (env.status.offlineSupported) {
-            SectionCard(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp)) {
+        // Womit die Stufen rechnen: Zugang und Modell je Stufe, offline das lokale Textmodell samt Regel.
+        SectionCard(title = stringResource(R.string.refine_card_models), gap = 4.dp) {
+            PageLinkRow(R.drawable.ic_cloud, stringResource(R.string.settings_group_llm), accessValue(prefs)) {
+                nav.push(Screen.LlmAccess)
+            }
+            if (env.status.offlineSupported) {
                 PageLinkRow(R.drawable.ic_offline_bolt, stringResource(R.string.refine_offline), offlineValue()) {
-                    nav.push(Screen.Models)
+                    nav.push(Screen.OfflineText)
                 }
             }
         }

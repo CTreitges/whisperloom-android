@@ -33,9 +33,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Einstellungen-Hub nach Gegenstaenden (3.9.0): Unterzeilen mit dem aktuellen Wert, jede Zeile
- * oeffnet ihre Seite, und ueber das echte Routing hin und zurueck (Zeilenname = Seitentitel).
- * Reihenfolge, Gruppen und Trenner: MainFlowTest.
+ * Einstellungen-Hub (3.9.0 nach Gegenstaenden, Neuaufbau mit drei Gruppen): Unterzeilen mit dem
+ * aktuellen Wert, jede Zeile oeffnet ihre Seite, und ueber das echte Routing hin und zurueck
+ * (Zeilenname = Seitentitel). KI-Zugang und Offline-Textverbesserung sind Unterseiten der
+ * Textverbesserung. Reihenfolge, Gruppen und Trenner: MainFlowTest.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w411dp-h2400dp-xxhdpi")
@@ -72,6 +73,9 @@ class SettingsHubTest {
     }
 
     private fun hub(env: AppEnv = env()) = screen(env) { SettingsHubScreen(it) }
+
+    /** Die Zeile "KI-Zugang" steht seit dem Neuaufbau in der Textverbesserung (Karte Zugang & Modelle), mit derselben Unterzeile. */
+    private fun refine(env: AppEnv = env()) = screen(env) { RefineScreen(it) }
 
     private fun click(text: String) {
         compose.onNodeWithText(text).performClick()
@@ -112,7 +116,7 @@ class SettingsHubTest {
     }
 
     @Test fun kiZugangAbWerkOnline() {
-        hub()
+        refine()
         // "Wie Erkennung" mit OpenAI, kein Modell gewaehlt: die Empfehlung je Stufe.
         compose.onNodeWithText("Wie Erkennung · OpenAI · Empfehlung je Stufe").assertExists()
     }
@@ -122,7 +126,7 @@ class SettingsHubTest {
         prefs.llmKey = "sk-ant"
         prefs.setLlmModelFor(RefineMode.SUMMARIZE, "claude-opus-5-5")
         prefs.setLlmModelFor(RefineMode.PROMPT, "claude-opus-5-5") // ohne Pro unsichtbar, zaehlt nicht
-        hub()
+        refine()
         compose.onNodeWithText("Anthropic · 1 Stufe mit eigenem Modell").assertExists()
     }
 
@@ -130,26 +134,26 @@ class SettingsHubTest {
         prefs.llmProviderId = "ollama"
         prefs.llmModel = "" // Pflicht bei Ollama: ohne Modell wirken die Stufen-Modelle nicht
         prefs.setLlmModelFor(RefineMode.POLISH, "qwen3:8b")
-        hub()
+        refine()
         compose.onNodeWithText("Stufe mit eigenem Modell", substring = true).assertDoesNotExist()
     }
 
     @Test fun kiZugangNenntDasModellDesZugangs() {
         prefs.llmProviderId = "anthropic"
         prefs.llmModel = "claude-sonnet-5"
-        hub()
+        refine()
         compose.onNodeWithText("Anthropic · Claude Sonnet 5").assertExists()
     }
 
     @Test fun kiZugangOfflineOhneEigenenZugang() {
         prefs.engine = Engine.OFFLINE
-        hub()
+        refine()
         compose.onNodeWithText("Kein Online-Zugang").assertExists()
     }
 
     @Test fun kiZugangBeiElevenLabsOhneModellTeil() {
         prefs.sttProviderId = "elevenlabs"
-        hub()
+        refine()
         compose.onNodeWithText("Wie Erkennung · ElevenLabs").assertExists()
     }
 
@@ -158,14 +162,12 @@ class SettingsHubTest {
     @Test fun jedeZeileOeffnetIhreSeite() {
         val nav = hub()
         mapOf(
+            "Spracherkennung" to Screen.Recognition,
             "Textverbesserung" to Screen.Refine,
             "Wörterbuch & Regeln" to Screen.Dictionary,
-            "Spracherkennung" to Screen.Recognition,
-            "KI-Zugang" to Screen.LlmAccess,
-            "Offline-Modelle" to Screen.Models,
             "Knopf & Tastatur" to Screen.ButtonKeyboard,
-            "Widgets" to Screen.Widgets(),
-            "Erweitert" to Screen.Advanced,
+            "Verlauf" to Screen.History,
+            "Pro-Funktionen" to Screen.Advanced,
             "Anleitung & Hilfe" to Screen.Help(1),
         ).forEach { (zeile, seite) ->
             click(zeile)
@@ -186,11 +188,9 @@ class SettingsHubTest {
         compose.waitForIdle()
         // Je Zeile ein Text, den nur ihre Seite zeigt.
         mapOf(
+            "Spracherkennung" to "Transkription",
             "Textverbesserung" to "Bei geteilten Sprachnachrichten",
             "Wörterbuch & Regeln" to "Feste Regeln",
-            "Spracherkennung" to "Transkription",
-            "KI-Zugang" to "Modell je Stufe",
-            "Offline-Modelle" to "Textverbesserung bei Offline-Erkennung",
         ).forEach { (zeile, inhalt) ->
             click(zeile)
             compose.onNodeWithText(inhalt).assertExists()
@@ -198,7 +198,69 @@ class SettingsHubTest {
             compose.runOnIdle { back.onBackPressed() }
             compose.waitForIdle()
             compose.onNodeWithText(inhalt).assertDoesNotExist()
-            compose.onNodeWithText("MODELLE & ZUGÄNGE").assertExists()
+            compose.onNodeWithText("SPRACHE & TEXT").assertExists()
         }
+    }
+
+    // --- Neuaufbau: Unterseiten statt Hub-Zeilen, Widgets nur mit Pro Widgets -------------------
+
+    @Test fun ohneProWidgetsGibtEsKeineWidgetsZeile() {
+        // Bis 3.9.1 stand hier der Platzhalter "Normale Widgets folgen bald".
+        hub()
+        compose.onNodeWithText("Widgets").assertDoesNotExist()
+        compose.onNodeWithText("Normale Widgets folgen bald").assertDoesNotExist()
+    }
+
+    @Test fun mitProWidgetsOeffnetDieWidgetsZeileDasMenue() {
+        prefs.proWidgetsEnabled = true
+        val nav = hub()
+        compose.onNodeWithText("1 Pro Widget · noch keins auf dem Startbildschirm").assertExists()
+        click("Widgets")
+        assertEquals(Screen.Widgets(), nav.current)
+    }
+
+    @Test fun kiZugangUndOfflineTextverbesserungSindUnterseitenDerTextverbesserung() {
+        // Bis 3.9.1 Hub-Zeilen "KI-Zugang" und "Offline-Modelle"; jetzt die Karte "Zugang & Modelle".
+        lateinit var back: OnBackPressedDispatcher
+        prefs.tutorialSeen = true
+        compose.setContent {
+            back = LocalOnBackPressedDispatcherOwner.current!!.onBackPressedDispatcher
+            WhisperLoomTheme { WhisperLoomApp(env(), route = RouteRequest(AppNav.ROUTE_SETTINGS)) }
+        }
+        compose.waitForIdle()
+        compose.onNodeWithText("KI-Zugang").assertDoesNotExist()
+        compose.onNodeWithText("Offline-Modelle").assertDoesNotExist()
+        click("Textverbesserung")
+        compose.onNodeWithText("Zugang & Modelle").assertExists()
+        compose.onNodeWithText("Wie Erkennung · OpenAI · Empfehlung je Stufe").assertExists()
+        click("KI-Zugang")
+        compose.onNodeWithText("Modell je Stufe").assertExists()
+        compose.runOnIdle { back.onBackPressed() }
+        compose.waitForIdle()
+        compose.onNodeWithText("Zugang & Modelle").assertExists()
+        click("Bei Offline-Erkennung")
+        compose.onNodeWithText("Offline-Textverbesserung").assertExists()
+        compose.onNodeWithText("Textverbesserung bei Offline-Erkennung").assertExists()
+        compose.runOnIdle { back.onBackPressed() }
+        compose.waitForIdle()
+        compose.onNodeWithText("Bei geteilten Sprachnachrichten").assertExists()
+    }
+
+    @Test fun derTastaturHinweisTextmodellFehltLandetUnterDerTextverbesserung() {
+        // Route "models" (IME, offline ohne Textmodell): Zurueck fuehrt in die Textverbesserung, nicht in den Hub.
+        prefs.engine = Engine.OFFLINE
+        prefs.refineMode = RefineMode.POLISH
+        prefs.tutorialSeen = true
+        lateinit var back: OnBackPressedDispatcher
+        compose.setContent {
+            back = LocalOnBackPressedDispatcherOwner.current!!.onBackPressedDispatcher
+            WhisperLoomTheme { WhisperLoomApp(env(), route = RouteRequest(AppNav.ROUTE_MODELS)) }
+        }
+        compose.waitForIdle()
+        compose.onNodeWithText("Offline-Textverbesserung").assertExists()
+        compose.onNodeWithText("Offline ohne Textmodell").assertExists()
+        compose.runOnIdle { back.onBackPressed() }
+        compose.waitForIdle()
+        compose.onNodeWithText("Zugang & Modelle").assertExists()
     }
 }

@@ -14,6 +14,14 @@ val skipNative = providers.gradleProperty("whisperloom.skipNative").isPresent
 // beim bundleRelease. namespace (R-/BuildConfig-Paket, Kotlin-Pakete) bleibt unveraendert.
 val appId = providers.gradleProperty("whisperloom.applicationId").orNull ?: "com.chris.whisperloom"
 
+// Prototyp-Builds neben der installierten App (z. B. -Pwhisperloom.applicationId=com.chris.whisperloom.proto):
+// eigener Launcher-Name (-Pwhisperloom.appLabel="WhisperLoom Proto") und Versions-Zusatz
+// (-Pwhisperloom.versionSuffix=-proto). Ohne die Properties bleibt alles wie bisher.
+// Nur fuer assembleDebug/assembleRelease gedacht: die Patchnotes-Tests vergleichen BuildConfig.VERSION_NAME
+// exakt mit CHANGELOG-Kopf und Highlights, mit Suffix waeren sie rot (Review 3.9.5).
+val appLabel = providers.gradleProperty("whisperloom.appLabel").orNull ?: "@string/app_name"
+val versionSuffix = providers.gradleProperty("whisperloom.versionSuffix").orNull ?: ""
+
 android {
     namespace = "com.chris.whisperloom"
     // Compose 1.12 (BOM 2026.08.00) verlangt compileSdk 37 + AGP >= 9.2.0:
@@ -32,8 +40,9 @@ android {
         // nicht mehr akzeptiert. compileSdk 37 deckt das ab. Laufzeit-Verhalten von Android 16
         // (erzwungenes edge-to-edge — App nutzt enableEdgeToEdge — u.a.) am Geraet gegenpruefen.
         targetSdk = 36
-        versionCode = 20
-        versionName = "3.9.1"
+        versionCode = 21
+        versionName = "3.9.5$versionSuffix"
+        manifestPlaceholders["appLabel"] = appLabel
 
         if (!skipNative) {
             externalNativeBuild {

@@ -12,9 +12,9 @@ import com.chris.whisperloom.api.WavUpload
  */
 class OfflineNotAvailableException(message: String = MSG_NO_MODEL) : RuntimeException(message) {
     companion object {
-        const val MSG_NO_MODEL = "Kein Offline-Modell geladen — unter Offline-Modelle laden"
+        const val MSG_NO_MODEL = "Kein Offline-Modell geladen — unter Spracherkennung laden"
         const val MSG_UNSUPPORTED = "Offline-Erkennung wird von diesem Gerät nicht unterstützt (CPU ohne FP16/DotProd)"
-        const val MSG_LOAD_FAILED = "Offline-Modell konnte nicht geladen werden — unter Offline-Modelle löschen und neu laden"
+        const val MSG_LOAD_FAILED = "Offline-Modell konnte nicht geladen werden — unter Spracherkennung löschen und neu laden"
     }
 }
 

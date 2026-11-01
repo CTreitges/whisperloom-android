@@ -180,13 +180,12 @@ class WidgetsScreenTest {
 
     // --- Hub ---------------------------------------------------------------------
 
-    @Test fun hubZeigtWidgetsAuchOhneProWidgets() {
+    @Test fun hubZeigtWidgetsNurMitProWidgets() {
+        // Neuaufbau: ohne Pro Widgets keine Zeile (bis 3.9.1 stand hier der Platzhalter "Normale Widgets folgen bald").
         Prefs(ctx).proWidgetsEnabled = false
         show(Screen.SettingsHub)
-        compose.onNodeWithText("Widgets").assertExists()
-        compose.onNodeWithText("Normale Widgets folgen bald").assertExists()
-        click("Widgets")
-        assertEquals(Screen.Widgets(), nav.current)
+        compose.onNodeWithText("Widgets").assertDoesNotExist()
+        compose.onNodeWithText("Normale Widgets folgen bald").assertDoesNotExist()
     }
 
     @Test fun hubZaehltProWidgetsUndPlatzierteWidgets() {
@@ -211,8 +210,8 @@ class WidgetsScreenTest {
     @Test fun ohneProWidgetsFuehrtEinHinweisNachErweitert() {
         Prefs(ctx).proWidgetsEnabled = false
         show()
-        compose.onNodeWithText("Für Entwickler: Pro Widgets lassen sich unter „Erweitert“ freischalten.").assertIsDisplayed()
-        click("Erweitert")
+        compose.onNodeWithText("Für Entwickler: Pro Widgets lassen sich unter „Pro-Funktionen“ freischalten.").assertIsDisplayed()
+        click("Pro-Funktionen")
         assertEquals(Screen.Advanced, nav.current)
     }
 
@@ -540,10 +539,10 @@ class WidgetsScreenTest {
         click("Fertig")
 
         // Auch dieser Wunsch ist verbraucht: Weg und Zurueck oeffnet den Editor nicht noch einmal.
-        click("Erweitert")
+        click("Pro-Funktionen")
         compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
         compose.waitForIdle()
-        compose.onNodeWithText("Für Entwickler: Pro Widgets lassen sich unter „Erweitert“ freischalten.").assertExists()
+        compose.onNodeWithText("Für Entwickler: Pro Widgets lassen sich unter „Pro-Funktionen“ freischalten.").assertExists()
         compose.onNodeWithText("Widget bearbeiten").assertDoesNotExist()
     }
 

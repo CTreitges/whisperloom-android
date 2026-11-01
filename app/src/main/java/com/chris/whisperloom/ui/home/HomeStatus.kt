@@ -86,7 +86,4 @@ object HomeStatus {
     /** Nur das fehlende Textmodell warnt; Ueberspringen ist so gewaehlt (neutral). */
     fun offlineRefineTone(state: OfflineRefine): Tone =
         if (state == OfflineRefine.MISSING || state == OfflineRefine.ONLINE_MISSING) Tone.WARNING else Tone.NEUTRAL
-
-    /** Modelle-Zeile nur, wenn etwas installiert ist oder offline gewaehlt wurde. */
-    fun showModelsRow(installedCount: Int, engine: Engine?): Boolean = installedCount > 0 || engine == Engine.OFFLINE
 }

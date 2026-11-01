@@ -26,6 +26,7 @@ data class SystemStatus(
     val notifGranted: Boolean = true,
     val imeEnabled: Boolean = false,
     val imeSelected: Boolean = false,
+    /** Momentaufnahme von [FloatingMicService.running]; WhisperLoomApp liest neu, wenn der Dienst endet. */
     val bubbleRunning: Boolean = false,
     /** IDs der vollstaendig installierten whisper-Modelle (ModelCatalog). */
     val installedModels: Set<String> = emptySet(),
