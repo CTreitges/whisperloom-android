@@ -382,9 +382,11 @@ object ProviderCatalog {
      * Aus dem Katalog genommene OpenAI-Modelle (Abschaltung vor 2027-03-01) -> empfohlener Nachfolger
      * laut https://developers.openai.com/api/docs/deprecations (abgerufen 2026-11-01). Fuer die
      * Transkription nennt OpenAI "gpt-live-transcribe or gpt-transcribe"; im Katalog steht nur gpt-transcribe.
+     * gpt-5-mini geht bewusst auf gpt-5.6-luna statt auf die OpenAI-Empfehlung gpt-5.6-terra: Terra kostet
+     * $2/$12 statt $0.25/$2 je 1M, Luna $0.20/$1.20 (Entscheidung Christof 2026-11-01).
      */
     private val retiredOpenAiModels = mapOf(
-        "gpt-5-mini" to "gpt-5.6-terra", // Shutdown 2026-12-11
+        "gpt-5-mini" to "gpt-5.6-luna", // Shutdown 2026-12-11
         "gpt-5-nano" to "gpt-5.6-luna", // Shutdown 2026-12-11
         "gpt-4o-transcribe" to "gpt-transcribe", // Shutdown 2027-02-26
         "gpt-4o-mini-transcribe" to "gpt-transcribe", // Shutdown 2027-02-26
