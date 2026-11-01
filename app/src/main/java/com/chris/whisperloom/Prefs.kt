@@ -491,7 +491,7 @@ class Prefs(context: Context) {
 
     companion object {
         /** Stand der Einstellungen; [PrefsMigration] hebt aeltere an. */
-        internal const val PREFS_VERSION = 7
+        internal const val PREFS_VERSION = 8
 
         internal const val KEY_PREFS_VERSION = "prefs_version"
         private const val KEY_LANGUAGE = "language"
@@ -499,25 +499,25 @@ class Prefs(context: Context) {
         internal const val KEY_STT_PROVIDER = "stt_provider"
         internal const val KEY_API_URL = "api_url"
         internal const val KEY_API_KEY = "api_key"
-        private const val KEY_API_MODEL = "api_model"
+        internal const val KEY_API_MODEL = "api_model"
         private const val KEY_API_PROMPT = "api_prompt"
         private const val KEY_VOCAB_FILE_URI = "vocab_file_uri"
         private const val KEY_VOCAB_FILE_NAME = "vocab_file_name"
         private const val KEY_READ_TIMEOUT = "api_read_timeout_sec"
         private const val KEY_STT_FALLBACK = "stt_fallback"
-        private const val KEY_STT_FALLBACK_PROVIDER = "stt_fallback_provider"
+        internal const val KEY_STT_FALLBACK_PROVIDER = "stt_fallback_provider"
         private const val KEY_STT_FALLBACK_URL = "stt_fallback_url"
         private const val KEY_STT_FALLBACK_KEY = "stt_fallback_key"
-        private const val KEY_STT_FALLBACK_MODEL = "stt_fallback_model"
+        internal const val KEY_STT_FALLBACK_MODEL = "stt_fallback_model"
         internal const val KEY_LLM_PROVIDER = "llm_provider"
         private const val KEY_LLM_URL = "llm_url"
         private const val KEY_LLM_KEY = "llm_key"
         internal const val KEY_LLM_MODEL = "llm_model"
         private const val KEY_LLM_FALLBACK = "llm_fallback"
-        private const val KEY_LLM_FALLBACK_PROVIDER = "llm_fallback_provider"
+        internal const val KEY_LLM_FALLBACK_PROVIDER = "llm_fallback_provider"
         private const val KEY_LLM_FALLBACK_URL = "llm_fallback_url"
         private const val KEY_LLM_FALLBACK_KEY = "llm_fallback_key"
-        private const val KEY_LLM_FALLBACK_MODEL = "llm_fallback_model"
+        internal const val KEY_LLM_FALLBACK_MODEL = "llm_fallback_model"
 
         /** + [RefineMode.key] der Stufe: llm_model_polish, llm_model_beautify, llm_model_summarize, llm_model_prompt. */
         internal const val KEY_LLM_MODEL_PREFIX = "llm_model_"
