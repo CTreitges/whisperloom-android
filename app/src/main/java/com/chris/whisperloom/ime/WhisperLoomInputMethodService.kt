@@ -73,6 +73,14 @@ class WhisperLoomInputMethodService : InputMethodService() {
     private val io = Executors.newSingleThreadExecutor { r -> Thread(r, "loom-ime-io") }
     private val main = Handler(Looper.getMainLooper())
 
+    /** Nach onDestroy: der io-Thread laeuft noch zu Ende, reine Anzeige-Rueckmeldungen entfallen (CTR-94). */
+    private var destroyed = false
+
+    /** Anzeige-Rueckmeldung vom io-Thread — nicht fuer das Einfuegen des Texts, das auch danach retten muss. */
+    private fun postUi(block: () -> Unit) {
+        main.post { if (!destroyed) block() }
+    }
+
     @Volatile private var state = BubbleState.IDLE
 
     /** Audio des letzten fehlgeschlagenen Versuchs. */
@@ -673,7 +681,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
             val samples = recorder.stop()
             // Sehr kurze Aufnahmen (< 0,3 s) verwerfen — meist versehentliche Taps.
             if (samples.size < AudioRecorder.SAMPLE_RATE * 3 / 10) {
-                main.post {
+                postUi {
                     applyState(BubbleState.IDLE)
                     showIdleStatus()
                 }
@@ -711,7 +719,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
             } catch (e: Throwable) {
                 Log.e(TAG, "Diktat abgebrochen", e)
                 pendingSamples = null
-                main.post {
+                postUi {
                     applyState(BubbleState.IDLE)
                     showStatus(Status.ERROR)
                 }
@@ -752,7 +760,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
                 applicationContext,
                 samples,
                 skip = skip,
-                onRefineStart = { main.post { showRefining(skip) } },
+                onRefineStart = { postUi { showRefining(skip) } },
             )
             // Vor dem Einfuegen: ist das Feld inzwischen weg, bleibt der Text so erhalten.
             val inHistory = !privateField && History.record(applicationContext, HistorySource.KEYBOARD, dictation)
@@ -773,7 +781,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
         } catch (e: ApiNotConfiguredException) {
             // Das Audio bleibt fuer "Erneut senden": der Zugang laesst sich einrichten, ohne neu zu diktieren.
             pendingSamples = samples
-            main.post {
+            postUi {
                 applyState(BubbleState.ERROR)
                 showStatus(Status.NOT_CONFIGURED)
             }
@@ -782,7 +790,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
             // Ohne Offline-Modell ebenso: laden oder auf Online umstellen, dann erneut senden.
             val retryable = e.isRetryable() || e is OfflineNotAvailableException
             pendingSamples = if (retryable) samples else null
-            main.post {
+            postUi {
                 applyState(if (retryable) BubbleState.ERROR else BubbleState.IDLE)
                 showStatus(Status.ERROR, e.message ?: getString(R.string.kb_error))
                 if (!reduceMotion()) micZone?.let { BubbleAnimators.shake(it).start() }
@@ -1000,6 +1008,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
         info?.packageName?.let { "$it#${info.fieldId}" }
 
     override fun onDestroy() {
+        destroyed = true
         main.removeCallbacks(lockedTicker)
         // Offenes Diktat: der Globus ist gesperrt, ein Wechsel ueber die Navigationsleiste oder die
         // Systemeinstellungen beendet den Dienst trotzdem. Anhalten (Mikrofon sofort frei) und die

@@ -28,6 +28,9 @@ import com.chris.whisperloom.api.ProviderCatalog
  *
  * v6 -> v7 (3.9.1): Bei Anbietern mit Katalog gibt es im KI-Zugang kein eigenes Modell mehr, das Modell
  * waehlt jede Stufe ([toV7]).
+ *
+ * v7 -> v8 (TD-A4): OpenAI-Modelle mit Abschaltung vor 2027-03-01 sind aus dem Katalog; gespeicherte
+ * Auswahlen gehen still auf den Nachfolger ([toV8]).
  */
 internal object PrefsMigration {
 
@@ -44,6 +47,8 @@ internal object PrefsMigration {
                 putString(Prefs.KEY_LLM_MODEL, GEMINI_LEGACY_DEFAULT)
                 llmModel = GEMINI_LEGACY_DEFAULT
             }
+            // v8 vor v7: toV7 verteilt llm_model auf die Stufen und braucht dafuer schon den Nachfolger.
+            if (version < 8) llmModel = toV8(sp, this, llmModel, sttProvider)
             if (version < 6) toV6(sp, this)
             if (version < 7) toV7(sp, this, llmModel, sttProvider)
             putInt(Prefs.KEY_PREFS_VERSION, Prefs.PREFS_VERSION)
@@ -111,6 +116,29 @@ internal object PrefsMigration {
             if (sp.getString(key, "").isNullOrBlank()) e.putString(key, model)
         }
         e.remove(Prefs.KEY_LLM_MODEL)
+    }
+
+    /**
+     * Abgeschaltete OpenAI-Modelle ([ProviderCatalog.successorOf]) werden still zum Nachfolger: Erkennung,
+     * Zugang, jede Stufe und beide Fallbacks, je mit dem Anbieter, zu dem das Feld gehoert. Andere Anbieter
+     * und eigene Server bleiben unberuehrt.
+     * @return [llmModel] danach (fuer [toV7], das den Editor nicht lesen kann).
+     */
+    private fun toV8(sp: SharedPreferences, e: SharedPreferences.Editor, llmModel: String, sttProvider: String): String {
+        fun migrate(key: String, providerId: String) {
+            val successor = ProviderCatalog.successorOf(providerId, sp.getString(key, "").orEmpty())
+            if (successor != null) e.putString(key, successor)
+        }
+        val llm = sp.getString(Prefs.KEY_LLM_PROVIDER, "").orEmpty()
+        val llmProvider = if (llm.isBlank() || llm == AccessResolver.LLM_SAME) sttProvider else llm
+        migrate(Prefs.KEY_API_MODEL, sttProvider)
+        for (stage in RefineMode.MODEL_STAGES) migrate(Prefs.KEY_LLM_MODEL_PREFIX + stage.key, llmProvider)
+        val openai = ProviderCatalog.OPENAI_ID
+        migrate(Prefs.KEY_STT_FALLBACK_MODEL, sp.getString(Prefs.KEY_STT_FALLBACK_PROVIDER, openai) ?: openai)
+        migrate(Prefs.KEY_LLM_FALLBACK_MODEL, sp.getString(Prefs.KEY_LLM_FALLBACK_PROVIDER, openai) ?: openai)
+        val successor = ProviderCatalog.successorOf(llmProvider, llmModel) ?: return llmModel
+        e.putString(Prefs.KEY_LLM_MODEL, successor)
+        return successor
     }
 
     private fun cleanup(readable: Boolean, smartFillers: Boolean): PolishCleanup = when {
