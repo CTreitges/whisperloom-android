@@ -26,7 +26,9 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -93,6 +95,9 @@ private fun Editor(entry: HistoryEntry, processing: Processing, nav: NavState) {
     var saving by remember { mutableStateOf(false) }
     val close = { if (dirty) confirmDiscard = true else nav.pop() }
     BackHandler(enabled = dirty) { confirmDiscard = true }
+    // Fuer Deep-Links (Zahnrad der Tastatur), die sonst den Back-Stack samt Text ersetzen.
+    SideEffect { nav.unsavedEdit = dirty }
+    DisposableEffect(nav) { onDispose { nav.unsavedEdit = false } }
 
     val save: () -> Unit = {
         saving = true
