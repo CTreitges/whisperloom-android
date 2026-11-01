@@ -40,6 +40,11 @@ data class WidgetProfile(
     val serverUrl: String = "",
     /** Bearer-Token der Bridge. */
     val serverToken: String = "",
+    /**
+     * Erkennungssprache dieses Widgets ("auto", ISO-Code oder [com.chris.whisperloom.Prefs.LANG_DE_EN]);
+     * "" = wie in der App ([com.chris.whisperloom.Prefs.language]).
+     */
+    val language: String = "",
 ) {
     val isDefault: Boolean get() = id == DEFAULT_ID
 
@@ -56,7 +61,7 @@ data class WidgetProfile(
     override fun toString(): String =
         "WidgetProfile(id=$id, name=$name, icon=$icon, autoStop=$autoStop, pause=$pause, kind=$kind, " +
             "showName=$showName, claudeModel=$claudeModel, claudeEffort=$claudeEffort, ultracode=$ultracode, " +
-            "serverUrl=$serverUrl, serverToken=${if (serverToken.isEmpty()) "" else "***"})"
+            "language=$language, serverUrl=$serverUrl, serverToken=${if (serverToken.isEmpty()) "" else "***"})"
 
     /**
      * Was die Bridge ausser dem Transkript braucht: fuer [WidgetKind.CLAUDE_CODE] Modell, Effort
@@ -89,6 +94,7 @@ data class WidgetProfile(
         .put(K_ULTRACODE, ultracode)
         .put(K_SERVER_URL, serverUrl)
         .put(K_SERVER_TOKEN, serverToken)
+        .put(K_LANGUAGE, language)
 
     companion object {
         /** Das Standardprofil: nicht loeschbar, faengt jede unbekannte Profil-Id auf. */
@@ -127,6 +133,7 @@ data class WidgetProfile(
                 ultracode = o.optBoolean(K_ULTRACODE, false),
                 serverUrl = text(o, K_SERVER_URL).trim(),
                 serverToken = text(o, K_SERVER_TOKEN),
+                language = text(o, K_LANGUAGE).trim(),
             )
         }
 
@@ -163,6 +170,7 @@ data class WidgetProfile(
         private const val K_ULTRACODE = "ultracode"
         private const val K_SERVER_URL = "serverUrl"
         private const val K_SERVER_TOKEN = "serverToken"
+        private const val K_LANGUAGE = "language"
     }
 }
 

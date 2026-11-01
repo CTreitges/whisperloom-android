@@ -308,10 +308,12 @@ Column(padding 20, gap 16)
 ├─ [OFFLINE] ElevatedCard rec_card_offline "Offline-Modell": ListItem Headline "{Modell-Label}" Supporting "{MB} MB · {Qualitäts-Hinweis}" Trailing TextButton common_change "Ändern" → E4; bodySmall rec_offline_first_use "Erste Nutzung lädt das Modell in den Speicher (2–5 s)."
 ├─ ElevatedCard rec_card_language "Sprache & Kontext"
 │    ExposedDropdownMenuBox rec_language "Sprache": Prefs.LANGUAGES (Automatisch erkennen · Deutsch · Englisch · Spanisch · Französisch · Italienisch)
+│    [CTR-273: zusätzlich „Deutsch + Englisch" (`de+en`) nach Englisch; darunter bodySmall onSurfaceVariant rec_language_de_en_info bzw. offline rec_language_de_en_offline, nur wenn gewählt.]
 │    OutlinedTextField pref_api_prompt_hint (bestehend), minLines 2, capitalization Sentences; supportingText pref_api_prompt_info (bestehend)
 │    Bei Anbieter Mistral/OpenRouter (sttSendsPrompt=false): Label rec_context_words "Kontext-Wörter (kommagetrennt)", supportingText rec_context_words_info "Wird als Wortliste (context_bias) mitgeschickt."
 │    [Stand 3.0.0: context_bias ist NICHT umgesetzt (Mistral-Doku: nur Englisch belastbar, OpenRouter kennt es nicht) — supportingText rec_context_unsupported "Dieser Anbieter nimmt keinen Kontext entgegen — …", Label bleibt pref_api_prompt_hint.]
 │    [Stand 3.5.0: Das Textfeld ist ersetzt durch ListItem vocab_title "Vokabular" (Supporting vocab_count bzw. vocab_none, · vocab_row_file "Datei: %1$s") + FilledTonalButton vocab_open "Bearbeiten" → VocabularySheet (LoomSheet): Feld vocab_add_hint (Komma trennt), Liste der eigenen Begriffe mit ✕, Abschnitt vocab_file (Datei verknüpfen/Neu lesen/Andere Datei/Lösen, SAF mit persistenter Leseberechtigung, bei jedem Diktat neu gelesen), Zeile vocab_usage/vocab_usage_truncated. Speicherung weiter in apiPrompt (ein Eintrag pro Zeile) + vocab_file_uri/vocab_file_name. rec_context_unsupported lautet jetzt „Dieser Anbieter nimmt kein Vokabular entgegen — …".]
+│    [CTR-273: context_bias ist für Mistral umgesetzt (`Provider.sttBiasField`); Hinweis rec_context_bias statt rec_context_unsupported. OpenRouter bleibt bei rec_context_unsupported.]
 └─ Datenschutz-Zeile bodySmall onSurfaceVariant, Leading ic_privacy_tip 16: rec_privacy_online "Audio wird zur Erkennung an %1$s gesendet." | rec_privacy_offline "Alles bleibt auf dem Gerät."
 ```
 
@@ -1380,6 +1382,7 @@ eingerichtet, steht oben `widgets_agent_off` mit Link zu E7. Karten: Profile · 
 | `widget_profile_gallery` / `widget_profile_remove_photo` / `widget_photo_failed` | Aus Galerie / Bild entfernen / Bild konnte nicht geladen werden. |
 | `widget_profile_autostop` | Automatisch senden nach Sprechpause |
 | `widget_profile_pause`, `widget_pause_short/normal/long` (+ `_sub`) | Sprechpause, Kurz / Normal / Lang |
+| `widget_profile_language` / `widget_profile_language_app` | Sprache / Wie in der App (%1$s) — CTR-273: LoomDropdown nach den Claude-Optionen, „Wie in der App" + Prefs.LANGUAGES, gespeichert als `WidgetProfile.language` (`""` = wie App) |
 | `widget_profile_delete` / `widget_profile_delete_confirm` | Profil löschen / %1$d Widget(s) zeigt/zeigen danach „%2$s“. |
 | `widget_no_speech` | Nichts gehört (über `widget_error_retry`: „Nichts gehört — tippen für erneuten Versuch“) |
 | `cd_widget_named` | %1$s: %2$s (Profilname: Zustand) |

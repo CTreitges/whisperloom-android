@@ -48,6 +48,13 @@ class ElevenLabsSttTest {
         assertFalse(names(ElevenLabsStt.fields(stt(), " ", "")).contains("language_code"))
     }
 
+    /** "Deutsch + Englisch": ElevenLabs kennt nur einen Code und erkennt selbst (CTR-273, F3). */
+    @Test fun deutschUndEnglischLaesstDieSpracheWeg() {
+        val f = ElevenLabsStt.fields(stt(), "de+en", "")
+        assertFalse(names(f).contains("language_code"))
+        assertEquals(listOf("model_id", "tag_audio_events", "timestamps_granularity", "file_format"), names(f))
+    }
+
     @Test fun ohneVokabularKeinKeytermsUndNieLoggingOderPrompt() {
         val f = names(ElevenLabsStt.fields(stt(), "de", "  "))
         assertFalse(f.contains("keyterms"))

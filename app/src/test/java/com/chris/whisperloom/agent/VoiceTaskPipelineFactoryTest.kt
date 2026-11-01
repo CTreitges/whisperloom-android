@@ -49,6 +49,9 @@ class VoiceTaskPipelineFactoryTest {
     /** Der ganze Koerper jedes Auftrags, wie er an der Bridge ankam. */
     private val koerper = mutableListOf<org.json.JSONObject>()
 
+    /** Jede Anfrage an die Erkennung (Multipart als Text). */
+    private val erkennungen = mutableListOf<String>()
+
     /** Jede Anfrage an die Textverbesserung. */
     private val veredelungen = mutableListOf<org.json.JSONObject>()
     private val basis get() = "http://127.0.0.1:${server.address.port}"
@@ -62,7 +65,7 @@ class VoiceTaskPipelineFactoryTest {
 
         server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
         server.createContext("/v1/audio/transcriptions") { ex ->
-            ex.requestBody.readBytes()
+            erkennungen += ex.requestBody.readBytes().toString(Charsets.ISO_8859_1)
             antwort(ex, 200, """{"text":"kauf milch"}""")
         }
         server.createContext("/v1/chat/completions") { ex ->
@@ -319,6 +322,42 @@ class VoiceTaskPipelineFactoryTest {
 
         assertEquals(promptAnweisung, anweisung(0))
         assertEquals(listOf("Kauf milch", "Kauf bitte Milch."), gesendet)
+    }
+
+    // --- Sprache je Widget (CTR-273, F1) ------------------------------------------------------
+
+    /** Wert des Multipart-Felds `language` der Erkennungs-Anfrage [i]; null = nicht gesendet. */
+    private fun sprachfeld(i: Int): String? =
+        erkennungen[i].substringAfter("name=\"language\"\r\n\r\n", "").substringBefore("\r\n").ifEmpty { null }
+
+    @Test fun dieSpracheDesWidgetsGehtAnDieErkennungSonstDieDerApp() {
+        Prefs(ctx).language = "de"
+        val englisch = WidgetProfileStore(ctx).let { store ->
+            widget("English", "/a").copy(language = "en").also { store.save(it) }
+        }
+        val wieApp = widget("Einkauf", "/b")
+        assertEquals("", wieApp.language)
+
+        auftrag(profileId = englisch.id)
+        assertTrue(VoiceTaskWorker.pipelineFactory(ctx, store) { true }.run(null) is TaskOutcome.Sent)
+        auftrag("2026-09-22T00:05:00Z", wieApp.id)
+        assertTrue(VoiceTaskWorker.pipelineFactory(ctx, store) { true }.run(null) is TaskOutcome.Sent)
+
+        assertEquals("en", sprachfeld(0))
+        assertEquals("de", sprachfeld(1))
+        // Die Textverbesserung folgt der Sprache des Widgets: englische Anweisung beim englischen Widget.
+        assertEquals(RefinePrompt.build(RefineMode.POLISH, german = false, smartFillers = false), anweisung(0))
+        assertEquals(RefinePrompt.build(RefineMode.POLISH, german = true, smartFillers = false), anweisung(1))
+    }
+
+    @Test fun widgetMitAutoLaesstDieSpracheWeg() {
+        Prefs(ctx).language = "de"
+        val auto = WidgetProfileStore(ctx).let { store ->
+            widget("Auto", "/a").copy(language = "auto").also { store.save(it) }
+        }
+        auftrag(profileId = auto.id)
+        assertTrue(VoiceTaskWorker.pipelineFactory(ctx, store) { true }.run(null) is TaskOutcome.Sent)
+        assertEquals(null, sprachfeld(0))
     }
 
     @Test fun eineKorrekturDesServersWirktBeimNaechstenVersuch() {

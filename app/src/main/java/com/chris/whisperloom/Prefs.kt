@@ -55,7 +55,10 @@ class Prefs(context: Context) {
         sp.unregisterOnSharedPreferenceChangeListener(listener)
     }
 
-    /** Erkennungssprache: "auto" oder ISO-Code ("de", "en", "es", "fr", "it"). Default: Deutsch. */
+    /**
+     * Erkennungssprache: "auto", ISO-Code ("de", "en", "es", "fr", "it") oder [LANG_DE_EN].
+     * Default: Deutsch.
+     */
     var language: String
         get() = sp.getString(KEY_LANGUAGE, "de") ?: "de"
         set(v) = sp.edit { putString(KEY_LANGUAGE, v) }
@@ -592,11 +595,19 @@ class Prefs(context: Context) {
         val HISTORY_SIZES = listOf(10, 25, 50, 100, 250, 500)
         const val DEFAULT_HISTORY_SIZE = 50
 
+        /**
+         * Deutsche Diktate mit englischen Begriffen: gpt-transcribe bekommt beide Sprachen als
+         * Hinweis (`languages[]`), alle anderen Erkenner erkennen selbst (wie "auto"). Fuer
+         * Fuellwoerter und Textverbesserung zaehlt die erkannte Sprache, sonst Deutsch.
+         */
+        const val LANG_DE_EN = "de+en"
+
         /** Sprachen fuer die Einstellungs-Auswahl. Erste = Default. */
         val LANGUAGES = listOf(
             "auto" to "Automatisch erkennen",
             "de" to "Deutsch",
             "en" to "Englisch",
+            LANG_DE_EN to "Deutsch + Englisch",
             "es" to "Spanisch",
             "fr" to "Französisch",
             "it" to "Italienisch",

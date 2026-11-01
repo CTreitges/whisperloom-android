@@ -61,11 +61,15 @@ class ModelFlagsTest {
         // Snapshot von gpt-4o-mini-transcribe: language, obwohl der Name nach gpt-*transcribe* aussieht.
         assertEquals("language", stt("openai", "gpt-4o-mini-transcribe-2025-12-15")!!.languageField)
         assertEquals("languages[]", stt("openai", "gpt-transcribe-2026-08-01")!!.languageField)
+        // CTR-273: keywords[] erbt der Snapshot von gpt-transcribe, der von 4o-mini nicht.
+        assertEquals("keywords[]", stt("openai", "gpt-transcribe-2026-08-01")!!.keywordsField)
+        assertNull(stt("openai", "gpt-4o-mini-transcribe-2025-12-15")!!.keywordsField)
     }
 
     @Test fun neueGptTranscribeVarianteBekommtLanguagesArray() {
         val neu = stt("openai", "gpt-5-transcribe")!!
         assertEquals("languages[]", neu.languageField)
+        assertEquals("keywords[]", neu.keywordsField)
         assertTrue("temperature ist kein Erkennungs-Flag", neu.temperatureSupported)
         // OpenRouter nimmt language (ISO-639-1), auch fuer OpenAI-Modelle.
         assertNull(stt("openrouter", "openai/gpt-5-transcribe"))
