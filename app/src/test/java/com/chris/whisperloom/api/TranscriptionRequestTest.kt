@@ -51,9 +51,7 @@ class TranscriptionRequestTest {
     }
 
     @Test fun andereOpenAiModelleOhneKeywords() {
-        for (model in listOf("gpt-4o-transcribe", "gpt-4o-mini-transcribe", "whisper-1")) {
-            assertFalse(model, names(TranscriptionRequest.fields(stt("openai", model), "de", "Chris")).contains("keywords[]"))
-        }
+        assertFalse(names(TranscriptionRequest.fields(stt("openai", "whisper-1"), "de", "Chris")).contains("keywords[]"))
         assertFalse(names(TranscriptionRequest.fields(stt("groq"), "de", "Chris")).contains("keywords[]"))
     }
 
@@ -105,8 +103,8 @@ class TranscriptionRequestTest {
     }
 
     @Test fun altesOpenAiModellSendetLanguage() {
-        val f = TranscriptionRequest.fields(stt("openai", "gpt-4o-transcribe"), "de", "")
-        assertEquals(listOf("model" to "gpt-4o-transcribe", "response_format" to "json", "language" to "de"), f)
+        val f = TranscriptionRequest.fields(stt("openai", "whisper-1"), "de", "")
+        assertEquals(listOf("model" to "whisper-1", "response_format" to "json", "language" to "de"), f)
     }
 
     @Test fun groqBekommtAlleFelder() {

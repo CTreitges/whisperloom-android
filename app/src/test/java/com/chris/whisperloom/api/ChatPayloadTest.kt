@@ -27,10 +27,11 @@ class ChatPayloadTest {
         assertEquals(ChatPayload.MAX_COMPLETION_TOKENS, s.maxCompletionTokens)
     }
 
-    @Test fun altesGpt5MiniNimmtMinimal() {
-        val s = ChatPayload.sampling(llm("openai", "same", "gpt-5-mini"))
+    @Test fun gpt56TerraNimmtNone() {
+        // Nachfolger von gpt-5-mini (TD-A4); "minimal" kennt Terra nicht.
+        val s = ChatPayload.sampling(llm("openai", "same", "gpt-5.6-terra"))
         // 16384: die Denk-Token zaehlen mit, 4096 reichten fuer lange Diktate nicht (gemessen 2026-10-08).
-        assertEquals(ChatPayload.Sampling(temperature = null, reasoningEffort = "minimal", maxCompletionTokens = 16384), s)
+        assertEquals(ChatPayload.Sampling(temperature = null, reasoningEffort = "none", maxCompletionTokens = 16384), s)
     }
 
     @Test fun groqGptOssBekommtTemperatureUndLow() {
