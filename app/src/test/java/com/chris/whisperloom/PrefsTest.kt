@@ -538,11 +538,11 @@ class PrefsTest {
         val p = Prefs(ctx)
         assertEquals("gpt-transcribe", p.apiModel)
         assertEquals("gpt-5.6-luna", p.llmModelFor(RefineMode.POLISH))
-        assertEquals("gpt-5.6-terra", p.llmModelFor(RefineMode.BEAUTIFY))
+        assertEquals("gpt-5.6-luna", p.llmModelFor(RefineMode.BEAUTIFY))
         assertEquals("nicht abgeschaltet: bleibt", "gpt-6-sol", p.llmModelFor(RefineMode.SUMMARIZE))
         assertEquals("", p.llmModelFor(RefineMode.PROMPT))
         assertEquals("gpt-transcribe", p.sttFallbackModel)
-        assertEquals("gpt-5.6-terra", p.llmFallbackModel)
+        assertEquals("gpt-5.6-luna", p.llmFallbackModel)
         // Der Nachfolger steht im Katalog: kein temperature, sonst lehnt OpenAI ab.
         assertEquals(false, p.llmAccess(RefineMode.BEAUTIFY).modelOption?.temperatureSupported)
         assertEquals(8, sp.getInt("prefs_version", 0))

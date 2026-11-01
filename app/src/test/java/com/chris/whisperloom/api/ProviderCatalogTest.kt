@@ -93,11 +93,14 @@ class ProviderCatalogTest {
         }
     }
 
-    /** Nachfolger laut developers.openai.com/api/docs/deprecations (2026-11-01); sie stehen im Katalog. */
+    /**
+     * Nachfolger laut developers.openai.com/api/docs/deprecations (2026-11-01); sie stehen im Katalog.
+     * Ausnahme gpt-5-mini: Christof wählt gpt-5.6-luna statt der OpenAI-Empfehlung gpt-5.6-terra (Preis).
+     */
     @Test fun abgeschalteteOpenAiModelleHabenEinenNachfolgerImKatalog() {
         val openai = ProviderCatalog.openai
         val expected = mapOf(
-            "gpt-5-mini" to "gpt-5.6-terra",
+            "gpt-5-mini" to "gpt-5.6-luna",
             "gpt-5-nano" to "gpt-5.6-luna",
             "gpt-4o-transcribe" to "gpt-transcribe",
             "gpt-4o-mini-transcribe" to "gpt-transcribe",
@@ -108,7 +111,7 @@ class ProviderCatalogTest {
             assertNotNull(successor, openai.sttModel(successor) ?: openai.llmModel(successor))
         }
         // Datierter Snapshot endet mit seinem Modell.
-        assertEquals("gpt-5.6-terra", ProviderCatalog.successorOf("openai", " gpt-5-mini-2025-08-07 "))
+        assertEquals("gpt-5.6-luna", ProviderCatalog.successorOf("openai", " gpt-5-mini-2025-08-07 "))
         assertEquals("gpt-transcribe", ProviderCatalog.successorOf("openai", "gpt-4o-mini-transcribe-2025-12-15"))
         // Nur OpenAI selbst: ein eigener Server oder Groq darf "whisper-1" weiter nutzen.
         assertNull(ProviderCatalog.successorOf("custom", "whisper-1"))
