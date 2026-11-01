@@ -4,6 +4,11 @@ Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](ht
 
 ## [Unreleased]
 
+### Behoben
+
+- **Mikro-Knopf über die Benachrichtigung beendet:** Ist die App dabei offen, zeigt der Startbildschirm sofort wieder „Mikro-Knopf starten“ statt weiter „beenden“ (CTR-197).
+- **Kein automatischer Neustart des Knopfs:** Beendet Android die App im Hintergrund, startet der schwebende Knopf nicht mehr von selbst neu (`START_NOT_STICKY` statt `START_STICKY`, CTR-205). Starten wie gewohnt über die App.
+
 ## [3.9.5] — 2026-10-29
 
 ### Geändert
