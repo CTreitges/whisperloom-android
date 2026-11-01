@@ -76,6 +76,13 @@ fun WhisperLoomApp(env: AppEnv, route: RouteRequest? = null, onRouteConsumed: ()
             if (unseen) env.refreshStatus()
         }
 
+        // Der Knopf kann enden, waehrend die App offen ist (Benachrichtigung "Beenden") — ohne
+        // onResume. Den Status dann nachziehen, sonst zeigt Home weiter "beenden" (CTR-197).
+        val bubbleRunning by FloatingMicService.running.collectAsStateWithLifecycle()
+        LaunchedEffect(bubbleRunning) {
+            if (bubbleRunning != env.status.bubbleRunning) env.refreshStatus()
+        }
+
         // Der Assistent hat einen eigenen BackHandler (Schritt zurueck), der tiefer in der
         // Composition liegt und deshalb Vorrang hat.
         BackHandler(enabled = nav.canPop) { nav.pop() }

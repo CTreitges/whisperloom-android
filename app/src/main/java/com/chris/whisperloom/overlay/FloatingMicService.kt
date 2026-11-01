@@ -37,6 +37,9 @@ import com.chris.whisperloom.api.ApiNotConfiguredException
 import com.chris.whisperloom.api.isRetryable
 import com.chris.whisperloom.history.History
 import com.chris.whisperloom.history.HistorySource
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.util.concurrent.Executors
 import kotlin.math.abs
 
@@ -128,15 +131,19 @@ class FloatingMicService : Service() {
             return
         }
         addBubble()
-        isRunning = true
+        _running.value = true
     }
 
+    /**
+     * Immer START_NOT_STICKY: Nach einem Prozess-Kill startet das System den Dienst nicht von selbst
+     * neu. Ein Neustart ohne Nutzeraktion waere ein Mikrofon-Foreground-Service aus dem Hintergrund —
+     * das System verweigert dort den Mikrofonzugriff (ab Android 14 wirft startForeground), und
+     * Google Play wertet Dauer-Neustarts als Pruefrisiko (CTR-205).
+     * Der Knopf startet wieder ueber App, Assistent oder Widget.
+     */
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_STOP) {
-            stopSelf()
-            return START_NOT_STICKY
-        }
-        return START_STICKY
+        if (intent?.action == ACTION_STOP) stopSelf()
+        return START_NOT_STICKY
     }
 
     // --- Foreground-Notification ---------------------------------------------
@@ -487,7 +494,7 @@ class FloatingMicService : Service() {
     }
 
     override fun onDestroy() {
-        isRunning = false
+        _running.value = false
         main.removeCallbacks(tick)
         main.removeCallbacks(clearCopiedHint)
         cancelTarget.hide()
@@ -514,10 +521,16 @@ class FloatingMicService : Service() {
         @VisibleForTesting
         internal var targetIsPassword: () -> Boolean = TextInserterAccessibilityService::focusedIsPassword
 
-        /** Ob der schwebende Knopf aktuell laeuft (fuer die Setup-Statusanzeige). */
-        @Volatile
-        var isRunning = false
-            private set
+        private val _running = MutableStateFlow(false)
+
+        /**
+         * Ob der schwebende Knopf laeuft — beobachtbar, damit die App auch dann umschaltet, wenn
+         * die Benachrichtigung den Dienst beendet, waehrend sie offen ist (CTR-197).
+         */
+        val running: StateFlow<Boolean> = _running.asStateFlow()
+
+        /** Momentaufnahme von [running] (SystemStatus.read). */
+        val isRunning: Boolean get() = _running.value
 
         fun start(context: Context) {
             val i = Intent(context, FloatingMicService::class.java)
