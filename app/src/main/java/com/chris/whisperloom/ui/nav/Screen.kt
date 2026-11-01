@@ -3,7 +3,10 @@ package com.chris.whisperloom.ui.nav
 import android.content.Intent
 import android.os.Bundle
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.chris.whisperloom.AppNav
@@ -196,6 +199,9 @@ class NavState(initial: List<Screen>) {
 
     val current: Screen get() = stack.last()
     val canPop: Boolean get() = stack.size > 1
+
+    /** Bearbeiten-Fenster mit ungesicherten Aenderungen: ein Deep-Link fragt erst nach (Review 3.9.0 #14). */
+    var unsavedEdit by mutableStateOf(false)
 
     fun push(screen: Screen) {
         stack.add(screen)

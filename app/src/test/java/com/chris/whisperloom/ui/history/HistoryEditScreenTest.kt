@@ -1,6 +1,8 @@
 package com.chris.whisperloom.ui.history
 
 import android.content.ClipboardManager
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
@@ -16,10 +18,15 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.text.AnnotatedString
+import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.history.History
+import com.chris.whisperloom.history.HistoryEntry
 import com.chris.whisperloom.history.Processing
+import com.chris.whisperloom.ui.WhisperLoomApp
 import com.chris.whisperloom.ui.nav.NavState
+import com.chris.whisperloom.ui.nav.RouteRequest
 import com.chris.whisperloom.ui.nav.Screen
+import com.chris.whisperloom.ui.theme.WhisperLoomTheme
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -193,6 +200,48 @@ class HistoryEditScreenTest {
         assertFalse("keine contentDescription am Feld", SemanticsProperties.ContentDescription in field.config)
         feld().performTextReplacement("")
         compose.onNode(hasSetTextAction() and hasText("Fassung: Zusammenfassen")).assertExists()
+    }
+
+    /** Echte App-Wurzel mit offenem Bearbeiten-Fenster; [route] setzt der Test wie MainActivity.onNewIntent. */
+    private fun appMitEditor(entry: HistoryEntry): Pair<NavState, MutableState<RouteRequest?>> {
+        val nav = NavState(listOf(Screen.Home, Screen.History, Screen.HistoryDetail(entry.id), Screen.HistoryEdit(entry.id, Processing.SUMMARIZE)))
+        val route = mutableStateOf<RouteRequest?>(null)
+        val env = ui.env()
+        compose.setContent {
+            WhisperLoomTheme { WhisperLoomApp(env, route = route.value, onRouteConsumed = { route.value = null }, nav = nav) }
+        }
+        ui.waitFor("Fassung: Zusammenfassen")
+        return nav to route
+    }
+
+    /** Review 3.9.0 #14: das Zahnrad der Tastatur verwarf ungesicherten Text ohne Rueckfrage. */
+    @Test fun deepLinkMitAenderungenFragtErst() {
+        val (nav, route) = appMitEditor(ui.record())
+        feld().performTextReplacement("Noch nicht gespeichert.")
+
+        route.value = RouteRequest(AppNav.ROUTE_SETTINGS)
+        compose.waitForIdle()
+        compose.onNodeWithText("Änderungen verwerfen?").assertIsDisplayed()
+        compose.onNodeWithText("Weiter bearbeiten").performClick()
+        compose.waitForIdle()
+        assertTrue(nav.current is Screen.HistoryEdit)
+        assertFeld("Noch nicht gespeichert.")
+
+        route.value = RouteRequest(AppNav.ROUTE_SETTINGS)
+        compose.waitForIdle()
+        compose.onNodeWithText("Verwerfen").performClick()
+        compose.waitForIdle()
+        assertEquals(Screen.SettingsHub, nav.current)
+    }
+
+    @Test fun deepLinkOhneAenderungenOeffnetDirekt() {
+        val (nav, route) = appMitEditor(ui.record())
+
+        route.value = RouteRequest(AppNav.ROUTE_SETTINGS)
+        compose.waitForIdle()
+
+        compose.onNodeWithText("Änderungen verwerfen?").assertDoesNotExist()
+        assertEquals(Screen.SettingsHub, nav.current)
     }
 
     @Test fun eintragWegWaehrendDesBearbeitensFuehrtZurueck() {
