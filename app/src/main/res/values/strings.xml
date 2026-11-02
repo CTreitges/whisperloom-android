@@ -1105,4 +1105,27 @@
     <string name="history_off_confirm_body">Alle Einträge werden gelöscht, neue Diktate nicht mehr gespeichert.</string>
     <string name="history_off_confirm">Ausschalten</string>
     <string name="history_settings_hint">Der Verlauf liegt nur auf diesem Gerät und kommt nie in ein Backup. Audio wird nicht gespeichert.</string>
+
+    <!-- Einstellungen übertragen (Format v1 mit WhisperLoom Desktop) -->
+    <string name="settings_group_sync">Einstellungen übertragen</string>
+    <string name="settings_sync_sub">Export und Import, auch mit WhisperLoom Desktop</string>
+    <string name="sync_intro">Überträgt Stufen, Modelle je Stufe, Kontext-Wörter, Füllwörter und Anbieter als Datei – zwischen Geräten und mit WhisperLoom Desktop. API-Keys kommen nie in die Datei.</string>
+    <string name="sync_export">Exportieren</string>
+    <string name="sync_import">Importieren</string>
+    <string name="sync_exported">Einstellungen exportiert (ohne API-Keys)</string>
+    <string name="sync_export_failed">Export fehlgeschlagen</string>
+    <string name="sync_read_failed">Datei nicht lesbar oder zu groß</string>
+    <string name="sync_invalid_title">Datei ungültig – nichts übernommen</string>
+    <string name="sync_confirm_title">Einstellungen übernehmen?</string>
+    <string name="sync_no_changes">Die Datei ändert keine Einstellung.</string>
+    <plurals name="sync_changes">
+        <item quantity="one">%d Einstellung ändert sich:</item>
+        <item quantity="other">%d Einstellungen ändern sich:</item>
+    </plurals>
+    <plurals name="sync_more">
+        <item quantity="one">… und %d weitere</item>
+        <item quantity="other">… und %d weitere</item>
+    </plurals>
+    <string name="sync_keys_stay">Die API-Keys dieses Geräts bleiben, wie sie sind.</string>
+    <string name="sync_imported">Einstellungen übernommen</string>
 </resources>
