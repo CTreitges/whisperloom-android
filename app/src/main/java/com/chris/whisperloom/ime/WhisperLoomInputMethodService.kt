@@ -2,6 +2,7 @@ package com.chris.whisperloom.ime
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.inputmethodservice.InputMethodService
 import android.os.Build
@@ -67,6 +68,13 @@ import kotlin.math.abs
 class WhisperLoomInputMethodService : InputMethodService() {
 
     private lateinit var prefs: Prefs
+
+    /**
+     * Die App schreibt die Stufe mit ihrer eigenen [Prefs], waehrend die Leiste offen stehen kann —
+     * auch ueber einen App-Wechsel hinweg, nach dem das System beim selben Feld [onStartInputView]
+     * nicht erneut ruft. Als Feld gehalten: SharedPreferences haelt Horcher nur schwach.
+     */
+    private val onPrefsChange = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> refreshRefineBar() }
     private val recorder = AudioRecorder()
 
     // Alle Netz-/IO-Arbeiten seriell auf einem Hintergrund-Thread; UI ueber main.
@@ -179,6 +187,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
     override fun onCreate() {
         super.onCreate()
         prefs = Prefs(this)
+        prefs.observe(onPrefsChange)
     }
 
     // performClick() aus onTouch heraus zu rufen (was Lint verlangt) wuerde hier doppelt
@@ -298,7 +307,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
         // Der Eingabe-View wird ueber Feld- und App-Wechsel hinweg wiederverwendet. Eine
         // offen stehende Leiste zeigte sonst die Stufe und den KI-Zugang von vorhin —
         // beides kann sich inzwischen geaendert haben.
-        if (refineBar?.isShown == true) refineBar?.show(prefs.refineMode, refineBlocked() == null, prefs.promptLevelEnabled)
+        refreshRefineBar()
         restoreStatus()
     }
 
@@ -579,6 +588,12 @@ class WhisperLoomInputMethodService : InputMethodService() {
         // Ohne Zugang bzw. Textmodell sind die KI-Stufen abgeblendet — das braucht eine Erklaerung,
         // sonst sieht es nach einem Fehler aus.
         if (blocked != null && state == BubbleState.IDLE) showStatus(blocked)
+    }
+
+    /** Eine offene Leiste auf den gespeicherten Stand bringen: Stufe, KI-Zugang, Schalter "Prompt". */
+    private fun refreshRefineBar() {
+        val bar = refineBar ?: return
+        if (bar.isShown) bar.show(prefs.refineMode, refineBlocked() == null, prefs.promptLevelEnabled)
     }
 
     private fun closeRefineBar() {
@@ -1009,6 +1024,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
 
     override fun onDestroy() {
         destroyed = true
+        prefs.unobserve(onPrefsChange)
         main.removeCallbacks(lockedTicker)
         // Offenes Diktat: der Globus ist gesperrt, ein Wechsel ueber die Navigationsleiste oder die
         // Systemeinstellungen beendet den Dienst trotzdem. Anhalten (Mikrofon sofort frei) und die
