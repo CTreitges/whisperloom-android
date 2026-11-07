@@ -1,0 +1,3 @@
+# Assets landen bitgenau im APK: kein Zeilenende-Umbau beim Checkout (core.autocrlf unter Windows).
+# AnleitungsTexteTest prueft die Lizenzhinweise auf die Byte-Groesse aus dem AAR.
+app/src/main/assets/** -text
