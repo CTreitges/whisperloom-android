@@ -3,6 +3,7 @@ package com.chris.whisperloom.sync
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.api.AccessResolver
 import com.chris.whisperloom.api.ApiAccess
+import com.chris.whisperloom.api.ProviderCatalog
 import org.json.JSONObject
 import java.net.URI
 
@@ -39,6 +40,24 @@ internal object SyncAccessRules {
         val file = incoming.optJSONObject(LLM)
         if (file?.has(MODEL) != true) llm.put(MODEL, "")
         llm.put(STAGE_MODELS, file?.opt(STAGE_MODELS) ?: JSONObject())
+    }
+
+    /**
+     * Abgeschaltete OpenAI-Modelle werden still zum Nachfolger ([ProviderCatalog.successorOf], wie `PrefsMigration` v8,
+     * die nach einem Import nicht mehr laeuft). Erst auf dem gemischten Stand ist der Anbieter jedes Felds bekannt.
+     */
+    fun migrateRetiredModels(tree: JSONObject) {
+        fun migrate(obj: JSONObject?, field: String, providerId: String?) {
+            if (obj == null || providerId == null) return
+            val model = obj.opt(field) as? String ?: return
+            ProviderCatalog.successorOf(providerId, model)?.let { obj.put(field, it) }
+        }
+        fun section(name: String) = tree.opt(name) as? JSONObject
+        listOf(STT, STT_FALLBACK, LLM_FALLBACK).forEach { migrate(section(it), MODEL, section(it)?.opt(PROVIDER) as? String) }
+        val provider = llmProvider(tree)
+        migrate(section(LLM), MODEL, provider)
+        val stages = section(LLM)?.opt(STAGE_MODELS) as? JSONObject ?: return
+        stages.keys().asSequence().toList().forEach { migrate(stages, it, provider) }
     }
 
     /** Anbieter, bei dem die Textverbesserung wirklich laeuft; null bei falschem Typ (meldet [SyncSettings.read]). */

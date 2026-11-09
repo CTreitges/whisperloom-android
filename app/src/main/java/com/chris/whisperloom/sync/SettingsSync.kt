@@ -52,6 +52,7 @@ object SettingsSync {
         val merged = SyncJson.copy(before) as JSONObject
         SyncJson.merge(merged, incoming)
         SyncAccessRules.resetOnProviderChange(before, incoming, merged)
+        SyncAccessRules.migrateRetiredModels(merged)
         val errors = mutableListOf<String>()
         val settings = SyncSettings.read(merged, errors)
         settings?.let { errors += it.validate() }

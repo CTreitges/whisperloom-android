@@ -154,7 +154,8 @@ class SettingsSyncTest {
         // Die Einstellungen der Datei gelten trotzdem.
         assertEquals("groq", prefs.sttProviderId)
         assertEquals("openai", prefs.llmProviderId)
-        assertEquals("gpt-5-mini", prefs.llmModelFor(RefineMode.POLISH))
+        // In der Datei steht das abgeschaltete gpt-5-mini.
+        assertEquals("gpt-5.6-luna", prefs.llmModelFor(RefineMode.POLISH))
 
         val text = SettingsSync.export(Prefs(ctx))
         assertFalse(text.contains("test-key-not-real"))
@@ -508,6 +509,47 @@ class SettingsSyncTest {
     @Test fun ungueltigeSpracheNenntDieErlaubtenWerte() {
         val preview = SettingsSync.preview(Prefs(ctx), """{"language": "de+fr"}""")
         assertTrue(preview.errors.toString(), preview.errors.single().contains("\"de+en\""))
+    }
+
+    // --- Abgeschaltete OpenAI-Modelle ---------------------------------------------------------------
+
+    @Test fun abgeschalteteOpenAiModelleWerdenZumNachfolger() {
+        val prefs = Prefs(ctx)
+        importOk(
+            prefs,
+            """{"stt": {"providerId": "openai", "model": "whisper-1"},
+               "sttFallback": {"providerId": "openai", "model": "gpt-4o-transcribe"},
+               "llm": {"providerId": "openai", "model": "gpt-5-nano", "stageModels": {"polish": "gpt-5-mini-2025-08-07"}},
+               "llmFallback": {"providerId": "openai", "model": "gpt-5-mini"}}""",
+        )
+        assertEquals("gpt-transcribe", prefs.apiModel)
+        assertEquals("gpt-transcribe", prefs.sttFallbackModel)
+        assertEquals("gpt-5.6-luna", prefs.llmModel)
+        assertEquals("gpt-5.6-luna", prefs.llmModelFor(RefineMode.POLISH))
+        assertEquals("gpt-5.6-luna", prefs.llmFallbackModel)
+    }
+
+    @Test fun wieErkennungNutztDenAnbieterDerErkennungFuerDieStufen() {
+        val prefs = Prefs(ctx)
+        importOk(prefs, """{"stt": {"providerId": "openai"}, "llm": {"providerId": "same", "stageModels": {"polish": "gpt-5-mini"}}}""")
+        assertEquals("gpt-5.6-luna", prefs.llmModelFor(RefineMode.POLISH))
+    }
+
+    @Test fun eigenerServerBehaeltSeineModellNamen() {
+        val prefs = Prefs(ctx)
+        importOk(prefs, """{"stt": {"providerId": "custom", "baseUrl": "https://w.example.org/v1", "model": "whisper-1"}}""")
+        assertEquals("whisper-1", prefs.apiModel)
+    }
+
+    @Test fun teilDateiOhneAnbieterZaehltDenAnbieterDesGeraets() {
+        val openai = Prefs(ctx).apply { sttProviderId = "openai" }
+        importOk(openai, """{"stt": {"model": "whisper-1"}}""")
+        assertEquals("gpt-transcribe", openai.apiModel)
+
+        clear()
+        val custom = Prefs(ctx).apply { sttProviderId = "custom" }
+        importOk(custom, """{"stt": {"model": "whisper-1"}}""")
+        assertEquals("whisper-1", custom.apiModel)
     }
 
     // --- Hilfen ---------------------------------------------------------------------------------
