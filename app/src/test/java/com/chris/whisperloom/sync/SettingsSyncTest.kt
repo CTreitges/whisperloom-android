@@ -492,6 +492,24 @@ class SettingsSyncTest {
         }
     }
 
+    // --- Sprache ----------------------------------------------------------------------------------
+
+    @Test fun deutschUndEnglischIstEineGueltigeSprache() {
+        val prefs = Prefs(ctx)
+        importOk(prefs, """{"language": "de+en"}""")
+        assertEquals(Prefs.LANG_DE_EN, prefs.language)
+    }
+
+    @Test fun eigenerExportMitDeutschUndEnglischLaesstSichWiederImportieren() {
+        val prefs = Prefs(ctx).apply { language = Prefs.LANG_DE_EN }
+        assertEquals(emptyList<String>(), SettingsSync.preview(prefs, SettingsSync.export(prefs)).errors)
+    }
+
+    @Test fun ungueltigeSpracheNenntDieErlaubtenWerte() {
+        val preview = SettingsSync.preview(Prefs(ctx), """{"language": "de+fr"}""")
+        assertTrue(preview.errors.toString(), preview.errors.single().contains("\"de+en\""))
+    }
+
     // --- Hilfen ---------------------------------------------------------------------------------
 
     /** Vergleichbarer Text: Schluessel sortiert, die Fuellwort-Listen als Menge. */

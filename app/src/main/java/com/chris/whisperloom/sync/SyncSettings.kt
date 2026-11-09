@@ -63,8 +63,8 @@ internal data class SyncSettings(
 
     fun validate(): List<String> {
         val errors = mutableListOf<String>()
-        if (language != "auto" && !(language.length in 2..3 && language.all { it in 'a'..'z' })) {
-            errors += "language: \"auto\" oder ISO-Code (z. B. \"de\")"
+        if (language != "auto" && language != Prefs.LANG_DE_EN && !(language.length in 2..3 && language.all { it in 'a'..'z' })) {
+            errors += "language: \"auto\", \"de+en\" oder ISO-Code (z. B. \"de\")"
         }
         if (engine != null && Engine.fromKey(engine) == null) errors += "engine: \"online\" oder \"offline\""
 
