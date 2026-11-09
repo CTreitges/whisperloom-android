@@ -637,6 +637,31 @@ class SettingsSyncTest {
         assertEquals(emptyList<String>(), SettingsSync.preview(prefs, """{"polish": {"customFillers": ["Halt", " eben "]}}""").changes)
     }
 
+    // --- Offline-Modelle, die es auf dem Telefon nicht gibt -----------------------------------------
+
+    @Test fun unbekanntesOfflineModellBehaeltDieWahlDesGeraets() {
+        val prefs = Prefs(ctx).apply {
+            offlineModel = "tiny"
+            localLlmModel = "gemma4_e4b"
+        }
+        val preview = importOk(prefs, """{"offline": {"model": "custom:meins", "localLlmModel": "gibtsnicht"}}""")
+
+        assertEquals("tiny", prefs.offlineModel)
+        assertEquals("gemma4_e4b", prefs.localLlmModel)
+        assertTrue(preview.warnings.toString(), preview.warnings.any { it.startsWith("offline.model:") })
+        assertTrue(preview.warnings.toString(), preview.warnings.any { it.startsWith("offline.localLlmModel:") })
+        assertFalse(preview.warnings.joinToString(), preview.warnings.joinToString().contains("custom:meins"))
+        assertEquals(emptyList<String>(), preview.changes)
+    }
+
+    @Test fun bekannteOfflineModelleWerdenOhneHinweisUebernommen() {
+        val prefs = Prefs(ctx)
+        val preview = importOk(prefs, """{"offline": {"model": "tiny", "localLlmModel": "gemma4_e4b"}}""")
+        assertEquals("tiny", prefs.offlineModel)
+        assertEquals("gemma4_e4b", prefs.localLlmModel)
+        assertEquals(emptyList<String>(), preview.warnings)
+    }
+
     // --- Hilfen ---------------------------------------------------------------------------------
 
     /** Vergleichbarer Text: Schluessel sortiert, die Fuellwort-Listen als Menge. */

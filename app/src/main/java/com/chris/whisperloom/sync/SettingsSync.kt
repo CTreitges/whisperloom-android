@@ -2,6 +2,8 @@ package com.chris.whisperloom.sync
 
 import android.content.Context
 import com.chris.whisperloom.Prefs
+import com.chris.whisperloom.whisper.ModelCatalog
+import com.chris.whisperloom.whisper.TextModelCatalog
 import org.json.JSONObject
 
 /** Ergebnis der Import-Vorschau. Uebernehmen ([SettingsSync.apply]) nur, wenn [canApply]. */
@@ -53,6 +55,7 @@ object SettingsSync {
         SyncJson.merge(merged, incoming)
         SyncAccessRules.resetOnProviderChange(before, incoming, merged)
         SyncAccessRules.migrateRetiredModels(merged)
+        keepDeviceOfflineModels(before, merged, warnings)
         val errors = mutableListOf<String>()
         val settings = SyncSettings.read(merged, errors)
         // Nur Werte aus der Datei: Das Geraet speichert bei jedem Tastendruck, auch eine halb getippte Adresse.
@@ -117,6 +120,23 @@ object SettingsSync {
         }
         root.opt(SyncTree.POLICY)?.let { if (it !is JSONObject) return "policy muss ein Objekt sein." }
         return null
+    }
+
+    /**
+     * Offline-Modelle, die Android nicht kennt (z. B. `custom:<name>` vom Desktop): Eine unbekannte ID gilt hier als nie
+     * installiert und wuerde die Offline-Erkennung lahmlegen. Der Rest der Datei gilt trotzdem, die Wahl des Geraets bleibt.
+     */
+    private fun keepDeviceOfflineModels(before: JSONObject, merged: JSONObject, warnings: MutableList<String>) {
+        val offline = merged.opt("offline") as? JSONObject ?: return
+        val device = before.getJSONObject("offline")
+        fun check(field: String, known: (String) -> Boolean) {
+            val id = offline.opt(field) as? String ?: return
+            if (id == device.opt(field) || known(id)) return
+            offline.put(field, device.get(field))
+            warnings += "offline.$field: Dieses Modell gibt es auf dem Gerät nicht, die bisherige Auswahl bleibt."
+        }
+        check("model") { ModelCatalog.find(it) != null }
+        check("localLlmModel") { TextModelCatalog.find(it) != null }
     }
 
     private fun changes(before: JSONObject, after: JSONObject): List<String> {
