@@ -127,6 +127,8 @@ class SettingsSyncTest {
         prefs.llmKey = "test-key-not-real-2"
         prefs.sttFallbackKey = "test-key-not-real-3"
         prefs.llmFallbackKey = "test-key-not-real-4"
+        // Derselbe Anbieter wie in der Datei: kein neues Ziel, der Key bleibt.
+        prefs.sttProviderId = "groq"
         importOk(prefs, fixture("settings-v1.json"))
 
         val text = SettingsSync.export(Prefs(ctx))
@@ -134,7 +136,7 @@ class SettingsSyncTest {
         val tree = JSONObject(text)
         assertFalse(tree.has("secrets"))
         assertFalse(tree.has("policy"))
-        // Der Import laesst die Keys des Telefons stehen.
+        // Der Import laesst die Keys stehen, solange ihr Ziel gleich bleibt.
         assertEquals("test-key-not-real-1", prefs.apiKey)
     }
 
@@ -318,6 +320,145 @@ class SettingsSyncTest {
             assertFalse(json, preview.canApply)
             assertTrue("$json -> ${preview.errors}", preview.errors.single().startsWith(message))
         }
+    }
+
+    // --- Anbieterwechsel beim Import: Key, Adresse, Modelle ---------------------------------------
+
+    /** Vier Zugaenge mit gespeichertem Key; die Fallbacks sind aus, zaehlen aber mit. */
+    private fun deviceWithKeys(): Prefs = Prefs(ctx).apply {
+        sttProviderId = "groq"
+        apiKey = "test-key-not-real-1"
+        llmProviderId = "anthropic"
+        llmKey = "test-key-not-real-2"
+        sttFallbackProviderId = "groq"
+        sttFallbackKey = "test-key-not-real-3"
+        llmFallbackProviderId = "groq"
+        llmFallbackKey = "test-key-not-real-4"
+    }
+
+    @Test fun anbieterwechselLoeschtDenKeyAllerVierZugaenge() {
+        val prefs = deviceWithKeys()
+        val preview = importOk(
+            prefs,
+            """{"stt": {"providerId": "openai"}, "llm": {"providerId": "groq"},
+               "sttFallback": {"providerId": "openai"}, "llmFallback": {"providerId": "openai"}}""",
+        )
+        assertEquals("", prefs.apiKey)
+        assertEquals("", prefs.llmKey)
+        assertEquals("", prefs.sttFallbackKey)
+        assertEquals("", prefs.llmFallbackKey)
+        assertTrue(preview.warnings.toString(), preview.warnings.any { it.contains("Key") })
+        assertFalse(preview.warnings.toString(), preview.warnings.joinToString().contains("test-key-not-real"))
+    }
+
+    @Test fun gleicherAnbieterBehaeltDenKey() {
+        val prefs = deviceWithKeys()
+        val preview = importOk(
+            prefs,
+            """{"stt": {"providerId": "groq", "model": "whisper-large-v3"}, "llm": {"providerId": "anthropic"},
+               "sttFallback": {"providerId": "groq"}, "llmFallback": {"providerId": "groq"}}""",
+        )
+        assertEquals("test-key-not-real-1", prefs.apiKey)
+        assertEquals("test-key-not-real-2", prefs.llmKey)
+        assertEquals("test-key-not-real-3", prefs.sttFallbackKey)
+        assertEquals("test-key-not-real-4", prefs.llmFallbackKey)
+        assertFalse(preview.warnings.toString(), preview.warnings.any { it.contains("Key") })
+    }
+
+    @Test fun neueAdresseDesEigenenServersLoeschtDenKey() {
+        val prefs = Prefs(ctx).apply {
+            sttProviderId = "custom"
+            apiBaseUrl = "https://a.example.org/v1"
+            apiKey = "test-key-not-real-1"
+        }
+        importOk(prefs, """{"stt": {"baseUrl": "https://b.example.org/v1"}}""")
+        assertEquals("", prefs.apiKey)
+    }
+
+    @Test fun andererPfadAufDemselbenHostBehaeltDenKey() {
+        val prefs = Prefs(ctx).apply {
+            sttProviderId = "custom"
+            apiBaseUrl = "https://a.example.org/v1"
+            apiKey = "test-key-not-real-1"
+        }
+        importOk(prefs, """{"stt": {"baseUrl": "https://a.example.org/openai/v1"}}""")
+        assertEquals("test-key-not-real-1", prefs.apiKey)
+    }
+
+    @Test fun geerbterKeyGehtNichtAnEineNeueAdresse() {
+        // Eigener Server fuer beides, die Textverbesserung ohne eigenen Key: sie erbt den der Erkennung.
+        val prefs = Prefs(ctx).apply {
+            sttProviderId = "custom"
+            apiBaseUrl = "https://a.example.org/v1"
+            apiKey = "test-key-not-real-1"
+            llmProviderId = "custom"
+        }
+        importOk(prefs, """{"llm": {"baseUrl": "https://fremd.example.org/v1"}}""")
+        assertEquals("", prefs.apiKey)
+    }
+
+    @Test fun teilDateiNurMitAnbieterLeertAdresseUndModell() {
+        val prefs = Prefs(ctx).apply {
+            sttProviderId = "custom"
+            apiBaseUrl = "http://192.168.1.5:8000/v1"
+            apiModel = "mein-whisper"
+            sttFallbackProviderId = "custom"
+            sttFallbackUrl = "http://192.168.1.6:8000/v1"
+            sttFallbackModel = "mein-fallback"
+            llmFallbackProviderId = "custom"
+            llmFallbackUrl = "http://192.168.1.7:8000/v1"
+            llmFallbackModel = "mein-text"
+        }
+        importOk(
+            prefs,
+            """{"stt": {"providerId": "groq"}, "sttFallback": {"providerId": "groq"}, "llmFallback": {"providerId": "groq"}}""",
+        )
+        assertEquals("", prefs.apiBaseUrl)
+        assertEquals("", prefs.apiModel)
+        assertEquals("", prefs.sttFallbackUrl)
+        assertEquals("", prefs.sttFallbackModel)
+        assertEquals("", prefs.llmFallbackUrl)
+        assertEquals("", prefs.llmFallbackModel)
+    }
+
+    @Test fun adresseUndModellDerDateiGeltenAuchBeimAnbieterwechsel() {
+        val prefs = Prefs(ctx).apply { sttProviderId = "groq" }
+        importOk(prefs, """{"stt": {"providerId": "custom", "baseUrl": "https://neu.example.org/v1", "model": "m"}}""")
+        assertEquals("https://neu.example.org/v1", prefs.apiBaseUrl)
+        assertEquals("m", prefs.apiModel)
+    }
+
+    @Test fun anbieterwechselErsetztDieStufenModelleGanz() {
+        val prefs = Prefs(ctx).apply {
+            llmProviderId = "anthropic"
+            llmModel = "claude-sonnet-5"
+            setLlmModelFor(RefineMode.POLISH, "claude-haiku")
+            setLlmModelFor(RefineMode.BEAUTIFY, "claude-opus")
+        }
+        importOk(prefs, """{"llm": {"providerId": "groq", "stageModels": {"polish": "llama-3.1-8b-instant"}}}""")
+        assertEquals("llama-3.1-8b-instant", prefs.llmModelFor(RefineMode.POLISH))
+        assertEquals("", prefs.llmModelFor(RefineMode.BEAUTIFY))
+        assertEquals("", prefs.llmModel)
+    }
+
+    @Test fun wechselDerErkennungSetztModelleVonWieErkennungZurueck() {
+        val prefs = Prefs(ctx).apply {
+            sttProviderId = "groq"
+            llmProviderId = "same"
+            setLlmModelFor(RefineMode.POLISH, "llama-3.1-8b-instant")
+        }
+        importOk(prefs, """{"stt": {"providerId": "openai"}}""")
+        assertEquals("", prefs.llmModelFor(RefineMode.POLISH))
+    }
+
+    @Test fun gleicherAnbieterMischtStufenModelleFeldweise() {
+        val prefs = Prefs(ctx).apply {
+            llmProviderId = "anthropic"
+            setLlmModelFor(RefineMode.BEAUTIFY, "claude-opus")
+        }
+        importOk(prefs, """{"llm": {"stageModels": {"polish": "claude-haiku"}}}""")
+        assertEquals("claude-haiku", prefs.llmModelFor(RefineMode.POLISH))
+        assertEquals("claude-opus", prefs.llmModelFor(RefineMode.BEAUTIFY))
     }
 
     // --- Hilfen ---------------------------------------------------------------------------------

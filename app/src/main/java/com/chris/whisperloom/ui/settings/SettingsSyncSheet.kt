@@ -43,7 +43,8 @@ import java.io.ByteArrayOutputStream
 /**
  * Einstellungen uebertragen (WLD-P5c): Export und Import im Format v1 von WhisperLoom Desktop ueber das
  * Storage Access Framework. Der Import zeigt erst eine Vorschau ([ImportDialog]); uebernommen wird nur nach OK
- * und nur eine fehlerfreie Datei. API-Keys gehen nie in den Export und bleiben beim Import, wie sie sind.
+ * und nur eine fehlerfreie Datei. API-Keys gehen nie in den Export; beim Import bleiben sie, ausser die Datei
+ * schickte sie an ein neues Ziel (dann werden sie geloescht, siehe Hinweis in der Vorschau).
  */
 @Composable
 fun SettingsSyncSheet(snack: SnackController, onDismiss: () -> Unit) {
@@ -115,7 +116,7 @@ fun ImportDialog(preview: ImportPreview, onApply: () -> Unit, onDismiss: () -> U
             val more = preview.changes.size - MAX_LINES
             if (more > 0) add(pluralStringResource(R.plurals.sync_more, more, more))
             addAll(preview.warnings)
-            add(stringResource(R.string.sync_keys_stay))
+            if (preview.droppedKeys.isEmpty()) add(stringResource(R.string.sync_keys_stay))
         }
     }
     AlertDialog(

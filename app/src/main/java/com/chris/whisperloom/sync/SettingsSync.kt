@@ -13,6 +13,8 @@ class ImportPreview internal constructor(
     /** Geaenderte Pfade, sortiert; ohne den Abschnitt `desktop`. */
     val changes: List<String>,
     internal val settings: SyncSettings?,
+    /** Zugaenge, deren gespeicherter Key beim Uebernehmen geloescht wird (neues Ziel). */
+    internal val droppedKeys: List<String> = emptyList(),
 ) {
     val canApply: Boolean get() = settings != null && errors.isEmpty()
 }
@@ -49,6 +51,7 @@ object SettingsSync {
         val before = SyncTree.of(prefs)
         val merged = SyncJson.copy(before) as JSONObject
         SyncJson.merge(merged, incoming)
+        SyncAccessRules.resetOnProviderChange(before, incoming, merged)
         val errors = mutableListOf<String>()
         val settings = SyncSettings.read(merged, errors)
         settings?.let { errors += it.validate() }
@@ -59,13 +62,17 @@ object SettingsSync {
         } else if (settings.historyEnabled && settings.historySize < prefs.historySize) {
             warnings += "Der Verlauf wird auf ${settings.historySize} Einträge verkleinert, ältere werden gelöscht."
         }
-        return ImportPreview(emptyList(), warnings, changes(before, merged), settings)
+        val droppedKeys = SyncAccessRules.droppedKeys(prefs, settings)
+        if (droppedKeys.isNotEmpty()) {
+            warnings += "Gespeicherte Keys werden gelöscht (${droppedKeys.joinToString(", ")}): Die Datei schickt sie an ein neues Ziel. Bei Bedarf neu eingeben."
+        }
+        return ImportPreview(emptyList(), warnings, changes(before, merged), settings, droppedKeys)
     }
 
     /** @throws IllegalStateException fuer eine Vorschau mit Fehlern — dann bleibt alles, wie es ist. */
     fun apply(context: Context, prefs: Prefs, preview: ImportPreview) {
         val settings = checkNotNull(preview.settings.takeIf { preview.canApply }) { "Import mit Fehlern" }
-        settings.writeTo(context, prefs)
+        settings.writeTo(context, prefs, preview.droppedKeys)
     }
 
     /**

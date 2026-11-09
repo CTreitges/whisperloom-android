@@ -96,10 +96,13 @@ internal data class SyncSettings(
     }
 
     /**
-     * Schreibt alles in die vorhandenen [Prefs]-Schluessel. Keys bleiben, wie sie sind. Den Verlauf schaltet und
+     * Schreibt alles in die vorhandenen [Prefs]-Schluessel. Keys bleiben, ausser denen in [droppedKeys]
+     * ([SyncAccessRules.droppedKeys]: sie gingen sonst an ein neues Ziel). Den Verlauf schaltet und
      * kuerzt [History] (Aus loescht, Verkleinern kuerzt — wie die Schalter in den Einstellungen).
      */
-    fun writeTo(context: Context, prefs: Prefs) {
+    fun writeTo(context: Context, prefs: Prefs, droppedKeys: List<String>) {
+        // Zuerst: Zu keinem Zeitpunkt darf ein neues Ziel neben dem alten Key stehen.
+        SyncAccessRules.clearKeys(prefs, droppedKeys)
         prefs.language = language
         // null = "noch nicht gewaehlt": steht in jedem Desktop-Export, der die Erkennung nie umgestellt hat. Es
         // setzt eine getroffene Wahl nicht zurueck — sonst stuende auf dem Telefon wieder die Einrichtung an.

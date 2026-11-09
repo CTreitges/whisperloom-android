@@ -90,4 +90,15 @@ class SettingsSyncSheetTest {
         compose.onNodeWithText("Übernehmen").assertDoesNotExist()
         compose.onNodeWithText("Schließen").assertExists()
     }
+
+    @Test fun vorschauNenntGeloeschteKeysStattKeysBleiben() {
+        prefs.sttProviderId = "groq"
+        prefs.apiKey = "test-key-not-real-1"
+        val preview = SettingsSync.preview(prefs, """{"stt": {"providerId": "openai"}}""")
+        compose.setContent { WhisperLoomTheme { ImportDialog(preview, onApply = {}, onDismiss = {}) } }
+
+        compose.onNodeWithText("Die API-Keys dieses Geräts bleiben, wie sie sind.").assertDoesNotExist()
+        compose.onNodeWithText("Key", substring = true).assertExists()
+        compose.onNodeWithText("test-key-not-real", substring = true).assertDoesNotExist()
+    }
 }
