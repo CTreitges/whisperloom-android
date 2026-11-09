@@ -2,7 +2,6 @@ package com.chris.whisperloom.sync
 
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.RefineMode
-import com.chris.whisperloom.RefineWay
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -32,84 +31,87 @@ internal object SyncTree {
     const val WELCOME_SEEN = "welcomeSeen"
     private val KNOWN_ANDROID = setOf(AGENT_ENABLED, WELCOME_SEEN)
 
-    fun of(prefs: Prefs): JSONObject {
+    fun of(prefs: Prefs): JSONObject = of(SyncSettings.of(prefs))
+
+    /** Auch die Vorschau des Imports: [SyncSettings.normalized] ergibt hier genau den spaeteren Export. */
+    fun of(s: SyncSettings): JSONObject {
         val tree = JSONObject()
             .put(SCHEMA_VERSION, SettingsSync.SCHEMA_VERSION)
-            .put("language", prefs.language)
-            .put("engine", prefs.engine?.key ?: JSONObject.NULL)
+            .put("language", s.language)
+            .put("engine", s.engine ?: JSONObject.NULL)
             .put(
                 STT,
                 JSONObject()
-                    .put("providerId", prefs.sttProviderId)
-                    .put("baseUrl", prefs.apiBaseUrl)
-                    .put("model", prefs.apiModel)
-                    .put("readTimeoutSec", prefs.apiReadTimeoutSec)
-                    .put("vocabulary", prefs.apiPrompt),
+                    .put("providerId", s.stt.providerId)
+                    .put("baseUrl", s.stt.baseUrl)
+                    .put("model", s.stt.model)
+                    .put("readTimeoutSec", s.readTimeoutSec)
+                    .put("vocabulary", s.vocabulary),
             )
-            .put("sttFallback", access(prefs.sttFallbackEnabled, prefs.sttFallbackProviderId, prefs.sttFallbackUrl, prefs.sttFallbackModel))
+            .put("sttFallback", access(s.sttFallback))
             .put(
                 "llm",
                 JSONObject()
-                    .put("providerId", prefs.llmProviderId)
-                    .put("baseUrl", prefs.llmUrl)
-                    .put("model", prefs.llmModel)
-                    .put("stageModels", stageModels(prefs)),
+                    .put("providerId", s.llm.providerId)
+                    .put("baseUrl", s.llm.baseUrl)
+                    .put("model", s.llm.model)
+                    .put("stageModels", stageModels(s)),
             )
-            .put("llmFallback", access(prefs.llmFallbackEnabled, prefs.llmFallbackProviderId, prefs.llmFallbackUrl, prefs.llmFallbackModel))
+            .put("llmFallback", access(s.llmFallback))
             .put(
                 "refine",
                 JSONObject()
-                    .put("stage", prefs.refineMode.key)
-                    .put("promptEnabled", prefs.promptLevelEnabled)
-                    .put("polishCleanup", prefs.polishCleanupFor(RefineWay.DICTATION).key)
-                    .put("summarizeForm", prefs.summarizeFormFor(RefineWay.DICTATION).key)
-                    .put("paragraphsPolish", prefs.paragraphsFor(RefineMode.POLISH))
-                    .put("paragraphsBeautify", prefs.paragraphsFor(RefineMode.BEAUTIFY)),
+                    .put("stage", s.refineStage)
+                    .put("promptEnabled", s.promptEnabled)
+                    .put("polishCleanup", s.polishCleanup)
+                    .put("summarizeForm", s.summarizeForm)
+                    .put("paragraphsPolish", s.paragraphsPolish)
+                    .put("paragraphsBeautify", s.paragraphsBeautify),
             )
             .put(
                 "share",
                 JSONObject()
-                    .put("stage", prefs.shareRefineMode.key)
-                    .put("polishCleanup", prefs.polishCleanupFor(RefineWay.SHARE).key)
-                    .put("summarizeForm", prefs.summarizeFormFor(RefineWay.SHARE).key)
-                    .put("hideFillers", prefs.shareHideFillers),
+                    .put("stage", s.shareStage)
+                    .put("polishCleanup", s.sharePolishCleanup)
+                    .put("summarizeForm", s.shareSummarizeForm)
+                    .put("hideFillers", s.shareHideFillers),
             )
             .put(
                 "polish",
                 JSONObject()
-                    .put("removeFillers", prefs.removeFillers)
-                    .put("autoCapitalize", prefs.autoCapitalize)
-                    .put("trailingSpace", prefs.trailingSpace)
+                    .put("removeFillers", s.removeFillers)
+                    .put("autoCapitalize", s.autoCapitalize)
+                    .put("trailingSpace", s.trailingSpace)
                     // Android speichert eine Menge: sortiert, damit der Export stabil ist.
-                    .put("customFillers", JSONArray(prefs.customFillers.sorted()))
-                    .put("disabledFillers", JSONArray(prefs.disabledFillers.sorted())),
+                    .put("customFillers", JSONArray(s.customFillers.sorted()))
+                    .put("disabledFillers", JSONArray(s.disabledFillers.sorted())),
             )
             .put(
                 "offline",
                 JSONObject()
-                    .put("model", prefs.offlineModel)
-                    .put("accurate", prefs.offlineAccurate)
-                    .put("refine", prefs.offlineRefine.key)
-                    .put("localLlmModel", prefs.localLlmModel),
+                    .put("model", s.offlineModel)
+                    .put("accurate", s.offlineAccurate)
+                    .put("refine", s.offlineRefine)
+                    .put("localLlmModel", s.localLlmModel),
             )
-            .put("history", JSONObject().put("enabled", prefs.historyEnabled).put("size", prefs.historySize))
-            .put("serverModelsEnabled", prefs.serverModelsEnabled)
-        SyncJson.merge(tree, carry(prefs))
+            .put("history", JSONObject().put("enabled", s.historyEnabled).put("size", s.historySize))
+            .put("serverModelsEnabled", s.serverModelsEnabled)
+        SyncJson.merge(tree, s.carry)
         val android = tree.optJSONObject(ANDROID) ?: JSONObject().also { tree.put(ANDROID, it) }
-        android.put(AGENT_ENABLED, prefs.proWidgetsEnabled).put(WELCOME_SEEN, prefs.welcomeSeen)
+        android.put(AGENT_ENABLED, s.agentEnabled).put(WELCOME_SEEN, s.welcomeSeen)
         return tree
     }
 
-    private fun access(enabled: Boolean, providerId: String, baseUrl: String, model: String): JSONObject =
-        JSONObject().put("enabled", enabled).put("providerId", providerId).put("baseUrl", baseUrl).put("model", model)
+    private fun access(a: SyncAccess): JSONObject =
+        JSONObject().put("enabled", a.enabled).put("providerId", a.providerId).put("baseUrl", a.baseUrl).put("model", a.model)
 
     /** Nur Stufen mit eigenem Modell; fehlende Stufe = Standard. */
-    private fun stageModels(prefs: Prefs): JSONObject = JSONObject().also { o ->
-        RefineMode.MODEL_STAGES.forEach { stage -> prefs.llmModelFor(stage).takeIf { it.isNotEmpty() }?.let { o.put(stage.key, it) } }
+    private fun stageModels(s: SyncSettings): JSONObject = JSONObject().also { o ->
+        RefineMode.MODEL_STAGES.forEach { stage -> s.stageModels[stage.key]?.takeIf { it.isNotEmpty() }?.let { o.put(stage.key, it) } }
     }
 
     /** Der gemerkte Rest des letzten Imports; ein kaputter Eintrag zaehlt als leer. */
-    private fun carry(prefs: Prefs): JSONObject =
+    fun carry(prefs: Prefs): JSONObject =
         prefs.syncCarry.takeIf { it.isNotEmpty() }?.let {
             try {
                 JSONObject(it)

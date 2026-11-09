@@ -69,7 +69,8 @@ object SettingsSync {
         if (droppedKeys.isNotEmpty()) {
             warnings += "Gespeicherte Keys werden gelöscht (${droppedKeys.joinToString(", ")}): Die Datei schickt sie an ein neues Ziel. Bei Bedarf neu eingeben."
         }
-        return ImportPreview(emptyList(), warnings, changes(before, merged), settings, droppedKeys)
+        val written = settings.normalized(prefs.engine?.key)
+        return ImportPreview(emptyList(), warnings, changes(before, SyncTree.of(written)), written, droppedKeys)
     }
 
     /** @throws IllegalStateException fuer eine Vorschau mit Fehlern — dann bleibt alles, wie es ist. */

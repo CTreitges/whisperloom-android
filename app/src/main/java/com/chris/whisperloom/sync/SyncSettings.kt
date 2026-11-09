@@ -4,6 +4,7 @@ import android.content.Context
 import com.chris.whisperloom.Engine
 import com.chris.whisperloom.OfflineRefineRule
 import com.chris.whisperloom.PolishCleanup
+import com.chris.whisperloom.PolishPlan
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.RefineWay
@@ -97,6 +98,31 @@ internal data class SyncSettings(
     }
 
     /**
+     * Die Werte, wie sie nach dem Schreiben gelten: Was [Prefs] anders speichert oder liest, ist hier schon umgerechnet.
+     * Erst nach [validate] aufrufen; [writeTo] bekommt nur das Ergebnis, die Vorschau vergleicht dasselbe.
+     *
+     * @param deviceEngine die Wahl des Geraets; `engine: null` steht in jedem Desktop-Export, der die Erkennung nie
+     *   umgestellt hat, und setzt eine getroffene Wahl nicht zurueck.
+     */
+    fun normalized(deviceEngine: String?): SyncSettings {
+        // "Lesbar" ist auf Android Glaetten mit der Bereinigung "Lesbar" (RefineMode.READABLE), "paragraphs" Glaetten.
+        val stage = when (refineStage) {
+            LEGACY_PARAGRAPHS, RefineMode.READABLE.key -> RefineMode.POLISH
+            // Ohne Pro-Funktion liest Prefs die Stufe "Prompt" als Glaetten.
+            RefineMode.PROMPT.key -> if (promptEnabled) RefineMode.PROMPT else RefineMode.POLISH
+            else -> RefineMode.fromKey(refineStage)
+        }
+        return copy(
+            engine = Engine.fromKey(engine)?.key ?: deviceEngine,
+            stageModels = stageModels.filterValues { it.isNotEmpty() },
+            refineStage = stage.key,
+            polishCleanup = if (refineStage == RefineMode.READABLE.key) PolishCleanup.READABLE.key else polishCleanup,
+            customFillers = PolishPlan.normalizeFillers(customFillers).toList(),
+            disabledFillers = PolishPlan.normalizeFillers(disabledFillers).toList(),
+        )
+    }
+
+    /**
      * Schreibt alles in die vorhandenen [Prefs]-Schluessel. Keys bleiben, ausser denen in [droppedKeys]
      * ([SyncAccessRules.droppedKeys]: sie gingen sonst an ein neues Ziel). Den Verlauf schaltet und
      * kuerzt [History] (Aus loescht, Verkleinern kuerzt — wie die Schalter in den Einstellungen).
@@ -105,8 +131,7 @@ internal data class SyncSettings(
         // Zuerst: Zu keinem Zeitpunkt darf ein neues Ziel neben dem alten Key stehen.
         SyncAccessRules.clearKeys(prefs, droppedKeys)
         prefs.language = language
-        // null = "noch nicht gewaehlt": steht in jedem Desktop-Export, der die Erkennung nie umgestellt hat. Es
-        // setzt eine getroffene Wahl nicht zurueck — sonst stuende auf dem Telefon wieder die Einrichtung an.
+        // Nur noch null, wenn auch das Geraet nichts gewaehlt hat (normalized): dann gibt es nichts zu schreiben.
         Engine.fromKey(engine)?.let { prefs.engine = it }
         prefs.sttProviderId = stt.providerId
         prefs.apiBaseUrl = stt.baseUrl
@@ -127,15 +152,9 @@ internal data class SyncSettings(
         prefs.llmFallbackUrl = llmFallback.baseUrl
         prefs.llmFallbackModel = llmFallback.model
 
-        // "Lesbar" ist auf Android Glaetten mit der Bereinigung "Lesbar" (RefineMode.READABLE), "paragraphs" Glaetten.
-        val stage = when (refineStage) {
-            LEGACY_PARAGRAPHS, RefineMode.READABLE.key -> RefineMode.POLISH
-            else -> RefineMode.fromKey(refineStage)
-        }
-        val cleanup = if (refineStage == RefineMode.READABLE.key) PolishCleanup.READABLE else PolishCleanup.fromKey(polishCleanup)
         prefs.promptLevelEnabled = promptEnabled
-        prefs.refineMode = stage
-        prefs.setPolishCleanupFor(RefineWay.DICTATION, cleanup)
+        prefs.refineMode = RefineMode.fromKey(refineStage)
+        prefs.setPolishCleanupFor(RefineWay.DICTATION, PolishCleanup.fromKey(polishCleanup))
         prefs.setSummarizeFormFor(RefineWay.DICTATION, SummarizeForm.fromKey(summarizeForm))
         prefs.setParagraphsFor(RefineMode.POLISH, paragraphsPolish)
         prefs.setParagraphsFor(RefineMode.BEAUTIFY, paragraphsBeautify)
@@ -165,6 +184,44 @@ internal data class SyncSettings(
 
     companion object {
         private const val LEGACY_PARAGRAPHS = "paragraphs"
+
+        /** Der aktuelle Stand des Geraets. */
+        fun of(prefs: Prefs): SyncSettings = SyncSettings(
+            language = prefs.language,
+            engine = prefs.engine?.key,
+            stt = SyncAccess(true, prefs.sttProviderId, prefs.apiBaseUrl, prefs.apiModel),
+            readTimeoutSec = prefs.apiReadTimeoutSec,
+            vocabulary = prefs.apiPrompt,
+            sttFallback = SyncAccess(prefs.sttFallbackEnabled, prefs.sttFallbackProviderId, prefs.sttFallbackUrl, prefs.sttFallbackModel),
+            llm = SyncAccess(true, prefs.llmProviderId, prefs.llmUrl, prefs.llmModel),
+            stageModels = RefineMode.MODEL_STAGES.associate { it.key to prefs.llmModelFor(it) },
+            llmFallback = SyncAccess(prefs.llmFallbackEnabled, prefs.llmFallbackProviderId, prefs.llmFallbackUrl, prefs.llmFallbackModel),
+            refineStage = prefs.refineMode.key,
+            promptEnabled = prefs.promptLevelEnabled,
+            polishCleanup = prefs.polishCleanupFor(RefineWay.DICTATION).key,
+            summarizeForm = prefs.summarizeFormFor(RefineWay.DICTATION).key,
+            paragraphsPolish = prefs.paragraphsFor(RefineMode.POLISH),
+            paragraphsBeautify = prefs.paragraphsFor(RefineMode.BEAUTIFY),
+            shareStage = prefs.shareRefineMode.key,
+            sharePolishCleanup = prefs.polishCleanupFor(RefineWay.SHARE).key,
+            shareSummarizeForm = prefs.summarizeFormFor(RefineWay.SHARE).key,
+            shareHideFillers = prefs.shareHideFillers,
+            removeFillers = prefs.removeFillers,
+            autoCapitalize = prefs.autoCapitalize,
+            trailingSpace = prefs.trailingSpace,
+            customFillers = prefs.customFillers.toList(),
+            disabledFillers = prefs.disabledFillers.toList(),
+            offlineModel = prefs.offlineModel,
+            offlineAccurate = prefs.offlineAccurate,
+            offlineRefine = prefs.offlineRefine.key,
+            localLlmModel = prefs.localLlmModel,
+            historyEnabled = prefs.historyEnabled,
+            historySize = prefs.historySize,
+            serverModelsEnabled = prefs.serverModelsEnabled,
+            agentEnabled = prefs.proWidgetsEnabled,
+            welcomeSeen = prefs.welcomeSeen,
+            carry = SyncTree.carry(prefs),
+        )
 
         /** Liest den gemischten Baum; Typfehler landen als "Falscher Typ bei <pfad>" in [errors], dann null. */
         fun read(tree: JSONObject, errors: MutableCollection<String>): SyncSettings? {

@@ -584,6 +584,59 @@ class SettingsSyncTest {
         assertEquals(listOf("llm.baseUrl: leer oder http(s)-URL"), preview.errors)
     }
 
+    // --- Die Vorschau nennt, was wirklich geschrieben wird -----------------------------------------
+
+    /** Importiert [json] und vergleicht die Vorschau mit dem, was sich danach am Export wirklich geaendert hat. */
+    private fun assertVorschauStimmt(prefs: Prefs, json: String) {
+        val before = SyncJson.leaves(SyncTree.of(prefs))
+        val preview = importOk(prefs, json)
+        val after = SyncJson.leaves(SyncTree.of(Prefs(ctx)))
+        val actual = (before.keys + after.keys).filter { !it.startsWith("desktop.") && before[it] != after[it] }.sorted()
+        assertEquals(json, actual, preview.changes)
+    }
+
+    @Test fun vorschauEntsprichtDenGeschriebenenWerten() {
+        listOf(
+            """{"engine": null}""",
+            """{"refine": {"stage": "readable", "polishCleanup": "plain"}}""",
+            """{"refine": {"stage": "paragraphs"}}""",
+            """{"refine": {"stage": "prompt", "promptEnabled": false}}""",
+            """{"polish": {"customFillers": ["Halt", "halt", " eben "]}}""",
+            """{"llm": {"stageModels": {"polish": ""}}}""",
+            """{"stt": {"futureField": 1}}""",
+            """{"stt": {"providerId": "groq"}}""",
+            """{"stt": {"providerId": "openai", "model": "whisper-1"}}""",
+            fixture("settings-v1.json"),
+            fixture("settings-v1-provisioning.json"),
+        ).forEach { json ->
+            clear()
+            val prefs = Prefs(ctx).apply {
+                engine = Engine.ONLINE
+                refineMode = RefineMode.POLISH
+                customFillers = setOf("halt")
+                sttProviderId = "custom"
+                apiBaseUrl = "https://w.example.org/v1"
+            }
+            assertVorschauStimmt(prefs, json)
+        }
+    }
+
+    @Test fun engineNullIstKeineAenderung() {
+        val prefs = Prefs(ctx).apply { engine = Engine.ONLINE }
+        assertEquals(emptyList<String>(), SettingsSync.preview(prefs, """{"engine": null}""").changes)
+    }
+
+    @Test fun stufeLesbarZeigtDieBereinigungStattDerStufe() {
+        val prefs = Prefs(ctx).apply { refineMode = RefineMode.POLISH }
+        val changes = SettingsSync.preview(prefs, """{"refine": {"stage": "readable"}}""").changes
+        assertEquals(listOf("refine.polishCleanup"), changes)
+    }
+
+    @Test fun fuellwoerterNurInAndererSchreibweiseSindKeineAenderung() {
+        val prefs = Prefs(ctx).apply { customFillers = setOf("eben", "halt") }
+        assertEquals(emptyList<String>(), SettingsSync.preview(prefs, """{"polish": {"customFillers": ["Halt", " eben "]}}""").changes)
+    }
+
     // --- Hilfen ---------------------------------------------------------------------------------
 
     /** Vergleichbarer Text: Schluessel sortiert, die Fuellwort-Listen als Menge. */
