@@ -55,7 +55,9 @@ object SettingsSync {
         SyncAccessRules.migrateRetiredModels(merged)
         val errors = mutableListOf<String>()
         val settings = SyncSettings.read(merged, errors)
-        settings?.let { errors += it.validate() }
+        // Nur Werte aus der Datei: Das Geraet speichert bei jedem Tastendruck, auch eine halb getippte Adresse.
+        val fromFile = SyncJson.leaves(incoming).keys
+        settings?.let { s -> errors += s.validate().filter { e -> fromFile.any { e.startsWith("$it: ") } } }
         if (settings == null || errors.isNotEmpty()) return ImportPreview(errors, warnings, emptyList(), null)
 
         if (!settings.historyEnabled && prefs.historyEnabled) {

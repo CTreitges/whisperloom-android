@@ -552,6 +552,38 @@ class SettingsSyncTest {
         assertEquals("whisper-1", custom.apiModel)
     }
 
+    // --- Geprueft wird die Datei, nicht der Stand des Geraets ---------------------------------------
+
+    @Test fun halbGetippteAdresseDesGeraetsBlockiertKeinenImport() {
+        val prefs = Prefs(ctx).apply {
+            llmProviderId = "custom"
+            llmUrl = "htt"
+        }
+        importOk(prefs, """{"language": "en"}""")
+        assertEquals("en", prefs.language)
+        assertEquals("htt", prefs.llmUrl)
+    }
+
+    @Test fun klartextAdresseDesGeraetsBlockiertKeinenImport() {
+        // Auf dem Geraet nur ein Hinweis im Feld (ServerUrlCheck.Severity.WARNING).
+        val prefs = Prefs(ctx).apply {
+            sttProviderId = "custom"
+            apiBaseUrl = "http://mein-server.example/v1"
+        }
+        importOk(prefs, """{"language": "en"}""")
+        assertEquals("http://mein-server.example/v1", prefs.apiBaseUrl)
+    }
+
+    @Test fun fehlerhafteAdresseAusDerDateiBleibtEinFehler() {
+        val prefs = Prefs(ctx).apply {
+            llmProviderId = "custom"
+            llmUrl = "htt"
+        }
+        val preview = SettingsSync.preview(prefs, """{"llm": {"baseUrl": "ftp://x"}}""")
+        assertFalse(preview.canApply)
+        assertEquals(listOf("llm.baseUrl: leer oder http(s)-URL"), preview.errors)
+    }
+
     // --- Hilfen ---------------------------------------------------------------------------------
 
     /** Vergleichbarer Text: Schluessel sortiert, die Fuellwort-Listen als Menge. */
