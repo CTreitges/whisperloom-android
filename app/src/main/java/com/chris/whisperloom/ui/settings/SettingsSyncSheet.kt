@@ -89,11 +89,13 @@ fun SettingsSyncSheet(snack: SnackController, onDismiss: () -> Unit) {
         ImportDialog(
             preview = p,
             onApply = {
-                SettingsSync.apply(ctx, prefs, p)
-                // Pro Widgets koennen mit dem Import an- oder ausgegangen sein.
-                VoiceTaskWidget.refresh(ctx)
                 preview = null
-                snack.show(res.getString(R.string.sync_imported))
+                scope.launch {
+                    SettingsSync.apply(ctx, prefs, p)
+                    // Pro Widgets koennen mit dem Import an- oder ausgegangen sein.
+                    VoiceTaskWidget.refresh(ctx)
+                    snack.show(res.getString(R.string.sync_imported))
+                }
             },
             onDismiss = { preview = null },
         )

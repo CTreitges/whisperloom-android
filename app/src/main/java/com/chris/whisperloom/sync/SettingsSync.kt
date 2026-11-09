@@ -4,6 +4,8 @@ import android.content.Context
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.whisper.ModelCatalog
 import com.chris.whisperloom.whisper.TextModelCatalog
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
 /** Ergebnis der Import-Vorschau. Uebernehmen ([SettingsSync.apply]) nur, wenn [canApply]. */
@@ -77,9 +79,10 @@ object SettingsSync {
     }
 
     /** @throws IllegalStateException fuer eine Vorschau mit Fehlern — dann bleibt alles, wie es ist. */
-    fun apply(context: Context, prefs: Prefs, preview: ImportPreview) {
+    suspend fun apply(context: Context, prefs: Prefs, preview: ImportPreview) {
         val settings = checkNotNull(preview.settings.takeIf { preview.canApply }) { "Import mit Fehlern" }
-        settings.writeTo(context, prefs, preview.droppedKeys)
+        // Auf IO: History kuerzt bzw. loescht Dateien und blockiert unter seiner Sperre.
+        withContext(Dispatchers.IO) { settings.writeTo(context, prefs, preview.droppedKeys) }
     }
 
     /**

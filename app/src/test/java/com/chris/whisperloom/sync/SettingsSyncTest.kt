@@ -2,11 +2,15 @@ package com.chris.whisperloom.sync
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import com.chris.whisperloom.history.History
 import com.chris.whisperloom.Engine
 import com.chris.whisperloom.PolishCleanup
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.RefineWay
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
@@ -38,7 +42,7 @@ class SettingsSyncTest {
         val preview = SettingsSync.preview(prefs, json)
         assertEquals(emptyList<String>(), preview.errors)
         assertTrue(preview.canApply)
-        SettingsSync.apply(ctx, prefs, preview)
+        runBlocking { SettingsSync.apply(ctx, prefs, preview) }
         return preview
     }
 
@@ -193,7 +197,7 @@ class SettingsSyncTest {
             assertTrue("$json -> ${preview.errors}", preview.errors.any { it.contains(message) })
         }
         // Auch ein erzwungenes apply einer ungueltigen Vorschau aendert nichts.
-        runCatching { SettingsSync.apply(ctx, prefs, SettingsSync.preview(prefs, """{"language": "en", "history": {"size": 33}}""")) }
+        runCatching { runBlocking { SettingsSync.apply(ctx, prefs, SettingsSync.preview(prefs, """{"language": "en", "history": {"size": 33}}""")) } }
 
         assertEquals(before, SettingsSync.export(Prefs(ctx)))
         assertEquals("de", prefs.language)
@@ -660,6 +664,21 @@ class SettingsSyncTest {
         assertEquals("tiny", prefs.offlineModel)
         assertEquals("gemma4_e4b", prefs.localLlmModel)
         assertEquals(emptyList<String>(), preview.warnings)
+    }
+
+    // --- Threads ------------------------------------------------------------------------------------
+
+    @Test fun applyBlockiertNichtDenAufrufendenThread() = runBlocking {
+        val prefs = Prefs(ctx)
+        val preview = SettingsSync.preview(prefs, """{"history": {"size": 100}}""")
+        // History arbeitet unter der Sperre dieses Objekts. Laeuft apply auf dem aufrufenden Thread, kommt es
+        // (reentrant) sofort durch; laeuft es auf dem IO-Thread, wartet es, bis die Sperre frei ist.
+        val job = synchronized(History) {
+            launch(start = CoroutineStart.UNDISPATCHED) { SettingsSync.apply(ctx, prefs, preview) }
+                .also { assertFalse("apply lief auf dem aufrufenden Thread", it.isCompleted) }
+        }
+        job.join()
+        assertEquals(100, prefs.historySize)
     }
 
     // --- Hilfen ---------------------------------------------------------------------------------
