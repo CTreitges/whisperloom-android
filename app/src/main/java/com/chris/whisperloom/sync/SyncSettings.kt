@@ -10,6 +10,7 @@ import com.chris.whisperloom.RefineWay
 import com.chris.whisperloom.SummarizeForm
 import com.chris.whisperloom.api.AccessResolver
 import com.chris.whisperloom.api.ProviderCatalog
+import com.chris.whisperloom.api.ServerUrlCheck
 import com.chris.whisperloom.history.History
 import org.json.JSONArray
 import org.json.JSONObject
@@ -68,21 +69,21 @@ internal data class SyncSettings(
         if (engine != null && Engine.fromKey(engine) == null) errors += "engine: \"online\" oder \"offline\""
 
         provider(errors, "stt.providerId", stt.providerId, stt = true)
-        url(errors, "stt.baseUrl", stt.baseUrl)
+        url(errors, "stt.baseUrl", stt.baseUrl, stt.providerId)
         if (readTimeoutSec != 0 && readTimeoutSec !in Prefs.MIN_TIMEOUT_SEC..Prefs.MAX_TIMEOUT_SEC) {
             errors += "stt.readTimeoutSec: 0 oder 30–1800"
         }
         provider(errors, "sttFallback.providerId", sttFallback.providerId, stt = true)
-        url(errors, "sttFallback.baseUrl", sttFallback.baseUrl)
+        url(errors, "sttFallback.baseUrl", sttFallback.baseUrl, sttFallback.providerId)
 
         if (llm.providerId != AccessResolver.LLM_SAME) provider(errors, "llm.providerId", llm.providerId, stt = false)
-        url(errors, "llm.baseUrl", llm.baseUrl)
+        url(errors, "llm.baseUrl", llm.baseUrl, if (llm.providerId == AccessResolver.LLM_SAME) stt.providerId else llm.providerId)
         val modelStages = RefineMode.MODEL_STAGES.map { it.key }
         stageModels.keys.filter { it !in modelStages }.forEach {
             errors += "llm.stageModels.$it: Stufe unbekannt (${modelStages.joinToString(", ")})"
         }
         provider(errors, "llmFallback.providerId", llmFallback.providerId, stt = false)
-        url(errors, "llmFallback.baseUrl", llmFallback.baseUrl)
+        url(errors, "llmFallback.baseUrl", llmFallback.baseUrl, llmFallback.providerId)
 
         oneOf(errors, "refine.stage", refineStage, RefineMode.entries.map { it.key } + LEGACY_PARAGRAPHS)
         oneOf(errors, "refine.polishCleanup", polishCleanup, PolishCleanup.entries.map { it.key })
@@ -218,7 +219,11 @@ internal data class SyncSettings(
             }
         }
 
-        private fun url(errors: MutableList<String>, path: String, url: String) {
+        /**
+         * Leer oder eine Adresse, die [ServerUrlCheck] durchlaesst. Unverschluesselt ueber das Internet (dort nur ein
+         * Hinweis) ist hier ein Fehler wie auf dem Desktop: Eine fremde Datei soll keinen Key im Klartext verschicken.
+         */
+        private fun url(errors: MutableList<String>, path: String, url: String, providerId: String) {
             // Gekuerzt und Schema ohne Gross-/Kleinschreibung wie zur Laufzeit (ServerUrlCheck) und auf dem Desktop
             // (System.Uri) — sonst liesse sich der eigene Export mit "https://x/v1 " nicht wieder importieren.
             if (url.isBlank()) return
@@ -228,7 +233,14 @@ internal data class SyncSettings(
             } catch (_: URISyntaxException) {
                 false
             }
-            if (!ok) errors += "$path: leer oder http(s)-URL"
+            if (!ok) {
+                errors += "$path: leer oder http(s)-URL"
+                return
+            }
+            val problem = ProviderCatalog.find(providerId)?.let { ServerUrlCheck.check(url, it) } ?: return
+            if (problem.severity == ServerUrlCheck.Severity.ERROR || problem.message == ServerUrlCheck.MSG_PUBLIC_HTTP) {
+                errors += "$path: ${problem.message}"
+            }
         }
 
         private fun oneOf(errors: MutableList<String>, path: String, value: String, allowed: List<String>) {

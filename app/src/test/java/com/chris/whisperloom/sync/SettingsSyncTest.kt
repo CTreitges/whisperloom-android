@@ -461,6 +461,37 @@ class SettingsSyncTest {
         assertEquals("claude-opus", prefs.llmModelFor(RefineMode.BEAUTIFY))
     }
 
+    // --- Adressen wie ServerUrlCheck, Klartext ins Internet ist ein Fehler ------------------------
+
+    @Test fun klartextInsInternetIstEinFehler() {
+        listOf("stt", "sttFallback", "llm", "llmFallback").forEach { section ->
+            val json = """{"$section": {"providerId": "custom", "baseUrl": "http://fremd.example/v1"}}"""
+            val preview = SettingsSync.preview(Prefs(ctx), json)
+            assertFalse(json, preview.canApply)
+            assertTrue("$json -> ${preview.errors}", preview.errors.any { it.startsWith("$section.baseUrl: Unverschlüsselt") })
+        }
+    }
+
+    @Test fun anbieterOhneHttpVerlangtHttps() {
+        val preview = SettingsSync.preview(Prefs(ctx), """{"stt": {"providerId": "openai", "baseUrl": "http://api.example.com/v1"}}""")
+        assertFalse(preview.canApply)
+        assertTrue(preview.errors.toString(), preview.errors.any { it == "stt.baseUrl: Dieser Anbieter braucht https://" })
+    }
+
+    @Test fun wieErkennungPrueftDieAdresseGegenDenAnbieterDerErkennung() {
+        val json = """{"stt": {"providerId": "openai"}, "llm": {"providerId": "same", "baseUrl": "http://text.example/v1"}}"""
+        val preview = SettingsSync.preview(Prefs(ctx), json)
+        assertFalse(preview.canApply)
+        assertTrue(preview.errors.toString(), preview.errors.any { it == "llm.baseUrl: Dieser Anbieter braucht https://" })
+    }
+
+    @Test fun klartextZuPrivatenAdressenBleibtErlaubt() {
+        listOf("http://192.168.1.5:8000/v1", "http://localhost:8000/v1", "http://server.local/v1", "https://fremd.example/v1").forEach { url ->
+            val preview = SettingsSync.preview(Prefs(ctx), """{"stt": {"providerId": "custom", "baseUrl": "$url"}}""")
+            assertEquals(url, emptyList<String>(), preview.errors)
+        }
+    }
+
     // --- Hilfen ---------------------------------------------------------------------------------
 
     /** Vergleichbarer Text: Schluessel sortiert, die Fuellwort-Listen als Menge. */
