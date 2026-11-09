@@ -61,7 +61,7 @@ class PrefsTest {
             assertEquals(way.name, PolishCleanup.PLAIN, p.polishCleanupFor(way))
             assertEquals(way.name, SummarizeForm.AUTO, p.summarizeFormFor(way))
         }
-        assertEquals(7, sp.getInt("prefs_version", 0))
+        assertEquals(8, sp.getInt("prefs_version", 0))
         // Ohne Engine ist die App nicht eingerichtet — auch nicht mit Key.
         assertFalse(TranscriptionEngine.isConfigured(ctx))
     }
@@ -79,11 +79,11 @@ class PrefsTest {
         assertEquals(RefineMode.POLISH, p.refineMode)
         val stt = p.sttAccess()
         assertEquals("openai", stt.provider.id)
-        assertEquals("gpt-4o-transcribe", stt.model) // nicht automatisch umgeschrieben
+        assertEquals("gpt-transcribe", stt.model) // gpt-4o-transcribe endet 2027-02-26: Nachfolger (v8)
         assertEquals("sk-alt", stt.apiKey)
         assertEquals(Prefs.DEFAULT_LLM_MODEL, p.llmAccess().model)
         assertTrue(TranscriptionEngine.isConfigured(ctx))
-        assertEquals(7, sp.getInt("prefs_version", 0))
+        assertEquals(8, sp.getInt("prefs_version", 0))
     }
 
     // --- Review KOR-2/SEC-3: v2 hatte eine freie api_url ohne Anbieter ---------------------
@@ -155,7 +155,7 @@ class PrefsTest {
         RefineMode.MODEL_STAGES.forEach { assertEquals(it.name, "gemini-2.5-flash-lite", p.llmModelFor(it)) }
         assertEquals("gemini-2.5-flash-lite", p.llmAccess(RefineMode.POLISH).model)
         assertEquals("gemini-2.5-flash-lite", p.llmAccess(RefineMode.BEAUTIFY).model)
-        assertEquals(7, sp.getInt("prefs_version", 0))
+        assertEquals(8, sp.getInt("prefs_version", 0))
     }
 
     @Test fun geminiMitGewaehltemModellUndAndereAnbieterBleibenUnveraendert() {
@@ -355,7 +355,7 @@ class PrefsTest {
             assertEquals(fall, share, p.polishCleanupFor(RefineWay.SHARE))
             assertEquals(fall, diktat.key, sp.getString("polish_cleanup", null))
             assertEquals(fall, share.key, sp.getString("share_polish_cleanup", null))
-            assertEquals(7, sp.getInt("prefs_version", 0))
+            assertEquals(8, sp.getInt("prefs_version", 0))
         }
     }
 
@@ -391,7 +391,7 @@ class PrefsTest {
         val p = Prefs(ctx)
         assertEquals(PolishCleanup.READABLE, p.polishCleanupFor(RefineWay.DICTATION))
         assertEquals(PolishCleanup.READABLE, p.polishCleanupFor(RefineWay.SHARE))
-        assertEquals(7, sp.getInt("prefs_version", 0))
+        assertEquals(8, sp.getInt("prefs_version", 0))
 
         sp.edit().clear().putInt("prefs_version", 4).putBoolean("polish_readable", false).putBoolean("smart_fillers", true).commit()
         assertEquals(PolishCleanup.CLEAN, Prefs(ctx).polishCleanupFor(RefineWay.SHARE))
@@ -470,7 +470,7 @@ class PrefsTest {
             assertEquals(stage.name, model, p.llmModelFor(stage))
             assertEquals(stage.name, model, p.llmAccess(stage).model)
         }
-        assertEquals(7, sp.getInt("prefs_version", 0))
+        assertEquals(8, sp.getInt("prefs_version", 0))
     }
 
     @Test fun v7WieErkennungNimmtDenAnbieterDerErkennung() {
@@ -521,6 +521,55 @@ class PrefsTest {
         sp.edit().putString("llm_model", "gpt-6-luna").putString("llm_model_polish", "").commit()
         assertEquals("", Prefs(ctx).llmModelFor(RefineMode.POLISH))
         assertEquals("gpt-6-luna", Prefs(ctx).llmModel)
+    }
+
+    // --- v8 (TD-A4): abgeschaltete OpenAI-Modelle gehen auf den Nachfolger ------------------------
+
+    @Test fun v8StelltAbgeschalteteOpenAiModelleAufDenNachfolgerUm() {
+        sp.edit().putInt("prefs_version", 7)
+            .putString("api_model", "whisper-1")
+            .putString("llm_provider", "openai")
+            .putString("llm_model_polish", "gpt-5-nano")
+            .putString("llm_model_beautify", "gpt-5-mini-2025-08-07")
+            .putString("llm_model_summarize", "gpt-6-sol")
+            .putString("stt_fallback_model", "gpt-4o-mini-transcribe")
+            .putString("llm_fallback_model", "gpt-5-mini")
+            .commit()
+        val p = Prefs(ctx)
+        assertEquals("gpt-transcribe", p.apiModel)
+        assertEquals("gpt-5.6-luna", p.llmModelFor(RefineMode.POLISH))
+        assertEquals("gpt-5.6-luna", p.llmModelFor(RefineMode.BEAUTIFY))
+        assertEquals("nicht abgeschaltet: bleibt", "gpt-6-sol", p.llmModelFor(RefineMode.SUMMARIZE))
+        assertEquals("", p.llmModelFor(RefineMode.PROMPT))
+        assertEquals("gpt-transcribe", p.sttFallbackModel)
+        assertEquals("gpt-5.6-luna", p.llmFallbackModel)
+        // Der Nachfolger steht im Katalog: kein temperature, sonst lehnt OpenAI ab.
+        assertEquals(false, p.llmAccess(RefineMode.BEAUTIFY).modelOption?.temperatureSupported)
+        assertEquals(8, sp.getInt("prefs_version", 0))
+    }
+
+    @Test fun v8LaesstAndereAnbieterUndEigeneServerInRuhe() {
+        // Ein eigener Server darf sein Modell "whisper-1" nennen; jeder Fallback zaehlt mit seinem Anbieter.
+        sp.edit().putInt("prefs_version", 7)
+            .putString("stt_provider", "custom").putString("api_url", "http://192.168.1.5:8000/v1")
+            .putString("api_model", "whisper-1")
+            .putString("llm_model_polish", "gpt-5-mini") // "wie Erkennung" = eigener Server
+            .putString("stt_fallback_provider", "groq").putString("stt_fallback_model", "whisper-1")
+            .putString("llm_fallback_provider", "openrouter").putString("llm_fallback_model", "gpt-5-nano")
+            .commit()
+        val p = Prefs(ctx)
+        assertEquals("whisper-1", p.apiModel)
+        assertEquals("gpt-5-mini", p.llmModelFor(RefineMode.POLISH))
+        assertEquals("whisper-1", p.sttFallbackModel)
+        assertEquals("gpt-5-nano", p.llmFallbackModel)
+    }
+
+    @Test fun v8VonV6VerteiltDenNachfolgerAufDieStufen() {
+        // toV7 liest llm_model nicht aus dem Editor — es muss schon den Nachfolger bekommen.
+        sp.edit().putInt("prefs_version", 6).putString("llm_provider", "openai").putString("llm_model", "gpt-5-nano").commit()
+        val p = Prefs(ctx)
+        assertEquals("", p.llmModel)
+        RefineMode.MODEL_STAGES.forEach { assertEquals(it.name, "gpt-5.6-luna", p.llmModelFor(it)) }
     }
 
     // --- Fallback (3.9.1) ----------------------------------------------------------------------
@@ -680,7 +729,7 @@ class PrefsTest {
         assertEquals(Prefs.DEFAULT_LOCAL_LLM_MODEL, p.localLlmModel)
         assertFalse(sp.contains("offline_refine"))
         assertFalse(sp.contains("local_llm_model"))
-        assertEquals(7, sp.getInt("prefs_version", 0))
+        assertEquals(8, sp.getInt("prefs_version", 0))
     }
 
     @Test fun unbekannteOfflineRegelGiltAlsLokal() {
@@ -961,5 +1010,15 @@ class PrefsTest {
         assertFalse(state.historyEnabled)
         assertEquals(100, state.historySize)
         state.dispose()
+    }
+
+    /** CTR-273 (F3): nur "Deutsch + Englisch" kommt dazu, der Rest und der Default bleiben. */
+    @Test fun sprachlisteMitDeutschUndEnglisch() {
+        assertEquals(listOf("auto", "de", "en", "de+en", "es", "fr", "it"), Prefs.LANGUAGES.map { it.first })
+        assertEquals("Deutsch + Englisch", Prefs.LANGUAGES.first { it.first == Prefs.LANG_DE_EN }.second)
+        val p = Prefs(ctx)
+        assertEquals("de", p.language)
+        p.language = Prefs.LANG_DE_EN
+        assertEquals("de+en", Prefs(ctx).language)
     }
 }

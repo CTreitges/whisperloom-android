@@ -47,25 +47,26 @@ class ModelFlagsTest {
         val viaRouter = llm("openrouter", "openai/gpt-6-astra")!!
         assertFalse(viaRouter.temperatureSupported)
         assertNull("effort-Heuristik nur bei OpenAI selbst", viaRouter.reasoningEffort)
-        // Snapshot eines Katalog-Modells behaelt dessen Stufe (gpt-5-mini: minimal) statt "low".
-        assertEquals("minimal", llm("openai", "gpt-5-mini-2025-08-07")!!.reasoningEffort)
+        // Snapshot eines Katalog-Modells behaelt dessen Stufe (gpt-5.4-nano: none) statt "low".
+        assertEquals("none", llm("openai", "gpt-5.4-nano-2026-03-17")!!.reasoningEffort)
         // Klassische Modelle bekommen keine Stufe.
         assertNull(llm("openai", "gpt-4.1"))
     }
 
     @Test fun snapshotErbtVomKatalogModell() {
-        val mini = llm("openai", "gpt-5-mini-2025-08-07")!!
-        assertFalse(mini.temperatureSupported)
-        assertEquals("minimal", mini.reasoningEffort)
+        val nano = llm("openai", "gpt-5.4-nano-2026-03-17")!!
+        assertFalse(nano.temperatureSupported)
+        assertEquals("none", nano.reasoningEffort)
         assertTrue(llm("openai", "gpt-4o-mini-2024-07-18")!!.temperatureSupported)
-        // Snapshot von gpt-4o-mini-transcribe: language, obwohl der Name nach gpt-*transcribe* aussieht.
-        assertEquals("language", stt("openai", "gpt-4o-mini-transcribe-2025-12-15")!!.languageField)
         assertEquals("languages[]", stt("openai", "gpt-transcribe-2026-08-01")!!.languageField)
+        // CTR-273: keywords[] erbt der Snapshot von gpt-transcribe.
+        assertEquals("keywords[]", stt("openai", "gpt-transcribe-2026-08-01")!!.keywordsField)
     }
 
     @Test fun neueGptTranscribeVarianteBekommtLanguagesArray() {
         val neu = stt("openai", "gpt-5-transcribe")!!
         assertEquals("languages[]", neu.languageField)
+        assertEquals("keywords[]", neu.keywordsField)
         assertTrue("temperature ist kein Erkennungs-Flag", neu.temperatureSupported)
         // OpenRouter nimmt language (ISO-639-1), auch fuer OpenAI-Modelle.
         assertNull(stt("openrouter", "openai/gpt-5-transcribe"))

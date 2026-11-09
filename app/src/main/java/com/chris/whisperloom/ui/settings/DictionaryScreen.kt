@@ -41,11 +41,12 @@ fun DictionaryScreen(nav: NavState) {
                     FilledTonalButton(onClick = { showVocabulary = true }) { Text(stringResource(R.string.vocab_open)) }
                 },
             )
-            // Mistral/OpenRouter kennen kein prompt-Feld; eine context_bias-Wortliste ist nicht
-            // umgesetzt (Spec §2.4, offen) — also ehrlich sagen, dass der Kontext dort nicht ankommt.
-            // ElevenLabs bekommt das Vokabular als keyterms, aber mit Aufpreis.
+            // OpenRouter kennt kein prompt-Feld — also ehrlich sagen, dass der Kontext dort nicht
+            // ankommt. Mistral bekommt ihn als context_bias-Wortliste (CTR-273), ElevenLabs als
+            // keyterms, aber mit Aufpreis.
             val contextInfo = when {
                 prefs.engine == Engine.OFFLINE -> R.string.pref_api_prompt_info
+                stt.provider.sttBiasField != null -> R.string.rec_context_bias
                 !stt.provider.sttSendsPrompt -> R.string.rec_context_unsupported
                 stt.provider.api == ApiStyle.ELEVENLABS -> R.string.rec_context_keyterms
                 else -> R.string.pref_api_prompt_info

@@ -29,20 +29,9 @@ object ProviderCatalog {
             sttModels = listOf(
                 ModelOption(
                     "gpt-transcribe", "GPT Transcribe (empfohlen)",
-                    "\$0.0045/min. Nutzt languages[] statt language, kennt keywords[] + prompt.",
+                    "\$0.0045/min. Nutzt languages[] statt language (bei Deutsch + Englisch beide). Vokabular als prompt und keywords[].",
                     languageField = "languages[]",
-                ),
-                ModelOption(
-                    "gpt-4o-transcribe", "GPT-4o Transcribe (Auslauf 02/2027)",
-                    "\$0.006/min, nur response_format=json, Shutdown 2027-02-26.",
-                ),
-                ModelOption(
-                    "gpt-4o-mini-transcribe", "GPT-4o mini Transcribe (Auslauf 02/2027)",
-                    "\$0.003/min, nur json, Shutdown 2027-02-26.",
-                ),
-                ModelOption(
-                    "whisper-1", "Whisper v2 (Legacy, Auslauf 02/2027)",
-                    "\$0.006/min, prompt max 224 Token.",
+                    keywordsField = "keywords[]",
                 ),
             ),
             // gpt-6-luna/-sol: ungemessen (Stand 2026-10-08), Umformulieren kostet mit Sol 13-17x mehr als gpt-4o-mini.
@@ -64,23 +53,19 @@ object ProviderCatalog {
                     "\$0.20/\$1.20 je 1M. Reasoning-Modell: kein temperature, reasoning_effort=none senden.",
                     temperatureSupported = false, reasoningEffort = "none",
                 ),
+                // Nachfolger von gpt-5-mini laut Deprecations-Seite; effort kennt none..max, kein minimal.
+                ModelOption(
+                    "gpt-5.6-terra", "GPT-5.6 Terra",
+                    "\$2/\$12 je 1M. Kein temperature; reasoning_effort=none. Nachfolger von GPT-5 mini.",
+                    temperatureSupported = false, reasoningEffort = "none",
+                ),
                 ModelOption(
                     "gpt-5.4-nano", "GPT-5.4 nano (Auslauf 04/2027)",
                     "\$0.20/\$1.25 je 1M. Kein temperature; reasoning_effort=none. Shutdown 2027-04-01, Nachfolger GPT-6 Luna.",
                     temperatureSupported = false, reasoningEffort = "none",
                 ),
-                ModelOption(
-                    "gpt-5-mini", "GPT-5 mini (Auslauf 12/2026)",
-                    "\$0.25/\$2.00. Kein temperature; reasoning_effort=minimal. Shutdown 2026-12-11.",
-                    temperatureSupported = false, reasoningEffort = "minimal",
-                ),
-                ModelOption(
-                    "gpt-5-nano", "GPT-5 nano (Auslauf 12/2026)",
-                    "\$0.05/\$0.40. Kein temperature; reasoning_effort=minimal. Shutdown 2026-12-11.",
-                    temperatureSupported = false, reasoningEffort = "minimal",
-                ),
             ),
-            notes = "Bezahlpflichtig (Tier 1 ab \$5). 25-MB-Limit. Alle 4o-/whisper-STT-Modelle enden 2027-02-26.",
+            notes = "Bezahlpflichtig (Tier 1 ab \$5). 25-MB-Limit.",
             rewriteLlmModel = "gpt-6-sol",
         ),
         Provider(
@@ -123,10 +108,14 @@ object ProviderCatalog {
             keyUrl = "https://console.mistral.ai/api-keys",
             sttSendsPrompt = false,
             sttSendsResponseFormat = false,
+            // Array-Feld mit Klammern wie languages[] bei OpenAI: so schickt es auch das OpenAI-SDK
+            // (extra_body={"context_bias": [...]}, in der Mistral-Doku als kompatibel genannt). Live testen.
+            sttBiasField = "context_bias[]",
             sttModels = listOf(
                 ModelOption(
                     "voxtral-mini-latest", "Voxtral Mini Transcribe 2",
-                    "\$0.003/min. 13 Sprachen inkl. Deutsch, bis 3 h. prompt/response_format nicht dokumentiert -> nicht senden.",
+                    "\$0.003/min. 13 Sprachen inkl. Deutsch, bis 3 h. prompt/response_format nicht dokumentiert -> nicht senden. " +
+                        "Vokabular als context_bias (bis 100 Wörter, für Deutsch experimentell).",
                 ),
             ),
             llmModels = listOf(
@@ -148,7 +137,10 @@ object ProviderCatalog {
                 ModelOption("scribe_v2", "Scribe v2", "\$0.22/h, 90+ Sprachen."),
                 ModelOption("scribe_v2_medical", "Scribe v2 Medical", "\$0.22/h. Für medizinische Diktate."),
             ),
-            notes = "Eigenes Protokoll (xi-api-key, model_id), nur Erkennung. Vokabular geht als keyterms (ca. +20 % Kosten).",
+            // Bewusst nicht gesendet (CTR-273): no_verbatim (Rohtext bleibt wortgetreu), temperature, seed,
+            // transcript_edit (+30 %), entity_*, detect_speaker_roles, use_multi_channel, webhook.
+            notes = "Eigenes Protokoll (xi-api-key, model_id), nur Erkennung. Vokabular geht als keyterms (ca. +20 % Kosten). " +
+                "Ohne Geräusch-Marken, Wort-Zeiten und Füllwort-Filter: der Rohtext bleibt wortgetreu.",
         ),
         Provider(
             id = "together",
@@ -385,4 +377,32 @@ object ProviderCatalog {
      * Provider gespeichert und liefen immer gegen OpenAI.
      */
     fun byId(id: String): Provider = find(id) ?: openai
+
+    /**
+     * Aus dem Katalog genommene OpenAI-Modelle (Abschaltung vor 2027-03-01) -> empfohlener Nachfolger
+     * laut https://developers.openai.com/api/docs/deprecations (abgerufen 2026-11-01). Fuer die
+     * Transkription nennt OpenAI "gpt-live-transcribe or gpt-transcribe"; im Katalog steht nur gpt-transcribe.
+     * gpt-5-mini geht bewusst auf gpt-5.6-luna statt auf die OpenAI-Empfehlung gpt-5.6-terra: Terra kostet
+     * $2/$12 statt $0.25/$2 je 1M, Luna $0.20/$1.20 (Entscheidung Christof 2026-11-01).
+     */
+    private val retiredOpenAiModels = mapOf(
+        "gpt-5-mini" to "gpt-5.6-luna", // Shutdown 2026-12-11
+        "gpt-5-nano" to "gpt-5.6-luna", // Shutdown 2026-12-11
+        "gpt-4o-transcribe" to "gpt-transcribe", // Shutdown 2027-02-26
+        "gpt-4o-mini-transcribe" to "gpt-transcribe", // Shutdown 2027-02-26
+        "whisper-1" to "gpt-transcribe", // Shutdown 2027-02-26
+    )
+
+    private val SNAPSHOT_SUFFIX = Regex("-\\d{4}-\\d{2}-\\d{2}$")
+
+    /**
+     * Nachfolger fuer ein abgeschaltetes Modell von [providerId], sonst null. Gilt nur fuer OpenAI selbst:
+     * ein eigener Server darf "whisper-1" weiter so nennen. Datierte Snapshots (gpt-5-mini-2025-08-07)
+     * enden mit ihrem Modell.
+     */
+    fun successorOf(providerId: String, model: String): String? {
+        if (providerId != OPENAI_ID) return null
+        val id = model.trim()
+        return retiredOpenAiModels[id] ?: retiredOpenAiModels[id.replace(SNAPSHOT_SUFFIX, "")]
+    }
 }

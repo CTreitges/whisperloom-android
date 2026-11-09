@@ -302,6 +302,20 @@ class HistoryTest {
         assertEquals(entry, History.get(ctx, id))
     }
 
+    @Test fun ueberschreibenErsetztDieVorhandeneDateiOhneReste() {
+        // Ersetzen einer vorhandenen Datei: AtomicFile.finishWrite (File.renameTo) scheiterte daran
+        // unter Windows still — der Eintrag blieb alt (FL-AWINTEST).
+        record()
+        val id = History.list(ctx).single().id
+
+        History.edit(ctx, id, Processing.EDITED, "Erste Fassung.")
+        History.edit(ctx, id, Processing.EDITED, "Zweite Fassung.")
+
+        val datei = File(History.dir(ctx), "$id.json").readText()
+        assertTrue(datei, datei.contains("Zweite Fassung."))
+        assertEquals(listOf("$id.json"), History.dir(ctx).list()!!.toList())
+    }
+
     @Test fun bearbeitenEinerFassungErsetztSieUndBehaeltDasModell() {
         record()
         val id = History.list(ctx).single().id

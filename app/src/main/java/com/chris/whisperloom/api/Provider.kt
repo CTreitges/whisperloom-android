@@ -7,6 +7,8 @@ import com.chris.whisperloom.RefineMode
  *
  * @param languageField Name des Multipart-Felds fuer die Sprache: "language" (Whisper-Familie)
  *   oder "languages[]" (OpenAI gpt-transcribe erwartet ein Array).
+ * @param keywordsField Multipart-Feld fuer das Vokabular als Einzelbegriffe, zusaetzlich zu
+ *   `prompt` (OpenAI gpt-transcribe: "keywords[]"); null = nur `prompt`.
  * @param temperatureSupported Reasoning-Modelle (OpenAI gpt-5.x) lehnen `temperature` mit 400 ab.
  * @param reasoningEffort Wert fuer `reasoning_effort`, wenn das Modell einen braucht/vertraegt
  *   ("none", "minimal", "low"); null = Feld weglassen.
@@ -22,6 +24,7 @@ data class ModelOption(
     val reasoningEffort: String? = null,
     val languageField: String = "language",
     val thinkingType: String? = null,
+    val keywordsField: String? = null,
 )
 
 /**
@@ -40,6 +43,8 @@ enum class ApiStyle { OPENAI, OLLAMA, ELEVENLABS }
  * @param sttSendsPrompt / [sttSendsResponseFormat] Extra-Felder, die nicht jeder Anbieter
  *   kennt (Mistral validiert streng, OpenRouter dokumentiert `prompt` nicht). [sttSendsPrompt]
  *   heisst zugleich "Vokabular kommt an" — bei ElevenLabs als keyterms statt als `prompt`.
+ * @param sttBiasField Wortlisten-Feld fuer das Vokabular, wenn der Anbieter kein `prompt` kennt
+ *   (Mistral: "context_bias", je Begriff ein Wort ohne Leerzeichen/Komma); null = keins.
  * @param sttPathOverride Kompletter Transkriptions-Endpunkt, wenn er nicht unter
  *   `baseUrl + /audio/transcriptions` liegt (DeepInfra).
  * @param sttMaxBytes Dokumentiertes Upload-Limit (null = unbekannt).
@@ -59,6 +64,7 @@ data class Provider(
     val llmModels: List<ModelOption> = emptyList(),
     val sttSendsPrompt: Boolean = true,
     val sttSendsResponseFormat: Boolean = true,
+    val sttBiasField: String? = null,
     val sttPathOverride: String? = null,
     val sttMaxBytes: Int? = null,
     val api: ApiStyle = ApiStyle.OPENAI,

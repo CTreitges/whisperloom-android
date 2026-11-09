@@ -14,6 +14,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import org.json.JSONObject
 import java.io.File
+import java.io.FileOutputStream
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.util.Locale
 import kotlin.random.Random
 
@@ -281,15 +284,25 @@ object History {
         }
     }
 
+    /**
+     * Wie [AtomicFile.startWrite]/[AtomicFile.finishWrite] (gleiche `.new`-Datei, also raeumen
+     * [AtomicFile.openRead] und [sweep] Reste weiter weg), aber das Ersetzen ueber [Files.move]:
+     * AtomicFile nimmt `File.renameTo`, das eine vorhandene Datei nicht auf jedem Dateisystem
+     * ersetzt (Windows-JVM der Unit-Tests) und dann nur loggt — die Aenderung waere still weg.
+     * ATOMIC_MOVE ist unter Android/Linux dasselbe rename(2) wie bisher.
+     */
     private fun write(dir: File, entry: HistoryEntry) {
         dir.mkdirs()
-        val file = AtomicFile(File(dir, entry.id + SUFFIX))
-        val out = file.startWrite()
+        val file = File(dir, entry.id + SUFFIX)
+        val tmp = File(file.path + ".new")
         try {
-            out.write(entry.toJson().toString().toByteArray(Charsets.UTF_8))
-            file.finishWrite(out)
+            FileOutputStream(tmp).use { out ->
+                out.write(entry.toJson().toString().toByteArray(Charsets.UTF_8))
+                out.fd.sync()
+            }
+            Files.move(tmp.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
         } catch (e: Exception) {
-            file.failWrite(out)
+            tmp.delete()
             throw e
         }
     }

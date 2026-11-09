@@ -11,10 +11,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chris.whisperloom.AppNav
+import com.chris.whisperloom.R
 import com.chris.whisperloom.overlay.FloatingMicService
+import com.chris.whisperloom.ui.history.ConfirmDialog
 import com.chris.whisperloom.ui.history.HistoryDetailScreen
 import com.chris.whisperloom.ui.history.HistoryEditScreen
 import com.chris.whisperloom.ui.history.HistoryListScreen
@@ -51,18 +57,38 @@ import com.chris.whisperloom.whisper.ModelDownloads
 /**
  * Wurzel der Compose-UI: Router (§1.2), Back-Stack und Screen-Wechsel (Fade-through, §5.4).
  * [route] = offener Deep-Link; nach dem Navigieren wird [onRouteConsumed] gerufen.
+ * [nav] vorgeben nur Tests (Back-Stack mit offenem Bearbeiten-Fenster).
  */
 @Composable
-fun WhisperLoomApp(env: AppEnv, route: RouteRequest? = null, onRouteConsumed: () -> Unit = {}) {
+fun WhisperLoomApp(
+    env: AppEnv,
+    route: RouteRequest? = null,
+    nav: NavState = rememberNavState { startStack(SetupFacts.from(env.prefs, env.status), env.prefs.tutorialSeen) },
+    onRouteConsumed: () -> Unit = {},
+) {
     CompositionLocalProvider(LocalAppEnv provides env) {
         val ctx = LocalContext.current
-        val nav = rememberNavState { startStack(SetupFacts.from(env.prefs, env.status), env.prefs.tutorialSeen) }
 
+        // Offenes Bearbeiten mit Aenderungen: der Deep-Link wartet auf die Rueckfrage (Review 3.9.0 #14).
+        var held by remember { mutableStateOf<RouteRequest?>(null) }
         LaunchedEffect(route) {
             if (route != null) {
-                applyRoute(nav, route, SetupFacts.from(env.prefs, env.status))
+                if (nav.unsavedEdit) held = route else applyRoute(nav, route, SetupFacts.from(env.prefs, env.status))
                 onRouteConsumed()
             }
+        }
+        held?.let { r ->
+            ConfirmDialog(
+                title = stringResource(R.string.history_discard_title),
+                body = stringResource(R.string.history_discard_body),
+                confirm = stringResource(R.string.history_discard),
+                dismiss = stringResource(R.string.history_keep_editing),
+                onConfirm = {
+                    held = null
+                    applyRoute(nav, r, SetupFacts.from(env.prefs, env.status))
+                },
+                onDismiss = { held = null },
+            )
         }
 
         // Ein fertiger Download aendert den Systemstatus (installierte Modelle) — auch wenn er auf einem
@@ -74,6 +100,13 @@ fun WhisperLoomApp(env: AppEnv, route: RouteRequest? = null, onRouteConsumed: ()
                 state is DownloadState.Done && id !in status.installedModels && id !in status.installedTextModels
             }
             if (unseen) env.refreshStatus()
+        }
+
+        // Der Knopf kann enden, waehrend die App offen ist (Benachrichtigung "Beenden") — ohne
+        // onResume. Den Status dann nachziehen, sonst zeigt Home weiter "beenden" (CTR-197).
+        val bubbleRunning by FloatingMicService.running.collectAsStateWithLifecycle()
+        LaunchedEffect(bubbleRunning) {
+            if (bubbleRunning != env.status.bubbleRunning) env.refreshStatus()
         }
 
         // Der Assistent hat einen eigenen BackHandler (Schritt zurueck), der tiefer in der

@@ -45,5 +45,10 @@ class OfflineBackend(
 
     /** Bei "auto" liefert whisper die erkannte Sprache mit ([TranscriptResult.detectedLanguage]). */
     override fun transcribe(upload: WavUpload, language: String): TranscriptResult =
-        WhisperEngine.transcribe(modelId, upload.readSamples(), language, initialPrompt, accurate)
+        WhisperEngine.transcribe(modelId, upload.readSamples(), whisperLanguage(language), initialPrompt, accurate)
+
+    companion object {
+        /** whisper.cpp kennt nur einen Code je Lauf: "Deutsch + Englisch" erkennt es selbst ("auto"). */
+        fun whisperLanguage(language: String): String = if (language == Prefs.LANG_DE_EN) "auto" else language
+    }
 }

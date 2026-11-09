@@ -97,9 +97,17 @@ object TranscriptionEngine {
         }
     }
 
-    /** Bei "auto" die vom Erkenner gemeldete Sprache nehmen — sonst bleibt "auto". */
-    internal fun effectiveLanguage(configured: String, detected: String?): String =
-        if (configured == "auto" && !detected.isNullOrBlank()) detected else configured
+    /**
+     * Bei "auto" die vom Erkenner gemeldete Sprache nehmen — sonst bleibt "auto". Bei "Deutsch +
+     * Englisch" ebenso, ohne gemeldete Sprache aber Deutsch: Fuellwoerter und Prompt der
+     * Textverbesserung kennen nur einen Code.
+     */
+    internal fun effectiveLanguage(configured: String, detected: String?): String = when {
+        configured != "auto" && configured != Prefs.LANG_DE_EN -> configured
+        !detected.isNullOrBlank() -> detected
+        configured == Prefs.LANG_DE_EN -> "de"
+        else -> configured
+    }
 
     /**
      * @param skip Ausweg waehrend der Textverbesserung: [RefineSkip.skip] liefert sofort den Text
@@ -110,6 +118,8 @@ object TranscriptionEngine {
      *   Nicht, wenn ohne KI weitergeht (Stufe aus, kein Netz, kein Textmodell, Ueberspringen).
      * @param fixedRefinement feste Verarbeitung statt der des Diktats (Claude-Code-Widget: immer
      *   "Prompt", [com.chris.whisperloom.agent.WidgetProfile.fixedRefinement]); null = wie beim Diktat.
+     * @param language Erkennungssprache statt [Prefs.language] (Widget mit eigener Sprache,
+     *   [com.chris.whisperloom.agent.WidgetProfile.language]); null oder leer = wie in der App.
      * @return Rohtext, Sprache, Dauer und das Ergebnis von KI und Regeln ([refine]); scheitert die
      *   Textverbesserung, kommt der erkannte Text mit Hinweis ([Refined.skipped]) durch. Leerer
      *   Rohtext = nichts erkannt, dann auch kein Text.
@@ -125,6 +135,7 @@ object TranscriptionEngine {
         cancelled: () -> Boolean = { false },
         onRefineStart: () -> Unit = {},
         fixedRefinement: Refinement? = null,
+        language: String? = null,
     ): Dictation {
         val app = context.applicationContext
         val prefs = Prefs(app)
@@ -134,18 +145,19 @@ object TranscriptionEngine {
         val trimmed = AudioUtils.trimSilence(samples)
         val backend = backendFactory(prefs, VocabularySource.prompt(app, prefs).text)
         (backend as? FallbackBackend)?.cancelled = cancelled
-        val result = backend.transcribe(WavUpload.fromSamples(trimmed), prefs.language)
+        val configured = language?.takeIf { it.isNotBlank() } ?: prefs.language
+        val result = backend.transcribe(WavUpload.fromSamples(trimmed), configured)
         val sttNote = sttFallbackNote(backend)
         val raw = result.text
-        val language = effectiveLanguage(prefs.language, result.detectedLanguage)
+        val spoken = effectiveLanguage(configured, result.detectedLanguage)
         // Diktat, Knopf und Widget: die Stufe und ihre Einstellungen fuers Diktat, nie die der Sprachnachrichten.
         val refinement = fixedRefinement ?: prefs.refinementFor(RefineWay.DICTATION)
-        if (raw.isBlank()) return Dictation("", language, durationMs, Refined(refinement, "", note = sttNote))
+        if (raw.isBlank()) return Dictation("", spoken, durationMs, Refined(refinement, "", note = sttNote))
 
         // Die Online-Erkennung hat das Netz gerade bewiesen; offline erkannt zaehlt nur ein validiertes.
-        val refined = refine(app, raw, language, refinement, prefs.engine != Engine.OFFLINE, skip, cancelled, onRefineStart)
+        val refined = refine(app, raw, spoken, refinement, prefs.engine != Engine.OFFLINE, skip, cancelled, onRefineStart)
         val note = listOfNotNull(sttNote, refined.note).joinToString(" · ").ifEmpty { null }
-        return Dictation(raw, language, durationMs, refined.copy(note = note))
+        return Dictation(raw, spoken, durationMs, refined.copy(note = note))
     }
 
     /**

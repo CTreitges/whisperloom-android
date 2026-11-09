@@ -2,6 +2,7 @@ package com.chris.whisperloom.ime
 
 import android.Manifest
 import android.app.Application
+import android.os.Looper
 import android.view.MotionEvent
 import android.view.View
 import android.widget.ImageButton
@@ -11,6 +12,8 @@ import com.chris.whisperloom.Engine
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineMode
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -81,12 +84,24 @@ class ImeGestureTest {
         mic = root.findViewById(R.id.mic)
     }
 
+    /** Der Test hat den Dienst schon selbst beendet. */
+    private var beendet = false
+
     @After fun abbau() {
         // Ohne das laesst jeder Test, der mit laufendem Mikrofon endet, einen Aufnahme- und
         // einen io-Thread zurueck.
-        service.onFinishInputView(true)
-        service.onDestroy()
+        if (!beendet) {
+            service.onFinishInputView(true)
+            service.onDestroy()
+        }
         ShadowAudioRecord.clearSource()
+    }
+
+    /** Wartet, bis der io-Thread des (beendeten) Dienstes fertig ist; dessen Posts liegen dann im Main-Looper. */
+    private fun ioAbwarten() {
+        val io = WhisperLoomInputMethodService::class.java.getDeclaredField("io")
+            .apply { isAccessible = true }.get(service) as ExecutorService
+        assertTrue(io.awaitTermination(5, TimeUnit.SECONDS))
     }
 
     private fun layout() {
@@ -162,6 +177,21 @@ class ImeGestureTest {
     @Test fun loslassenOhneZiehenSendet() {
         down()
         up()
+        assertEquals(app.getString(R.string.kb_transcribing), statusText)
+    }
+
+    /**
+     * CTR-94: Der io-Thread meldet sich nach onDestroy (Tastatur gewechselt) noch zurueck. Lief das
+     * in den Aufbau des naechsten Tests, griff es dort auf einen toten Kontext zu (NPE, wackliger Test).
+     */
+    @Test fun nachDemBeendenZeigtDerDienstNichtsMehrAn() {
+        down()
+        up()
+        service.onFinishInputView(true)
+        service.onDestroy()
+        beendet = true
+        ioAbwarten()
+        shadowOf(Looper.getMainLooper()).idle()
         assertEquals(app.getString(R.string.kb_transcribing), statusText)
     }
 

@@ -3,6 +3,7 @@ package com.chris.whisperloom.ui.access
 import com.chris.whisperloom.AudioUtils
 import com.chris.whisperloom.OnlineBackend
 import com.chris.whisperloom.RefineMode
+import com.chris.whisperloom.TranscriptionEngine
 import com.chris.whisperloom.api.ApiAccess
 import com.chris.whisperloom.api.ApiHttpException
 import com.chris.whisperloom.api.ApiNetworkException
@@ -51,10 +52,14 @@ object AccessTest {
 
     /**
      * LLM-Zugang: kurzer Testsatz per Chat-Completion. Lehnt das Modell `temperature` ab, merkt
-     * [onTemperatureRejected] es sich (ModelCache) — wie beim Diktat.
+     * [onTemperatureRejected] es sich (ModelCache) — wie beim Diktat. Geprueft wird mit der
+     * Anweisung, die ein Diktat ohne erkannte Sprache bekaeme ("Deutsch + Englisch" -> Deutsch).
      */
     fun llm(access: ApiAccess, language: String, onTemperatureRejected: (ApiAccess) -> Unit = {}): Outcome =
-        timed { TextRefiner(access, onTemperatureRejected = onTemperatureRejected).refine(PROBE_TEXT, language, RefineMode.POLISH, smartFillers = false) }
+        timed {
+            TextRefiner(access, onTemperatureRejected = onTemperatureRejected)
+                .refine(PROBE_TEXT, TranscriptionEngine.effectiveLanguage(language, null), RefineMode.POLISH, smartFillers = false)
+        }
 
     /**
      * Sprachauftrag-Bridge: ein leeres Transkript, das die Bridge mit 400 beantwortet —

@@ -1,5 +1,7 @@
 package com.chris.whisperloom.api
 
+import com.chris.whisperloom.Prefs
+import com.chris.whisperloom.Vocabulary
 import java.util.Locale
 
 /**
@@ -32,12 +34,6 @@ object ElevenLabsStt {
 
     /** Zeichen, die ElevenLabs in keyterms ablehnt. */
     private val FORBIDDEN = Regex("[<>{}\\[\\]\\\\]")
-
-    /**
-     * Endet ein Stueck auf ein Satzzeichen, ist es ein Satz(teil) aus altem Freitext, kein Begriff.
-     * Das "…" setzt auch [com.chris.whisperloom.Vocabulary.prompt] ans Ende eines angeschnittenen Eintrags.
-     */
-    private val SENTENCE_END = Regex("[.!?:;…]$")
     private val WHITESPACE = Regex("\\s+")
 
     fun url(access: ApiAccess): String = Http.endpoint(access.baseUrl, PATH)
@@ -45,7 +41,8 @@ object ElevenLabsStt {
     /**
      * Textfelder in Sendereihenfolge (die Datei kommt zuletzt, siehe [ApiTranscriber]).
      *
-     * - keine Sprache bei "auto" (ElevenLabs erkennt sie selbst); sonst der ISO-639-1-Code der App.
+     * - keine Sprache bei "auto" und "Deutsch + Englisch" (ElevenLabs erkennt sie selbst und kennt
+     *   nur einen Code); sonst der ISO-639-1-Code der App.
      * - `tag_audio_events=false`: sonst stuende "(Lachen)" im Diktat.
      * - `timestamps_granularity=none`: die App braucht keine Wort-Zeiten.
      * - kein `enable_logging` — Zero-Retention gibt es nur fuer Enterprise-Konten.
@@ -53,7 +50,7 @@ object ElevenLabsStt {
     fun fields(access: ApiAccess, language: String, prompt: String): List<Pair<String, String>> {
         val out = mutableListOf("model_id" to access.model)
         val lang = language.trim()
-        if (lang.isNotEmpty() && lang != "auto") out += "language_code" to lang
+        if (lang.isNotEmpty() && lang != "auto" && lang != Prefs.LANG_DE_EN) out += "language_code" to lang
         out += "tag_audio_events" to "false"
         out += "timestamps_granularity" to "none"
         out += "file_format" to FILE_FORMAT
@@ -69,17 +66,11 @@ object ElevenLabsStt {
      * Von mehr als [MAX_KEYTERMS] bleiben die letzten — dort stehen die eigenen Begriffe.
      */
     fun keyterms(prompt: String): List<String> =
-        prompt.split(',')
-            .map { it.trim() }
-            .filter { term ->
-                term.isNotEmpty() &&
-                    term.length <= MAX_KEYTERM_CHARS &&
-                    term.split(WHITESPACE).size <= MAX_KEYTERM_WORDS &&
-                    !FORBIDDEN.containsMatchIn(term) &&
-                    !SENTENCE_END.containsMatchIn(term)
-            }
-            .distinct()
-            .takeLast(MAX_KEYTERMS)
+        Vocabulary.terms(prompt, MAX_KEYTERMS) { term ->
+            term.length <= MAX_KEYTERM_CHARS &&
+                term.split(WHITESPACE).size <= MAX_KEYTERM_WORDS &&
+                !FORBIDDEN.containsMatchIn(term)
+        }
 
     /**
      * Die erkannte Sprache kommt 2- oder 3-stellig ("de" bzw. "deu"). Die App rechnet mit

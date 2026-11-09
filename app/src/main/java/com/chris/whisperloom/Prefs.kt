@@ -55,7 +55,10 @@ class Prefs(context: Context) {
         sp.unregisterOnSharedPreferenceChangeListener(listener)
     }
 
-    /** Erkennungssprache: "auto" oder ISO-Code ("de", "en", "es", "fr", "it"). Default: Deutsch. */
+    /**
+     * Erkennungssprache: "auto", ISO-Code ("de", "en", "es", "fr", "it") oder [LANG_DE_EN].
+     * Default: Deutsch.
+     */
     var language: String
         get() = sp.getString(KEY_LANGUAGE, "de") ?: "de"
         set(v) = sp.edit { putString(KEY_LANGUAGE, v) }
@@ -498,7 +501,7 @@ class Prefs(context: Context) {
 
     companion object {
         /** Stand der Einstellungen; [PrefsMigration] hebt aeltere an. */
-        internal const val PREFS_VERSION = 7
+        internal const val PREFS_VERSION = 8
 
         internal const val KEY_PREFS_VERSION = "prefs_version"
         private const val KEY_LANGUAGE = "language"
@@ -506,25 +509,25 @@ class Prefs(context: Context) {
         internal const val KEY_STT_PROVIDER = "stt_provider"
         internal const val KEY_API_URL = "api_url"
         internal const val KEY_API_KEY = "api_key"
-        private const val KEY_API_MODEL = "api_model"
+        internal const val KEY_API_MODEL = "api_model"
         private const val KEY_API_PROMPT = "api_prompt"
         private const val KEY_VOCAB_FILE_URI = "vocab_file_uri"
         private const val KEY_VOCAB_FILE_NAME = "vocab_file_name"
         private const val KEY_READ_TIMEOUT = "api_read_timeout_sec"
         private const val KEY_STT_FALLBACK = "stt_fallback"
-        private const val KEY_STT_FALLBACK_PROVIDER = "stt_fallback_provider"
+        internal const val KEY_STT_FALLBACK_PROVIDER = "stt_fallback_provider"
         private const val KEY_STT_FALLBACK_URL = "stt_fallback_url"
         private const val KEY_STT_FALLBACK_KEY = "stt_fallback_key"
-        private const val KEY_STT_FALLBACK_MODEL = "stt_fallback_model"
+        internal const val KEY_STT_FALLBACK_MODEL = "stt_fallback_model"
         internal const val KEY_LLM_PROVIDER = "llm_provider"
         private const val KEY_LLM_URL = "llm_url"
         private const val KEY_LLM_KEY = "llm_key"
         internal const val KEY_LLM_MODEL = "llm_model"
         private const val KEY_LLM_FALLBACK = "llm_fallback"
-        private const val KEY_LLM_FALLBACK_PROVIDER = "llm_fallback_provider"
+        internal const val KEY_LLM_FALLBACK_PROVIDER = "llm_fallback_provider"
         private const val KEY_LLM_FALLBACK_URL = "llm_fallback_url"
         private const val KEY_LLM_FALLBACK_KEY = "llm_fallback_key"
-        private const val KEY_LLM_FALLBACK_MODEL = "llm_fallback_model"
+        internal const val KEY_LLM_FALLBACK_MODEL = "llm_fallback_model"
 
         /** + [RefineMode.key] der Stufe: llm_model_polish, llm_model_beautify, llm_model_summarize, llm_model_prompt. */
         internal const val KEY_LLM_MODEL_PREFIX = "llm_model_"
@@ -603,11 +606,19 @@ class Prefs(context: Context) {
         val HISTORY_SIZES = listOf(10, 25, 50, 100, 250, 500)
         const val DEFAULT_HISTORY_SIZE = 50
 
+        /**
+         * Deutsche Diktate mit englischen Begriffen: gpt-transcribe bekommt beide Sprachen als
+         * Hinweis (`languages[]`), alle anderen Erkenner erkennen selbst (wie "auto"). Fuer
+         * Fuellwoerter und Textverbesserung zaehlt die erkannte Sprache, sonst Deutsch.
+         */
+        const val LANG_DE_EN = "de+en"
+
         /** Sprachen fuer die Einstellungs-Auswahl. Erste = Default. */
         val LANGUAGES = listOf(
             "auto" to "Automatisch erkennen",
             "de" to "Deutsch",
             "en" to "Englisch",
+            LANG_DE_EN to "Deutsch + Englisch",
             "es" to "Spanisch",
             "fr" to "Französisch",
             "it" to "Italienisch",

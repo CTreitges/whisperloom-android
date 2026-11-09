@@ -2,6 +2,7 @@ package com.chris.whisperloom.ime
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.inputmethodservice.InputMethodService
 import android.os.Build
@@ -67,11 +68,26 @@ import kotlin.math.abs
 class WhisperLoomInputMethodService : InputMethodService() {
 
     private lateinit var prefs: Prefs
+
+    /**
+     * Die App schreibt die Stufe mit ihrer eigenen [Prefs], waehrend die Leiste offen stehen kann —
+     * auch ueber einen App-Wechsel hinweg, nach dem das System beim selben Feld [onStartInputView]
+     * nicht erneut ruft. Als Feld gehalten: SharedPreferences haelt Horcher nur schwach.
+     */
+    private val onPrefsChange = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> refreshRefineBar() }
     private val recorder = AudioRecorder()
 
     // Alle Netz-/IO-Arbeiten seriell auf einem Hintergrund-Thread; UI ueber main.
     private val io = Executors.newSingleThreadExecutor { r -> Thread(r, "loom-ime-io") }
     private val main = Handler(Looper.getMainLooper())
+
+    /** Nach onDestroy: der io-Thread laeuft noch zu Ende, reine Anzeige-Rueckmeldungen entfallen (CTR-94). */
+    private var destroyed = false
+
+    /** Anzeige-Rueckmeldung vom io-Thread — nicht fuer das Einfuegen des Texts, das auch danach retten muss. */
+    private fun postUi(block: () -> Unit) {
+        main.post { if (!destroyed) block() }
+    }
 
     @Volatile private var state = BubbleState.IDLE
 
@@ -171,6 +187,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
     override fun onCreate() {
         super.onCreate()
         prefs = Prefs(this)
+        prefs.observe(onPrefsChange)
     }
 
     // performClick() aus onTouch heraus zu rufen (was Lint verlangt) wuerde hier doppelt
@@ -290,7 +307,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
         // Der Eingabe-View wird ueber Feld- und App-Wechsel hinweg wiederverwendet. Eine
         // offen stehende Leiste zeigte sonst die Stufe und den KI-Zugang von vorhin —
         // beides kann sich inzwischen geaendert haben.
-        if (refineBar?.isShown == true) refineBar?.show(prefs.refineMode, refineBlocked() == null, prefs.promptLevelEnabled)
+        refreshRefineBar()
         restoreStatus()
     }
 
@@ -573,6 +590,12 @@ class WhisperLoomInputMethodService : InputMethodService() {
         if (blocked != null && state == BubbleState.IDLE) showStatus(blocked)
     }
 
+    /** Eine offene Leiste auf den gespeicherten Stand bringen: Stufe, KI-Zugang, Schalter "Prompt". */
+    private fun refreshRefineBar() {
+        val bar = refineBar ?: return
+        if (bar.isShown) bar.show(prefs.refineMode, refineBlocked() == null, prefs.promptLevelEnabled)
+    }
+
     private fun closeRefineBar() {
         val bar = refineBar ?: return
         if (!bar.isShown) return
@@ -673,7 +696,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
             val samples = recorder.stop()
             // Sehr kurze Aufnahmen (< 0,3 s) verwerfen — meist versehentliche Taps.
             if (samples.size < AudioRecorder.SAMPLE_RATE * 3 / 10) {
-                main.post {
+                postUi {
                     applyState(BubbleState.IDLE)
                     showIdleStatus()
                 }
@@ -711,7 +734,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
             } catch (e: Throwable) {
                 Log.e(TAG, "Diktat abgebrochen", e)
                 pendingSamples = null
-                main.post {
+                postUi {
                     applyState(BubbleState.IDLE)
                     showStatus(Status.ERROR)
                 }
@@ -752,7 +775,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
                 applicationContext,
                 samples,
                 skip = skip,
-                onRefineStart = { main.post { showRefining(skip) } },
+                onRefineStart = { postUi { showRefining(skip) } },
             )
             // Vor dem Einfuegen: ist das Feld inzwischen weg, bleibt der Text so erhalten.
             val inHistory = !privateField && History.record(applicationContext, HistorySource.KEYBOARD, dictation)
@@ -773,7 +796,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
         } catch (e: ApiNotConfiguredException) {
             // Das Audio bleibt fuer "Erneut senden": der Zugang laesst sich einrichten, ohne neu zu diktieren.
             pendingSamples = samples
-            main.post {
+            postUi {
                 applyState(BubbleState.ERROR)
                 showStatus(Status.NOT_CONFIGURED)
             }
@@ -782,7 +805,7 @@ class WhisperLoomInputMethodService : InputMethodService() {
             // Ohne Offline-Modell ebenso: laden oder auf Online umstellen, dann erneut senden.
             val retryable = e.isRetryable() || e is OfflineNotAvailableException
             pendingSamples = if (retryable) samples else null
-            main.post {
+            postUi {
                 applyState(if (retryable) BubbleState.ERROR else BubbleState.IDLE)
                 showStatus(Status.ERROR, e.message ?: getString(R.string.kb_error))
                 if (!reduceMotion()) micZone?.let { BubbleAnimators.shake(it).start() }
@@ -1000,6 +1023,8 @@ class WhisperLoomInputMethodService : InputMethodService() {
         info?.packageName?.let { "$it#${info.fieldId}" }
 
     override fun onDestroy() {
+        destroyed = true
+        prefs.unobserve(onPrefsChange)
         main.removeCallbacks(lockedTicker)
         // Offenes Diktat: der Globus ist gesperrt, ein Wechsel ueber die Navigationsleiste oder die
         // Systemeinstellungen beendet den Dienst trotzdem. Anhalten (Mikrofon sofort frei) und die

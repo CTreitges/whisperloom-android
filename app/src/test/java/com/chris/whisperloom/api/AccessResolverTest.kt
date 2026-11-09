@@ -26,12 +26,12 @@ class AccessResolverTest {
     }
 
     @Test fun bestandsnutzerBehaeltAltesModellUndUrl() {
-        // Vor v3: kein stt_provider, aber Key + gpt-4o-transcribe gespeichert.
-        val a = AccessResolver.resolveStt("", "https://api.openai.com/v1", "sk-x", "gpt-4o-transcribe", 0)
+        // Vor v3: kein stt_provider, aber Key + Modell gespeichert. Der Resolver schreibt nichts um —
+        // abgeschaltete Modelle ersetzt PrefsMigration (v8) beim Laden.
+        val a = AccessResolver.resolveStt("", "https://api.openai.com/v1", "sk-x", "whisper-1", 0)
         assertEquals("openai", a.provider.id)
-        assertEquals("gpt-4o-transcribe", a.model)
-        assertTrue(a.modelOption!!.label.contains("Auslauf"))
-        assertEquals("language", a.modelOption!!.languageField)
+        assertEquals("whisper-1", a.model)
+        assertEquals("https://api.openai.com/v1", a.baseUrl)
     }
 
     @Test fun werteWerdenGetrimmt() {

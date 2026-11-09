@@ -76,11 +76,53 @@ class ProviderCatalogTest {
 
     @Test fun gptTranscribeSendetLanguagesArray() {
         assertEquals("languages[]", ProviderCatalog.openai.sttModel("gpt-transcribe")!!.languageField)
-        assertEquals("language", ProviderCatalog.openai.sttModel("gpt-4o-transcribe")!!.languageField)
     }
 
-    @Test fun altesDefaultModellIstAlsAuslaufGekennzeichnet() {
-        assertTrue(ProviderCatalog.openai.sttModel("gpt-4o-transcribe")!!.label.contains("Auslauf"))
+    /** TD-A4: was vor 2027-03-01 abgeschaltet wird, steht nicht mehr zur Wahl (Datum aus der Notiz). */
+    @Test fun keinKatalogModellLaeuftVorMaerz2027Aus() {
+        val shutdown = Regex("Shutdown (\\d{4}-\\d{2}-\\d{2})")
+        for (p in ProviderCatalog.providers) {
+            for (m in p.sttModels + p.llmModels) {
+                val date = shutdown.find(m.note)?.groupValues?.get(1) ?: continue
+                assertTrue("${p.id}/${m.id} $date", date >= "2027-03-01")
+            }
+        }
+        val openai = ProviderCatalog.openai
+        for (id in listOf("gpt-5-mini", "gpt-5-nano", "gpt-4o-transcribe", "gpt-4o-mini-transcribe", "whisper-1")) {
+            assertNull(id, openai.sttModel(id) ?: openai.llmModel(id))
+        }
+    }
+
+    /**
+     * Nachfolger laut developers.openai.com/api/docs/deprecations (2026-11-01); sie stehen im Katalog.
+     * Ausnahme gpt-5-mini: Christof wählt gpt-5.6-luna statt der OpenAI-Empfehlung gpt-5.6-terra (Preis).
+     */
+    @Test fun abgeschalteteOpenAiModelleHabenEinenNachfolgerImKatalog() {
+        val openai = ProviderCatalog.openai
+        val expected = mapOf(
+            "gpt-5-mini" to "gpt-5.6-luna",
+            "gpt-5-nano" to "gpt-5.6-luna",
+            "gpt-4o-transcribe" to "gpt-transcribe",
+            "gpt-4o-mini-transcribe" to "gpt-transcribe",
+            "whisper-1" to "gpt-transcribe",
+        )
+        for ((retired, successor) in expected) {
+            assertEquals(retired, successor, ProviderCatalog.successorOf("openai", retired))
+            assertNotNull(successor, openai.sttModel(successor) ?: openai.llmModel(successor))
+        }
+        // Datierter Snapshot endet mit seinem Modell.
+        assertEquals("gpt-5.6-luna", ProviderCatalog.successorOf("openai", " gpt-5-mini-2025-08-07 "))
+        assertEquals("gpt-transcribe", ProviderCatalog.successorOf("openai", "gpt-4o-mini-transcribe-2025-12-15"))
+        // Nur OpenAI selbst: ein eigener Server oder Groq darf "whisper-1" weiter nutzen.
+        assertNull(ProviderCatalog.successorOf("custom", "whisper-1"))
+        assertNull(ProviderCatalog.successorOf("groq", "whisper-1"))
+        assertNull(ProviderCatalog.successorOf("openai", "gpt-6-luna"))
+        assertNull(ProviderCatalog.successorOf("openai", "gpt-5-mini-latest"))
+        assertNull(ProviderCatalog.successorOf("openai", ""))
+        // Terra wie die anderen gpt-5.6: kein temperature, effort none (kein minimal mehr).
+        val terra = openai.llmModel("gpt-5.6-terra")!!
+        assertFalse(terra.temperatureSupported)
+        assertEquals("none", terra.reasoningEffort)
     }
 
     @Test fun reasoningModelleOhneTemperatureHabenEinenEffort() {
@@ -106,6 +148,16 @@ class ProviderCatalogTest {
             ProviderCatalog.byId("deepinfra").sttPathOverride,
         )
         assertNull(ProviderCatalog.openai.sttPathOverride)
+    }
+
+    /** CTR-273 (F5/F6): Vokabular-Wortlisten nur dort, wo die Anbieter-Doku sie nennt. */
+    @Test fun vokabularFelderNurBeiGptTranscribeUndMistral() {
+        val keywords = ProviderCatalog.providers.flatMap { p -> p.sttModels.filter { it.keywordsField != null }.map { "${p.id}/${it.id}" } }
+        assertEquals(listOf("openai/gpt-transcribe"), keywords)
+        assertEquals("keywords[]", ProviderCatalog.openai.sttModel("gpt-transcribe")!!.keywordsField)
+        val bias = ProviderCatalog.providers.filter { it.sttBiasField != null }.map { it.id }
+        assertEquals(listOf("mistral"), bias)
+        assertEquals("context_bias[]", ProviderCatalog.byId("mistral").sttBiasField)
     }
 
     @Test fun anzeigeReihenfolgeDerDropdowns() {
