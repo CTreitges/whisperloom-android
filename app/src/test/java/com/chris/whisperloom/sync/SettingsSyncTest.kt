@@ -681,6 +681,123 @@ class SettingsSyncTest {
         assertEquals(100, prefs.historySize)
     }
 
+    // --- Eigene Anbieter vom Desktop (custom:<id>, local:<name>) ------------------------------------
+
+    private val providersJson =
+        """"providers": {"custom": [
+            {"id": "mein", "name": "M", "protocol": "openai", "baseUrl": "https://m.example.org/v1"},
+            {"id": "ohne", "name": "O", "baseUrl": "https://o.example.org/v1"},
+            {"id": "lan", "name": "L", "protocol": "openai", "baseUrl": "http://192.168.1.9:8000/v1"},
+            {"id": "offen", "name": "F", "protocol": "openai", "baseUrl": "http://fremd.example/v1"},
+            {"id": "leer", "name": "E", "protocol": "openai", "baseUrl": ""},
+            {"id": "oll", "name": "A", "protocol": "ollama", "baseUrl": "https://a.example.org"}
+        ]}"""
+
+    @Test fun eigenerOpenAiAnbieterWirdZumEigenenServer() {
+        val prefs = Prefs(ctx)
+        val preview = importOk(
+            prefs,
+            """{$providersJson, "stt": {"providerId": "custom:mein", "baseUrl": "https://ignoriert.example.org/v1", "model": "w"},
+               "llm": {"providerId": "custom:ohne", "model": "t"}, "sttFallback": {"providerId": "custom:lan", "enabled": true}}""",
+        )
+        assertEquals("custom", prefs.sttProviderId)
+        assertEquals("https://m.example.org/v1", prefs.apiBaseUrl)
+        assertEquals("w", prefs.apiModel)
+        assertEquals("custom", prefs.llmProviderId)
+        assertEquals("https://o.example.org/v1", prefs.llmUrl)
+        assertEquals("t", prefs.llmModel)
+        assertEquals("custom", prefs.sttFallbackProviderId)
+        assertEquals("http://192.168.1.9:8000/v1", prefs.sttFallbackUrl)
+        assertTrue(prefs.sttFallbackEnabled)
+        assertEquals(emptyList<String>(), preview.warnings)
+    }
+
+    @Test fun eintragAusEinerFrueherenDateiZaehlt() {
+        val prefs = Prefs(ctx)
+        importOk(prefs, """{$providersJson}""")
+        importOk(prefs, """{"stt": {"providerId": "custom:mein"}}""")
+        assertEquals("custom", prefs.sttProviderId)
+        assertEquals("https://m.example.org/v1", prefs.apiBaseUrl)
+    }
+
+    @Test fun nichtAbbildbarerAnbieterUeberspringtNurDiesenZugang() {
+        listOf("local:server", "custom:fehlt", "custom:oll", "custom:leer").forEach { id ->
+            clear()
+            val prefs = Prefs(ctx).apply {
+                sttProviderId = "groq"
+                apiModel = "whisper-large-v3"
+                apiKey = "test-key-not-real-1"
+                llmProviderId = "anthropic"
+                setLlmModelFor(RefineMode.POLISH, "claude-haiku")
+                llmFallbackProviderId = "groq"
+            }
+            val preview = importOk(
+                prefs,
+                """{$providersJson, "language": "en",
+                   "stt": {"providerId": "$id", "baseUrl": "https://x.example.org/v1", "model": "m", "vocabulary": "Wort"},
+                   "llm": {"providerId": "$id", "model": "m", "stageModels": {"polish": "m"}},
+                   "llmFallback": {"providerId": "$id", "enabled": true}}""",
+            )
+            assertEquals(id, "en", prefs.language)
+            assertEquals(id, "Wort", prefs.apiPrompt)
+            assertEquals(id, "groq", prefs.sttProviderId)
+            assertEquals(id, "", prefs.apiBaseUrl)
+            assertEquals(id, "whisper-large-v3", prefs.apiModel)
+            assertEquals(id, "test-key-not-real-1", prefs.apiKey)
+            assertEquals(id, "anthropic", prefs.llmProviderId)
+            assertEquals(id, "claude-haiku", prefs.llmModelFor(RefineMode.POLISH))
+            assertEquals(id, "groq", prefs.llmFallbackProviderId)
+            assertFalse(id, prefs.llmFallbackEnabled)
+            listOf("stt", "llm", "llmFallback").forEach { section ->
+                assertTrue("$id $section ${preview.warnings}", preview.warnings.any { it.startsWith("$section:") })
+            }
+            assertFalse(id, preview.warnings.joinToString().contains(id))
+        }
+    }
+
+    @Test fun eigenerAnbieterLoeschtDenKeyBeiNeuemZiel() {
+        val prefs = Prefs(ctx).apply {
+            sttProviderId = "groq"
+            apiKey = "test-key-not-real-1"
+        }
+        val preview = importOk(prefs, """{$providersJson, "stt": {"providerId": "custom:mein"}}""")
+        assertEquals("", prefs.apiKey)
+        assertTrue(preview.warnings.toString(), preview.warnings.any { it.contains("Key") })
+    }
+
+    @Test fun eigenerAnbieterAufDemselbenServerBehaeltDenKey() {
+        val prefs = Prefs(ctx).apply {
+            sttProviderId = "custom"
+            apiBaseUrl = "https://m.example.org/v1"
+            apiKey = "test-key-not-real-1"
+        }
+        importOk(prefs, """{$providersJson, "stt": {"providerId": "custom:mein"}}""")
+        assertEquals("test-key-not-real-1", prefs.apiKey)
+    }
+
+    @Test fun klartextAdresseEinesEintragsIstEinFehler() {
+        val prefs = Prefs(ctx)
+        val preview = SettingsSync.preview(prefs, """{$providersJson, "stt": {"providerId": "custom:offen"}}""")
+        assertFalse(preview.canApply)
+        assertTrue(preview.errors.toString(), preview.errors.any { it.startsWith("stt.baseUrl: Unverschlüsselt") })
+    }
+
+    @Test fun andereDoppelpunktIdsBleibenUnbekannt() {
+        val preview = SettingsSync.preview(Prefs(ctx), """{"stt": {"providerId": "foo:bar"}}""")
+        assertFalse(preview.canApply)
+        assertTrue(preview.errors.toString(), preview.errors.any { it.startsWith("stt.providerId: Anbieter unbekannt") })
+    }
+
+    @Test fun vorschauStimmtAuchMitEigenenAnbietern() {
+        listOf(
+            """{$providersJson, "stt": {"providerId": "custom:mein", "model": "w"}}""",
+            """{$providersJson, "stt": {"providerId": "local:server", "model": "m"}, "llm": {"providerId": "custom:oll"}}""",
+        ).forEach { json ->
+            clear()
+            assertVorschauStimmt(Prefs(ctx).apply { sttProviderId = "groq" }, json)
+        }
+    }
+
     // --- Hilfen ---------------------------------------------------------------------------------
 
     /** Vergleichbarer Text: Schluessel sortiert, die Fuellwort-Listen als Menge. */

@@ -4,6 +4,7 @@ import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.api.AccessResolver
 import com.chris.whisperloom.api.ApiAccess
 import com.chris.whisperloom.api.ProviderCatalog
+import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URI
 
@@ -22,6 +23,49 @@ internal object SyncAccessRules {
     private const val MODEL = "model"
     private const val STAGE_MODELS = "stageModels"
     private const val KEY_MARKER = "key:"
+    private const val PROVIDERS = "providers"
+    private const val CUSTOM_ENTRIES = "custom"
+    private const val CUSTOM_PREFIX = "custom:"
+    private const val LOCAL_PREFIX = "local:"
+    private const val OPENAI_PROTOCOL = "openai"
+
+    /** Felder, die den Zugang ausmachen; `stt.vocabulary` und der Timeout gelten auch ohne ihn. */
+    private val ACCESS_FIELDS = listOf(PROVIDER, BASE_URL, MODEL, STAGE_MODELS, "enabled")
+
+    /**
+     * Eigene Anbieter des Desktops in [incoming], vor dem Mischen: `custom:<id>` mit Eintrag in `providers.custom`,
+     * Protokoll `openai` und Adresse wird zum Android-Anbieter `custom` mit der Adresse des Eintrags (sie gilt immer,
+     * nie `*.baseUrl`). Alles andere gibt es auf Android nicht; dann bleibt der Zugang des Geraets.
+     *
+     * @return die uebersprungenen Zugaenge
+     */
+    fun mapDesktopProviders(before: JSONObject, incoming: JSONObject): List<String> {
+        val entries = customEntries(incoming) ?: customEntries(before)
+        return listOf(STT, STT_FALLBACK, LLM, LLM_FALLBACK).filter { name ->
+            val section = incoming.opt(name) as? JSONObject ?: return@filter false
+            val id = section.opt(PROVIDER) as? String ?: return@filter false
+            if (!id.startsWith(CUSTOM_PREFIX) && !id.startsWith(LOCAL_PREFIX)) return@filter false
+            val url = if (id.startsWith(CUSTOM_PREFIX)) openAiEntryUrl(entries, id.removePrefix(CUSTOM_PREFIX)) else null
+            if (url != null) {
+                section.put(PROVIDER, ProviderCatalog.CUSTOM_ID).put(BASE_URL, url)
+            } else {
+                ACCESS_FIELDS.forEach { section.remove(it) }
+            }
+            url == null
+        }
+    }
+
+    private fun customEntries(tree: JSONObject): JSONArray? =
+        (tree.opt(PROVIDERS) as? JSONObject)?.opt(CUSTOM_ENTRIES) as? JSONArray
+
+    /** Adresse des Eintrags, null = nicht abbildbar. Ohne `protocol` gilt wie im Format `openai`. */
+    private fun openAiEntryUrl(entries: JSONArray?, id: String): String? {
+        if (entries == null) return null
+        val entry = (0 until entries.length()).mapNotNull { entries.opt(it) as? JSONObject }
+            .firstOrNull { it.opt("id") == id } ?: return null
+        if ((entry.opt("protocol") ?: OPENAI_PROTOCOL) != OPENAI_PROTOCOL) return null
+        return (entry.opt(BASE_URL) as? String)?.takeIf { it.isNotBlank() }
+    }
 
     /**
      * Neuer Anbieter: Adresse und Modelle gehoeren zum alten, gelten also nur noch, wenn die Datei sie selbst nennt

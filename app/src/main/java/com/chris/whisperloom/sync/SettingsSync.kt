@@ -53,6 +53,9 @@ object SettingsSync {
         listOf(SyncTree.SECRETS, SyncTree.POLICY, SyncTree.SCHEMA_VERSION).forEach { incoming.remove(it) }
 
         val before = SyncTree.of(prefs)
+        SyncAccessRules.mapDesktopProviders(before, incoming).forEach {
+            warnings += "$it: Diesen Anbieter gibt es auf dem Gerät nicht, der bisherige Zugang bleibt."
+        }
         val merged = SyncJson.copy(before) as JSONObject
         SyncJson.merge(merged, incoming)
         SyncAccessRules.resetOnProviderChange(before, incoming, merged)
