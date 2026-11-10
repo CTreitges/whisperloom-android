@@ -50,6 +50,7 @@ fun SettingsHubScreen(nav: NavState) {
     val status = env.status
     val snack = rememberSnack()
     var showAbout by rememberSaveable { mutableStateOf(false) }
+    var showSync by rememberSaveable { mutableStateOf(false) }
 
     val button = stringResource(if (status.bubbleRunning) R.string.settings_val_bubble_on else R.string.settings_val_bubble_off) +
         " · " + stringResource(if (status.imeEnabled) R.string.settings_val_kb_on else R.string.settings_val_kb_off)
@@ -106,6 +107,11 @@ fun SettingsHubScreen(nav: NavState) {
 
             item { SectionHeader(stringResource(R.string.settings_section_more)) }
             item { HubRow(R.drawable.ic_history, stringResource(R.string.settings_group_history), history) { nav.push(Screen.History) } }
+            item {
+                HubRow(R.drawable.ic_settings, stringResource(R.string.settings_group_sync), stringResource(R.string.settings_sync_sub)) {
+                    showSync = true
+                }
+            }
             item { HubRow(R.drawable.ic_build, stringResource(R.string.settings_group_advanced), advanced) { nav.push(Screen.Advanced) } }
             item { HubRow(R.drawable.ic_help, stringResource(R.string.settings_group_help), stringResource(R.string.settings_help_sub)) { nav.push(Screen.Help(1)) } }
             item {
@@ -124,4 +130,5 @@ fun SettingsHubScreen(nav: NavState) {
             nav.push(Screen.Patchnotes)
         }) { showAbout = false }
     }
+    if (showSync) SettingsSyncSheet(snack) { showSync = false }
 }
