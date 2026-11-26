@@ -8,6 +8,6 @@ enum class InsertResult {
     /** Dienst aus, kein Fokusfeld oder das Feld lehnt ab — der Knopf nimmt die Zwischenablage. */
     FAILED,
 
-    /** Passwortfeld: bewusst nicht eingefuegt, auch nicht in die Zwischenablage (UX-Spec §6.21). */
+    /** Passwortfeld: bewusst nicht eingefuegt, auch nicht in die Zwischenablage (UX-Spec §6.22). */
     BLOCKED,
 }

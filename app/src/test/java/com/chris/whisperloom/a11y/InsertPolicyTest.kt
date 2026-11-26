@@ -9,7 +9,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Die Bedienungshilfe fuegt nie in ein Passwortfeld ein (UX-Spec §6.21) — gleich, ob das Feld
+ * Die Bedienungshilfe fuegt nie in ein Passwortfeld ein (UX-Spec §6.22) — gleich, ob das Feld
  * sich per Knoten oder per Eingabetyp als Passwortfeld meldet. Zahlen- und Telefonfelder bleiben.
  */
 @RunWith(RobolectricTestRunner::class)

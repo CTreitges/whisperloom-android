@@ -1,7 +1,7 @@
 package com.chris.whisperloom.overlay
 
 /**
- * Reine (Android-freie) Auswertung der Touch-Geste am schwebenden Knopf (UX-Spec §6.21) —
+ * Reine (Android-freie) Auswertung der Touch-Geste am schwebenden Knopf (UX-Spec §6.22) —
  * JVM-unit-testbar, nach dem Muster von [com.chris.whisperloom.ime.DictationGesture].
  *
  * Ein Druck ist erst offen ([Phase.PRESSED]). Daraus wird
@@ -30,6 +30,21 @@ class BubbleGesture {
 
         /** Ende eines Zugs; [held] sagt, ob dabei eine gehaltene Aufnahme laeuft. */
         DROP,
+    }
+
+    companion object {
+        /**
+         * Endet ein gehaltenes Diktat ohne Zug frueher (gemessen ab Ablauf der Halte-Zeit), war es ein
+         * langsamer Tipp: Die Aufnahme laeuft weiter wie nach einem Tipp, statt zu senden.
+         */
+        const val HOLD_MIN_MS = 1_000L
+
+        /**
+         * Langsamer Tipp: Zwischen Ablauf der Halte-Zeit ([downTime] + [holdTimeout]) und dem Loslassen
+         * ([upTime]) lag weniger als [HOLD_MIN_MS]. Zeiten aus `MotionEvent.getEventTime()`.
+         */
+        fun isSlowTap(downTime: Long, upTime: Long, holdTimeout: Long): Boolean =
+            upTime - downTime - holdTimeout < HOLD_MIN_MS
     }
 
     var phase = Phase.NONE

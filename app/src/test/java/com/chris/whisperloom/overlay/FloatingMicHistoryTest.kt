@@ -100,7 +100,7 @@ class FloatingMicHistoryTest {
     }
 
     /**
-     * Passwortfeld (UX-Spec §6.21): nicht einfuegen, nicht in die Zwischenablage, nicht in den
+     * Passwortfeld (UX-Spec §6.22): nicht einfuegen, nicht in die Zwischenablage, nicht in den
      * Verlauf — nur ein Hinweis. Bis CTR-274 wurde hier trotzdem eingefuegt.
      */
     @Test fun ausDemPasswortfeldNicht() {

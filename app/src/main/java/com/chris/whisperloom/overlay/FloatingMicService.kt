@@ -102,7 +102,7 @@ class FloatingMicService : Service() {
                 return
             }
             val elapsed = elapsedMs()
-            // Grenzen der IME (UX-Spec §6.21): online ab 10 min ein Hinweis, bei 12 min senden.
+            // Grenzen der IME (UX-Spec §6.22): online ab 10 min ein Hinweis, bei 12 min senden.
             when (DictationSession.length(elapsed, lengthLimited)) {
                 DictationSession.Length.MAX -> {
                     toast(getString(R.string.float_too_long_sent))
@@ -133,7 +133,7 @@ class FloatingMicService : Service() {
     /** Touch-Geste am Knopf: Tipp, Halten zum Sprechen, Ziehen ([BubbleGesture]). */
     private val gesture = BubbleGesture()
 
-    /** Halte-Zeit abgelaufen: im Ruhezustand die Aufnahme starten (UX-Spec §6.21). */
+    /** Halte-Zeit abgelaufen: im Ruhezustand die Aufnahme starten (UX-Spec §6.22). */
     private val holdStart = Runnable {
         if (gesture.holdElapsed(prefs.holdToTalk, state == BubbleState.IDLE)) startRec()
     }
@@ -291,8 +291,7 @@ class FloatingMicService : Service() {
                 MotionEvent.ACTION_DOWN -> {
                     downX = e.rawX; downY = e.rawY; startX = lp.x; startY = lp.y
                     gesture.down()
-                    // Halte-Zeit des Systems: folgt der Einstellung "Beruehrungs- und Haltedauer".
-                    main.postDelayed(holdStart, ViewConfiguration.getLongPressTimeout().toLong())
+                    main.postDelayed(holdStart, holdTimeout())
                 }
                 MotionEvent.ACTION_MOVE -> {
                     val dx = (e.rawX - downX).toInt()
@@ -313,7 +312,10 @@ class FloatingMicService : Service() {
                     val held = gesture.held
                     when (gesture.up()) {
                         BubbleGesture.Release.TAP -> onTap()
-                        BubbleGesture.Release.SEND -> stopRec()
+                        // Kurz nach dem Start losgelassen = langsamer Tipp: weiter aufnehmen statt
+                        // einen fast leeren Clip zu senden, den die Erkennung mit Erfundenem fuellt.
+                        BubbleGesture.Release.SEND ->
+                            if (!BubbleGesture.isSlowTap(e.downTime, e.eventTime, holdTimeout())) stopRec()
                         BubbleGesture.Release.DROP -> drop(held)
                         BubbleGesture.Release.NONE -> Unit
                     }
@@ -332,9 +334,14 @@ class FloatingMicService : Service() {
         }
     }
 
+    /** Halte-Zeit des Systems: folgt der Einstellung "Beruehrungs- und Haltedauer". */
+    private fun holdTimeout() = ViewConfiguration.getLongPressTimeout().toLong()
+
     /** Loslassen nach einem Zug; [held] = dabei laeuft eine gehaltene Aufnahme. */
     private fun drop(held: Boolean) {
-        if (cancelTarget.isHit) {
+        if (cancelTarget.isHit && canDiscard()) {
+            // canDiscard: das Ziel blieb stehen, waehrend die Aufnahme schon in SENDING ging
+            // (12-min-Grenze, totes Mikrofon) — dann nichts verwerfen, die Uebertragung laeuft.
             renderer?.haptic(BubbleMotion.Haptic.REJECT)
             cancelTarget.hide()
             // Der Knopf soll nach dem Verwerfen nicht ueber dem Ziel liegen
@@ -502,7 +509,7 @@ class FloatingMicService : Service() {
             if (!password) History.record(applicationContext, HistorySource.BUBBLE, dictation)
             pendingSamples = null
             main.post {
-                // Passwortfeld: weder einfuegen noch in die Zwischenablage (UX-Spec §6.21). Die
+                // Passwortfeld: weder einfuegen noch in die Zwischenablage (UX-Spec §6.22). Die
                 // Bedienungshilfe prueft beim Einfuegen selbst noch einmal (Fokus kann wechseln).
                 val result = when {
                     out.isBlank() -> null

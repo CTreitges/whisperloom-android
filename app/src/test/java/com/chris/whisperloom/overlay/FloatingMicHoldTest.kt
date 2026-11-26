@@ -29,7 +29,7 @@ import org.robolectric.shadows.ShadowWindowManagerImpl
 import java.time.Duration
 
 /**
- * Halten zum Sprechen am echten, vom Dienst verdrahteten Knopf (UX-Spec §6.21): Touch-Ereignisse
+ * Halten zum Sprechen am echten, vom Dienst verdrahteten Knopf (UX-Spec §6.22): Touch-Ereignisse
  * statt performClick, die Halte-Zeit ueber den Main-Looper.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -59,9 +59,12 @@ class FloatingMicHoldTest {
         bubble = Shadow.extract<ShadowWindowManagerImpl>(wm).views.single().findViewById(R.id.bubble)
     }
 
-    private fun touch(action: Int, x: Float = 10f, y: Float = 10f) {
-        val now = SystemClock.uptimeMillis()
-        val e = MotionEvent.obtain(now, now, action, x, y, 0)
+    private var downAt = 0L
+
+    /** Wie Android: alle Ereignisse einer Geste tragen die downTime des ACTION_DOWN. */
+    private fun touch(action: Int, x: Float = 10f, y: Float = 10f, at: Long = SystemClock.uptimeMillis()) {
+        if (action == MotionEvent.ACTION_DOWN) downAt = at
+        val e = MotionEvent.obtain(downAt, at, action, x, y, 0)
         bubble.dispatchTouchEvent(e)
         e.recycle()
     }
@@ -79,10 +82,28 @@ class FloatingMicHoldTest {
         warten(holdMs + 50)
         assertEquals(app.getString(R.string.cd_bubble_recording), zustand())
         fixture.awaitRecorded()
+        warten(BubbleGesture.HOLD_MIN_MS)
 
         touch(MotionEvent.ACTION_UP)
         fixture.waitFor("Gehaltenes Diktat nicht gesendet") { clip() != null }
         assertEquals("Lokal verbessert.", clip())
+    }
+
+    /** Langsamer Tipp: kurz nach dem Start losgelassen laeuft die Aufnahme weiter wie nach einem Tipp. */
+    @Test fun kurzesHaltenIstEinLangsamerTipp() {
+        starten()
+        touch(MotionEvent.ACTION_DOWN)
+        warten(holdMs + 50)
+        fixture.awaitRecorded()
+        // Feste Zeitstempel: die Testuhr springt beim Aufnahmestart (Vorwaermen) um Sekunden.
+        touch(MotionEvent.ACTION_UP, at = downAt + holdMs + 100)
+        warten(100)
+        assertEquals(app.getString(R.string.cd_bubble_recording), zustand())
+        assertNull(clip())
+
+        touch(MotionEvent.ACTION_DOWN)
+        touch(MotionEvent.ACTION_UP)
+        fixture.waitFor("Tipp nach langsamem Tipp hat nicht gesendet") { clip() != null }
     }
 
     @Test fun abgefangenerTouchImHaltenSendet() {
