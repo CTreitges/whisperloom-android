@@ -8,8 +8,13 @@ Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](ht
 
 - **Sprache „Deutsch + Englisch“.** Unter Einstellungen › **Spracherkennung** › Sprache gibt es die neue Wahl **Deutsch + Englisch**, gedacht für deutsche Diktate mit englischen Wörtern. GPT Transcribe (OpenAI) bekommt beide Sprachen als Hinweis, alle anderen Dienste erkennen die Sprache selbst. Für Füllwörter und Textverbesserung gilt die erkannte Sprache, sonst Deutsch. Das Offline-Modell erkennt nur eine Sprache je Diktat; das steht auch unter der Auswahl.
 - **Sprache je Widget.** Im Editor eines Pro Widgets wählst du unter **Sprache**, in welcher Sprache dieses Widget erkennt, z. B. ein Widget für englische Aufträge. Ab Werk steht dort **Wie in der App**, es bleibt also alles wie bisher.
+- **Halten zum Sprechen am Knopf.** Halte den schwebenden Knopf gedrückt und sprich. Lässt du los, wird gesendet. Ziehst du dabei auf das ✕, wird verworfen. Antippen geht weiter wie bisher. Ausschalten kannst du es unter Knopf & Tastatur › **Halten zum Sprechen**. Wie lange du halten musst, richtet sich nach der Einstellung „Berührungs- und Haltedauer“ deines Handys.
+- **Knopf ausblenden.** Ziehst du den Knopf in Ruhe nach unten, erscheint **Ausblenden**. Lässt du ihn dort los, verschwindet er, bis du ein anderes Textfeld antippst. Dann ist er an derselben Stelle wieder da.
+- **Lange Diktate am Knopf.** Mit Online-Erkennung meldet der Knopf nach 10 Minuten: „Noch 2 Minuten“. Nach 12 Minuten sendet er von selbst, damit der Anbieter das Diktat nicht ablehnt. Offline gibt es keine Grenze.
 
 ### Geändert
+
+- **Nie in Passwortfelder.** Ist das Feld ein Passwortfeld, fügt der Knopf nichts ein. Der Text kommt auch nicht in die Zwischenablage und nicht in den Verlauf. Du siehst nur einen Hinweis. Zahlen- und Telefonfelder gehen weiter.
 
 - **Vokabular kommt bei mehr Anbietern an.** GPT Transcribe bekommt dein Vokabular zusätzlich als einzelne Schlüsselwörter. Mistral (Voxtral) bekommt es jetzt als Wortliste, bisher kam dort gar nichts an: höchstens 100 Wörter, Begriffe aus mehreren Wörtern werden mit _ verbunden, für Deutsch ist das bei Mistral noch im Test. Begriffe, die ein Anbieter ablehnen würde, lässt WhisperLoom weg, statt das Diktat scheitern zu lassen.
 

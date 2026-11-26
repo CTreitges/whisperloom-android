@@ -1737,16 +1737,14 @@ Animationen.
   10 min einmal Haptik `REJECT` und Toast `float_too_long_soon`; bei 12 min sendet der Knopf von selbst (wie ein Tipp)
   mit Toast `float_too_long_sent`. Offline gibt es keine Grenze. Gemessen wird die Aufnahmezeit seit offenem Mikrofon.
   Deckt sich mit der Höchstdauer aus §6.21 (CTR-272 B2); treffen beide zusammen, gilt §6.21 (Warnung 20 s vor Ende).
-- **V1/§5.2 Ausblenden statt Beenden.** In IDLE erscheint beim Ziehen dasselbe Ziel unten mittig als
-  Ausblenden-Ziel: Icon `ic_visibility_off`, Label `float_snooze_label` „Ausblenden“, im Magnet-Radius
-  `float_snooze_release` „Loslassen zum Ausblenden“, Füllung bleibt `surfaceContainerHigh` (kein `errorContainer`).
-  Loslassen darüber: Haptik `CONFIRM`, Knopf springt an die gemerkte Position und wird für **15 min** ausgeblendet
-  (fest, keine Einstellung, kein Schütteln). Danach oder per Notification-Aktion kommt er an derselben Stelle zurück.
-  Ohne Ziehen: Bedienungshilfe-Aktion `cd_bubble_snooze` „15 Minuten ausblenden“ in IDLE (§5.6). Der Dienst läuft
-  weiter; „Beenden“ bleibt. Ein erneuter Start aus der App blendet ebenfalls ein (falls Notifications aus sind).
-- **§5.5 Notification beim Ausblenden.** Text `float_snoozed_text` „Ausgeblendet bis %1$s“ (Uhrzeit im
-  Geräteformat), zusätzliche Aktion `float_snooze_end` „Einblenden“ (`ic_visibility`, `ACTION_SNOOZE_END`) vor
-  „Beenden“. Danach wieder §5.5.
+- **V1/§5.2 Ausblenden bis zum nächsten Feld** (Stand 26.11.2026, ersetzt das 15-min-Ausblenden aus #38). In IDLE
+  erscheint beim Ziehen dasselbe Ziel unten mittig als Ausblenden-Ziel: Icon `ic_visibility_off`, Label
+  `float_hide_label` „Ausblenden“, im Magnet-Radius `float_hide_release` „Loslassen zum Ausblenden“, Füllung bleibt
+  `surfaceContainerHigh` (kein `errorContainer`), Beschreibung `cd_hide`. Loslassen darüber: Haptik `CONFIRM`, Knopf
+  springt an die gemerkte Position und verschwindet, bis die Bedienungshilfe den Fokus auf ein **anderes** editierbares
+  Feld meldet (`FieldKey` = Fenster-ID + Knoten-Kennung, kein Inhalt). Dasselbe Feld erneut fokussiert: bleibt weg.
+  Keine Frist, keine Notification-Aktion „Einblenden“; der Dienst läuft weiter (Android 15/16: kein Neustart aus dem
+  Hintergrund nötig), „Beenden“ bleibt. Die Notification bleibt wie §5.5.
 
 ---
 

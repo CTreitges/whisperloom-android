@@ -33,6 +33,7 @@ import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineSkip
 import com.chris.whisperloom.TranscriptionEngine
+import com.chris.whisperloom.a11y.FieldKey
 import com.chris.whisperloom.a11y.InsertResult
 import com.chris.whisperloom.a11y.TextInserterAccessibilityService
 import com.chris.whisperloom.api.ApiNotConfiguredException
@@ -165,6 +166,7 @@ class FloatingMicService : Service() {
             return
         }
         addBubble()
+        instance = this
         _running.value = true
     }
 
@@ -298,7 +300,10 @@ class FloatingMicService : Service() {
                     val dy = (e.rawY - downY).toInt()
                     if ((abs(dx) > touchSlop || abs(dy) > touchSlop) && gesture.beyondSlop()) {
                         main.removeCallbacks(holdStart)
-                        if (canDiscard()) cancelTarget.show()
+                        when {
+                            canDiscard() -> cancelTarget.show(CancelTarget.Kind.DISCARD)
+                            state == BubbleState.IDLE -> cancelTarget.show(CancelTarget.Kind.HIDE)
+                        }
                     }
                     if (!gesture.dragging) return true // unter der Schwelle: noch nicht verschieben
                     val p = clampToScreen(startX + dx, startY + dy, root.width, root.height)
@@ -339,7 +344,12 @@ class FloatingMicService : Service() {
 
     /** Loslassen nach einem Zug; [held] = dabei laeuft eine gehaltene Aufnahme. */
     private fun drop(held: Boolean) {
-        if (cancelTarget.isHit && canDiscard()) {
+        if (cancelTarget.isHit && cancelTarget.kind == CancelTarget.Kind.HIDE && state == BubbleState.IDLE) {
+            renderer?.haptic(BubbleMotion.Haptic.CONFIRM)
+            cancelTarget.hide()
+            restorePosition() // kommt beim naechsten Feld an der gemerkten Stelle zurueck
+            hideUntilNextField()
+        } else if (cancelTarget.isHit && canDiscard()) {
             // canDiscard: das Ziel blieb stehen, waehrend die Aufnahme schon in SENDING ging
             // (12-min-Grenze, totes Mikrofon) — dann nichts verwerfen, die Uebertragung laeuft.
             renderer?.haptic(BubbleMotion.Haptic.REJECT)
@@ -353,6 +363,34 @@ class FloatingMicService : Service() {
             savePosition()
             if (held) stopRec()
         }
+    }
+
+    // --- Ausblenden bis zum naechsten Feld (UX-Spec §6.22) ----------------------
+
+    /** Zuletzt gemeldetes Feld; null = noch keins (z. B. Bedienungshilfe aus). */
+    private var lastField: FieldKey? = null
+
+    /** Ausgeblendet: der Knopf bleibt weg, bis ein anderes Feld als [hiddenIn] den Fokus bekommt. */
+    private var hidden = false
+    private var hiddenIn: FieldKey? = null
+
+    /**
+     * Nimmt nur den View weg; der Dienst laeuft weiter — aus dem Hintergrund duerfte er unter
+     * Android 15 nicht wieder starten. Keine Frist, kein "Einblenden": zurueck kommt er am naechsten Feld.
+     */
+    private fun hideUntilNextField() {
+        hidden = true
+        hiddenIn = lastField
+        bubbleView?.visibility = View.GONE
+    }
+
+    private fun onFieldFocused(field: FieldKey) {
+        lastField = field
+        if (!hidden || field == hiddenIn) return
+        hidden = false
+        hiddenIn = null
+        restorePosition() // Display kann sich gedreht haben: neu in den Bildschirm begrenzen
+        bubbleView?.visibility = View.VISIBLE
     }
 
     private fun restorePosition() {
@@ -566,6 +604,7 @@ class FloatingMicService : Service() {
     }
 
     override fun onDestroy() {
+        if (instance === this) instance = null
         _running.value = false
         main.removeCallbacks(tick)
         main.removeCallbacks(clearCopiedHint)
@@ -604,6 +643,15 @@ class FloatingMicService : Service() {
 
         /** Momentaufnahme von [running] (SystemStatus.read). */
         val isRunning: Boolean get() = _running.value
+
+        /** Laufender Dienst fuer Meldungen der Bedienungshilfe (gleicher Prozess). */
+        @Volatile private var instance: FloatingMicService? = null
+
+        /** Die Bedienungshilfe meldet ein fokussiertes, editierbares Feld (nur Kennung, kein Inhalt). */
+        fun fieldFocused(field: FieldKey) {
+            val service = instance ?: return
+            service.main.post { service.onFieldFocused(field) }
+        }
 
         fun start(context: Context) {
             val i = Intent(context, FloatingMicService::class.java)

@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.chris.whisperloom.history.HistoryPolicy
+import com.chris.whisperloom.overlay.FloatingMicService
 
 /**
  * Bedienungshilfe-Dienst, der erkannten Text an der Cursor-Position in das gerade
@@ -20,7 +21,14 @@ class TextInserterAccessibilityService : AccessibilityService() {
         instance = this
     }
 
-    override fun onAccessibilityEvent(event: AccessibilityEvent?) { /* nicht benoetigt */ }
+    /**
+     * Fokus auf ein editierbares Feld an den schwebenden Knopf melden (UX-Spec §6.22). Gelesen werden
+     * nur Fenster-ID, Knoten-Kennung und isEditable — nie der Inhalt.
+     */
+    override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        if (event?.eventType != AccessibilityEvent.TYPE_VIEW_FOCUSED) return
+        fieldKeyOf(event.windowId, event.source)?.let(FloatingMicService::fieldFocused)
+    }
 
     override fun onInterrupt() { /* nicht benoetigt */ }
 
@@ -41,6 +49,10 @@ class TextInserterAccessibilityService : AccessibilityService() {
         private var instance: TextInserterAccessibilityService? = null
 
         fun isRunning(): Boolean = instance != null
+
+        /** Kennung eines editierbaren Felds; null fuer alles andere. */
+        internal fun fieldKeyOf(windowId: Int, node: AccessibilityNodeInfo?): FieldKey? =
+            node?.takeIf { it.isEditable }?.let { FieldKey(windowId, it.hashCode()) }
 
         /** Versucht den Text einzufuegen; [InsertResult.FAILED], wenn Dienst aus oder kein Fokusfeld. */
         fun tryInsert(text: String): InsertResult = instance?.insert(text) ?: InsertResult.FAILED
