@@ -112,7 +112,7 @@ class FloatingMicHistoryTest {
         fixture.waitFor("Kein Hinweis aufs Passwortfeld") { ShadowToast.getTextOfLatestToast() == blocked }
         assertNull("nichts in der Zwischenablage", clip())
         assertEquals(0, History.count(app))
-        assertEquals(app.getString(R.string.cd_bubble_idle), bubble.stateDescription?.toString())
+        assertEquals(app.getString(R.string.cd_bubble_idle), bubble.contentDescription?.toString())
     }
 
     @Test fun verlaufAusSchreibtNichts() {

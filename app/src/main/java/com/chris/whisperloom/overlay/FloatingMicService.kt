@@ -526,7 +526,6 @@ class FloatingMicService : Service() {
                 if (copied) fallbackClipboard(out)
                 applyState(BubbleState.IDLE, copied = copied)
                 renderer?.flashSuccess()
-                renderer?.haptic(BubbleMotion.Haptic.SUCCESS)
                 dictation.result.skipped?.let { toast(getString(R.string.refine_skipped, it)) }
                     ?: dictation.result.note?.let { toast(it) }
             }

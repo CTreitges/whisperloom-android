@@ -71,7 +71,15 @@ class FloatingMicHoldTest {
 
     private fun warten(ms: Long) = shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(ms))
 
-    private fun zustand() = bubble.stateDescription?.toString()
+    /**
+     * Zustand aus der contentDescription. Waehrend der Aufnahme steht die Zeit darin
+     * ("Aufnahme laeuft, 0:07 — …"); verglichen wird nur der Zustand, also die Vorlage.
+     */
+    private fun zustand(): String? {
+        val cd = bubble.contentDescription?.toString() ?: return null
+        val recording = app.getString(R.string.cd_bubble_recording, "\u0000").substringBefore('\u0000')
+        return if (cd.startsWith(recording)) app.getString(R.string.cd_bubble_recording) else cd
+    }
 
     private fun clip(): String? =
         app.getSystemService(ClipboardManager::class.java).primaryClip?.getItemAt(0)?.text?.toString()
