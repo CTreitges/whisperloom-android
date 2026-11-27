@@ -3,6 +3,7 @@
 
     py -3 -X utf8 tools/bubble_emulator_check.py visibility [--serial S] [--no-build] [--avd wl35]
                                                             [--pid-file DATEI] [--shots ORDNER]
+    py -3 -X utf8 tools/bubble_emulator_check.py gestures [wie visibility]   # Ziehen, Halten + Wischen, ✕, Bilder
     py -3 -X utf8 tools/bubble_emulator_check.py disclosure --shots ORDNER   # Hinweis vorab als Bild
     py -3 -X utf8 tools/bubble_emulator_check.py stop --pid-file DATEI       # Emulator per gespeicherter PID
 
@@ -74,6 +75,28 @@ def bubble_frame(dumpsys_window: str) -> Bounds | None:
         if m:
             return Bounds(*(int(x) for x in m.groups()))
     return None
+
+
+CROSS_TITLE = "WhisperLoomModeCross"  # ModeCrossWindow.WINDOW_TITLE
+
+
+def cross_shown(dumpsys_window: str) -> bool:
+    """Ob das Modus-Kreuz-Fenster gerade angehaengt ist."""
+    return any(CROSS_TITLE in b.split("\n", 1)[0] for b in re.split(r"\n(?=\s*Window #\d+)", dumpsys_window))
+
+
+def pref_value(prefs_xml: str, key: str) -> str | None:
+    """Wert eines Eintrags aus shared_prefs/*.xml (string oder boolean), sonst None."""
+    m = re.search(rf'<string name="{re.escape(key)}">([^<]*)</string>', prefs_xml)
+    if m:
+        return m.group(1)
+    m = re.search(rf'<boolean name="{re.escape(key)}" value="(true|false)"\s*/>', prefs_xml)
+    return m.group(1) if m else None
+
+
+def right_mode(prefs_xml: str) -> str:
+    """Ziel rechts im nach oben offenen Bogen: das letzte Ziel — "prompt", wenn eingeschaltet, sonst "summarize"."""
+    return "prompt" if pref_value(prefs_xml, "refine_prompt_enabled") == "true" else "summarize"
 
 
 def node_bounds(ui_xml: str, resource_id: str) -> Bounds | None:
@@ -308,8 +331,10 @@ def set_a11y(d: Device, on: bool) -> None:
     time.sleep(2)
 
 
-def open_check_page(d: Device, start_bubble: bool = False) -> None:
+def open_check_page(d: Device, start_bubble: bool = False, bg: str | None = None) -> None:
     extra = " --ez start_bubble true" if start_bubble else ""
+    if bg:
+        extra += f" --es bg {bg}"
     d.sh(f"am start -W -n {CHECK_ACTIVITY}{extra}")
     time.sleep(1.5)
 
@@ -387,6 +412,108 @@ def visibility(args) -> int:
     return 1 if failed else 0
 
 
+def read_prefs(d: Device) -> str:
+    return d.sh(f"run-as {PKG} cat shared_prefs/whisperloom.xml", check=False)
+
+
+def frame_center(d: Device) -> tuple[int, int] | None:
+    b = bubble_frame(d.sh("dumpsys window windows"))
+    return b.center if b else None
+
+
+def hold_at(d: Device, x: int, y: int) -> None:
+    """Finger aufsetzen und ueber die Halte-Zeit (500 ms, siehe gestures) liegen lassen."""
+    d.sh(f"input motionevent DOWN {x} {y}")
+    time.sleep(1.2)
+
+
+def slide(d: Device, x0: int, y0: int, x1: int, y1: int, steps: int = 6) -> None:
+    for i in range(1, steps + 1):
+        d.sh(f"input motionevent MOVE {x0 + (x1 - x0) * i // steps} {y0 + (y1 - y0) * i // steps}")
+
+
+def gestures(args) -> int:
+    """A9/A10: Ziehen vor der Haltezeit verschiebt, Halten + Wischen setzt den Modus, ✕ setzt nichts; Bilder."""
+    d = ensure_device(args)
+    shots = Path(args.shots)
+    build_and_install(d, build=not args.no_build)
+    prepare(d)
+    results: list[tuple[str, bool]] = []
+
+    def case(name: str, ok: bool) -> None:
+        results.append((name, ok))
+        print(f"{'ok    ' if ok else 'FEHLER'} {name}")
+
+    try:
+        open_check_page(d, start_bubble=True, bg="dark")
+        focus_field(d, "check_field_a")
+        d.wait_visible(True)
+        w, h = parse_wm_size(d.sh("wm size"))
+        reach = 110 * parse_wm_density(d.sh("wm density")) // 160  # weiter als die Einrast-Schwelle (56 dp)
+        mode_before = pref_value(read_prefs(d), "refine_mode")
+
+        # Sofortiges Ziehen (Halte-Zeit 1500 ms aus prepare): verschiebt nur, in die Mitte ueber der Tastatur.
+        start = frame_center(d)
+        tx, ty = w // 2, h * 3 // 8
+        if start:
+            d.sh(f"input swipe {start[0]} {start[1]} {tx} {ty} 400")
+        time.sleep(1.5)
+        moved = frame_center(d)
+        case(
+            "Ziehen vor der Haltezeit verschiebt nur",
+            moved is not None and abs(moved[0] - tx) < 60 and abs(moved[1] - ty) < 60
+            and pref_value(read_prefs(d), "refine_mode") == mode_before and not cross_shown(d.sh("dumpsys window windows")),
+        )
+        cx, cy = moved or (tx, ty)
+
+        d.sh("settings put secure long_press_timeout 500")
+        time.sleep(1)
+        expected = right_mode(read_prefs(d))
+
+        # Halten: Kreuz kaum sichtbar; nach rechts wischen: deutlich; loslassen setzt den Modus.
+        hold_at(d, cx, cy)
+        opened = cross_shown(d.sh("dumpsys window windows"))
+        d.screenshot(shots / "menu-faint-dark.png")
+        slide(d, cx, cy, cx + reach, cy)
+        d.screenshot(shots / "menu-visible-dark.png")
+        d.sh(f"input motionevent UP {cx + reach} {cy}")
+        time.sleep(1.5)
+        mode_right = pref_value(read_prefs(d), "refine_mode")
+        case(f"Halten + Wischen nach rechts setzt Modus ({mode_right}, erwartet {expected})", opened and mode_right == expected)
+
+        # Halten + ✕ (nach unten): setzt nichts, Knopf bleibt an seiner Stelle.
+        hold_at(d, cx, cy)
+        slide(d, cx, cy, cx, cy + reach)
+        d.sh(f"input motionevent UP {cx} {cy + reach}")
+        time.sleep(1.5)
+        still = frame_center(d)
+        case(
+            "Halten + ✕ setzt nichts",
+            pref_value(read_prefs(d), "refine_mode") == expected
+            and still is not None and abs(still[0] - cx) < 10 and abs(still[1] - cy) < 10,
+        )
+
+        # Heller Grund: Ruhe-Knopf, Kreuz deutlich (nach oben links), zurueck in die Mitte = nichts gewaehlt.
+        open_check_page(d, bg="light")
+        focus_field(d, "check_field_a")
+        d.wait_visible(True)
+        time.sleep(1)
+        d.screenshot(shots / "idle-light.png")
+        hold_at(d, cx, cy)
+        slide(d, cx, cy, cx - reach * 7 // 10, cy - reach * 7 // 10)
+        d.screenshot(shots / "menu-visible-light.png")
+        slide(d, cx - reach * 7 // 10, cy - reach * 7 // 10, cx, cy)
+        d.sh(f"input motionevent UP {cx} {cy}")
+        time.sleep(1.5)
+        case("Kreuz aufgezogen und zurueck: Modus bleibt", pref_value(read_prefs(d), "refine_mode") == expected)
+    finally:
+        d.sh("settings put secure long_press_timeout 400", check=False)
+
+    failed = [n for n, ok in results if not ok]
+    print(f"{len(results) - len(failed)}/{len(results)} ok")
+    return 1 if failed else 0
+
+
 def disclosure(args) -> int:
     """Hinweis vor dem Einschalten der Bedienungshilfe (Assistent Schritt 5) als Bild."""
     d = ensure_device(args)
@@ -409,14 +536,14 @@ def disclosure(args) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["visibility", "disclosure", "stop"])
+    ap.add_argument("command", choices=["visibility", "gestures", "disclosure", "stop"])
     ap.add_argument("--serial")
     ap.add_argument("--avd", default="wl35")
     ap.add_argument("--no-build", action="store_true")
     ap.add_argument("--pid-file", default=str(Path.home() / ".claude/backups/wl-bubble-textfeld-work/pids.jsonl"))
     ap.add_argument("--shots", default=str(Path.home() / ".claude/backups/wl-bubble-textfeld-work/shots"))
     args = ap.parse_args(argv)
-    return {"visibility": visibility, "disclosure": disclosure, "stop": stop}[args.command](args)
+    return {"visibility": visibility, "gestures": gestures, "disclosure": disclosure, "stop": stop}[args.command](args)
 
 
 if __name__ == "__main__":

@@ -102,6 +102,33 @@ class BubbleFrameTest(unittest.TestCase):
         self.assertIsNone(c.bubble_frame(DUMPSYS.replace("WhisperLoomBubble", "Other")))
 
 
+PREFS = """<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <string name="refine_mode">beautify</string>
+    <boolean name="refine_prompt_enabled" value="true" />
+    <boolean name="hold_to_talk" value="false" />
+</map>
+"""
+
+
+class PrefsTest(unittest.TestCase):
+    def test_string_and_boolean(self):
+        self.assertEqual("beautify", c.pref_value(PREFS, "refine_mode"))
+        self.assertEqual("true", c.pref_value(PREFS, "refine_prompt_enabled"))
+        self.assertIsNone(c.pref_value(PREFS, "missing"))
+
+    def test_right_target_is_prompt_only_when_enabled(self):
+        self.assertEqual("prompt", c.right_mode(PREFS))
+        self.assertEqual("summarize", c.right_mode(PREFS.replace('value="true"', 'value="false"')))
+        self.assertEqual("summarize", c.right_mode(""))
+
+
+class CrossShownTest(unittest.TestCase):
+    def test_only_cross_window_counts(self):
+        self.assertFalse(c.cross_shown(DUMPSYS))
+        self.assertTrue(c.cross_shown(DUMPSYS + "  Window #6 Window{ff u0 WhisperLoomModeCross}:\n    mViewVisibility=0x0\n"))
+
+
 class EmulatorEnvTest(unittest.TestCase):
     def test_sdk_adb_first_and_sdk_root_set(self):
         sdk = Path("C:/Users/X/Sdk")

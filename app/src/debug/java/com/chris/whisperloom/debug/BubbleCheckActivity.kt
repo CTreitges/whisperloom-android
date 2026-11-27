@@ -1,6 +1,7 @@
 package com.chris.whisperloom.debug
 
 import android.app.Activity
+import android.graphics.Color
 import android.os.Bundle
 import android.text.InputType
 import android.view.WindowManager
@@ -13,7 +14,8 @@ import com.chris.whisperloom.overlay.FloatingMicService
 /**
  * Nur im Debug-Build: feste Felder fuer `tools/bubble_emulator_check.py` (UX-Spec §6.22) — Feld A,
  * Feld B, ein Passwortfeld und ein Knopf ohne Feld. Mit `--ez start_bubble true` startet sie den
- * schwebenden Knopf aus dem Vordergrund (Mikrofon-Dienst darf nicht aus dem Hintergrund starten).
+ * schwebenden Knopf aus dem Vordergrund (Mikrofon-Dienst darf nicht aus dem Hintergrund starten),
+ * mit `--es bg light|dark` auf hellem bzw. dunklem Grund.
  * Klassische Views statt Compose: reine Pruefhilfe, keine App-Oberflaeche.
  */
 class BubbleCheckActivity : Activity() {
@@ -30,6 +32,11 @@ class BubbleCheckActivity : Activity() {
             LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(48, 160, 48, 48)
+                // Hintergrund fuer die Lesbarkeits-Bilder des Modus-Kreuzes (A10): --es bg light|dark
+                when (intent.getStringExtra(EXTRA_BACKGROUND)) {
+                    "light" -> setBackgroundColor(Color.WHITE)
+                    "dark" -> setBackgroundColor(Color.BLACK)
+                }
                 addView(plain)
                 addView(field(R.id.check_field_a, "Feld A", InputType.TYPE_CLASS_TEXT))
                 addView(field(R.id.check_field_b, "Feld B", InputType.TYPE_CLASS_TEXT))
@@ -53,5 +60,6 @@ class BubbleCheckActivity : Activity() {
 
     companion object {
         const val EXTRA_START_BUBBLE = "start_bubble"
+        const val EXTRA_BACKGROUND = "bg"
     }
 }
