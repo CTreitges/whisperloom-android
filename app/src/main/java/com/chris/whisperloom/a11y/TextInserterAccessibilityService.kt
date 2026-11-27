@@ -135,7 +135,16 @@ class TextInserterAccessibilityService : AccessibilityService() {
          * Ist das fokussierte Feld ein Passwortfeld? Dann kommt das Diktat nicht in den Verlauf.
          * Gelesen wird nur diese Eigenschaft, kein Inhalt. false = Dienst aus oder kein Fokusfeld.
          */
-        fun focusedIsPassword(): Boolean = instance?.focusedField()?.let(::isPassword) ?: false
+        fun focusedIsPassword(): Boolean =
+            instance?.let { passwordFocus(it.findFocus(AccessibilityNodeInfo.FOCUS_INPUT), it.focusedField()) } ?: false
+
+        /**
+         * Passwort, wenn der Eingabefokus ueber alle Fenster ([anyWindow], wie die Sichtbarkeit ihn sieht —
+         * auch Split-Screen oder WebView-Feld ohne isEditable) oder das Fokusfeld des aktiven Fensters
+         * ([active], Einfuegeziel) eines ist. Lieber einmal zu oft gesperrt als ein Diktat im Verlauf.
+         */
+        internal fun passwordFocus(anyWindow: AccessibilityNodeInfo?, active: AccessibilityNodeInfo?): Boolean =
+            listOfNotNull(anyWindow, active).any(::isPassword)
 
         /** Passwortfeld laut Knoten oder Eingabetyp; ein Inkognito-Flag kennt die Bedienungshilfe nicht. */
         internal fun isPassword(node: AccessibilityNodeInfo): Boolean =

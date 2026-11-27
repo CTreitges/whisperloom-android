@@ -3,6 +3,8 @@ package com.chris.whisperloom.a11y
 import android.text.InputType
 import android.view.accessibility.AccessibilityNodeInfo
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -38,6 +40,15 @@ class InsertPolicyTest {
         for (typ in listOf(InputType.TYPE_CLASS_NUMBER, InputType.TYPE_CLASS_PHONE, InputType.TYPE_CLASS_TEXT)) {
             assertEquals("Typ $typ", InsertResult.INSERTED, TextInserterAccessibilityService.insertInto(feld(inputType = typ), "0221 12345"))
         }
+    }
+
+    @Test fun passwortImAnderenFensterSperrtDenVerlauf() {
+        // Split-Screen/WebView: das aktive Fenster hat kein Fokusfeld, der Eingabefokus liegt woanders.
+        val webPasswort = AccessibilityNodeInfo().apply { isPassword = true } // ohne isEditable
+        assertTrue(TextInserterAccessibilityService.passwordFocus(webPasswort, null))
+        assertTrue(TextInserterAccessibilityService.passwordFocus(null, feld(password = true)))
+        assertFalse(TextInserterAccessibilityService.passwordFocus(feld(), feld()))
+        assertFalse(TextInserterAccessibilityService.passwordFocus(null, null))
     }
 
     @Test fun ohneFeldScheitertEs() {
