@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Feste IDs der Debug-Pruefseite (BubbleCheckActivity), damit tools/bubble_emulator_check.py sie per uiautomator findet. -->
+<resources>
+    <item name="check_plain" type="id" />
+    <item name="check_field_a" type="id" />
+    <item name="check_field_b" type="id" />
+    <item name="check_field_pw" type="id" />
+</resources>

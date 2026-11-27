@@ -44,7 +44,7 @@ fun rememberBubbleControl(snack: SnackController, onOverlayLost: () -> Unit): Bu
     return BubbleControl(
         running = status.bubbleRunning,
         pending = pending,
-        blocked = HomeStatus.blocked(status.micGranted, status.canDrawOverlays),
+        blocked = HomeStatus.blocked(status.micGranted, status.canDrawOverlays, status.a11yRunning),
     ) {
         if (status.bubbleRunning) {
             FloatingMicService.stop(ctx)

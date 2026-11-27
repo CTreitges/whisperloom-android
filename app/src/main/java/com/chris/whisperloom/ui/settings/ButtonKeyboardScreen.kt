@@ -87,7 +87,7 @@ fun ButtonKeyboardScreen(nav: NavState) {
                         val loom = MaterialTheme.loom
                         Button(
                             onClick = control.toggle,
-                            enabled = control.blocked == HomeStatus.Blocked.NONE && !control.pending,
+                            enabled = HomeStatus.toggleEnabled(running, control.blocked) && !control.pending,
                             modifier = Modifier.height(48.dp),
                             colors = if (running) {
                                 ButtonDefaults.buttonColors(containerColor = loom.recordingContainer, contentColor = loom.recordingText)
@@ -98,6 +98,12 @@ fun ButtonKeyboardScreen(nav: NavState) {
                             Text(stringResource(if (running) R.string.home_hero_btn_stop else R.string.home_hero_btn_start))
                         }
                     },
+                )
+                SwitchRow(
+                    headline = stringResource(R.string.button_hold_to_talk),
+                    supporting = stringResource(R.string.button_hold_to_talk_sub),
+                    checked = prefs.holdToTalk,
+                    onCheckedChange = { prefs.holdToTalk = it },
                 )
                 LoomRow(
                     headline = stringResource(R.string.button_reset_pos),

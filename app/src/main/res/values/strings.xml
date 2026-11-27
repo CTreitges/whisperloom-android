@@ -71,15 +71,16 @@
     <string name="home_cd_settings">Einstellungen</string>
     <string name="home_hero_title">Schwebender Knopf</string>
     <string name="home_hero_sub_off">Aus — startet den Knopf über allen Apps</string>
-    <string name="home_hero_sub_on">Läuft — antippen zum Diktieren, ziehen zum Verschieben</string>
+    <string name="home_hero_sub_on">Läuft — erscheint am Textfeld, sobald die Tastatur offen ist</string>
     <string name="home_hero_btn_start">Mikro-Knopf starten</string>
     <string name="home_hero_btn_stop">Mikro-Knopf beenden</string>
     <string name="home_state_running">Läuft</string>
     <string name="home_state_stopped">Aus</string>
     <string name="home_blocked_mic">Mikrofon fehlt — beheben</string>
     <string name="home_blocked_overlay">„Über anderen Apps anzeigen“ fehlt — beheben</string>
+    <string name="home_blocked_a11y">Bedienungshilfe fehlt — ohne sie kein Knopf</string>
     <string name="home_banner_title">Noch nicht optimal</string>
-    <string name="home_banner_a11y">Ohne Bedienungshilfe landet der Text nur in der Zwischenablage.</string>
+    <string name="home_banner_a11y">Ohne Bedienungshilfe erscheint der schwebende Knopf nicht. Sie zeigt ihn am Textfeld und fügt den Text ein.</string>
     <string name="home_banner_model">Offline gewählt, aber kein Modell geladen.</string>
     <string name="home_banner_text_model">Offline ohne Textmodell — der Text kommt ohne KI.</string>
     <string name="home_banner_text_model_online">Offline ohne Textmodell — ohne Netz kommt der Text ohne KI.</string>
@@ -104,7 +105,7 @@
     <string name="home_val_refine_local_missing">%1$s · Textmodell fehlt — Text ohne KI</string>
     <string name="home_val_refine_online_no_local">%1$s · %2$s · ohne Netz ohne KI</string>
     <string name="home_val_perms_ok">Mikrofon ✓ · Über Apps ✓ · Bedienungshilfe ✓</string>
-    <string name="home_val_perms_a11y_missing">Mikrofon ✓ · Über Apps ✓ · Bedienungshilfe ✗ (Zwischenablage)</string>
+    <string name="home_val_perms_a11y_missing">Mikrofon ✓ · Über Apps ✓ · Bedienungshilfe ✗ (kein Knopf)</string>
     <string name="home_val_perms_missing">Pflicht-Berechtigung fehlt</string>
     <string name="home_val_kb_active">Aktiv</string>
     <string name="home_val_kb_enabled">Aktiviert, nicht ausgewählt</string>
@@ -179,7 +180,7 @@
     <string name="setup_s4_keyboard_only">Nur Tastatur nutzen</string>
     <string name="setup_s4_keyboard_only_hint">Ohne diesen Schritt funktioniert nur die Tastatur-Variante.</string>
     <string name="setup_s5_title">Text automatisch einfügen</string>
-    <string name="setup_s5_fallback">Ohne diesen Schritt landet der Text in der Zwischenablage — du fügst ihn dann selbst ein.</string>
+    <string name="setup_s5_fallback">Ohne diesen Schritt erscheint der schwebende Knopf nicht. Diktat-Tastatur und Teilen funktionieren trotzdem.</string>
     <string name="setup_s5_step_1">Die Bedienungshilfe-Einstellungen öffnen sich</string>
     <string name="setup_s5_step_2">Installierte Apps → WhisperLoom → Ein</string>
     <string name="setup_s5_step_3">Bei „Eingeschränkte Einstellung“: App-Info → ⋮ → Eingeschränkte Einstellungen zulassen, dann erneut</string>
@@ -201,13 +202,13 @@
     <string name="setup_done_home">Zum Start</string>
     <string name="a11y_label">WhisperLoom Text-Einfügen</string>
     <!-- Zeigt Android beim Aktivieren. Gelesen wird nur das Zielfeld: Text und Cursor zum Einfügen, isPassword für den Verlauf. -->
-    <string name="a11y_description">Fügt Diktate vom Knopf ins fokussierte Feld ein. Liest nur dieses Feld und prüft, ob es ein Passwortfeld ist. Die Diktate kommen in den Verlauf, wenn er an ist.</string>
+    <string name="a11y_description">Zeigt den Knopf am Textfeld mit offener Tastatur, fügt Diktate ein, nie ins Passwortfeld. Inhalt liest sie nur beim Einfügen. Verlauf nur, wenn er an ist.</string>
 
     <!-- Prominent Disclosure (Google-Play-Pflicht: eigener Consent-Hinweis vor Mikrofon-/Bedienungshilfe-Zugriff) -->
     <string name="disclosure_mic_title">Mikrofon &amp; Diktat</string>
     <string name="disclosure_mic_body">WhisperLoom nimmt beim Diktieren Ton auf, um ihn in Text umzuwandeln. Im Online-Modus wird die Aufnahme zur Erkennung an den von dir gewählten Anbieter gesendet (z. B. OpenAI oder Groq); im Offline-Modus verlässt die Aufnahme das Gerät nicht. WhisperLoom speichert keine Aufnahmen; nur der Auftrag eines Pro Widgets bleibt auf dem Gerät, bis er gesendet ist.</string>
     <string name="disclosure_a11y_title">Bedienungshilfe: Text einfügen</string>
-    <string name="disclosure_a11y_body">Die Bedienungshilfe „WhisperLoom Text-Einfügen“ fügt den diktierten Text in das gerade aktive Eingabefeld ein. Dafür liest sie nur dieses Feld: Text und Cursor, um an der richtigen Stelle einzufügen, und ob es ein Passwortfeld ist. Andere Bildschirminhalte liest sie nicht, den Feldinhalt speichert sie nicht, und sie wird nur aktiv, wenn du den Knopf antippst. Diktate vom Knopf hebt WhisperLoom im Verlauf auf dem Gerät auf, solange er eingeschaltet ist, nicht aus Passwortfeldern.</string>
+    <string name="disclosure_a11y_body">Die Bedienungshilfe „WhisperLoom Text-Einfügen“ hat zwei Aufgaben. Erstens zeigt sie den schwebenden Knopf nur, wenn du schreiben kannst: Bei Fokus- und Fensterwechseln prüft sie, ob ein Eingabefeld aktiv und die Bildschirmtastatur offen ist und ob es ein Passwortfeld ist. Dafür liest sie nur Merkmale (editierbar, Passwort, Eingabetyp, Fenstertyp, eine Kennung des Felds), keinen Inhalt. Zweitens fügt sie den diktierten Text in das aktive Feld ein: Nur dabei liest sie Text und Cursor dieses Felds, um an der richtigen Stelle einzufügen. In ein Passwortfeld fügt sie nie ein. Andere Bildschirminhalte liest sie nicht, und den Feldinhalt speichert sie nicht. Ohne diese Bedienungshilfe erscheint der Knopf nicht. Diktate vom Knopf hebt WhisperLoom im Verlauf auf dem Gerät auf, solange er eingeschaltet ist, nicht aus Passwortfeldern.</string>
     <string name="disclosure_continue">Fortfahren</string>
 
     <!-- Tutorial (T): einmal nach der Einrichtung, sonst Home „Mehr“ (Seite 3) und Hilfe „Tutorial erneut ansehen“ -->
@@ -496,10 +497,12 @@
     <string name="button_card_bubble">Schwebender Knopf</string>
     <string name="button_reset_pos">Position zurücksetzen</string>
     <string name="button_reset_pos_sub">Setzt den Knopf an die Startposition</string>
+    <string name="button_hold_to_talk">Halten zum Sprechen</string>
+    <string name="button_hold_to_talk_sub">Knopf gedrückt halten und sprechen. Loslassen sendet. Antippen geht weiter.</string>
     <string name="button_pos_reset_done">Position zurückgesetzt</string>
     <string name="button_text_output">Textausgabe</string>
     <string name="button_text_output_a11y">Bedienungshilfe: fügt direkt ins Feld ein</string>
-    <string name="button_text_output_clip">Zwischenablage (Bedienungshilfe aus)</string>
+    <string name="button_text_output_clip">Aus — ohne sie erscheint der Knopf nicht</string>
     <string name="button_card_permissions">Berechtigungen</string>
     <string name="perm_mic">Mikrofon</string>
     <string name="perm_overlay">Über anderen Apps anzeigen</string>
@@ -616,7 +619,7 @@
     <string name="help_s6_online">Online: Audio und Vokabular gehen an den gewählten Anbieter, bei Textverbesserung auch der erkannte Text — mit Ollama im eigenen Netz bleibt er dort. Eine Vokabular-Datei wird nur gelesen.</string>
     <string name="help_s6_offline">Offline: Die Aufnahme bleibt auf dem Gerät, mit dem lokalen Textmodell auch der Text. Ins Netz gehen nur Modell-Downloads und, wenn du offline online verbessern lässt, der erkannte Text.</string>
     <string name="help_s6_history">Den Text deiner Diktate aus Knopf und Tastatur hebt der Verlauf auf — nur auf dem Gerät, nie im Backup. Abschalten: Verlauf › ⋮ › Verlauf-Einstellungen.</string>
-    <string name="help_s6_a11y">Die Bedienungshilfe liest nur das Feld, in das sie einfügt, und prüft, ob es ein Passwortfeld ist — keine anderen Bildschirminhalte. Den Feldinhalt speichert sie nicht.</string>
+    <string name="help_s6_a11y">Die Bedienungshilfe prüft nur Merkmale (Textfeld, Passwortfeld, Tastatur offen), damit der Knopf am Textfeld erscheint. Text und Cursor liest sie nur beim Einfügen, speichert ihn aber nicht.</string>
     <string name="help_s7_title">Wenn etwas nicht klappt</string>
     <string name="help_s7_intro">Die häufigsten Probleme und wo du sie behebst: Antippen zeigt die Lösung, „Öffnen“ führt direkt hin.</string>
     <string name="help_p1">Knopf erscheint nicht</string>
@@ -672,7 +675,7 @@
     <!-- §6.11 Schwebender Knopf (V1) und Notification (N1) -->
     <string name="float_channel">WhisperLoom Diktat</string>
     <string name="float_running">WhisperLoom-Diktat aktiv</string>
-    <string name="float_running_text">Knopf antippen zum Diktieren, ziehen zum Verschieben</string>
+    <string name="float_running_text">Erscheint am Textfeld, sobald die Tastatur offen ist</string>
     <string name="float_stop">Beenden</string>
     <string name="float_no_overlay">Bitte „Über anderen Apps anzeigen" erlauben</string>
     <string name="float_clipboard_fallback">Text kopiert — Bedienungshilfe aktivieren zum automatischen Einfügen</string>
@@ -690,6 +693,18 @@
     <string name="cd_bubble_refining">Text wird verbessert. Antippen fügt ihn ohne KI ein</string>
     <string name="cd_bubble_error">Fehler — antippen für erneuten Versuch</string>
     <string name="cd_cancel">Diktat verwerfen</string>
+    <!-- §6.22 Diktat-Knopf: Passwortfelder, Höchstdauer, Ausblenden -->
+    <string name="float_password_blocked">Nicht eingefügt: Das ist ein Passwortfeld</string>
+    <string name="float_too_long_soon">Noch 2 Minuten — dann sendet der Knopf von selbst</string>
+    <string name="float_too_long_sent">12 Minuten erreicht — Diktat wird gesendet</string>
+    <string name="float_hide_label">Ausblenden</string>
+    <string name="float_hide_release">Loslassen zum Ausblenden</string>
+    <string name="cd_hide">Knopf bis zum nächsten Textfeld ausblenden</string>
+    <!-- Modus-Kreuz und TalkBack-Aktionen (docs/design/bubble-textfeld.md) -->
+    <string name="float_mode_set">Modus: %1$s</string>
+    <string name="cd_bubble_action_mode">Modus: %1$s</string>
+    <string name="cd_bubble_action_mode_active">Modus: %1$s (aktiv)</string>
+    <string name="cd_bubble_action_discard">Diktat verwerfen</string>
 
     <!-- §6.12 IME-Tastatur (V2) -->
     <string name="kb_hint_hold">Halte das Mikrofon gedrückt und sprich</string>

@@ -121,6 +121,19 @@ eigene F-Droid-Repo läuft davon unberührt weiter.
       inkl. Android-16-Verhalten (erzwungenes edge-to-edge).
 - [x] **Accessibility-Service**: Weg A gewählt (behalten + deklarieren) — Disclosure-Flow eingebaut.
       Offen: Accessibility-Deklarationsformular + Demo-Video in der Play Console.
+      Für das Formular (CTR-274): Der Dienst **fügt nie in Passwortfelder ein** — der Knopf zeigt dann
+      nur einen Hinweis, nichts landet in Feld, Zwischenablage oder Verlauf. Das schränkt die Nutzung
+      ein.
+      **Ab 4.0 (Knopf nur am Textfeld, Branch `feat/bubble-textfeld`) ändert sich die Nutzung — im
+      Formular und im Demo-Video nennen:** Die Bedienungshilfe empfängt zusätzlich Fokus- und
+      Fenster-Ereignisse (`typeViewFocused`, `typeWindowsChanged`, `typeWindowStateChanged`) und darf die
+      interaktiven Fenster abfragen (`flagRetrieveInteractiveWindows`). Damit erkennt sie, ob ein
+      editierbares Feld fokussiert und ein Fenster vom Typ Eingabemethode (Bildschirmtastatur) offen ist;
+      nur dann erscheint der Knopf. Gelesen werden dafür **nur Metadaten** — editierbar, Passwort,
+      Eingabetyp, Fenstertyp, Knoten-Kennung —, **kein Inhalt**; Text und Cursor des Felds liest sie wie
+      bisher nur beim Einfügen eines Diktats. Nichts davon wird gespeichert, geloggt oder gesendet.
+      Ohne Bedienungshilfe erscheint der Knopf nicht. Der Hinweistext vorab (`disclosure_a11y_body`) nennt
+      das; Screenshot für das Formular: `shots/disclosure.png` aus dem Arbeitsordner des Runs.
 
 ## 5. Der Accessibility-Service — zentrale Entscheidung
 
@@ -144,7 +157,9 @@ Drei Wege:
 - **A** verlangt: das **Accessibility-Deklarationsformular** (App content) mit Zweck, Datentypen und
   **Demo-Video der In-App-Disclosure**; `isAccessibilityTool` **nicht** auf `true`.
 - **B/C**: die App hat bereits eine vollwertige **Diktier-Tastatur (IME)** als regelkonformen
-  Einfügeweg; der Overlay-Knopf bliebe mit Zwischenablage-Fallback nutzbar.
+  Einfügeweg; der Overlay-Knopf bliebe mit Zwischenablage-Fallback nutzbar. **Ab 4.0 gilt das nicht
+  mehr:** Der Knopf braucht die Bedienungshilfe, um Textfeld und Tastatur-Fenster zu erkennen; ein
+  Play-Build ohne a11y hätte keinen Knopf, nur Tastatur und Teilen.
 
 ## 6. Play-Console-Formulare (App content)
 

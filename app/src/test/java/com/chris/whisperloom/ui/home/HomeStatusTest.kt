@@ -14,10 +14,26 @@ import org.junit.Test
 /** Home-Statuslogik (UX-Spec §2.1): Sperre, Banner-Prioritaet, Status-Farben, Tastatur-Zeile. */
 class HomeStatusTest {
 
-    @Test fun heroSperreMikrofonVorOverlay() {
-        assertEquals(HomeStatus.Blocked.NONE, HomeStatus.blocked(micGranted = true, canDrawOverlays = true))
-        assertEquals(HomeStatus.Blocked.MIC, HomeStatus.blocked(micGranted = false, canDrawOverlays = false))
-        assertEquals(HomeStatus.Blocked.OVERLAY, HomeStatus.blocked(micGranted = true, canDrawOverlays = false))
+    @Test fun heroSperreMikrofonVorOverlayVorBedienungshilfe() {
+        assertEquals(HomeStatus.Blocked.NONE, HomeStatus.blocked(micGranted = true, canDrawOverlays = true, a11yRunning = true))
+        assertEquals(HomeStatus.Blocked.MIC, HomeStatus.blocked(micGranted = false, canDrawOverlays = false, a11yRunning = false))
+        assertEquals(HomeStatus.Blocked.OVERLAY, HomeStatus.blocked(micGranted = true, canDrawOverlays = false, a11yRunning = false))
+        // Ohne Bedienungshilfe erscheint der Knopf nie (UX-Spec §6.22): Starten fuehrt erst zum Einschalten.
+        assertEquals(HomeStatus.Blocked.A11Y, HomeStatus.blocked(micGranted = true, canDrawOverlays = true, a11yRunning = false))
+    }
+
+    @Test fun einrichtungStartetKnopfNurOhneSperre() {
+        assertTrue(HomeStatus.startsAfterSetup(false, micGranted = true, canDrawOverlays = true, a11yRunning = true))
+        // Bedienungshilfe uebersprungen: kein Mikrofon-Dienst mit nie sichtbarem Knopf.
+        assertFalse(HomeStatus.startsAfterSetup(false, micGranted = true, canDrawOverlays = true, a11yRunning = false))
+        assertFalse(HomeStatus.startsAfterSetup(true, micGranted = true, canDrawOverlays = true, a11yRunning = true))
+        assertFalse(HomeStatus.startsAfterSetup(false, micGranted = true, canDrawOverlays = false, a11yRunning = true))
+    }
+
+    @Test fun laufenderKnopfLaesstSichImmerBeenden() {
+        assertTrue(HomeStatus.toggleEnabled(running = true, blocked = HomeStatus.Blocked.A11Y))
+        assertFalse(HomeStatus.toggleEnabled(running = false, blocked = HomeStatus.Blocked.A11Y))
+        assertTrue(HomeStatus.toggleEnabled(running = false, blocked = HomeStatus.Blocked.NONE))
     }
 
     @Test fun bannerZeigtNurDenErstenOffenenPunkt() {

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Nur Debug-Build: Pruefseite fuer tools/bubble_emulator_check.py (Release und Play-Bundle enthalten sie nicht). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- exported: adb startet sie ohne root (Emulator oder Testgeraet). Zeigt nur leere Felder. -->
+        <activity
+            android:name=".debug.BubbleCheckActivity"
+            android:exported="true"
+            android:label="Knopf-Pruefung" />
+    </application>
+</manifest>

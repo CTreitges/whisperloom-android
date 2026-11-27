@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import com.chris.whisperloom.R
 import com.chris.whisperloom.overlay.FloatingMicService
 import com.chris.whisperloom.ui.components.GuideHeader
+import com.chris.whisperloom.ui.home.HomeStatus
 import com.chris.whisperloom.ui.components.PrimaryButton
 import com.chris.whisperloom.ui.components.SmallTopBar
 import com.chris.whisperloom.ui.components.StepStateChip
@@ -130,7 +131,9 @@ fun SetupScreen(step: Int, nav: NavState) {
                         facts = facts,
                         onGoToStep = go,
                         onFinish = {
-                            val startBubble = !prefs.overlaySkipped && env.status.canDrawOverlays
+                            val startBubble = HomeStatus.startsAfterSetup(
+                                prefs.overlaySkipped, env.status.micGranted, env.status.canDrawOverlays, env.status.a11yRunning,
+                            )
                             if (prefs.tutorialSeen) {
                                 if (startBubble) FloatingMicService.start(ctx)
                                 nav.replaceAll(Screen.Home)

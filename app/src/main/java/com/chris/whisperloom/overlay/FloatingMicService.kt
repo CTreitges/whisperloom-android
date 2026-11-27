@@ -8,6 +8,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.graphics.PixelFormat
@@ -23,25 +24,33 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
+import android.view.WindowInsets
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.annotation.VisibleForTesting
+import androidx.core.view.ViewCompat
 import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.AudioRecorder
+import com.chris.whisperloom.Engine
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
+import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.RefineSkip
 import com.chris.whisperloom.TranscriptionEngine
+import com.chris.whisperloom.a11y.FieldFocus
+import com.chris.whisperloom.a11y.InsertResult
 import com.chris.whisperloom.a11y.TextInserterAccessibilityService
 import com.chris.whisperloom.api.ApiNotConfiguredException
 import com.chris.whisperloom.api.isRetryable
 import com.chris.whisperloom.history.History
 import com.chris.whisperloom.history.HistorySource
+import com.chris.whisperloom.ime.DictationSession
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.util.concurrent.Executors
 import kotlin.math.abs
+import kotlin.math.hypot
 
 /**
  * Schwebender Mikro-Knopf (Overlay ueber allen Apps, UX-Spec §5.1/§5.2). Tippen startet und
@@ -99,15 +108,60 @@ class FloatingMicService : Service() {
                 return
             }
             val elapsed = elapsedMs()
+            // Grenzen der IME (UX-Spec §6.22): online ab 10 min ein Hinweis, bei 12 min senden.
+            when (DictationSession.length(elapsed, lengthLimited)) {
+                DictationSession.Length.MAX -> {
+                    toast(getString(R.string.float_too_long_sent))
+                    stopRec()
+                    return
+                }
+                DictationSession.Length.LONG -> if (!longWarned) {
+                    longWarned = true
+                    renderer?.haptic(BubbleMotion.Haptic.REJECT)
+                    toast(getString(R.string.float_too_long_soon))
+                }
+                DictationSession.Length.OK -> Unit
+            }
             renderer?.updateTimer(elapsed)
             main.postDelayed(this, BubbleUi.DOT_PERIOD_MS - elapsed % BubbleUi.DOT_PERIOD_MS)
         }
+    }
+
+    /**
+     * Die laufende Aufnahme geht an die Online-Erkennung und hat damit eine Hoechstdauer. Gemessen
+     * wird die Zeit seit offenem Mikrofon — der Knopf kennt keine Pause, sie ist also die Tonlaenge.
+     */
+    private var lengthLimited = false
+
+    /** Der Hinweis "noch 2 Minuten" kam schon. */
+    private var longWarned = false
+
+    /** Touch-Geste am Knopf: Tipp, Halten zum Sprechen, Modus-Kreuz, Ziehen ([BubbleGesture]). */
+    private val gesture = BubbleGesture()
+
+    /** Druckpunkt der laufenden Geste in Bildschirm-Pixeln; Mitte des Modus-Kreuzes. */
+    private var downX = 0f
+    private var downY = 0f
+
+    /**
+     * Halte-Zeit abgelaufen (nur in IDLE): Modus-Kreuz oeffnen und mit "Halten zum Sprechen" die
+     * Aufnahme starten. Ohne Mikrofonrecht oder Einrichtung nur das Kreuz — der Hinweis kommt beim
+     * Loslassen ohne Ziel (wie ein Tipp), nicht mitten in der Geste (docs/design/bubble-textfeld.md §1).
+     */
+    private val holdStart = Runnable {
+        if (!gesture.holdElapsed(state == BubbleState.IDLE)) return@Runnable
+        if (prefs.holdToTalk && canRecord()) {
+            startRec()
+            if (state == BubbleState.RECORDING) gesture.recordingStarted()
+        }
+        openCross()
     }
 
     private val clearCopiedHint = Runnable {
         if (state == BubbleState.IDLE && copiedHint) {
             copiedHint = false
             render()
+            updateAlpha()
         }
     }
 
@@ -118,6 +172,7 @@ class FloatingMicService : Service() {
         prefs = Prefs(this)
         wm = getSystemService(WINDOW_SERVICE) as WindowManager
         cancelTarget = CancelTarget(this, wm)
+        crossWindow = ModeCrossWindow(this, wm)
         try {
             startAsForeground()
         } catch (e: Exception) {
@@ -131,7 +186,17 @@ class FloatingMicService : Service() {
             return
         }
         addBubble()
+        prefs.observe(onPrefsChange)
+        instance = this
         _running.value = true
+    }
+
+    /**
+     * Modus oder Prompt-Schalter aenderten sich ausserhalb des Knopfs (Tastatur-Leiste, Einstellungen):
+     * TalkBack-Ansage und -Aktionen nachziehen. Harte Referenz, SharedPreferences haelt Horcher nur schwach.
+     */
+    private val onPrefsChange = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == Prefs.KEY_REFINE_MODE || key == Prefs.KEY_PROMPT_LEVEL) refreshActions()
     }
 
     /**
@@ -191,14 +256,19 @@ class FloatingMicService : Service() {
             gravity = Gravity.TOP or Gravity.START
             x = start.x
             y = start.y
+            title = WINDOW_TITLE
         }
         // Touch-Ziel ist der 68-dp-Kreis; der Klick-Listener bedient TalkBacks Doppeltipp.
         r.bubble.setOnTouchListener(dragTapListener())
         r.bubble.setOnClickListener { onTap() }
         recorder.onAmplitude = { amp -> r.level = amp }
+        // Erst am naechsten Textfeld mit offener Tastatur sichtbar, nicht sofort auf dem Home-Screen.
+        v.visibility = View.GONE
         wm.addView(v, lp)
         bubbleView = v
         applyState(BubbleState.IDLE)
+        refreshActions()
+        onFocus(TextInserterAccessibilityService.currentFocus())
     }
 
     private fun clampToScreen(x: Int, y: Int, width: Int, height: Int): BubblePos {
@@ -243,11 +313,8 @@ class FloatingMicService : Service() {
         // Position umgekehrt als Tippen durchging und die Aufnahme startete.
         private val touchSlop = ViewConfiguration.get(this@FloatingMicService).scaledTouchSlop
 
-        var downX = 0f
-        var downY = 0f
         var startX = 0
         var startY = 0
-        var moved = false
 
         // Kein performClick(): es spielte den System-Klickton ab — genau zum Aufnahmestart, also
         // mit im Diktat. TalkBack bedient den Knopf ueber den OnClickListener (addBubble).
@@ -256,16 +323,30 @@ class FloatingMicService : Service() {
             val root = bubbleView ?: return false
             when (e.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
-                    downX = e.rawX; downY = e.rawY; startX = lp.x; startY = lp.y; moved = false
+                    downX = e.rawX; downY = e.rawY; startX = lp.x; startY = lp.y
+                    crossMoved = false
+                    touching = true
+                    updateAlpha()
+                    gesture.down(idle = state == BubbleState.IDLE)
+                    main.removeCallbacks(holdStart) // nie zwei Halte-Zeiten (verlorenes UP/CANCEL)
+                    main.postDelayed(holdStart, holdTimeout())
                 }
                 MotionEvent.ACTION_MOVE -> {
+                    // Nach der Halte-Zeit waehlt Bewegung nur ein Ziel im Kreuz, sie verschiebt nichts.
+                    if (gesture.phase == BubbleGesture.Phase.HELD) {
+                        aimCross(e.rawX, e.rawY, touchSlop.toFloat())
+                        return true
+                    }
                     val dx = (e.rawX - downX).toInt()
                     val dy = (e.rawY - downY).toInt()
-                    if (abs(dx) > touchSlop || abs(dy) > touchSlop) {
-                        if (!moved && canDiscard()) cancelTarget.show()
-                        moved = true
+                    if ((abs(dx) > touchSlop || abs(dy) > touchSlop) && gesture.beyondSlop()) {
+                        main.removeCallbacks(holdStart)
+                        when {
+                            canDiscard() -> cancelTarget.show(CancelTarget.Kind.DISCARD)
+                            state == BubbleState.IDLE -> cancelTarget.show(CancelTarget.Kind.HIDE)
+                        }
                     }
-                    if (!moved) return true // unter der Schwelle: noch nicht verschieben
+                    if (!gesture.dragging) return true // unter der Schwelle: noch nicht verschieben
                     val p = clampToScreen(startX + dx, startY + dy, root.width, root.height)
                     lp.x = p.x
                     lp.y = p.y
@@ -273,26 +354,235 @@ class FloatingMicService : Service() {
                     updateCancelHit()
                 }
                 MotionEvent.ACTION_UP -> {
-                    if (!moved) {
-                        onTap()
-                    } else if (cancelTarget.isHit) {
-                        renderer?.haptic(BubbleMotion.Haptic.REJECT)
-                        cancelTarget.hide()
-                        // Der Knopf soll nach dem Verwerfen nicht ueber dem Ziel liegen
-                        // bleiben — zurueck an die gemerkte Position.
-                        restorePosition()
-                        discard()
-                    } else {
-                        cancelTarget.hide()
-                        savePosition()
+                    main.removeCallbacks(holdStart)
+                    touching = false
+                    crossWindow.hide()
+                    when (gesture.up()) {
+                        // Halten ohne Aufnahme und nach Bewegung im Kreuz: nur schliessen (umentschieden).
+                        BubbleGesture.Release.TAP -> if (!crossMoved) onTap()
+                        // Kurz nach dem Start losgelassen = langsamer Tipp: weiter aufnehmen statt
+                        // einen fast leeren Clip zu senden, den die Erkennung mit Erfundenem fuellt.
+                        BubbleGesture.Release.SEND -> releaseHeld(e)
+                        BubbleGesture.Release.DROP -> drop()
+                        BubbleGesture.Release.PICK ->
+                            (gesture.armed as? ModeCross.CrossTarget.Mode)?.let { pickMode(it.mode) }
+                        BubbleGesture.Release.DISCARD -> if (state == BubbleState.RECORDING) {
+                            renderer?.haptic(BubbleMotion.Haptic.REJECT)
+                            discard()
+                        }
+                        BubbleGesture.Release.NONE -> Unit
                     }
+                    endTouch()
                 }
                 MotionEvent.ACTION_CANCEL -> {
+                    main.removeCallbacks(holdStart)
+                    touching = false
+                    val dragged = gesture.dragging
+                    val onDiscard = gesture.armed == ModeCross.CrossTarget.Discard
+                    val send = gesture.cancel()
                     cancelTarget.hide()
-                    if (moved) savePosition()
+                    crossWindow.hide()
+                    if (dragged) savePosition()
+                    // Ein abgefangener Touch soll kein gehaltenes Diktat fressen (wie die IME) — ausser der
+                    // Finger lag schon auf dem ✕; ohne Sprache geht nichts raus. Ging die Aufnahme waehrend
+                    // des Haltens schon in SENDING (totes Mikrofon, 12-min-Grenze), wird nichts verworfen.
+                    if (send && onDiscard) {
+                        if (state == BubbleState.RECORDING) discard()
+                    } else if (send) {
+                        stopRec(requireSpeech = true)
+                    }
+                    endTouch()
                 }
             }
             return true
+        }
+    }
+
+    /** Finger weg: Deckkraft zurueck, und was waehrend der Geste aufgeschoben war, jetzt verstecken. */
+    private fun endTouch() {
+        updateAlpha()
+        updateVisibility()
+    }
+
+    /** Halte-Zeit des Systems: folgt der Einstellung "Beruehrungs- und Haltedauer". */
+    private fun holdTimeout() = ViewConfiguration.getLongPressTimeout().toLong()
+
+    /** Loslassen nach einem Zug (vor der Halte-Zeit begonnen, also nie mit gehaltener Aufnahme). */
+    private fun drop() {
+        if (cancelTarget.isHit && cancelTarget.kind == CancelTarget.Kind.HIDE && state == BubbleState.IDLE) {
+            renderer?.haptic(BubbleMotion.Haptic.CONFIRM)
+            cancelTarget.hide()
+            restorePosition() // kommt beim naechsten Feld an der gemerkten Stelle zurueck
+            hideUntilNextField()
+        } else if (cancelTarget.isHit && canDiscard()) {
+            // canDiscard: das Ziel blieb stehen, waehrend die Aufnahme schon in SENDING ging
+            // (12-min-Grenze, totes Mikrofon) — dann nichts verwerfen, die Uebertragung laeuft.
+            renderer?.haptic(BubbleMotion.Haptic.REJECT)
+            cancelTarget.hide()
+            // Der Knopf soll nach dem Verwerfen nicht ueber dem Ziel liegen
+            // bleiben — zurueck an die gemerkte Position.
+            restorePosition()
+            discard()
+        } else {
+            cancelTarget.hide()
+            savePosition()
+        }
+    }
+
+    // --- Modus-Kreuz (docs/design/bubble-textfeld.md §2/§3) --------------------
+
+    private lateinit var crossWindow: ModeCrossWindow
+
+    /** Modi im Kreuz und in den TalkBack-Aktionen: "Prompt" nur, wenn eingeschaltet. */
+    private fun crossModes() = RefineMode.settings(prefs.promptLevelEnabled)
+
+    private fun canRecord() =
+        checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED &&
+            TranscriptionEngine.isConfigured(this)
+
+    /** Der Finger hat im offenen Kreuz den Touch-Slop verlassen: Loslassen ist dann kein langsamer Tipp mehr. */
+    private var crossMoved = false
+
+    /** Kreuz um den Druckpunkt, kaum sichtbar, solange der Finger auf dem Knopf liegt. */
+    private fun openCross() {
+        crossMoved = false
+        val modes = crossModes()
+        val layout = ModeCross.layout(
+            downX, downY, safeArea(), modes, resources.displayMetrics.density, ModeCrossWindow.pillWidthDp(this, modes),
+        )
+        crossWindow.show(layout, prefs.refineMode)
+    }
+
+    /** Bildschirm ohne Status-, Navigationsleiste und Kamera-Aussparung, in Bildschirm-Pixeln wie rawX/rawY. */
+    private fun safeArea(): ModeCross.Area {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val metrics = wm.currentWindowMetrics
+            val insets = metrics.windowInsets.getInsetsIgnoringVisibility(
+                WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout(),
+            )
+            val b = metrics.bounds
+            return ModeCross.Area(b.left + insets.left, b.top + insets.top, b.right - insets.right, b.bottom - insets.bottom)
+        }
+        val dm = resources.displayMetrics
+        return ModeCross.Area(0, (STATUS_BAR_FALLBACK_DP * dm.density).toInt(), dm.widthPixels, dm.heightPixels)
+    }
+
+    /** Finger bewegt sich im Halten: Deckkraft nach Fingerweg, Ziel waehlen, beim Einrasten Haptik. */
+    private fun aimCross(x: Float, y: Float, slopPx: Float) {
+        val layout = crossWindow.layout ?: return
+        val density = resources.displayMetrics.density
+        val travel = hypot(x - downX, y - downY)
+        if (travel > slopPx) crossMoved = true
+        val target = ModeCross.pick(x, y, downX, downY, layout, gesture.armed, density)
+        if (target != gesture.armed && target != null) renderer?.haptic(BubbleMotion.Haptic.CONTEXT_CLICK)
+        gesture.aim(target)
+        crossWindow.update(ModeCross.alpha(travel, slopPx, density), target)
+    }
+
+    /**
+     * Loslassen im Halten ohne Ziel: Hat der Finger das Kreuz nie verlassen und kam das Loslassen frueh,
+     * war es ein langsamer Tipp (Aufnahme laeuft weiter); sonst senden, ohne Sprache nichts.
+     */
+    private fun releaseHeld(e: MotionEvent) {
+        if (!crossMoved && BubbleGesture.isSlowTap(e.downTime, e.eventTime, holdTimeout())) return
+        stopRec(requireSpeech = true)
+    }
+
+    /** Modus dauerhaft setzen; laeuft die gehaltene Aufnahme, mit ihm senden — ohne Sprache nur der Wechsel. */
+    private fun pickMode(mode: RefineMode) {
+        setMode(mode)
+        if (state == BubbleState.RECORDING) stopRec(requireSpeech = true, haptic = false)
+    }
+
+    private fun setMode(mode: RefineMode) {
+        prefs.refineMode = mode
+        renderer?.haptic(BubbleMotion.Haptic.CONFIRM)
+        toast(getString(R.string.float_mode_set, getString(ModeCrossWindow.labelRes(mode))))
+        refreshActions()
+    }
+
+    // --- TalkBack (N11): je Modus eine Aktion, dazu Ausblenden bzw. Verwerfen ---
+
+    private val actionIds = mutableListOf<Int>()
+
+    private fun refreshActions() {
+        val view = renderer?.bubble ?: return
+        // Der aktive Modus gehoert zur Ansage am Knopf, nicht erst ins Aktionsmenue.
+        ViewCompat.setStateDescription(
+            view, getString(R.string.float_mode_set, getString(ModeCrossWindow.labelRes(prefs.refineMode))),
+        )
+        actionIds.forEach { ViewCompat.removeAccessibilityAction(view, it) }
+        actionIds.clear()
+        for (action in BubbleActions.of(state, crossModes(), prefs.refineMode)) {
+            val label = when (action) {
+                is BubbleAction.SetMode -> getString(
+                    if (action.active) R.string.cd_bubble_action_mode_active else R.string.cd_bubble_action_mode,
+                    getString(ModeCrossWindow.labelRes(action.mode)),
+                )
+                BubbleAction.Hide -> getString(R.string.cd_hide)
+                BubbleAction.Discard -> getString(R.string.cd_bubble_action_discard)
+            }
+            actionIds += ViewCompat.addAccessibilityAction(view, label) { _, _ ->
+                when (action) {
+                    is BubbleAction.SetMode -> setMode(action.mode)
+                    BubbleAction.Hide -> if (state == BubbleState.IDLE) {
+                        restorePosition()
+                        hideUntilNextField()
+                    }
+                    BubbleAction.Discard -> if (canDiscard()) discard()
+                }
+                true
+            }
+        }
+    }
+
+    // --- Sichtbar nur am Textfeld, Ausblenden bis zum naechsten Feld (UX-Spec §6.22) ---
+
+    /** Entscheidet aus den Meldungen der Bedienungshilfe, ob der Knopf zu sehen ist. */
+    private val visibility = BubbleVisibility()
+
+    /** Finger liegt auf dem Knopf: voll deckend, und waehrend der Geste wird nicht versteckt. */
+    private var touching = false
+
+    /** Aufnahme oder Senden: der Knopf bleibt sichtbar, auch ohne Feld oder Tastatur. */
+    private fun busy() = state == BubbleState.RECORDING || state == BubbleState.SENDING
+
+    /**
+     * Nimmt nur den View weg; der Dienst laeuft weiter — aus dem Hintergrund duerfte er unter
+     * Android 15 nicht wieder starten. Keine Frist, kein "Einblenden": zurueck kommt er am naechsten Feld.
+     */
+    private fun hideUntilNextField() {
+        visibility.hide()
+        updateVisibility()
+    }
+
+    private fun onFocus(focus: FieldFocus?) {
+        visibility.onFocus(focus)
+        updateVisibility()
+    }
+
+    /** Zeigt oder versteckt den View nach [visibility]; nie mitten in einer Geste. */
+    private fun updateVisibility() {
+        val v = bubbleView ?: return
+        val show = visibility.visible(busy())
+        if (show == (v.visibility == View.VISIBLE) || (!show && touching)) return
+        if (show) {
+            restorePosition() // Display kann sich gedreht haben: neu in den Bildschirm begrenzen
+            refreshActions() // der Modus kann sich in der App geaendert haben
+        }
+        v.visibility = if (show) View.VISIBLE else View.GONE
+    }
+
+    /** Ruhe halb deckend, Beruehrung/Aufnahme/Senden voll ([BubbleVisibility.alpha]). */
+    private fun updateAlpha() {
+        val v = bubbleView ?: return
+        val target = BubbleVisibility.alpha(state, touching, copiedHint)
+        v.animate().cancel()
+        // Versteckt oder nicht angehaengt laeuft keine Animation: direkt setzen.
+        if (BubbleAnimators.reduceMotion(this) || v.visibility != View.VISIBLE || !v.isAttachedToWindow) {
+            v.alpha = target
+        } else {
+            v.animate().alpha(target).setDuration(BubbleMotion.ALPHA_FADE_MS).start()
         }
     }
 
@@ -331,7 +621,12 @@ class FloatingMicService : Service() {
         main.removeCallbacks(tick)
         main.removeCallbacks(clearCopiedHint)
         render()
-        if (previous != next) renderer?.announce()
+        updateAlpha()
+        updateVisibility() // Ende von Aufnahme/Senden bei geschlossener Tastatur: jetzt weg
+        if (previous != next) {
+            renderer?.announce()
+            refreshActions()
+        }
         if (next == BubbleState.RECORDING) main.post(tick)
         if (copied) main.postDelayed(clearCopiedHint, BubbleMotion.COPIED_HINT_MS)
         if ((previous == BubbleState.RECORDING) != (next == BubbleState.RECORDING)) refreshNotification()
@@ -350,25 +645,33 @@ class FloatingMicService : Service() {
             startActivity(AppNav.setup(this))
             return
         }
+        // Vor dem Mikrofon: die Vibration soll nicht als Ton in der Aufnahme landen.
+        renderer?.haptic(BubbleMotion.Haptic.CONFIRM)
         if (recorder.start()) {
             recordingStartedAt = SystemClock.elapsedRealtime()
             pendingSamples = null
+            lengthLimited = prefs.engine == Engine.ONLINE
+            longWarned = false
             applyState(BubbleState.RECORDING)
-            renderer?.haptic(BubbleMotion.Haptic.CONFIRM)
             TranscriptionEngine.warmUp(this) // lokales Textmodell parallel zur Aufnahme laden
         } else {
             toast(getString(R.string.kb_error))
         }
     }
 
-    private fun stopRec() {
+    /**
+     * Aufnahme beenden und senden. [requireSpeech] (Moduswahl im Kreuz): ohne Sprachpegel nichts senden,
+     * keine Anfrage an die Erkennung — dann war es nur ein Moduswechsel (N7) oder ein stilles Halten.
+     * [haptic] false, wenn der Aufrufer schon eine Haptik gegeben hat (eine je Loslassen).
+     */
+    private fun stopRec(requireSpeech: Boolean = false, haptic: Boolean = true) {
         if (state != BubbleState.RECORDING) return
         applyState(BubbleState.SENDING)
-        renderer?.haptic(BubbleMotion.Haptic.CONTEXT_CLICK)
+        if (haptic) renderer?.haptic(BubbleMotion.Haptic.CONTEXT_CLICK)
         runIo {
             val samples = recorder.stop()
             // Sehr kurze Aufnahmen (< 0,3 s) verwerfen — meist versehentliche Taps.
-            if (samples.size < AudioRecorder.SAMPLE_RATE * 3 / 10) {
+            if (samples.size < AudioRecorder.SAMPLE_RATE * 3 / 10 || (requireSpeech && !ModeCross.hasSpeech(samples))) {
                 main.post { applyState(BubbleState.IDLE) }
                 return@runIo
             }
@@ -444,14 +747,25 @@ class FloatingMicService : Service() {
             val text = dictation.text
             val out = if (prefs.trailingSpace && text.isNotEmpty()) "$text " else text
             // Vor dem Einfuegen, nie aus einem Passwortfeld (Ziel = Fokusfeld der Bedienungshilfe).
-            if (!targetIsPassword()) History.record(applicationContext, HistorySource.BUBBLE, dictation)
+            val password = targetIsPassword()
+            if (!password) History.record(applicationContext, HistorySource.BUBBLE, dictation)
             pendingSamples = null
             main.post {
-                var copied = false
-                if (out.isNotBlank() && !TextInserterAccessibilityService.tryInsert(out)) {
-                    fallbackClipboard(out)
-                    copied = true
+                // Passwortfeld: weder einfuegen noch in die Zwischenablage (UX-Spec §6.22). Die
+                // Bedienungshilfe prueft beim Einfuegen selbst noch einmal (Fokus kann wechseln).
+                val result = when {
+                    out.isBlank() -> null
+                    password -> InsertResult.BLOCKED
+                    else -> TextInserterAccessibilityService.tryInsert(out)
                 }
+                if (result == InsertResult.BLOCKED) {
+                    applyState(BubbleState.IDLE)
+                    renderer?.haptic(BubbleMotion.Haptic.REJECT)
+                    toast(getString(R.string.float_password_blocked))
+                    return@post
+                }
+                val copied = result == InsertResult.FAILED
+                if (copied) fallbackClipboard(out)
                 applyState(BubbleState.IDLE, copied = copied)
                 renderer?.flashSuccess()
                 dictation.result.skipped?.let { toast(getString(R.string.refine_skipped, it)) }
@@ -494,10 +808,14 @@ class FloatingMicService : Service() {
     }
 
     override fun onDestroy() {
+        if (instance === this) instance = null
         _running.value = false
+        prefs.unobserve(onPrefsChange)
         main.removeCallbacks(tick)
         main.removeCallbacks(clearCopiedHint)
+        main.removeCallbacks(holdStart)
         cancelTarget.hide()
+        crossWindow.hide()
         renderer?.release()
         renderer = null
         runCatching { bubbleView?.let { wm.removeView(it) } }
@@ -510,8 +828,14 @@ class FloatingMicService : Service() {
     companion object {
         private const val TAG = "FloatingMic"
 
+        /** Fenstertitel des Knopfs in `dumpsys window` (Emulator-Pruefung tools/bubble_emulator_check.py). */
+        const val WINDOW_TITLE = "WhisperLoomBubble"
+
         /** Assistenten-Schritt "Mikrofon erlauben" (UX-Spec §2.2). */
         private const val SETUP_STEP_MIC = 3
+
+        /** Statusleiste vor Android 11 (ohne WindowMetrics): Modus-Kreuz bleibt darunter. */
+        private const val STATUS_BAR_FALLBACK_DP = 24
         const val ACTION_STOP = "com.chris.whisperloom.STOP_FLOAT"
 
         /**
@@ -531,6 +855,18 @@ class FloatingMicService : Service() {
 
         /** Momentaufnahme von [running] (SystemStatus.read). */
         val isRunning: Boolean get() = _running.value
+
+        /** Laufender Dienst fuer Meldungen der Bedienungshilfe (gleicher Prozess). */
+        @Volatile private var instance: FloatingMicService? = null
+
+        /**
+         * Die Bedienungshilfe meldet Fokus und Tastatur (nur Metadaten, kein Inhalt); null = sie ist
+         * aus. Ohne Meldung erscheint der Knopf nicht.
+         */
+        fun focusChanged(focus: FieldFocus?) {
+            val service = instance ?: return
+            service.main.post { service.onFocus(focus) }
+        }
 
         fun start(context: Context) {
             val i = Intent(context, FloatingMicService::class.java)

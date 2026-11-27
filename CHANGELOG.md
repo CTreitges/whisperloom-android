@@ -8,8 +8,15 @@ Alle nennenswerten Änderungen an WhisperLoom. Format nach [Keep a Changelog](ht
 
 - **Sprache „Deutsch + Englisch“.** Unter Einstellungen › **Spracherkennung** › Sprache gibt es die neue Wahl **Deutsch + Englisch**, gedacht für deutsche Diktate mit englischen Wörtern. GPT Transcribe (OpenAI) bekommt beide Sprachen als Hinweis, alle anderen Dienste erkennen die Sprache selbst. Für Füllwörter und Textverbesserung gilt die erkannte Sprache, sonst Deutsch. Das Offline-Modell erkennt nur eine Sprache je Diktat; das steht auch unter der Auswahl.
 - **Sprache je Widget.** Im Editor eines Pro Widgets wählst du unter **Sprache**, in welcher Sprache dieses Widget erkennt, z. B. ein Widget für englische Aufträge. Ab Werk steht dort **Wie in der App**, es bleibt also alles wie bisher.
+- **Knopf nur am Textfeld.** Der schwebende Knopf erscheint nur noch, wenn du schreiben kannst: Ein Textfeld ist angetippt und die Tastatur offen. Schließt du die Tastatur, verschwindet er wieder, außer du diktierst gerade. In Passwortfeldern erscheint er nicht. In Ruhe ist er halb durchsichtig, damit er nichts verdeckt; berührst du ihn, ist er voll da. Ohne eingeschaltete Bedienungshilfe gibt es keinen Knopf, die App zeigt dir dann den Weg zum Einschalten.
+- **Halten zum Sprechen am Knopf.** Halte den schwebenden Knopf gedrückt und sprich. Lässt du los, wird gesendet. Antippen geht weiter wie bisher. Ausschalten kannst du es unter Knopf & Tastatur › **Halten zum Sprechen**. Wie lange du halten musst, richtet sich nach der Einstellung „Berührungs- und Haltedauer“ deines Handys.
+- **Modus per Halten und Wischen.** Hältst du den Knopf, erscheinen um ihn herum ganz blass die Modi Aus, Glätten, Schöner und Kürzen (und Prompt, wenn eingeschaltet), unten ein ✕. Sobald du den Finger wegbewegst, werden sie deutlich. Lässt du auf einem Modus los, gilt er ab jetzt, und was du gesagt hast, wird gleich mit ihm verarbeitet. Hast du nichts gesagt, wechselt nur der Modus. Auf dem ✕ wird verworfen. Mit TalkBack gibt es je Modus eine Aktion am Knopf.
+- **Knopf ausblenden.** Ziehst du den Knopf in Ruhe nach unten, erscheint **Ausblenden**. Lässt du ihn dort los, verschwindet er, bis du ein anderes Textfeld antippst. Dann ist er an derselben Stelle wieder da.
+- **Lange Diktate am Knopf.** Mit Online-Erkennung meldet der Knopf nach 10 Minuten: „Noch 2 Minuten“. Nach 12 Minuten sendet er von selbst, damit der Anbieter das Diktat nicht ablehnt. Offline gibt es keine Grenze.
 
 ### Geändert
+
+- **Nie in Passwortfelder.** Ist das Feld ein Passwortfeld, fügt der Knopf nichts ein. Der Text kommt auch nicht in die Zwischenablage und nicht in den Verlauf. Du siehst nur einen Hinweis. Zahlen- und Telefonfelder gehen weiter.
 
 - **Vokabular kommt bei mehr Anbietern an.** GPT Transcribe bekommt dein Vokabular zusätzlich als einzelne Schlüsselwörter. Mistral (Voxtral) bekommt es jetzt als Wortliste, bisher kam dort gar nichts an: höchstens 100 Wörter, Begriffe aus mehreren Wörtern werden mit _ verbunden, für Deutsch ist das bei Mistral noch im Test. Begriffe, die ein Anbieter ablehnen würde, lässt WhisperLoom weg, statt das Diktat scheitern zu lassen.
 

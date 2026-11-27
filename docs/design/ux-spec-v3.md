@@ -1710,6 +1710,62 @@ Gegenständen („Modelle & Zugänge") verlangt Architekturwissen (STT- vs. LLM-
 - **Tests:** `SettingsHubTest` (Zeilen, Unterseiten, Widgets nur mit Pro, Route models), `MainFlowTest` (drei Gruppen, Trenner, Whisper-Liste in E1),
   `TextModelUiTest` (E1 offline/online, OfflineTextScreen, Hub-Zeile), `ApplyRouteTest`, `RouteRequestTest`, `SettingsScreenshotTest` (vier neue PNGs).
 
+### 6.22 Nachtrag: Diktat-Knopf — Halten, Passwortfelder, Höchstdauer, Ausblenden
+
+(§6.21 ist von CTR-272 „Zugang Basis 2“ belegt, PR #36.) Ergänzt §5.1, §5.2, §5.5 und §6.20; wo sie widersprechen, gilt
+dieser Abschnitt. Herleitung: Plan CTR-274 (Bedienmuster
+nach Vorbild Wispr Flow, außerhalb des Repos). Übernommen sind nur Bedienmuster, keine Form, Icons, Farben oder
+Animationen.
+
+- **V1 Halten zum Sprechen.** In IDLE startet Halten ohne Bewegung die Aufnahme, sobald die Halte-Zeit des Systems
+  (`ViewConfiguration.getLongPressTimeout()`, folgt der Einstellung „Berührungs- und Haltedauer“) abgelaufen ist:
+  RECORDING wie beim Tipp, Haptik `CONFIRM`. Loslassen sendet (`CONTEXT_CLICK`) — außer in der ersten Sekunde nach
+  Ablauf der Halte-Zeit (`BubbleGesture.HOLD_MIN_MS`, gemessen an den Touch-Zeitstempeln): Das war ein langsamer Tipp, die Aufnahme läuft weiter wie nach einem
+  Tipp (kein fast leerer Clip, den die Erkennung mit Erfundenem füllt). **Ab 4.0 (Branch `feat/bubble-textfeld`):**
+  Nach Ablauf der Halte-Zeit öffnet sich das Modus-Kreuz; Bewegung wählt einen Modus oder das ✕ und verschiebt nicht
+  mehr — Gesten, Maße, Rand, Sprache und TalkBack stehen verbindlich in `docs/design/bubble-textfeld.md`.
+  Bewegt sich der Finger vor Ablauf der Halte-Zeit, ist es nur Verschieben. Ein abgefangener
+  Touch (`ACTION_CANCEL`) im Halten sendet, damit kein Diktat verloren geht (wie die IME). Kurzer Tipp, TalkBack-Doppeltipp
+  und die Aktionen aus §6.20 bleiben unverändert. Die Logik steht Android-frei in `BubbleGesture`.
+- **E3 Schalter.** Karte „Schwebender Knopf“: `SwitchRow` `button_hold_to_talk` „Halten zum Sprechen“ mit
+  `button_hold_to_talk_sub`. Ab Werk an (Getter-Default `Prefs.holdToTalk`). Aus: Halten wirkt wie ein langsamer Tipp.
+  Künftige Zugangs-Profile (CTR-272) setzen ihn aus.
+- **V1 Nie in Passwortfelder.** Ist das Fokusfeld der Bedienungshilfe ein Passwortfeld (`isPassword` oder
+  Passwort-Eingabetyp), fügt der Knopf nicht ein, kopiert nicht in die Zwischenablage und schreibt nicht in den Verlauf.
+  Toast `float_password_blocked`, Haptik `REJECT`, kein Erfolgs-Ring, Zustand IDLE. Zahlen- und Telefonfelder bleiben
+  erlaubt. (Die Konfiguration der Bedienungshilfe ändert erst „Sichtbar nur am Textfeld“ unten.)
+- **V1 Höchstdauer (nur Online-Erkennung).** Gleiche Grenzen wie die IME (`DictationSession.LONG_MS`/`MAX_MS`): ab
+  10 min einmal Haptik `REJECT` und Toast `float_too_long_soon`; bei 12 min sendet der Knopf von selbst (wie ein Tipp)
+  mit Toast `float_too_long_sent`. Offline gibt es keine Grenze. Gemessen wird die Aufnahmezeit seit offenem Mikrofon.
+  Deckt sich mit der Höchstdauer aus §6.21 (CTR-272 B2); treffen beide zusammen, gilt §6.21 (Warnung 20 s vor Ende).
+- **V1/§5.2 Ausblenden bis zum nächsten Feld** (Stand 26.11.2026, ersetzt das 15-min-Ausblenden aus #38). In IDLE
+  erscheint beim Ziehen dasselbe Ziel unten mittig als Ausblenden-Ziel: Icon `ic_visibility_off`, Label
+  `float_hide_label` „Ausblenden“, im Magnet-Radius `float_hide_release` „Loslassen zum Ausblenden“, Füllung bleibt
+  `surfaceContainerHigh` (kein `errorContainer`), Beschreibung `cd_hide`. Loslassen darüber: Haptik `CONFIRM`, Knopf
+  springt an die gemerkte Position und verschwindet, bis die Bedienungshilfe den Fokus auf ein **anderes** editierbares
+  Feld meldet (`FieldKey` = Fenster-ID + Knoten-Kennung, kein Inhalt). Dasselbe Feld erneut fokussiert: bleibt weg.
+  Keine Frist, keine Notification-Aktion „Einblenden“; der Dienst läuft weiter (Android 15/16: kein Neustart aus dem
+  Hintergrund nötig), „Beenden“ bleibt. Die Notification bleibt wie §5.5.
+- **V1 Sichtbar nur am Textfeld** (Stand 27.11.2026, Ziel 4.0, Branch `feat/bubble-textfeld`). Der Knopf ist nur zu
+  sehen, wenn die Bedienungshilfe ein fokussiertes, editierbares Feld **und** ein offenes Fenster vom Typ
+  Eingabemethode (`AccessibilityWindowInfo.TYPE_INPUT_METHOD`) meldet. Schließt sich die Tastatur oder verliert das
+  Feld den Fokus, verschwindet er — außer in RECORDING und SENDING, dann bleibt er bis zum Ende (ein laufendes
+  Mikrofon ist nie unsichtbar). Nie in Passwortfeldern (Knoten oder Eingabetyp), Zahlen- und Telefonfelder ja. Ohne
+  Bedienungshilfe nie. Nach dem Start erscheint er erst am nächsten Feld, nicht sofort auf dem Home-Screen.
+  Keine Option „immer zeigen“. Während einer Berührung wird nicht versteckt (erst nach dem Loslassen). Die
+  Bedienungshilfe empfängt dafür `typeViewFocused`, `typeWindowsChanged`, `typeWindowStateChanged` (plus
+  `typeWindowContentChanged` wie bisher) mit `flagRetrieveInteractiveWindows` und liest nur Metadaten: editierbar,
+  Passwort, Eingabetyp, Fenstertyp, Knoten-Kennung (`FieldFocus`), nie Inhalt. Die Logik steht Android-frei in
+  `BubbleVisibility`; das Ausblenden bis zum nächsten Feld (oben) liegt mit darin.
+- **V1 Durchsichtig in Ruhe.** IDLE ohne Berührung: Deckkraft 50 % (`BubbleVisibility.IDLE_ALPHA`, kein Regler).
+  Voll bei Berührung, in RECORDING, SENDING, ERROR und solange „Kopiert — einfügen“ steht. Wechsel 150 ms
+  (`BubbleMotion.ALPHA_FADE_MS`), bei Reduce-Motion sofort.
+- **H/E3 Ohne Bedienungshilfe.** `HomeStatus.Blocked.A11Y`: „Mikro-Knopf starten“ ist gesperrt, Warn-Chip
+  `home_blocked_a11y` „Bedienungshilfe fehlt — ohne sie kein Knopf“ führt in W Schritt 5 (Hinweis vorab bleibt vor
+  dem Systemdialog). Ein laufender Knopf lässt sich immer beenden (`HomeStatus.toggleEnabled`). Banner, Textausgabe-
+  Zeile in E3, `setup_s5_fallback`, `home_hero_sub_on`, `float_running_text`, `a11y_description`,
+  `disclosure_a11y_body`, `help_s6_a11y` sagen, dass der Knopf ohne Bedienungshilfe nicht erscheint.
+
 ---
 
 ## 7. Akzeptanzkriterien (prüfbar, je Screen)
