@@ -66,6 +66,29 @@ class GeometryTest(unittest.TestCase):
         self.assertEqual(320, c.parse_wm_density("Physical density: 420\nOverride density: 320\n"))
 
 
+class CheckPageCmdTest(unittest.TestCase):
+    def test_background_recreates_task(self):
+        # Ohne neue Aufgabe holt am start die laufende Seite nur nach vorn, onCreate sieht bg nie.
+        cmd = c.check_page_cmd(bg="light")
+        self.assertIn("--activity-clear-task", cmd)
+        self.assertIn("--es bg light", cmd)
+
+    def test_plain_keeps_running_page(self):
+        cmd = c.check_page_cmd(start_bubble=True)
+        self.assertNotIn("--activity-clear-task", cmd)
+        self.assertIn("--ez start_bubble true", cmd)
+
+
+class DragPlanTest(unittest.TestCase):
+    def test_far_from_target_single_swipe(self):
+        self.assertEqual([((900, 1800), (540, 900))], c.drag_plan((900, 1800), (540, 900), (540, 600)))
+
+    def test_already_at_target_takes_detour(self):
+        # Ein Wisch ohne Weg waere ein Tipp und startete eine Aufnahme.
+        plan = c.drag_plan((545, 905), (540, 900), (540, 600))
+        self.assertEqual([((545, 905), (540, 600)), ((540, 600), (540, 900))], plan)
+
+
 class DevicesTest(unittest.TestCase):
     def test_only_ready_devices(self):
         out = "List of devices attached\nemulator-5554\tdevice\nR58M\tunauthorized\n\n"

@@ -331,11 +331,18 @@ def set_a11y(d: Device, on: bool) -> None:
     time.sleep(2)
 
 
-def open_check_page(d: Device, start_bubble: bool = False, bg: str | None = None) -> None:
+def check_page_cmd(start_bubble: bool = False, bg: str | None = None) -> str:
+    """am-start-Befehl fuer die Pruefseite. Mit Hintergrund wird die Aufgabe neu angelegt
+    (--activity-clear-task), sonst holt am start nur die laufende Seite nach vorn und onCreate
+    sieht das neue Extra nie."""
     extra = " --ez start_bubble true" if start_bubble else ""
     if bg:
-        extra += f" --es bg {bg}"
-    d.sh(f"am start -W -n {CHECK_ACTIVITY}{extra}")
+        extra += f" --activity-clear-task --es bg {bg}"
+    return f"am start -W -n {CHECK_ACTIVITY}{extra}"
+
+
+def open_check_page(d: Device, start_bubble: bool = False, bg: str | None = None) -> None:
+    d.sh(check_page_cmd(start_bubble, bg))
     time.sleep(1.5)
 
 
@@ -421,6 +428,14 @@ def frame_center(d: Device) -> tuple[int, int] | None:
     return b.center if b else None
 
 
+def drag_plan(start: tuple[int, int], target: tuple[int, int], detour: tuple[int, int]) -> list:
+    """Wische fuer "Ziehen vor der Haltezeit". Liegt der Knopf schon am Ziel (Rest eines frueheren
+    Laufs), waere der Wisch ohne Weg ein Tipp und startete eine Aufnahme — dann erst zum Umweg."""
+    if abs(start[0] - target[0]) < 60 and abs(start[1] - target[1]) < 60:
+        return [(start, detour), (detour, target)]
+    return [(start, target)]
+
+
 def hold_at(d: Device, x: int, y: int) -> None:
     """Finger aufsetzen und ueber die Halte-Zeit (500 ms, siehe gestures) liegen lassen."""
     d.sh(f"input motionevent DOWN {x} {y}")
@@ -456,8 +471,9 @@ def gestures(args) -> int:
         start = frame_center(d)
         tx, ty = w // 2, h * 3 // 8
         if start:
-            d.sh(f"input swipe {start[0]} {start[1]} {tx} {ty} 400")
-        time.sleep(1.5)
+            for (x0, y0), (x1, y1) in drag_plan(start, (tx, ty), (w // 2, h // 4)):
+                d.sh(f"input swipe {x0} {y0} {x1} {y1} 400")
+                time.sleep(1.5)
         moved = frame_center(d)
         case(
             "Ziehen vor der Haltezeit verschiebt nur",
