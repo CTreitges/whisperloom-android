@@ -226,7 +226,7 @@ Beim Diktieren gilt: normal sprechen, ohne Kunstpausen. Satzzeichen musst du nic
 
 ### 4.2 Verschieben und Abbrechen
 
-- **Verschieben:** Knopf gedrückt halten und ziehen. Er bleibt, wo du ihn loslässt (kein Einrasten am Rand), und merkt sich die Position. Er rutscht nie aus dem Bildschirm.
+- **Verschieben:** Knopf berühren und sofort ziehen. Er bleibt, wo du ihn loslässt (kein Einrasten am Rand), und merkt sich die Position. Er rutscht nie aus dem Bildschirm. Hältst du erst still, öffnet sich stattdessen das Modus-Kreuz ([4.6](#46-halten-zum-sprechen-und-modus-wählen)).
 - **Abbrechen:** Während der Aufnahme (oder im Fehlerzustand) den Knopf nach unten ziehen. Am unteren Rand erscheint das Abbrechen-Ziel **✕ Verwerfen**. Sobald der Knopf darüber ist, wächst das Ziel, färbt sich rot und zeigt **Loslassen zum Verwerfen** — loslassen, und das Diktat ist weg („Diktat verworfen"). Der Knopf springt an seine alte Position zurück.
 - **Position zurücksetzen:** Ist der Knopf mal an einer unpraktischen Stelle gelandet (z. B. nach dem Drehen des Bildschirms), setzt Einstellungen → Knopf & Tastatur → **Position zurücksetzen** ihn an die Startposition.
 
@@ -245,6 +245,13 @@ Verliert das Feld während der Übertragung den Fokus, kopiert WhisperLoom den T
 ### 4.5 Beenden
 
 **Mikro-Knopf beenden** auf dem Startbildschirm, oder **Beenden** in der Benachrichtigung. Beim nächsten Start steht der Knopf wieder an seiner gemerkten Position.
+
+### 4.6 Halten zum Sprechen und Modus wählen
+
+- **Halten zum Sprechen:** Knopf gedrückt halten, bis es kurz vibriert, sprechen, loslassen — gesendet wird beim Loslassen. Lässt du sehr früh wieder los (in der ersten Sekunde), war es ein langsamer Tipp: die Aufnahme läuft weiter, bis du nochmal tippst. Hast du beim Halten nichts gesagt, wird nichts gesendet. Wie lange du halten musst, folgt der Android-Einstellung „Berührungs- und Haltedauer“.
+- **Modus wählen:** Beim Halten erscheinen um den Knopf ganz blass die Modi **Aus**, **Glätten**, **Schöner**, **Kürzen** (und **Prompt**, wenn eingeschaltet), gegenüber ein **✕**. Bewegst du den Finger weg, werden sie deutlich; der Modus in Fingerrichtung leuchtet auf und es vibriert kurz. Loslassen auf einem Modus stellt ihn dauerhaft ein (wie unter Einstellungen → Textverbesserung) und verarbeitet das gerade Gesagte gleich damit. Ohne Gesprochenes wechselt nur der Modus. Loslassen auf dem **✕** verwirft die Aufnahme. Am Bildschirmrand dreht sich der Bogen zur Bildschirmmitte, damit alle Ziele zu sehen sind.
+- **Halten zum Sprechen aus** (Einstellungen → Knopf & Tastatur): Halten öffnet nur das Modus-Kreuz, ohne Aufnahme. Lässt du ohne Bewegung los, startet die Aufnahme wie nach einem Tipp.
+- **TalkBack:** Doppeltipp startet bzw. beendet. Im Aktionsmenü des Knopfs gibt es je Modus „Modus: …“ (der aktive mit „(aktiv)“), dazu „Knopf bis zum nächsten Textfeld ausblenden“ bzw. „Diktat verwerfen“.
 
 ---
 

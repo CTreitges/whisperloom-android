@@ -1721,9 +1721,10 @@ Animationen.
   (`ViewConfiguration.getLongPressTimeout()`, folgt der Einstellung „Berührungs- und Haltedauer“) abgelaufen ist:
   RECORDING wie beim Tipp, Haptik `CONFIRM`. Loslassen sendet (`CONTEXT_CLICK`) — außer in der ersten Sekunde nach
   Ablauf der Halte-Zeit (`BubbleGesture.HOLD_MIN_MS`, gemessen an den Touch-Zeitstempeln): Das war ein langsamer Tipp, die Aufnahme läuft weiter wie nach einem
-  Tipp (kein fast leerer Clip, den die Erkennung mit Erfundenem füllt). Zieht der Finger im Halten über den
-  Touch-Slop, verschiebt er den Knopf und zeigt das ✕; Loslassen darüber verwirft (§5.2), sonst wird gesendet und die
-  neue Position gemerkt. Bewegt sich der Finger vor Ablauf der Halte-Zeit, ist es nur Verschieben. Ein abgefangener
+  Tipp (kein fast leerer Clip, den die Erkennung mit Erfundenem füllt). **Ab 4.0 (Branch `feat/bubble-textfeld`):**
+  Nach Ablauf der Halte-Zeit öffnet sich das Modus-Kreuz; Bewegung wählt einen Modus oder das ✕ und verschiebt nicht
+  mehr — Gesten, Maße, Rand, Sprache und TalkBack stehen verbindlich in `docs/design/bubble-textfeld.md`.
+  Bewegt sich der Finger vor Ablauf der Halte-Zeit, ist es nur Verschieben. Ein abgefangener
   Touch (`ACTION_CANCEL`) im Halten sendet, damit kein Diktat verloren geht (wie die IME). Kurzer Tipp, TalkBack-Doppeltipp
   und die Aktionen aus §6.20 bleiben unverändert. Die Logik steht Android-frei in `BubbleGesture`.
 - **E3 Schalter.** Karte „Schwebender Knopf“: `SwitchRow` `button_hold_to_talk` „Halten zum Sprechen“ mit
