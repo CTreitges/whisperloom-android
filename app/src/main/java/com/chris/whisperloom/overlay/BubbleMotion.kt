@@ -29,6 +29,9 @@ object BubbleMotion {
     const val ICON_FADE_MS = 150L
     const val FILL_CROSSFADE_MS = 200L
 
+    /** Deckkraft-Wechsel Ruhe (halb) <-> Beruehrung/Aufnahme (voll), UX-Spec §6.22. */
+    const val ALPHA_FADE_MS = 150L
+
     const val CANCEL_APPEAR_MS = 200L
     const val CANCEL_SCALE_START = 0.8f
     const val CANCEL_HIT_SCALE = 1.12f

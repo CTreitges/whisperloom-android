@@ -4,6 +4,7 @@ import android.accessibilityservice.AccessibilityService
 import android.os.Bundle
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import android.view.accessibility.AccessibilityWindowInfo
 import com.chris.whisperloom.history.HistoryPolicy
 import com.chris.whisperloom.overlay.FloatingMicService
 
@@ -19,21 +20,36 @@ class TextInserterAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         instance = this
+        report()
     }
 
     /**
-     * Fokus auf ein editierbares Feld an den schwebenden Knopf melden (UX-Spec §6.22). Gelesen werden
-     * nur Fenster-ID, Knoten-Kennung und isEditable — nie der Inhalt.
+     * Fokus und Tastatur an den schwebenden Knopf melden (UX-Spec §6.22): er erscheint nur am
+     * editierbaren Feld mit offener Bildschirmtastatur. Gelesen werden nur Metadaten — Fenstertyp,
+     * Knoten-Kennung, isEditable, isPassword, Eingabetyp —, nie der Inhalt.
      */
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        if (event?.eventType != AccessibilityEvent.TYPE_VIEW_FOCUSED) return
-        fieldKeyOf(event.windowId, event.source)?.let(FloatingMicService::fieldFocused)
+        when (event?.eventType) {
+            AccessibilityEvent.TYPE_VIEW_FOCUSED,
+            AccessibilityEvent.TYPE_WINDOWS_CHANGED,
+            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED,
+            -> report()
+        }
     }
+
+    private fun report() = FloatingMicService.focusChanged(currentFocusState())
+
+    /** Momentaufnahme ueber alle Fenster (flagRetrieveInteractiveWindows). */
+    private fun currentFocusState(): FieldFocus =
+        focusOf(windows.map { it.type }, findFocus(AccessibilityNodeInfo.FOCUS_INPUT))
 
     override fun onInterrupt() { /* nicht benoetigt */ }
 
     override fun onDestroy() {
-        if (instance === this) instance = null
+        if (instance === this) {
+            instance = null
+            FloatingMicService.focusChanged(null) // Bedienungshilfe aus: kein Knopf mehr
+        }
         super.onDestroy()
     }
 
@@ -49,6 +65,22 @@ class TextInserterAccessibilityService : AccessibilityService() {
         private var instance: TextInserterAccessibilityService? = null
 
         fun isRunning(): Boolean = instance != null
+
+        /** Aktueller Fokus fuer den gerade gestarteten Knopf; null = Bedienungshilfe aus. */
+        fun currentFocus(): FieldFocus? = instance?.currentFocusState()
+
+        /**
+         * Meldung aus den Fenstertypen und dem Eingabefokus: Tastatur offen = ein Fenster vom Typ
+         * [AccessibilityWindowInfo.TYPE_INPUT_METHOD]; Passwort nach Knoten oder Eingabetyp.
+         */
+        internal fun focusOf(windowTypes: List<Int>, focused: AccessibilityNodeInfo?): FieldFocus {
+            val field = focused?.let { fieldKeyOf(it.windowId, it) }
+            return FieldFocus(
+                field = field,
+                password = focused != null && field != null && isPassword(focused),
+                keyboardOpen = AccessibilityWindowInfo.TYPE_INPUT_METHOD in windowTypes,
+            )
+        }
 
         /** Kennung eines editierbaren Felds; null fuer alles andere. */
         internal fun fieldKeyOf(windowId: Int, node: AccessibilityNodeInfo?): FieldKey? =

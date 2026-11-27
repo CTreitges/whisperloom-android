@@ -33,7 +33,7 @@ import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
 import com.chris.whisperloom.RefineSkip
 import com.chris.whisperloom.TranscriptionEngine
-import com.chris.whisperloom.a11y.FieldKey
+import com.chris.whisperloom.a11y.FieldFocus
 import com.chris.whisperloom.a11y.InsertResult
 import com.chris.whisperloom.a11y.TextInserterAccessibilityService
 import com.chris.whisperloom.api.ApiNotConfiguredException
@@ -143,6 +143,7 @@ class FloatingMicService : Service() {
         if (state == BubbleState.IDLE && copiedHint) {
             copiedHint = false
             render()
+            updateAlpha()
         }
     }
 
@@ -232,9 +233,12 @@ class FloatingMicService : Service() {
         r.bubble.setOnTouchListener(dragTapListener())
         r.bubble.setOnClickListener { onTap() }
         recorder.onAmplitude = { amp -> r.level = amp }
+        // Erst am naechsten Textfeld mit offener Tastatur sichtbar, nicht sofort auf dem Home-Screen.
+        v.visibility = View.GONE
         wm.addView(v, lp)
         bubbleView = v
         applyState(BubbleState.IDLE)
+        onFocus(TextInserterAccessibilityService.currentFocus())
     }
 
     private fun clampToScreen(x: Int, y: Int, width: Int, height: Int): BubblePos {
@@ -292,6 +296,8 @@ class FloatingMicService : Service() {
             when (e.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     downX = e.rawX; downY = e.rawY; startX = lp.x; startY = lp.y
+                    touching = true
+                    updateAlpha()
                     gesture.down()
                     main.postDelayed(holdStart, holdTimeout())
                 }
@@ -314,6 +320,7 @@ class FloatingMicService : Service() {
                 }
                 MotionEvent.ACTION_UP -> {
                     main.removeCallbacks(holdStart)
+                    touching = false
                     val held = gesture.held
                     when (gesture.up()) {
                         BubbleGesture.Release.TAP -> onTap()
@@ -324,19 +331,28 @@ class FloatingMicService : Service() {
                         BubbleGesture.Release.DROP -> drop(held)
                         BubbleGesture.Release.NONE -> Unit
                     }
+                    endTouch()
                 }
                 MotionEvent.ACTION_CANCEL -> {
                     main.removeCallbacks(holdStart)
+                    touching = false
                     val dragged = gesture.dragging
                     val send = gesture.cancel()
                     cancelTarget.hide()
                     if (dragged) savePosition()
                     // Ein abgefangener Touch soll kein gehaltenes Diktat fressen (wie die IME).
                     if (send) stopRec()
+                    endTouch()
                 }
             }
             return true
         }
+    }
+
+    /** Finger weg: Deckkraft zurueck, und was waehrend der Geste aufgeschoben war, jetzt verstecken. */
+    private fun endTouch() {
+        updateAlpha()
+        updateVisibility()
     }
 
     /** Halte-Zeit des Systems: folgt der Einstellung "Beruehrungs- und Haltedauer". */
@@ -365,32 +381,51 @@ class FloatingMicService : Service() {
         }
     }
 
-    // --- Ausblenden bis zum naechsten Feld (UX-Spec §6.22) ----------------------
+    // --- Sichtbar nur am Textfeld, Ausblenden bis zum naechsten Feld (UX-Spec §6.22) ---
 
-    /** Zuletzt gemeldetes Feld; null = noch keins (z. B. Bedienungshilfe aus). */
-    private var lastField: FieldKey? = null
+    /** Entscheidet aus den Meldungen der Bedienungshilfe, ob der Knopf zu sehen ist. */
+    private val visibility = BubbleVisibility()
 
-    /** Ausgeblendet: der Knopf bleibt weg, bis ein anderes Feld als [hiddenIn] den Fokus bekommt. */
-    private var hidden = false
-    private var hiddenIn: FieldKey? = null
+    /** Finger liegt auf dem Knopf: voll deckend, und waehrend der Geste wird nicht versteckt. */
+    private var touching = false
+
+    /** Aufnahme oder Senden: der Knopf bleibt sichtbar, auch ohne Feld oder Tastatur. */
+    private fun busy() = state == BubbleState.RECORDING || state == BubbleState.SENDING
 
     /**
      * Nimmt nur den View weg; der Dienst laeuft weiter — aus dem Hintergrund duerfte er unter
      * Android 15 nicht wieder starten. Keine Frist, kein "Einblenden": zurueck kommt er am naechsten Feld.
      */
     private fun hideUntilNextField() {
-        hidden = true
-        hiddenIn = lastField
-        bubbleView?.visibility = View.GONE
+        visibility.hide()
+        updateVisibility()
     }
 
-    private fun onFieldFocused(field: FieldKey) {
-        lastField = field
-        if (!hidden || field == hiddenIn) return
-        hidden = false
-        hiddenIn = null
-        restorePosition() // Display kann sich gedreht haben: neu in den Bildschirm begrenzen
-        bubbleView?.visibility = View.VISIBLE
+    private fun onFocus(focus: FieldFocus?) {
+        visibility.onFocus(focus)
+        updateVisibility()
+    }
+
+    /** Zeigt oder versteckt den View nach [visibility]; nie mitten in einer Geste. */
+    private fun updateVisibility() {
+        val v = bubbleView ?: return
+        val show = visibility.visible(busy())
+        if (show == (v.visibility == View.VISIBLE) || (!show && touching)) return
+        if (show) restorePosition() // Display kann sich gedreht haben: neu in den Bildschirm begrenzen
+        v.visibility = if (show) View.VISIBLE else View.GONE
+    }
+
+    /** Ruhe halb deckend, Beruehrung/Aufnahme/Senden voll ([BubbleVisibility.alpha]). */
+    private fun updateAlpha() {
+        val v = bubbleView ?: return
+        val target = BubbleVisibility.alpha(state, touching, copiedHint)
+        v.animate().cancel()
+        // Versteckt oder nicht angehaengt laeuft keine Animation: direkt setzen.
+        if (BubbleAnimators.reduceMotion(this) || v.visibility != View.VISIBLE || !v.isAttachedToWindow) {
+            v.alpha = target
+        } else {
+            v.animate().alpha(target).setDuration(BubbleMotion.ALPHA_FADE_MS).start()
+        }
     }
 
     private fun restorePosition() {
@@ -428,6 +463,8 @@ class FloatingMicService : Service() {
         main.removeCallbacks(tick)
         main.removeCallbacks(clearCopiedHint)
         render()
+        updateAlpha()
+        updateVisibility() // Ende von Aufnahme/Senden bei geschlossener Tastatur: jetzt weg
         if (previous != next) renderer?.announce()
         if (next == BubbleState.RECORDING) main.post(tick)
         if (copied) main.postDelayed(clearCopiedHint, BubbleMotion.COPIED_HINT_MS)
@@ -647,10 +684,13 @@ class FloatingMicService : Service() {
         /** Laufender Dienst fuer Meldungen der Bedienungshilfe (gleicher Prozess). */
         @Volatile private var instance: FloatingMicService? = null
 
-        /** Die Bedienungshilfe meldet ein fokussiertes, editierbares Feld (nur Kennung, kein Inhalt). */
-        fun fieldFocused(field: FieldKey) {
+        /**
+         * Die Bedienungshilfe meldet Fokus und Tastatur (nur Metadaten, kein Inhalt); null = sie ist
+         * aus. Ohne Meldung erscheint der Knopf nicht.
+         */
+        fun focusChanged(focus: FieldFocus?) {
             val service = instance ?: return
-            service.main.post { service.onFieldFocused(field) }
+            service.main.post { service.onFocus(focus) }
         }
 
         fun start(context: Context) {

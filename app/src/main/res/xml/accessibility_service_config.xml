@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Fokus- und Fenster-Ereignisse: der schwebende Knopf erscheint nur am Textfeld mit offener
+     Tastatur (UX-Spec §6.22). Gelesen werden nur Metadaten (editierbar, Passwort, Eingabetyp,
+     Fenstertyp, Knoten-Kennung); Feldinhalt nur beim Einfuegen eines Diktats.
+     typeWindowContentChanged bleibt, damit der Knoten-Cache beim Einfuegen frisch ist. -->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
-    android:accessibilityEventTypes="typeViewFocused|typeWindowContentChanged"
+    android:accessibilityEventTypes="typeViewFocused|typeWindowContentChanged|typeWindowsChanged|typeWindowStateChanged"
     android:accessibilityFeedbackType="feedbackGeneric"
-    android:accessibilityFlags="flagDefault"
+    android:accessibilityFlags="flagDefault|flagRetrieveInteractiveWindows"
     android:canRetrieveWindowContent="true"
     android:notificationTimeout="100"
     android:description="@string/a11y_description" />

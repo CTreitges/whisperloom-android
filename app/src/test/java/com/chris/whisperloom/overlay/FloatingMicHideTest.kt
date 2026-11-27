@@ -12,6 +12,7 @@ import android.view.WindowManager
 import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
 import com.chris.whisperloom.R
+import com.chris.whisperloom.a11y.FieldFocus
 import com.chris.whisperloom.a11y.FieldKey
 import com.chris.whisperloom.llm.OfflineRefineFixture
 import org.junit.After
@@ -67,8 +68,9 @@ class FloatingMicHideTest {
 
     private fun warten(ms: Long = 0) = shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(ms))
 
+    /** Die Bedienungshilfe meldet [feld] fokussiert, Tastatur offen. */
     private fun fokus(feld: FieldKey) {
-        FloatingMicService.fieldFocused(feld)
+        FloatingMicService.focusChanged(FieldFocus(feld, password = false, keyboardOpen = true))
         warten()
     }
 
@@ -120,12 +122,14 @@ class FloatingMicHideTest {
     }
 
     @Test fun zielInRuheIstAusblenden() {
+        fokus(feldA)
         val (x, y) = abseits()
         ziehenNach(x, y)
         assertEquals(app.getString(R.string.float_hide_label), zielLabel())
     }
 
     @Test fun zielInDerAufnahmeBleibtVerwerfen() {
+        fokus(feldA)
         bubble.performClick()
         fixture.awaitRecorded()
         val (x, y) = abseits()
@@ -151,13 +155,6 @@ class FloatingMicHideTest {
         fokus(feldA)
         aufsZielAblegen()
         fokus(feldB)
-        fokus(feldA)
-        assertEquals(View.VISIBLE, root.visibility)
-    }
-
-    @Test fun ohneBekanntesFeldZeigtDasNaechsteFeld() {
-        aufsZielAblegen()
-        assertEquals(View.GONE, root.visibility)
         fokus(feldA)
         assertEquals(View.VISIBLE, root.visibility)
     }
