@@ -89,6 +89,24 @@ class DragPlanTest(unittest.TestCase):
         self.assertEqual([((545, 905), (540, 600)), ((540, 600), (540, 900))], plan)
 
 
+class StopTest(unittest.TestCase):
+    def test_only_latest_emulator_row(self):
+        rows = [
+            {"kind": "session", "pid": 1},
+            {"kind": "emulator", "pid": 30104},
+            {"kind": "emulator", "pid": 15284},
+            {"kind": "session", "pid": 2},
+        ]
+        self.assertEqual(15284, c.latest_emulator_pid(rows))
+        self.assertIsNone(c.latest_emulator_pid([{"kind": "session", "pid": 1}]))
+
+    def test_reused_pid_is_not_killed(self):
+        self.assertTrue(c.is_emulator_image('"emulator.exe","15284","Console","1","120.000 K"\n'))
+        self.assertFalse(c.is_emulator_image('"Code.exe","15284","Console","1","90.000 K"\n'))
+        # tasklist ohne Treffer: Hinweiszeile statt CSV
+        self.assertFalse(c.is_emulator_image("INFO: Es werden keine Aufgaben mit den angegebenen Kriterien ausgefuehrt.\n"))
+
+
 class DevicesTest(unittest.TestCase):
     def test_only_ready_devices(self):
         out = "List of devices attached\nemulator-5554\tdevice\nR58M\tunauthorized\n\n"

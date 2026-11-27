@@ -281,24 +281,37 @@ def start_emulator(adb: Path, args) -> str:
     sys.exit("Emulator nicht in 300 s gebootet")
 
 
-def stop(args) -> int:
-    """Beendet den zuletzt gespeicherten Emulator: erst adb emu kill, dann die gespeicherte PID."""
-    rows = [json.loads(l) for l in Path(args.pid_file).read_text(encoding="utf-8").splitlines() if l.strip()]
+def latest_emulator_pid(rows: list[dict]) -> int | None:
+    """PID des zuletzt gestarteten Emulators. Aeltere Zeilen bleiben unberuehrt: Windows vergibt PIDs neu."""
     emus = [r for r in rows if r.get("kind") == "emulator"]
-    adb = adb_path()
-    for serial in attached_devices(subprocess.run([str(adb), "devices"], capture_output=True, text=True).stdout):
-        if serial.startswith("emulator-"):
-            subprocess.run([str(adb), "-s", serial, "emu", "kill"], capture_output=True)
-    for r in emus:
-        pid = int(r["pid"])
-        if os.name == "nt":
-            subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True)
-        else:
-            try:
-                os.kill(pid, 15)
-            except ProcessLookupError:
-                pass
-        print(f"Emulator-PID {pid} beendet (oder schon weg)")
+    return int(emus[-1]["pid"]) if emus else None
+
+
+def is_emulator_image(tasklist_csv: str) -> bool:
+    """`tasklist /FO CSV /NH`-Zeile: gehoert die PID noch zu emulator.exe (oder dem qemu-Kern)?"""
+    name = tasklist_csv.strip().split(",")[0].strip('"').lower()
+    return name in ("emulator.exe", "qemu-system-x86_64.exe")
+
+
+def stop(args) -> int:
+    """Beendet genau den zuletzt gespeicherten Emulator, nur wenn die PID noch ein Emulator ist."""
+    rows = [json.loads(l) for l in Path(args.pid_file).read_text(encoding="utf-8").splitlines() if l.strip()]
+    pid = latest_emulator_pid(rows)
+    if pid is None:
+        print("Kein Emulator gespeichert")
+        return 0
+    if os.name == "nt":
+        listing = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"], capture_output=True, text=True)
+        if not is_emulator_image(listing.stdout):
+            print(f"PID {pid} ist kein Emulator mehr (schon beendet?) — nichts beendet")
+            return 0
+        subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True)
+    else:
+        try:
+            os.kill(pid, 15)
+        except ProcessLookupError:
+            pass
+    print(f"Emulator-PID {pid} beendet")
     return 0
 
 
