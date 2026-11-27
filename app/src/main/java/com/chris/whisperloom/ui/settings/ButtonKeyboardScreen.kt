@@ -87,7 +87,7 @@ fun ButtonKeyboardScreen(nav: NavState) {
                         val loom = MaterialTheme.loom
                         Button(
                             onClick = control.toggle,
-                            enabled = control.blocked == HomeStatus.Blocked.NONE && !control.pending,
+                            enabled = HomeStatus.toggleEnabled(running, control.blocked) && !control.pending,
                             modifier = Modifier.height(48.dp),
                             colors = if (running) {
                                 ButtonDefaults.buttonColors(containerColor = loom.recordingContainer, contentColor = loom.recordingText)

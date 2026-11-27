@@ -9,8 +9,11 @@ import com.chris.whisperloom.ui.components.Tone
 /** Reine Entscheidungslogik der Home-Statusanzeige (Spec §2.1) — JVM-unit-testbar. */
 object HomeStatus {
 
-    /** Hero-Button gesperrt: Pflicht-Berechtigung fehlt, Chip fuehrt in den Schritt. */
-    enum class Blocked { NONE, MIC, OVERLAY }
+    /**
+     * Hero-Button gesperrt: Pflicht-Berechtigung fehlt, Chip fuehrt in den Schritt. Ohne Bedienungshilfe
+     * erscheint der Knopf nie (UX-Spec §6.22) — deshalb sperrt auch sie das Starten.
+     */
+    enum class Blocked { NONE, MIC, OVERLAY, A11Y }
 
     /** ReadinessBanner: nur der erste offene weiche Punkt in dieser Prioritaet. */
     enum class Banner { NONE, A11Y, MODEL, TEXT_MODEL, NOTIF }
@@ -25,11 +28,15 @@ object HomeStatus {
 
     enum class Keyboard { ACTIVE, ENABLED, OFF }
 
-    fun blocked(micGranted: Boolean, canDrawOverlays: Boolean): Blocked = when {
+    fun blocked(micGranted: Boolean, canDrawOverlays: Boolean, a11yRunning: Boolean): Blocked = when {
         !micGranted -> Blocked.MIC
         !canDrawOverlays -> Blocked.OVERLAY
+        !a11yRunning -> Blocked.A11Y
         else -> Blocked.NONE
     }
+
+    /** Starten nur ohne Sperre; ein laufender Knopf laesst sich immer beenden. */
+    fun toggleEnabled(running: Boolean, blocked: Blocked): Boolean = running || blocked == Blocked.NONE
 
     /** @param textModelMissing offline mit KI-Stufe, aber das lokale Textmodell fehlt (Spec §4). */
     fun banner(

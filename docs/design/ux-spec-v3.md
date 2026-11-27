@@ -1732,7 +1732,7 @@ Animationen.
 - **V1 Nie in Passwortfelder.** Ist das Fokusfeld der Bedienungshilfe ein Passwortfeld (`isPassword` oder
   Passwort-Eingabetyp), fügt der Knopf nicht ein, kopiert nicht in die Zwischenablage und schreibt nicht in den Verlauf.
   Toast `float_password_blocked`, Haptik `REJECT`, kein Erfolgs-Ring, Zustand IDLE. Zahlen- und Telefonfelder bleiben
-  erlaubt. Die Bedienungshilfe-Konfiguration ändert sich nicht.
+  erlaubt. (Die Konfiguration der Bedienungshilfe ändert erst „Sichtbar nur am Textfeld“ unten.)
 - **V1 Höchstdauer (nur Online-Erkennung).** Gleiche Grenzen wie die IME (`DictationSession.LONG_MS`/`MAX_MS`): ab
   10 min einmal Haptik `REJECT` und Toast `float_too_long_soon`; bei 12 min sendet der Knopf von selbst (wie ein Tipp)
   mit Toast `float_too_long_sent`. Offline gibt es keine Grenze. Gemessen wird die Aufnahmezeit seit offenem Mikrofon.
@@ -1745,6 +1745,25 @@ Animationen.
   Feld meldet (`FieldKey` = Fenster-ID + Knoten-Kennung, kein Inhalt). Dasselbe Feld erneut fokussiert: bleibt weg.
   Keine Frist, keine Notification-Aktion „Einblenden“; der Dienst läuft weiter (Android 15/16: kein Neustart aus dem
   Hintergrund nötig), „Beenden“ bleibt. Die Notification bleibt wie §5.5.
+- **V1 Sichtbar nur am Textfeld** (Stand 27.11.2026, Ziel 4.0, Branch `feat/bubble-textfeld`). Der Knopf ist nur zu
+  sehen, wenn die Bedienungshilfe ein fokussiertes, editierbares Feld **und** ein offenes Fenster vom Typ
+  Eingabemethode (`AccessibilityWindowInfo.TYPE_INPUT_METHOD`) meldet. Schließt sich die Tastatur oder verliert das
+  Feld den Fokus, verschwindet er — außer in RECORDING und SENDING, dann bleibt er bis zum Ende (ein laufendes
+  Mikrofon ist nie unsichtbar). Nie in Passwortfeldern (Knoten oder Eingabetyp), Zahlen- und Telefonfelder ja. Ohne
+  Bedienungshilfe nie. Nach dem Start erscheint er erst am nächsten Feld, nicht sofort auf dem Home-Screen.
+  Keine Option „immer zeigen“. Während einer Berührung wird nicht versteckt (erst nach dem Loslassen). Die
+  Bedienungshilfe empfängt dafür `typeViewFocused`, `typeWindowsChanged`, `typeWindowStateChanged` (plus
+  `typeWindowContentChanged` wie bisher) mit `flagRetrieveInteractiveWindows` und liest nur Metadaten: editierbar,
+  Passwort, Eingabetyp, Fenstertyp, Knoten-Kennung (`FieldFocus`), nie Inhalt. Die Logik steht Android-frei in
+  `BubbleVisibility`; das Ausblenden bis zum nächsten Feld (oben) liegt mit darin.
+- **V1 Durchsichtig in Ruhe.** IDLE ohne Berührung: Deckkraft 50 % (`BubbleVisibility.IDLE_ALPHA`, kein Regler).
+  Voll bei Berührung, in RECORDING, SENDING, ERROR und solange „Kopiert — einfügen“ steht. Wechsel 150 ms
+  (`BubbleMotion.ALPHA_FADE_MS`), bei Reduce-Motion sofort.
+- **H/E3 Ohne Bedienungshilfe.** `HomeStatus.Blocked.A11Y`: „Mikro-Knopf starten“ ist gesperrt, Warn-Chip
+  `home_blocked_a11y` „Bedienungshilfe fehlt — ohne sie kein Knopf“ führt in W Schritt 5 (Hinweis vorab bleibt vor
+  dem Systemdialog). Ein laufender Knopf lässt sich immer beenden (`HomeStatus.toggleEnabled`). Banner, Textausgabe-
+  Zeile in E3, `setup_s5_fallback`, `home_hero_sub_on`, `float_running_text`, `a11y_description`,
+  `disclosure_a11y_body`, `help_s6_a11y` sagen, dass der Knopf ohne Bedienungshilfe nicht erscheint.
 
 ---
 

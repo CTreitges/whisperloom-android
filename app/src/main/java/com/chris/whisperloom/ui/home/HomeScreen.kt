@@ -197,7 +197,7 @@ private fun HeroCard(control: BubbleControl, onFix: (Int) -> Unit) {
         PrimaryButton(
             text = label,
             onClick = control.toggle,
-            enabled = control.blocked == HomeStatus.Blocked.NONE,
+            enabled = HomeStatus.toggleEnabled(running, control.blocked),
             working = control.pending,
             leadingIcon = if (running) R.drawable.ic_stop else R.drawable.ic_play_arrow,
             height = 64.dp,
@@ -214,10 +214,15 @@ private fun HeroCard(control: BubbleControl, onFix: (Int) -> Unit) {
             },
         )
         if (control.blocked != HomeStatus.Blocked.NONE) {
-            val mic = control.blocked == HomeStatus.Blocked.MIC
+            // A11Y fuehrt in den Assistenten-Schritt: dort steht der Hinweis vorab (Prominent Disclosure).
+            val (step, text) = when (control.blocked) {
+                HomeStatus.Blocked.MIC -> SetupRouter.STEP_MIC to R.string.home_blocked_mic
+                HomeStatus.Blocked.OVERLAY -> SetupRouter.STEP_OVERLAY to R.string.home_blocked_overlay
+                else -> SetupRouter.STEP_A11Y to R.string.home_blocked_a11y
+            }
             AssistChip(
-                onClick = { onFix(if (mic) SetupRouter.STEP_MIC else SetupRouter.STEP_OVERLAY) },
-                label = { Text(stringResource(if (mic) R.string.home_blocked_mic else R.string.home_blocked_overlay)) },
+                onClick = { onFix(step) },
+                label = { Text(stringResource(text)) },
                 leadingIcon = { LoomIcon(R.drawable.ic_warning, null, Modifier.size(18.dp)) },
                 colors = AssistChipDefaults.assistChipColors(
                     containerColor = loom.warningContainer,
