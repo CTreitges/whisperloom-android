@@ -228,6 +228,7 @@ class FloatingMicService : Service() {
             gravity = Gravity.TOP or Gravity.START
             x = start.x
             y = start.y
+            title = WINDOW_TITLE
         }
         // Touch-Ziel ist der 68-dp-Kreis; der Klick-Listener bedient TalkBacks Doppeltipp.
         r.bubble.setOnTouchListener(dragTapListener())
@@ -658,6 +659,9 @@ class FloatingMicService : Service() {
 
     companion object {
         private const val TAG = "FloatingMic"
+
+        /** Fenstertitel des Knopfs in `dumpsys window` (Emulator-Pruefung tools/bubble_emulator_check.py). */
+        const val WINDOW_TITLE = "WhisperLoomBubble"
 
         /** Assistenten-Schritt "Mikrofon erlauben" (UX-Spec §2.2). */
         private const val SETUP_STEP_MIC = 3
