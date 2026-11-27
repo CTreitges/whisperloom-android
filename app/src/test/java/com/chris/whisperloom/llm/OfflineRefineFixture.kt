@@ -41,6 +41,12 @@ class OfflineRefineFixture(private val app: Context) {
     /** Nach dem Ton wirft das Mikrofon, statt "nichts da" zu melden (der Aufnahme-Thread stirbt). */
     @Volatile var micFails = false
 
+    /** Ausschlag des Tons (Vollausschlag 32767); klein = Raumrauschen ohne Sprache. */
+    @Volatile var level: Short = 8000
+
+    /** Wie oft die Erkennung lief — 0 heisst: keine Anfrage. */
+    val transcriptions = AtomicInteger()
+
     fun setUp() {
         app.getSharedPreferences(Prefs.FILE, Context.MODE_PRIVATE).edit().clear().commit()
         shadowOf(app as android.app.Application).grantPermissions(Manifest.permission.RECORD_AUDIO)
@@ -56,7 +62,10 @@ class OfflineRefineFixture(private val app: Context) {
         TranscriptionEngine.backendFactory = { _, _ ->
             object : TranscriptionBackend {
                 override val label = "Offline · Small"
-                override fun transcribe(upload: WavUpload, language: String) = TranscriptResult("also ähm hallo welt")
+                override fun transcribe(upload: WavUpload, language: String): TranscriptResult {
+                    transcriptions.incrementAndGet()
+                    return TranscriptResult("also ähm hallo welt")
+                }
             }
         }
         LocalTextEngine.init(app)
@@ -87,7 +96,8 @@ class OfflineRefineFixture(private val app: Context) {
                     if (micFails) throw IllegalStateException("Mikrofon weg")
                     return 0
                 }
-                for (i in 0 until n) data[offset + i] = if (i % 2 == 0) 8000 else -8000
+                val a = level
+                for (i in 0 until n) data[offset + i] = if (i % 2 == 0) a else (-a).toShort()
                 return n
             }
         })

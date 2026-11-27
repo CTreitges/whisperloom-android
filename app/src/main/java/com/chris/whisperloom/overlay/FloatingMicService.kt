@@ -23,14 +23,17 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
+import android.view.WindowInsets
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.annotation.VisibleForTesting
+import androidx.core.view.ViewCompat
 import com.chris.whisperloom.AppNav
 import com.chris.whisperloom.AudioRecorder
 import com.chris.whisperloom.Engine
 import com.chris.whisperloom.Prefs
 import com.chris.whisperloom.R
+import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.RefineSkip
 import com.chris.whisperloom.TranscriptionEngine
 import com.chris.whisperloom.a11y.FieldFocus
@@ -46,6 +49,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.util.concurrent.Executors
 import kotlin.math.abs
+import kotlin.math.hypot
 
 /**
  * Schwebender Mikro-Knopf (Overlay ueber allen Apps, UX-Spec §5.1/§5.2). Tippen startet und
@@ -131,12 +135,25 @@ class FloatingMicService : Service() {
     /** Der Hinweis "noch 2 Minuten" kam schon. */
     private var longWarned = false
 
-    /** Touch-Geste am Knopf: Tipp, Halten zum Sprechen, Ziehen ([BubbleGesture]). */
+    /** Touch-Geste am Knopf: Tipp, Halten zum Sprechen, Modus-Kreuz, Ziehen ([BubbleGesture]). */
     private val gesture = BubbleGesture()
 
-    /** Halte-Zeit abgelaufen: im Ruhezustand die Aufnahme starten (UX-Spec §6.22). */
+    /** Druckpunkt der laufenden Geste in Bildschirm-Pixeln; Mitte des Modus-Kreuzes. */
+    private var downX = 0f
+    private var downY = 0f
+
+    /**
+     * Halte-Zeit abgelaufen (nur in IDLE): Modus-Kreuz oeffnen und mit "Halten zum Sprechen" die
+     * Aufnahme starten. Ohne Mikrofonrecht oder Einrichtung nur das Kreuz — der Hinweis kommt beim
+     * Loslassen ohne Ziel (wie ein Tipp), nicht mitten in der Geste (docs/design/bubble-textfeld.md §1).
+     */
     private val holdStart = Runnable {
-        if (gesture.holdElapsed(prefs.holdToTalk, state == BubbleState.IDLE)) startRec()
+        if (!gesture.holdElapsed(state == BubbleState.IDLE)) return@Runnable
+        if (prefs.holdToTalk && canRecord()) {
+            startRec()
+            if (state == BubbleState.RECORDING) gesture.recordingStarted()
+        }
+        openCross()
     }
 
     private val clearCopiedHint = Runnable {
@@ -154,6 +171,7 @@ class FloatingMicService : Service() {
         prefs = Prefs(this)
         wm = getSystemService(WINDOW_SERVICE) as WindowManager
         cancelTarget = CancelTarget(this, wm)
+        crossWindow = ModeCrossWindow(this, wm)
         try {
             startAsForeground()
         } catch (e: Exception) {
@@ -239,6 +257,7 @@ class FloatingMicService : Service() {
         wm.addView(v, lp)
         bubbleView = v
         applyState(BubbleState.IDLE)
+        refreshActions()
         onFocus(TextInserterAccessibilityService.currentFocus())
     }
 
@@ -284,8 +303,6 @@ class FloatingMicService : Service() {
         // Position umgekehrt als Tippen durchging und die Aufnahme startete.
         private val touchSlop = ViewConfiguration.get(this@FloatingMicService).scaledTouchSlop
 
-        var downX = 0f
-        var downY = 0f
         var startX = 0
         var startY = 0
 
@@ -297,12 +314,18 @@ class FloatingMicService : Service() {
             when (e.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     downX = e.rawX; downY = e.rawY; startX = lp.x; startY = lp.y
+                    crossMoved = false
                     touching = true
                     updateAlpha()
                     gesture.down()
                     main.postDelayed(holdStart, holdTimeout())
                 }
                 MotionEvent.ACTION_MOVE -> {
+                    // Nach der Halte-Zeit waehlt Bewegung nur ein Ziel im Kreuz, sie verschiebt nichts.
+                    if (gesture.phase == BubbleGesture.Phase.HELD) {
+                        aimCross(e.rawX, e.rawY, touchSlop.toFloat())
+                        return true
+                    }
                     val dx = (e.rawX - downX).toInt()
                     val dy = (e.rawY - downY).toInt()
                     if ((abs(dx) > touchSlop || abs(dy) > touchSlop) && gesture.beyondSlop()) {
@@ -322,14 +345,20 @@ class FloatingMicService : Service() {
                 MotionEvent.ACTION_UP -> {
                     main.removeCallbacks(holdStart)
                     touching = false
-                    val held = gesture.held
+                    crossWindow.hide()
                     when (gesture.up()) {
-                        BubbleGesture.Release.TAP -> onTap()
+                        // Halten ohne Aufnahme und nach Bewegung im Kreuz: nur schliessen (umentschieden).
+                        BubbleGesture.Release.TAP -> if (!crossMoved) onTap()
                         // Kurz nach dem Start losgelassen = langsamer Tipp: weiter aufnehmen statt
                         // einen fast leeren Clip zu senden, den die Erkennung mit Erfundenem fuellt.
-                        BubbleGesture.Release.SEND ->
-                            if (!BubbleGesture.isSlowTap(e.downTime, e.eventTime, holdTimeout())) stopRec()
-                        BubbleGesture.Release.DROP -> drop(held)
+                        BubbleGesture.Release.SEND -> releaseHeld(e)
+                        BubbleGesture.Release.DROP -> drop()
+                        BubbleGesture.Release.PICK ->
+                            (gesture.armed as? ModeCross.CrossTarget.Mode)?.let { pickMode(it.mode) }
+                        BubbleGesture.Release.DISCARD -> if (state == BubbleState.RECORDING) {
+                            renderer?.haptic(BubbleMotion.Haptic.REJECT)
+                            discard()
+                        }
                         BubbleGesture.Release.NONE -> Unit
                     }
                     endTouch()
@@ -338,11 +367,14 @@ class FloatingMicService : Service() {
                     main.removeCallbacks(holdStart)
                     touching = false
                     val dragged = gesture.dragging
+                    val onDiscard = gesture.armed == ModeCross.CrossTarget.Discard
                     val send = gesture.cancel()
                     cancelTarget.hide()
+                    crossWindow.hide()
                     if (dragged) savePosition()
-                    // Ein abgefangener Touch soll kein gehaltenes Diktat fressen (wie die IME).
-                    if (send) stopRec()
+                    // Ein abgefangener Touch soll kein gehaltenes Diktat fressen (wie die IME) — ausser der
+                    // Finger lag schon auf dem ✕; ohne Sprache geht nichts raus.
+                    if (send && onDiscard) discard() else if (send) stopRec(requireSpeech = true)
                     endTouch()
                 }
             }
@@ -359,8 +391,8 @@ class FloatingMicService : Service() {
     /** Halte-Zeit des Systems: folgt der Einstellung "Beruehrungs- und Haltedauer". */
     private fun holdTimeout() = ViewConfiguration.getLongPressTimeout().toLong()
 
-    /** Loslassen nach einem Zug; [held] = dabei laeuft eine gehaltene Aufnahme. */
-    private fun drop(held: Boolean) {
+    /** Loslassen nach einem Zug (vor der Halte-Zeit begonnen, also nie mit gehaltener Aufnahme). */
+    private fun drop() {
         if (cancelTarget.isHit && cancelTarget.kind == CancelTarget.Kind.HIDE && state == BubbleState.IDLE) {
             renderer?.haptic(BubbleMotion.Haptic.CONFIRM)
             cancelTarget.hide()
@@ -378,7 +410,110 @@ class FloatingMicService : Service() {
         } else {
             cancelTarget.hide()
             savePosition()
-            if (held) stopRec()
+        }
+    }
+
+    // --- Modus-Kreuz (docs/design/bubble-textfeld.md §2/§3) --------------------
+
+    private lateinit var crossWindow: ModeCrossWindow
+
+    /** Modi im Kreuz und in den TalkBack-Aktionen: "Prompt" nur, wenn eingeschaltet. */
+    private fun crossModes() = RefineMode.settings(prefs.promptLevelEnabled)
+
+    private fun canRecord() =
+        checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED &&
+            TranscriptionEngine.isConfigured(this)
+
+    /** Der Finger hat im offenen Kreuz den Touch-Slop verlassen: Loslassen ist dann kein langsamer Tipp mehr. */
+    private var crossMoved = false
+
+    /** Kreuz um den Druckpunkt, kaum sichtbar, solange der Finger auf dem Knopf liegt. */
+    private fun openCross() {
+        crossMoved = false
+        val layout = ModeCross.layout(downX, downY, safeArea(), crossModes(), resources.displayMetrics.density)
+        crossWindow.show(layout, prefs.refineMode)
+    }
+
+    /** Bildschirm ohne Status-, Navigationsleiste und Kamera-Aussparung, in Bildschirm-Pixeln wie rawX/rawY. */
+    private fun safeArea(): ModeCross.Area {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val metrics = wm.currentWindowMetrics
+            val insets = metrics.windowInsets.getInsetsIgnoringVisibility(
+                WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout(),
+            )
+            val b = metrics.bounds
+            return ModeCross.Area(b.left + insets.left, b.top + insets.top, b.right - insets.right, b.bottom - insets.bottom)
+        }
+        val dm = resources.displayMetrics
+        return ModeCross.Area(0, (STATUS_BAR_FALLBACK_DP * dm.density).toInt(), dm.widthPixels, dm.heightPixels)
+    }
+
+    /** Finger bewegt sich im Halten: Deckkraft nach Fingerweg, Ziel waehlen, beim Einrasten Haptik. */
+    private fun aimCross(x: Float, y: Float, slopPx: Float) {
+        val layout = crossWindow.layout ?: return
+        val density = resources.displayMetrics.density
+        val travel = hypot(x - downX, y - downY)
+        if (travel > slopPx) crossMoved = true
+        val target = ModeCross.pick(x, y, downX, downY, layout, gesture.armed, density)
+        if (target != gesture.armed && target != null) renderer?.haptic(BubbleMotion.Haptic.CONTEXT_CLICK)
+        gesture.aim(target)
+        crossWindow.update(ModeCross.alpha(travel, slopPx, density), target)
+    }
+
+    /**
+     * Loslassen im Halten ohne Ziel: Hat der Finger das Kreuz nie verlassen und kam das Loslassen frueh,
+     * war es ein langsamer Tipp (Aufnahme laeuft weiter); sonst senden, ohne Sprache nichts.
+     */
+    private fun releaseHeld(e: MotionEvent) {
+        if (!crossMoved && BubbleGesture.isSlowTap(e.downTime, e.eventTime, holdTimeout())) return
+        stopRec(requireSpeech = true)
+    }
+
+    /** Modus dauerhaft setzen; laeuft die gehaltene Aufnahme, mit ihm senden — ohne Sprache nur der Wechsel. */
+    private fun pickMode(mode: RefineMode) {
+        setMode(mode)
+        if (state == BubbleState.RECORDING) stopRec(requireSpeech = true, haptic = false)
+    }
+
+    private fun setMode(mode: RefineMode) {
+        prefs.refineMode = mode
+        renderer?.haptic(BubbleMotion.Haptic.CONFIRM)
+        toast(getString(R.string.float_mode_set, getString(ModeCrossWindow.labelRes(mode))))
+        refreshActions()
+    }
+
+    // --- TalkBack (N11): je Modus eine Aktion, dazu Ausblenden bzw. Verwerfen ---
+
+    private val actionIds = mutableListOf<Int>()
+
+    private fun refreshActions() {
+        val view = renderer?.bubble ?: return
+        // Der aktive Modus gehoert zur Ansage am Knopf, nicht erst ins Aktionsmenue.
+        ViewCompat.setStateDescription(
+            view, getString(R.string.float_mode_set, getString(ModeCrossWindow.labelRes(prefs.refineMode))),
+        )
+        actionIds.forEach { ViewCompat.removeAccessibilityAction(view, it) }
+        actionIds.clear()
+        for (action in BubbleActions.of(state, crossModes(), prefs.refineMode)) {
+            val label = when (action) {
+                is BubbleAction.SetMode -> getString(
+                    if (action.active) R.string.cd_bubble_action_mode_active else R.string.cd_bubble_action_mode,
+                    getString(ModeCrossWindow.labelRes(action.mode)),
+                )
+                BubbleAction.Hide -> getString(R.string.cd_hide)
+                BubbleAction.Discard -> getString(R.string.cd_bubble_action_discard)
+            }
+            actionIds += ViewCompat.addAccessibilityAction(view, label) { _, _ ->
+                when (action) {
+                    is BubbleAction.SetMode -> setMode(action.mode)
+                    BubbleAction.Hide -> if (state == BubbleState.IDLE) {
+                        restorePosition()
+                        hideUntilNextField()
+                    }
+                    BubbleAction.Discard -> if (canDiscard()) discard()
+                }
+                true
+            }
         }
     }
 
@@ -412,7 +547,10 @@ class FloatingMicService : Service() {
         val v = bubbleView ?: return
         val show = visibility.visible(busy())
         if (show == (v.visibility == View.VISIBLE) || (!show && touching)) return
-        if (show) restorePosition() // Display kann sich gedreht haben: neu in den Bildschirm begrenzen
+        if (show) {
+            restorePosition() // Display kann sich gedreht haben: neu in den Bildschirm begrenzen
+            refreshActions() // der Modus kann sich in der App geaendert haben
+        }
         v.visibility = if (show) View.VISIBLE else View.GONE
     }
 
@@ -466,7 +604,10 @@ class FloatingMicService : Service() {
         render()
         updateAlpha()
         updateVisibility() // Ende von Aufnahme/Senden bei geschlossener Tastatur: jetzt weg
-        if (previous != next) renderer?.announce()
+        if (previous != next) {
+            renderer?.announce()
+            refreshActions()
+        }
         if (next == BubbleState.RECORDING) main.post(tick)
         if (copied) main.postDelayed(clearCopiedHint, BubbleMotion.COPIED_HINT_MS)
         if ((previous == BubbleState.RECORDING) != (next == BubbleState.RECORDING)) refreshNotification()
@@ -485,27 +626,33 @@ class FloatingMicService : Service() {
             startActivity(AppNav.setup(this))
             return
         }
+        // Vor dem Mikrofon: die Vibration soll nicht als Ton in der Aufnahme landen.
+        renderer?.haptic(BubbleMotion.Haptic.CONFIRM)
         if (recorder.start()) {
             recordingStartedAt = SystemClock.elapsedRealtime()
             pendingSamples = null
             lengthLimited = prefs.engine == Engine.ONLINE
             longWarned = false
             applyState(BubbleState.RECORDING)
-            renderer?.haptic(BubbleMotion.Haptic.CONFIRM)
             TranscriptionEngine.warmUp(this) // lokales Textmodell parallel zur Aufnahme laden
         } else {
             toast(getString(R.string.kb_error))
         }
     }
 
-    private fun stopRec() {
+    /**
+     * Aufnahme beenden und senden. [requireSpeech] (Moduswahl im Kreuz): ohne Sprachpegel nichts senden,
+     * keine Anfrage an die Erkennung — dann war es nur ein Moduswechsel (N7) oder ein stilles Halten.
+     * [haptic] false, wenn der Aufrufer schon eine Haptik gegeben hat (eine je Loslassen).
+     */
+    private fun stopRec(requireSpeech: Boolean = false, haptic: Boolean = true) {
         if (state != BubbleState.RECORDING) return
         applyState(BubbleState.SENDING)
-        renderer?.haptic(BubbleMotion.Haptic.CONTEXT_CLICK)
+        if (haptic) renderer?.haptic(BubbleMotion.Haptic.CONTEXT_CLICK)
         runIo {
             val samples = recorder.stop()
             // Sehr kurze Aufnahmen (< 0,3 s) verwerfen — meist versehentliche Taps.
-            if (samples.size < AudioRecorder.SAMPLE_RATE * 3 / 10) {
+            if (samples.size < AudioRecorder.SAMPLE_RATE * 3 / 10 || (requireSpeech && !ModeCross.hasSpeech(samples))) {
                 main.post { applyState(BubbleState.IDLE) }
                 return@runIo
             }
@@ -648,6 +795,7 @@ class FloatingMicService : Service() {
         main.removeCallbacks(clearCopiedHint)
         main.removeCallbacks(holdStart)
         cancelTarget.hide()
+        crossWindow.hide()
         renderer?.release()
         renderer = null
         runCatching { bubbleView?.let { wm.removeView(it) } }
@@ -665,6 +813,9 @@ class FloatingMicService : Service() {
 
         /** Assistenten-Schritt "Mikrofon erlauben" (UX-Spec §2.2). */
         private const val SETUP_STEP_MIC = 3
+
+        /** Statusleiste vor Android 11 (ohne WindowMetrics): Modus-Kreuz bleibt darunter. */
+        private const val STATUS_BAR_FALLBACK_DP = 24
         const val ACTION_STOP = "com.chris.whisperloom.STOP_FLOAT"
 
         /**

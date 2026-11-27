@@ -700,6 +700,11 @@
     <string name="float_hide_label">Ausblenden</string>
     <string name="float_hide_release">Loslassen zum Ausblenden</string>
     <string name="cd_hide">Knopf bis zum nächsten Textfeld ausblenden</string>
+    <!-- Modus-Kreuz und TalkBack-Aktionen (docs/design/bubble-textfeld.md) -->
+    <string name="float_mode_set">Modus: %1$s</string>
+    <string name="cd_bubble_action_mode">Modus: %1$s</string>
+    <string name="cd_bubble_action_mode_active">Modus: %1$s (aktiv)</string>
+    <string name="cd_bubble_action_discard">Diktat verwerfen</string>
 
     <!-- §6.12 IME-Tastatur (V2) -->
     <string name="kb_hint_hold">Halte das Mikrofon gedrückt und sprich</string>

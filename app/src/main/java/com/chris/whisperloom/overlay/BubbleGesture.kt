@@ -1,15 +1,19 @@
 package com.chris.whisperloom.overlay
 
+import com.chris.whisperloom.overlay.ModeCross.CrossTarget
+
 /**
- * Reine (Android-freie) Auswertung der Touch-Geste am schwebenden Knopf (UX-Spec §6.22) —
- * JVM-unit-testbar, nach dem Muster von [com.chris.whisperloom.ime.DictationGesture].
+ * Reine (Android-freie) Auswertung der Touch-Geste am schwebenden Knopf (UX-Spec §6.22,
+ * docs/design/bubble-textfeld.md §1/§5) — JVM-unit-testbar, nach dem Muster von
+ * [com.chris.whisperloom.ime.DictationGesture].
  *
  * Ein Druck ist erst offen ([Phase.PRESSED]). Daraus wird
  * - ein **Tipp**, wenn der Finger ohne Bewegung losgelassen wird,
- * - **Halten zum Sprechen** ([Phase.HELD]), wenn die Halte-Zeit ohne Bewegung ablaeuft
- *   (nur in IDLE und nur mit Schalter) — Loslassen sendet dann,
- * - **Ziehen** ([Phase.DRAGGING]), sobald der Finger den Touch-Slop verlaesst. Nach dem
- *   Halten bleibt die Aufnahme dabei gehalten: Loslassen sendet, ueber dem Ziel verwirft es.
+ * - **Halten** ([Phase.HELD]), wenn die Halte-Zeit ohne Bewegung ablaeuft (nur in IDLE): das
+ *   Modus-Kreuz ist offen, mit Aufnahme ([held], Halten zum Sprechen) oder ohne. Bewegung waehlt
+ *   dann nur ein Ziel ([aim]) und verschiebt nichts. Loslassen auf einem Modus = [Release.PICK],
+ *   auf dem ✕ = [Release.DISCARD], ohne Ziel = senden bzw. ohne Aufnahme ein Tipp,
+ * - **Ziehen** ([Phase.DRAGGING]), sobald der Finger vor der Halte-Zeit den Touch-Slop verlaesst.
  *
  * Der Listener im [FloatingMicService] fuehrt nur aus, was diese Klasse entscheidet.
  */
@@ -17,24 +21,30 @@ class BubbleGesture {
 
     enum class Phase { NONE, PRESSED, HELD, DRAGGING }
 
-    /** Was das Loslassen ausloest; ob ein Ziel getroffen ist, prueft der Dienst. */
+    /** Was das Loslassen ausloest; ob das Ziel unten getroffen ist, prueft der Dienst. */
     enum class Release {
         /** Kein offener Druck. */
         NONE,
 
-        /** Kurzer Tipp: wie bisher umschalten. */
+        /** Kurzer Tipp (oder Halten ohne Aufnahme und ohne Ziel): wie bisher umschalten. */
         TAP,
 
-        /** Gehaltene Aufnahme ohne Ziehen: senden. */
+        /** Gehaltene Aufnahme ohne Ziel: senden. */
         SEND,
 
-        /** Ende eines Zugs; [held] sagt, ob dabei eine gehaltene Aufnahme laeuft. */
+        /** Ende eines Zugs vor der Halte-Zeit. */
         DROP,
+
+        /** Im Kreuz auf einem Modus losgelassen ([armed]): Modus setzen, mit Aufnahme damit senden. */
+        PICK,
+
+        /** Im Kreuz auf dem ✕ losgelassen: verwerfen. */
+        DISCARD,
     }
 
     companion object {
         /**
-         * Endet ein gehaltenes Diktat ohne Zug frueher (gemessen ab Ablauf der Halte-Zeit), war es ein
+         * Endet ein gehaltenes Diktat ohne Ziel frueher (gemessen ab Ablauf der Halte-Zeit), war es ein
          * langsamer Tipp: Die Aufnahme laeuft weiter wie nach einem Tipp, statt zu senden.
          */
         const val HOLD_MIN_MS = 1_000L
@@ -54,26 +64,39 @@ class BubbleGesture {
     var held = false
         private set
 
+    /** Ziel im Kreuz unter dem Finger; bleibt nach dem Loslassen bis zum naechsten Druck lesbar. */
+    var armed: CrossTarget? = null
+        private set
+
     fun down() {
         phase = Phase.PRESSED
         held = false
+        armed = null
     }
 
     /**
-     * Die Halte-Zeit ist abgelaufen. true = jetzt die Aufnahme starten. Nur aus einem
-     * unbewegten Druck, mit [enabled] Schalter und im Ruhezustand ([idle]) — waehrend einer
-     * Aufnahme oder Uebertragung bleibt ein langer Druck ein Tipp.
+     * Die Halte-Zeit ist abgelaufen. true = jetzt das Kreuz oeffnen. Nur aus einem unbewegten Druck
+     * im Ruhezustand ([idle]) — waehrend einer Aufnahme oder Uebertragung bleibt ein langer Druck ein Tipp.
      */
-    fun holdElapsed(enabled: Boolean, idle: Boolean): Boolean {
-        if (phase != Phase.PRESSED || !enabled || !idle) return false
+    fun holdElapsed(idle: Boolean): Boolean {
+        if (phase != Phase.PRESSED || !idle) return false
         phase = Phase.HELD
-        held = true
         return true
     }
 
-    /** Der Finger hat den Touch-Slop verlassen. true = der Zug beginnt gerade. */
+    /** Der Dienst hat zum Halten die Aufnahme gestartet (Halten zum Sprechen). */
+    fun recordingStarted() {
+        if (phase == Phase.HELD) held = true
+    }
+
+    /** Ziel im offenen Kreuz ([ModeCross.pick]); ohne Kreuz wirkungslos. */
+    fun aim(target: CrossTarget?) {
+        if (phase == Phase.HELD) armed = target
+    }
+
+    /** Der Finger hat den Touch-Slop verlassen. true = der Zug beginnt gerade (nur vor der Halte-Zeit). */
     fun beyondSlop(): Boolean {
-        if (phase != Phase.PRESSED && phase != Phase.HELD) return false
+        if (phase != Phase.PRESSED) return false
         phase = Phase.DRAGGING
         return true
     }
@@ -85,7 +108,11 @@ class BubbleGesture {
         val release = when (phase) {
             Phase.NONE -> Release.NONE
             Phase.PRESSED -> Release.TAP
-            Phase.HELD -> Release.SEND
+            Phase.HELD -> when (armed) {
+                is CrossTarget.Mode -> Release.PICK
+                CrossTarget.Discard -> Release.DISCARD
+                null -> if (held) Release.SEND else Release.TAP
+            }
             Phase.DRAGGING -> Release.DROP
         }
         phase = Phase.NONE
@@ -94,11 +121,12 @@ class BubbleGesture {
 
     /**
      * Abgefangener Touch (ACTION_CANCEL). Eine gehaltene Aufnahme wird gesendet, damit kein
-     * Diktat verloren geht; ein Tipp wird nicht ausgeloest. true = senden.
+     * Diktat verloren geht; weder Tipp noch Moduswahl werden ausgeloest. true = senden.
      */
     fun cancel(): Boolean {
         val send = held && phase != Phase.NONE
         phase = Phase.NONE
+        armed = null
         return send
     }
 }
