@@ -53,8 +53,8 @@ class ModeCrossWindow(private val ctx: Context, private val wm: WindowManager) {
             // Apps darunter (untrusted touch occlusion). 0,8 laesst sie durch.
             alpha = MAX_OBSCURING_ALPHA
         }
-        runCatching { wm.addView(v, lp) }
-        view = v
+        // Nur ein angezeigtes Kreuz gilt: sonst rastete beim Wischen blind ein Ziel ein (kein Layout = keine Wahl).
+        if (runCatching { wm.addView(v, lp) }.isSuccess) view = v
     }
 
     fun update(alpha: Float, armed: CrossTarget?) {
@@ -168,6 +168,18 @@ class ModeCrossWindow(private val ctx: Context, private val wm: WindowManager) {
         private const val MIN_TEXT_SP = 12f
         private const val TEXT_PADDING_DP = 6f
         private const val ICON_DP = 24f
+
+        /**
+         * Breiteste Pille in dp fuer [ModeCross.layout]: 72 dp, solange der Name bei 12 sp hineinpasst; bei
+         * grosser Systemschrift waechst sie wie in [CrossView.drawPill] mit, damit das Layout Platz laesst.
+         */
+        fun pillWidthDp(ctx: Context, modes: List<RefineMode>): Float {
+            val metrics = ctx.resources.displayMetrics
+            val paint = Paint().apply { textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, MIN_TEXT_SP, metrics) }
+            return modes.maxOfOrNull { mode ->
+                paint.measureText(ctx.getString(labelRes(mode))) / metrics.density + TEXT_PADDING_DP * 2
+            }?.coerceAtLeast(ModeCross.PILL_W_DP) ?: ModeCross.PILL_W_DP
+        }
 
         /** Kurznamen wie in der Tastatur-Leiste, damit beide Wege gleich heissen. */
         @StringRes

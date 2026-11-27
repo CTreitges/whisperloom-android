@@ -8,6 +8,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.graphics.PixelFormat
@@ -185,8 +186,17 @@ class FloatingMicService : Service() {
             return
         }
         addBubble()
+        prefs.observe(onPrefsChange)
         instance = this
         _running.value = true
+    }
+
+    /**
+     * Modus oder Prompt-Schalter aenderten sich ausserhalb des Knopfs (Tastatur-Leiste, Einstellungen):
+     * TalkBack-Ansage und -Aktionen nachziehen. Harte Referenz, SharedPreferences haelt Horcher nur schwach.
+     */
+    private val onPrefsChange = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == Prefs.KEY_REFINE_MODE || key == Prefs.KEY_PROMPT_LEVEL) refreshActions()
     }
 
     /**
@@ -317,7 +327,8 @@ class FloatingMicService : Service() {
                     crossMoved = false
                     touching = true
                     updateAlpha()
-                    gesture.down()
+                    gesture.down(idle = state == BubbleState.IDLE)
+                    main.removeCallbacks(holdStart) // nie zwei Halte-Zeiten (verlorenes UP/CANCEL)
                     main.postDelayed(holdStart, holdTimeout())
                 }
                 MotionEvent.ACTION_MOVE -> {
@@ -373,8 +384,13 @@ class FloatingMicService : Service() {
                     crossWindow.hide()
                     if (dragged) savePosition()
                     // Ein abgefangener Touch soll kein gehaltenes Diktat fressen (wie die IME) — ausser der
-                    // Finger lag schon auf dem ✕; ohne Sprache geht nichts raus.
-                    if (send && onDiscard) discard() else if (send) stopRec(requireSpeech = true)
+                    // Finger lag schon auf dem ✕; ohne Sprache geht nichts raus. Ging die Aufnahme waehrend
+                    // des Haltens schon in SENDING (totes Mikrofon, 12-min-Grenze), wird nichts verworfen.
+                    if (send && onDiscard) {
+                        if (state == BubbleState.RECORDING) discard()
+                    } else if (send) {
+                        stopRec(requireSpeech = true)
+                    }
                     endTouch()
                 }
             }
@@ -430,7 +446,10 @@ class FloatingMicService : Service() {
     /** Kreuz um den Druckpunkt, kaum sichtbar, solange der Finger auf dem Knopf liegt. */
     private fun openCross() {
         crossMoved = false
-        val layout = ModeCross.layout(downX, downY, safeArea(), crossModes(), resources.displayMetrics.density)
+        val modes = crossModes()
+        val layout = ModeCross.layout(
+            downX, downY, safeArea(), modes, resources.displayMetrics.density, ModeCrossWindow.pillWidthDp(this, modes),
+        )
         crossWindow.show(layout, prefs.refineMode)
     }
 
@@ -791,6 +810,7 @@ class FloatingMicService : Service() {
     override fun onDestroy() {
         if (instance === this) instance = null
         _running.value = false
+        prefs.unobserve(onPrefsChange)
         main.removeCallbacks(tick)
         main.removeCallbacks(clearCopiedHint)
         main.removeCallbacks(holdStart)

@@ -117,6 +117,13 @@ class BubbleGestureTest {
         assertEquals(Release.TAP, g.up())
     }
 
+    @Test fun druckAusSendenBleibtTippAuchWennSendenWaehrendDesHaltensEndet() {
+        // Finger in SENDING aufgesetzt (KI ueberspringen), Uebertragung endet vor Ablauf der Halte-Zeit.
+        g.down(idle = false)
+        assertFalse("kein Kreuz, keine neue Aufnahme", g.holdElapsed(idle = true))
+        assertEquals(Release.TAP, g.up())
+    }
+
     @Test fun neuerDruckVergisstHaltenUndZiel() {
         holdAndRecord()
         g.aim(CrossTarget.Discard)

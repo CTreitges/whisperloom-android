@@ -549,7 +549,7 @@ class Prefs(context: Context) {
         internal const val KEY_PARAGRAPHS_BEAUTIFY = "paragraphs_beautify"
         internal const val KEY_SUMMARIZE_FORM = "summarize_form"
         internal const val KEY_SHARE_SUMMARIZE_FORM = "share_summarize_form"
-        private const val KEY_PROMPT_LEVEL = "refine_prompt_enabled"
+        internal const val KEY_PROMPT_LEVEL = "refine_prompt_enabled"
         private const val KEY_REMOVE_FILLERS = "remove_fillers"
         private const val KEY_AUTO_CAP = "auto_capitalize"
         private const val KEY_TRAILING_SPACE = "trailing_space"

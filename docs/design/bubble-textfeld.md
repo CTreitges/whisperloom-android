@@ -95,8 +95,10 @@ dem größten Richtungsabstand (≥ 12°, Radius bis 220 dp). Die Reihenfolge de
 | kein Ziel | senden (Langsamer-Tipp-Regel §1) | nichts senden, zurück in Ruhe | wie Tipp, nach Bewegung nur schließen |
 
 - Moduswechsel: Toast „Modus: Glätten“ (`float_mode_set`), Haptik `CONFIRM`.
-- **Sprache** (`ModeCross.hasSpeech`): mindestens **200 ms** in 20-ms-Rahmen mit Effektivpegel **≥ 0,015**
-  (≈ −36 dBFS). Raumrauschen liegt darunter, ein Knacks (Haptik, Finger am Gehäuse, 50–80 ms) unter der Dauer;
+- **Sprache** (`ModeCross.hasSpeech`): mindestens **200 ms am Stück** in 20-ms-Rahmen mit Effektivpegel **≥ 0,015**
+  (≈ −36 dBFS); Lücken bis 40 ms (Verschlusslaute) zählen mit, längere Pausen setzen die Zählung zurück.
+  Raumrauschen liegt darunter, ein Knacks (Haptik, Finger am Gehäuse, 50–80 ms) unter der Dauer — auch mehrere
+  Einrast-Knackse beim Wischen über mehrere Ziele;
   leises Sprechen (Spitzen 0,04–0,09) zählt. Die bestehende 0,3-s-Grenze verwirft weiter Fehlgriffe, den Modus
   speichert die Wahl trotzdem.
 - Die KI-Stufen sind auch ohne eingerichteten KI-Zugang wählbar; die Erkennung meldet dann wie bisher „ohne

@@ -111,6 +111,40 @@ class ModeCrossTest {
         }
     }
 
+    /** Druckpunkt ausserhalb des sicheren Bereichs bzw. kleines Querformat: nie zwei Ziele aufeinander. */
+    @Test fun knopfUnterDerNavigationsleisteUndKleinesQuerformatOhneUeberlappung() {
+        for ((cx, cy, area) in listOf(
+            Triple(14f, 766f, ModeCross.Area(0, 24, 360, 732)),
+            Triple(16f, 40f, ModeCross.Area(0, 24, 640, 272)),
+            Triple(624f, 260f, ModeCross.Area(0, 24, 640, 272)),
+        )) {
+            for (modes in listOf(four, five)) {
+                val l = ModeCross.layout(cx, cy, area, modes, density = 1f)
+                assertNoOverlap(l)
+                assertInside(l, area.right, area.bottom, top = area.top)
+            }
+        }
+    }
+
+    /** Grosse Systemschrift: breitere Pillen bleiben getrennt und im Bildschirm. */
+    @Test fun breitePillenBeiGrosserSchrift() {
+        for (cx in listOf(48f, 180f, 312f)) {
+            val l = ModeCross.layout(cx, 400f, ModeCross.Area(0, 24, 360, 732), five, density = 1f, pillWidthDp = 110f)
+            for (i in l.targets.indices) for (j in i + 1 until l.targets.size) {
+                val (a, pa) = l.targets[i]
+                val (b, pb) = l.targets[j]
+                val aw = if (a == CrossTarget.Discard) 26f else 55f
+                val bw = if (b == CrossTarget.Discard) 26f else 55f
+                val apart = abs(pa.x - pb.x) >= aw + bw - 0.5f || abs(pa.y - pb.y) >= 44f - 0.5f
+                assertTrue("$a und $b ueberlappen bei cx=$cx ($pa, $pb)", apart)
+            }
+            for ((t, p) in l.targets) {
+                val hw = if (t == CrossTarget.Discard) 26f else 55f
+                assertTrue("$t ragt ueber den Rand bei cx=$cx: $p", p.x - hw >= 8f - 0.5f && p.x + hw <= 352f + 0.5f)
+            }
+        }
+    }
+
     @Test fun winzigerBildschirmKlemmtAlles() {
         val l = layout(60f, 60f, five, 120, 120)
         assertInside(l, 120, 120)
@@ -181,5 +215,17 @@ class ModeCrossTest {
     @Test fun hapticKnacksIstKeineSprache() {
         // 80 ms laut (Vibrationsmotor im Mikrofon), sonst still: unter der Mindestdauer.
         assertFalse(ModeCross.hasSpeech(tone(80, 0.6f, silenceMs = 1500)))
+    }
+
+    @Test fun mehrereEinrastKnackseSindKeineSprache() {
+        // Wischen ueber Aus -> Glaetten -> Schoener: drei Einrast-Vibrationen, zusammen 240 ms laut.
+        val clicks = tone(80, 0.6f, silenceMs = 300) + tone(80, 0.6f, silenceMs = 300) + tone(80, 0.6f, silenceMs = 300)
+        assertFalse(ModeCross.hasSpeech(clicks))
+    }
+
+    @Test fun kurzeLueckenInDerSpracheZaehlenMit() {
+        // Silben mit kurzen Verschlusslauten (40 ms leise) dazwischen bleiben Sprache.
+        val word = tone(120, 0.05f, silenceMs = 40) + tone(120, 0.05f)
+        assertTrue(ModeCross.hasSpeech(word))
     }
 }

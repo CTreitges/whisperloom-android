@@ -68,18 +68,24 @@ class BubbleGesture {
     var armed: CrossTarget? = null
         private set
 
-    fun down() {
+    /** Der Druck begann im Ruhezustand; nur dann kann er zum Halten werden. */
+    private var idleAtDown = true
+
+    /** Finger aufgesetzt; [idle] = der Knopf war dabei in Ruhe. */
+    fun down(idle: Boolean = true) {
         phase = Phase.PRESSED
         held = false
         armed = null
+        idleAtDown = idle
     }
 
     /**
-     * Die Halte-Zeit ist abgelaufen. true = jetzt das Kreuz oeffnen. Nur aus einem unbewegten Druck
-     * im Ruhezustand ([idle]) — waehrend einer Aufnahme oder Uebertragung bleibt ein langer Druck ein Tipp.
+     * Die Halte-Zeit ist abgelaufen. true = jetzt das Kreuz oeffnen. Nur aus einem unbewegten Druck,
+     * der in Ruhe begann und noch in Ruhe ist ([idle]) — waehrend einer Aufnahme oder Uebertragung
+     * bleibt ein langer Druck ein Tipp, auch wenn die Uebertragung waehrend des Haltens endet.
      */
     fun holdElapsed(idle: Boolean): Boolean {
-        if (phase != Phase.PRESSED || !idle) return false
+        if (phase != Phase.PRESSED || !idle || !idleAtDown) return false
         phase = Phase.HELD
         return true
     }

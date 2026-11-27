@@ -15,6 +15,7 @@ import com.chris.whisperloom.RefineMode
 import com.chris.whisperloom.llm.OfflineRefineFixture
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -117,6 +118,8 @@ class FloatingMicModeTest {
         assertEquals("deutlich beim Wegbewegen", 1f, cross.alpha, 0.001f)
         touch(MotionEvent.ACTION_UP, cx + reach, cy, at = downAt + holdMs + 2_000)
         assertEquals(listOf(bubble.rootView), windows())
+        // Das Loslassen auf "Kuerzen" sendet: abwarten, sonst laeuft die Uebertragung in den naechsten Test.
+        fixture.waitFor("Senden nicht beendet") { zustand() == app.getString(R.string.cd_bubble_idle) }
     }
 
     @Test fun wischenAufModusSetztIhnDauerhaftUndSendetMitIhm() {
@@ -147,6 +150,34 @@ class FloatingMicModeTest {
         assertEquals(0, fixture.transcriptions.get())
         assertNull(clip())
         assertEquals(app.getString(R.string.float_discarded), ShadowToast.getTextOfLatestToast())
+    }
+
+    @Test fun abbruchAufKreuzVerwirftNichtWennSchonGesendetWird() {
+        starten()
+        touch(MotionEvent.ACTION_DOWN)
+        warten(holdMs + 50)
+        fixture.awaitRecorded()
+        for (step in 1..4) touch(MotionEvent.ACTION_MOVE, cx, cy + reach * step / 4)
+        // Aufnahme endet von aussen, waehrend der Finger auf dem ✕ liegt (hier per Klick wie TalkBack;
+        // im Betrieb totes Mikrofon oder 12-min-Grenze): der Dienst steht in SENDING.
+        bubble.performClick()
+        touch(MotionEvent.ACTION_CANCEL, cx, cy + reach)
+        assertNotEquals("Senden zurueckgesetzt", app.getString(R.string.cd_bubble_idle), zustand())
+        assertNotEquals(app.getString(R.string.float_discarded), ShadowToast.getTextOfLatestToast())
+        fixture.waitFor("laufende Uebertragung wurde abgebrochen") { clip() != null }
+        assertEquals(1, fixture.transcriptions.get())
+    }
+
+    @Test fun modusAusDerTastaturLeisteAktualisiertTalkBack() {
+        starten()
+        prefs.refineMode = RefineMode.SUMMARIZE // z. B. in der Leiste der eigenen Tastatur
+        prefs.promptLevelEnabled = true
+        warten(0)
+        val info = bubble.createAccessibilityNodeInfo()
+        assertEquals(modeToast(RefineMode.SUMMARIZE), info.stateDescription?.toString())
+        val labels = info.actionList.mapNotNull { it.label?.toString() }
+        val prompt = app.getString(R.string.cd_bubble_action_mode, app.getString(ModeCrossWindow.labelRes(RefineMode.PROMPT)))
+        assertTrue("$prompt fehlt in $labels", prompt in labels)
     }
 
     @Test fun haltenOhneSpracheSendetNichts() {

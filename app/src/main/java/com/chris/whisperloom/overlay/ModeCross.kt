@@ -65,6 +65,9 @@ object ModeCross {
     /** So viel Sprache muss eine Aufnahme enthalten; kurze Knackser (Haptik, Finger) bleiben darunter. */
     const val SPEECH_MIN_MS = 200
 
+    /** Leise Rahmen innerhalb der Sprache, die die Zaehlung nicht zuruecksetzen (2 x 20 ms). */
+    const val SPEECH_GAP_FRAMES = 2
+
     private const val FRAME_SAMPLES = 320 // 20 ms bei 16 kHz (AudioRecorder.SAMPLE_RATE)
 
     /** Nur in Ecken, wenn mit [MAX_RADIUS_DP] keine Lage passt. */
@@ -97,22 +100,31 @@ object ModeCross {
      * Lage der Ziele um den Druckpunkt ([cx], [cy]). Der Bogen oeffnet nach oben; passt das nicht, probiert
      * die Logik weitere Spannweiten, Richtungen und ✕-Lagen durch und nimmt die erste, bei der alle Ziele —
      * notfalls gemeinsam verschoben — in [area] liegen, sich nicht ueberlappen, weit genug vom Druckpunkt
-     * liegen und in klar verschiedene Richtungen zeigen. Passt nichts, wird die erste Lage geklemmt.
+     * liegen und in klar verschiedene Richtungen zeigen. Passt nichts mit waehlbarem Richtungsabstand, gilt
+     * die erste ueberlappungsfreie Lage; erst danach wird ein Bogen zur Bildschirmmitte geklemmt.
+     * [pillWidthDp] = breiteste Pille (waechst bei grosser Systemschrift mit, siehe [ModeCrossWindow]).
      */
-    fun layout(cx: Float, cy: Float, area: Area, modes: List<RefineMode>, density: Float): Layout {
+    fun layout(
+        cx: Float, cy: Float, area: Area, modes: List<RefineMode>, density: Float,
+        pillWidthDp: Float = PILL_W_DP,
+    ): Layout {
+        val d = Dims(density, maxOf(PILL_W_DP, pillWidthDp))
+        val facings = directions(cx, cy, area)
         // Ecke: Passt keine Lage mit MIN_SEPARATION_DEG, gilt die mit dem groessten Richtungsabstand —
         // mindestens zweimal die Winkel-Hysterese, sonst waere ein Ziel nicht waehlbar.
         var best: List<Placed>? = null
         var bestSeparation = 2 * ANGLE_HYSTERESIS_DEG
+        var firstApart: List<Placed>? = null
         for (maxRadius in listOf(MAX_RADIUS_DP, CORNER_MAX_RADIUS_DP)) {
             for (span in SPANS) {
-                for (facing in directions(cx, cy, area)) {
+                for (facing in facings) {
                     for (offset in DISCARD_OFFSETS) {
-                        val raw = arc(cx, cy, modes, facing, span, facing + offset, density, maxRadius) ?: continue
-                        val placed = shiftInside(raw, area, density) ?: continue
-                        val separation = separation(placed, cx, cy, density) ?: continue
+                        val raw = arc(cx, cy, modes, facing, span, facing + offset, d, maxRadius) ?: continue
+                        val placed = shiftInside(raw, area, d) ?: continue
+                        val separation = separation(placed, cx, cy, d) ?: continue
                         if (separation >= MIN_SEPARATION_DEG) return Layout(placed)
-                        if (separation >= bestSeparation) {
+                        if (firstApart == null) firstApart = placed
+                        if (separation > bestSeparation || (best == null && separation >= bestSeparation)) {
                             best = placed
                             bestSeparation = separation
                         }
@@ -120,9 +132,16 @@ object ModeCross {
                 }
             }
         }
-        best?.let { return Layout(it) }
-        val fallback = requireNotNull(arc(cx, cy, modes, 90f, 180f, 270f, density, maxRadius = Float.MAX_VALUE))
-        return Layout(fallback.map { clampInside(it, area, density) })
+        (best ?: firstApart)?.let { return Layout(it) }
+        val toCenter = facings[1] // naechste Richtung zur Bereichsmitte (90° steht immer vorn)
+        val fallback = requireNotNull(arc(cx, cy, modes, toCenter, 180f, toCenter + 180f, d, maxRadius = Float.MAX_VALUE))
+        return Layout(fallback.map { clampInside(it, area, d) })
+    }
+
+    /** Masse fuer eine Lage: Dichte und Pillenbreite (dp). */
+    private data class Dims(val density: Float, val pillWidthDp: Float) {
+        /** Kleinster Mittenabstand benachbarter Modi: Pillenbreite + Luft (bei 72 dp = [MIN_GAP_DP]). */
+        val minGapDp get() = pillWidthDp + (MIN_GAP_DP - PILL_W_DP)
     }
 
     /**
@@ -139,7 +158,7 @@ object ModeCross {
         if (travel < (if (currentPoint != null) arm - HYSTERESIS_DP * density else arm)) return null
         val finger = direction(downX, downY, fingerX, fingerY)
         fun off(p: Point) = angleBetween(finger, direction(downX, downY, p.x, p.y))
-        val nearest = layout.targets.minBy { off(it.point) }
+        val nearest = layout.targets.minByOrNull { off(it.point) } ?: return null
         if (currentPoint == null || nearest.target == current) return nearest.target
         return if (off(nearest.point) + ANGLE_HYSTERESIS_DEG <= off(currentPoint)) nearest.target else current
     }
@@ -153,17 +172,25 @@ object ModeCross {
     }
 
     /**
-     * Enthaelt die Aufnahme Sprache? Mindestens [SPEECH_MIN_MS] in 20-ms-Rahmen mit Effektivpegel ab
-     * [SPEECH_RMS]. Raumrauschen bleibt unter dem Pegel, ein Knacks (Haptik, Finger) unter der Dauer.
+     * Enthaelt die Aufnahme Sprache? Mindestens [SPEECH_MIN_MS] am Stueck in 20-ms-Rahmen mit
+     * Effektivpegel ab [SPEECH_RMS]; Luecken bis [SPEECH_GAP_FRAMES] Rahmen (Verschlusslaute) zaehlen
+     * mit. Raumrauschen bleibt unter dem Pegel, Knackse (Einrast-Haptik, Finger) unter der Dauer —
+     * auch mehrere hintereinander, denn eine laengere Pause setzt die Zaehlung zurueck.
      */
     fun hasSpeech(samples: FloatArray): Boolean {
         val needed = SPEECH_MIN_MS / 20
-        var frames = 0
+        var run = 0
+        var quiet = 0
         var start = 0
         while (start + FRAME_SAMPLES <= samples.size) {
             var sum = 0.0
             for (i in start until start + FRAME_SAMPLES) sum += samples[i].toDouble() * samples[i]
-            if (sqrt(sum / FRAME_SAMPLES) >= SPEECH_RMS && ++frames >= needed) return true
+            if (sqrt(sum / FRAME_SAMPLES) >= SPEECH_RMS) {
+                quiet = 0
+                if (++run >= needed) return true
+            } else if (++quiet > SPEECH_GAP_FRAMES) {
+                run = 0
+            }
             start += FRAME_SAMPLES
         }
         return false
@@ -189,21 +216,21 @@ object ModeCross {
 
     /**
      * Modi von links (facing + span/2) im Uhrzeigersinn. Der Radius waechst bei gestauchtem Bogen, bis
-     * Nachbarn [MIN_GAP_DP] auseinander liegen; braeuchte das mehr als [maxRadius], null.
+     * Nachbarn [Dims.minGapDp] auseinander liegen; braeuchte das mehr als [maxRadius], null.
      */
     private fun arc(
         cx: Float, cy: Float, modes: List<RefineMode>, facing: Float, span: Float, discardAngle: Float,
-        density: Float, maxRadius: Float,
+        d: Dims, maxRadius: Float,
     ): List<Placed>? {
         val n = modes.size
         val step = if (n > 1) span / (n - 1) else 0f
-        val needed = if (n > 1) MIN_GAP_DP / (2f * sin(Math.toRadians(step / 2.0)).toFloat()) else 0f
+        val needed = if (n > 1) d.minGapDp / (2f * sin(Math.toRadians(step / 2.0)).toFloat()) else 0f
         if (needed > maxRadius) return null
-        val radius = maxOf(RADIUS_DP, needed) * density
+        val radius = maxOf(RADIUS_DP, needed) * d.density
         val placed = modes.mapIndexed { i, mode ->
             Placed(CrossTarget.Mode(mode), polar(cx, cy, radius, facing + span / 2f - i * step))
         }
-        return placed + Placed(CrossTarget.Discard, polar(cx, cy, DISCARD_RADIUS_DP * density, discardAngle))
+        return placed + Placed(CrossTarget.Discard, polar(cx, cy, DISCARD_RADIUS_DP * d.density, discardAngle))
     }
 
     private fun polar(cx: Float, cy: Float, radius: Float, angleDeg: Float): Point {
@@ -211,20 +238,20 @@ object ModeCross {
         return Point(cx + radius * cos(a).toFloat(), cy - radius * sin(a).toFloat())
     }
 
-    private fun halfSize(target: CrossTarget, density: Float): Pair<Float, Float> =
+    private fun halfSize(target: CrossTarget, d: Dims): Pair<Float, Float> =
         if (target == CrossTarget.Discard) {
-            DISCARD_DP / 2f * density to DISCARD_DP / 2f * density
+            DISCARD_DP / 2f * d.density to DISCARD_DP / 2f * d.density
         } else {
-            PILL_W_DP / 2f * density to PILL_H_DP / 2f * density
+            d.pillWidthDp / 2f * d.density to PILL_H_DP / 2f * d.density
         }
 
     /** Alle Ziele gemeinsam so verschieben, dass sie mit Rand in [area] liegen; null, wenn das nicht geht. */
-    private fun shiftInside(placed: List<Placed>, area: Area, density: Float): List<Placed>? {
-        val m = MARGIN_DP * density
-        val left = placed.minOf { it.point.x - halfSize(it.target, density).first }
-        val right = placed.maxOf { it.point.x + halfSize(it.target, density).first }
-        val top = placed.minOf { it.point.y - halfSize(it.target, density).second }
-        val bottom = placed.maxOf { it.point.y + halfSize(it.target, density).second }
+    private fun shiftInside(placed: List<Placed>, area: Area, d: Dims): List<Placed>? {
+        val m = MARGIN_DP * d.density
+        val left = placed.minOf { it.point.x - halfSize(it.target, d).first }
+        val right = placed.maxOf { it.point.x + halfSize(it.target, d).first }
+        val top = placed.minOf { it.point.y - halfSize(it.target, d).second }
+        val bottom = placed.maxOf { it.point.y + halfSize(it.target, d).second }
         if (right - left > area.right - area.left - 2 * m || bottom - top > area.bottom - area.top - 2 * m) return null
         val dx = maxOf(0f, area.left + m - left) - maxOf(0f, right - (area.right - m))
         val dy = maxOf(0f, area.top + m - top) - maxOf(0f, bottom - (area.bottom - m))
@@ -235,16 +262,16 @@ object ModeCross {
      * Kleinster Richtungsabstand zweier Ziele vom Druckpunkt aus; null, wenn ein Ziel zu nah am
      * Druckpunkt liegt oder zwei sich ueberlappen.
      */
-    private fun separation(placed: List<Placed>, cx: Float, cy: Float, density: Float): Float? {
-        val reach = MIN_REACH_DP * density
+    private fun separation(placed: List<Placed>, cx: Float, cy: Float, d: Dims): Float? {
+        val reach = MIN_REACH_DP * d.density
         if (placed.any { hypot(it.point.x - cx, it.point.y - cy) < reach }) return null
         val angles = placed.map { direction(cx, cy, it.point.x, it.point.y) }
         var smallest = 360f
         for (i in placed.indices) {
             for (j in i + 1 until placed.size) {
                 smallest = minOf(smallest, angleBetween(angles[i], angles[j]))
-                val (aw, ah) = halfSize(placed[i].target, density)
-                val (bw, bh) = halfSize(placed[j].target, density)
+                val (aw, ah) = halfSize(placed[i].target, d)
+                val (bw, bh) = halfSize(placed[j].target, d)
                 val apartX = abs(placed[i].point.x - placed[j].point.x) >= aw + bw
                 val apartY = abs(placed[i].point.y - placed[j].point.y) >= ah + bh
                 if (!apartX && !apartY) return null
@@ -253,9 +280,9 @@ object ModeCross {
         return smallest
     }
 
-    private fun clampInside(p: Placed, area: Area, density: Float): Placed {
-        val m = MARGIN_DP * density
-        val (hw, hh) = halfSize(p.target, density)
+    private fun clampInside(p: Placed, area: Area, d: Dims): Placed {
+        val m = MARGIN_DP * d.density
+        val (hw, hh) = halfSize(p.target, d)
         val x = p.point.x.coerceIn(area.left + m + hw, maxOf(area.left + m + hw, area.right - m - hw))
         val y = p.point.y.coerceIn(area.top + m + hh, maxOf(area.top + m + hh, area.bottom - m - hh))
         return p.copy(point = Point(x, y))
