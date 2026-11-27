@@ -63,6 +63,19 @@ def bubble_visible(dumpsys_window: str) -> bool | None:
     return None
 
 
+def bubble_frame(dumpsys_window: str) -> Bounds | None:
+    """Rahmen des Knopf-Fensters in Bildschirm-Pixeln (`frame=[l,t][r,b]`). Ein Overlay einer anderen
+    App fehlt im `uiautomator dump` des aktiven Fensters, deshalb aus `dumpsys window`."""
+    blocks = re.split(r"\n(?=\s*Window #\d+)", dumpsys_window)
+    for block in blocks:
+        if WINDOW_TITLE not in block.split("\n", 1)[0]:
+            continue
+        m = re.search(r"\bframe=\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]", block)
+        if m:
+            return Bounds(*(int(x) for x in m.groups()))
+    return None
+
+
 def node_bounds(ui_xml: str, resource_id: str) -> Bounds | None:
     """Bounds des Knotens mit resource-id aus einem `uiautomator dump`."""
     for m in re.finditer(r"<node\b[^>]*>", ui_xml):
@@ -106,6 +119,16 @@ def sdk_dir(repo: Path = REPO, env: dict | None = None) -> Path:
     if env.get("ANDROID_HOME"):
         return Path(env["ANDROID_HOME"])
     return Path(env.get("LOCALAPPDATA", "")) / "Android" / "Sdk"
+
+
+def emulator_env(sdk: Path, env) -> dict[str, str]:
+    """Umgebung fuer den Emulator: SDK-adb vorn im PATH. Ein aelteres adb im PATH startet sonst einen
+    eigenen Server, der den des SDK abwirft ("server version doesn't match", Geraet bleibt offline)."""
+    out = dict(env)
+    out["ANDROID_SDK_ROOT"] = str(sdk)
+    out["ANDROID_HOME"] = str(sdk)
+    out["PATH"] = str(sdk / "platform-tools") + os.pathsep + env.get("PATH", "")
+    return out
 
 
 def attached_devices(adb_devices: str) -> list[str]:
@@ -214,7 +237,7 @@ def start_emulator(adb: Path, args) -> str:
     log = open(Path(args.pid_file).with_suffix(".emulator.log") if args.pid_file else os.devnull, "w")
     p = subprocess.Popen(
         [str(emu), "-avd", args.avd, "-no-snapshot-save", "-no-audio", "-no-boot-anim"],
-        stdout=log, stderr=subprocess.STDOUT, creationflags=flags,
+        stdout=log, stderr=subprocess.STDOUT, creationflags=flags, env=emulator_env(sdk_dir(), os.environ),
     )
     if args.pid_file:
         with open(args.pid_file, "a", encoding="utf-8") as f:
@@ -272,6 +295,9 @@ def prepare(d: Device) -> None:
     d.sh("settings put secure show_ime_with_hard_keyboard 1")
     # Ziehen ohne Halten: Halte-Zeit hochsetzen, damit `input swipe` nicht als Halten zaehlt.
     d.sh("settings put secure long_press_timeout 1500")
+    # `install -r` beendet den Prozess; die Bedienungshilfe steht danach unter "Crashed services" und
+    # bindet erst nach Aus/Ein neu (derselbe Wert in den Settings loest nichts aus).
+    set_a11y(d, False)
     set_a11y(d, True)
 
 
@@ -299,9 +325,9 @@ def close_keyboard(d: Device) -> bool:
 
 
 def drop_on_target(d: Device) -> None:
-    b = d.ui_bounds(f"{PKG}:id/bubble")
+    b = bubble_frame(d.sh("dumpsys window windows"))
     if b is None:
-        raise RuntimeError("Knopf nicht im UI-Baum")
+        raise RuntimeError("Knopf-Fenster nicht gefunden")
     w, h = parse_wm_size(d.sh("wm size"))
     tx, ty = cancel_target_center(w, h, parse_wm_density(d.sh("wm density")))
     bx, by = b.center

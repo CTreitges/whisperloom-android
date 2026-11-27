@@ -87,5 +87,34 @@ class SdkDirTest(unittest.TestCase):
             self.assertEqual(Path("/home/u/AppData") / "Android" / "Sdk", c.sdk_dir(Path(tmp), env={"LOCALAPPDATA": "/home/u/AppData"}))
 
 
+class BubbleFrameTest(unittest.TestCase):
+    def test_frame_of_bubble_window_only(self):
+        dump = (
+            "  Window #3 Window{a1 u0 com.android.launcher3/.Launcher}:\n"
+            "    Frames: parent=[0,0][1080,2400] display=[0,0][1080,2400] frame=[0,0][1080,2400]\n"
+            "  Window #5 Window{e0 u0 WhisperLoomBubble}:\n"
+            "    Frames: parent=[0,63][1080,2337] display=[-100000,-100000][100000,100000] frame=[24,383][276,635] last=[24,383][276,635]\n"
+        )
+        self.assertEqual(c.Bounds(24, 383, 276, 635), c.bubble_frame(dump))
+        self.assertEqual((150, 509), c.bubble_frame(dump).center)
+
+    def test_no_bubble_window(self):
+        self.assertIsNone(c.bubble_frame(DUMPSYS.replace("WhisperLoomBubble", "Other")))
+
+
+class EmulatorEnvTest(unittest.TestCase):
+    def test_sdk_adb_first_and_sdk_root_set(self):
+        sdk = Path("C:/Users/X/Sdk")
+        env = c.emulator_env(sdk, {"PATH": "C:/Android", "OTHER": "1"})
+        self.assertTrue(env["PATH"].startswith(str(sdk / "platform-tools")))
+        self.assertTrue(env["PATH"].endswith("C:/Android"))
+        self.assertEqual(str(sdk), env["ANDROID_SDK_ROOT"])
+        self.assertEqual("1", env["OTHER"])
+
+    def test_linux_path_without_path_var(self):
+        env = c.emulator_env(Path("/home/u/Android/Sdk"), {})
+        self.assertEqual(str(Path("/home/u/Android/Sdk") / "platform-tools") + c.os.pathsep, env["PATH"])
+
+
 if __name__ == "__main__":
     unittest.main()
