@@ -22,6 +22,14 @@ class HomeStatusTest {
         assertEquals(HomeStatus.Blocked.A11Y, HomeStatus.blocked(micGranted = true, canDrawOverlays = true, a11yRunning = false))
     }
 
+    @Test fun einrichtungStartetKnopfNurOhneSperre() {
+        assertTrue(HomeStatus.startsAfterSetup(false, micGranted = true, canDrawOverlays = true, a11yRunning = true))
+        // Bedienungshilfe uebersprungen: kein Mikrofon-Dienst mit nie sichtbarem Knopf.
+        assertFalse(HomeStatus.startsAfterSetup(false, micGranted = true, canDrawOverlays = true, a11yRunning = false))
+        assertFalse(HomeStatus.startsAfterSetup(true, micGranted = true, canDrawOverlays = true, a11yRunning = true))
+        assertFalse(HomeStatus.startsAfterSetup(false, micGranted = true, canDrawOverlays = false, a11yRunning = true))
+    }
+
     @Test fun laufenderKnopfLaesstSichImmerBeenden() {
         assertTrue(HomeStatus.toggleEnabled(running = true, blocked = HomeStatus.Blocked.A11Y))
         assertFalse(HomeStatus.toggleEnabled(running = false, blocked = HomeStatus.Blocked.A11Y))

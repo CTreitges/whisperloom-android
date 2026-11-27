@@ -35,6 +35,14 @@ object HomeStatus {
         else -> Blocked.NONE
     }
 
+    /**
+     * Knopf am Ende der Einrichtung starten: nur ohne Sperre wie auf Home (ohne Bedienungshilfe
+     * liefe sonst ein Mikrofon-Dienst, dessen Knopf nie erscheint) und nicht, wenn der Schritt
+     * "Ueber anderen Apps" uebersprungen wurde.
+     */
+    fun startsAfterSetup(overlaySkipped: Boolean, micGranted: Boolean, canDrawOverlays: Boolean, a11yRunning: Boolean) =
+        !overlaySkipped && blocked(micGranted, canDrawOverlays, a11yRunning) == Blocked.NONE
+
     /** Starten nur ohne Sperre; ein laufender Knopf laesst sich immer beenden. */
     fun toggleEnabled(running: Boolean, blocked: Blocked): Boolean = running || blocked == Blocked.NONE
 
